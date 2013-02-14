@@ -13,3 +13,4 @@ credential-store/_ReSharper.credential-store/
 credential-store/Release
 ivy.xml
 custom-gradle/src/latestInitScript
+gradle.properties
