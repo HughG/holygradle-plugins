@@ -1,0 +1,15 @@
+syntax: glob
+.gradle
+*.class
+build
+*.ReSharper.user
+*.sdf
+*.suo
+*.vcxproj.user
+*.bak
+hg-credential-store/Release
+hg-credential-store/_ReSharper.hg-credential-store
+credential-store/_ReSharper.credential-store/
+credential-store/Release
+ivy.xml
+custom-gradle/src/latestInitScript

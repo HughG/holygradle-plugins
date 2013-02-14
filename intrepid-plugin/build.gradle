@@ -1,0 +1,6 @@
+dependencies {
+    compile group: 'com.aragost.javahg', name: 'javahg', version: '0.5-SNAPSHOT'
+    compile group: 'org.tmatesoft.svnkit', name: 'svnkit', version: '1.7.5'
+    runtime group: 'org', name: 'sevenZip', version:'9.+', configuration: 'basic'
+    runtime "holygradle:hg-credential-store:1.0.0.+"
+}

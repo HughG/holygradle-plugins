@@ -1,0 +1,99 @@
+import holygradle.util.Helper
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
+
+subprojects {
+    if (project.name.endsWith("plugin")) {
+        apply plugin: "groovy"
+        
+        dependencies {
+            groovy localGroovy()
+            compile gradleApi()
+        }
+    }
+}
+project("custom-gradle") {
+    apply plugin: "groovy"
+}
+
+subprojects {
+    if (configurations.findByName("default") == null) {
+        configurations {
+            it."default"
+        }
+    }
+
+    group = "holygradle"
+    
+    repositories {
+        ivy {
+            url artifactoryServer + 'plugins-release/'
+        }
+        maven {
+            url artifactoryServer + 'remote-repos/'
+            credentials {
+                username artifactoryUsername
+                password artifactoryPassword
+            }
+        }
+    }
+    
+    ["publishRelease", "publishSnapshot"].each { taskName ->
+        project.task(taskName, type: Upload) {
+            configuration = configurations.default
+            group = "Publishing"
+            uploadDescriptor = true
+            descriptorDestination = new File("ivy.xml")
+            
+            repositories.ivy {
+                credentials {
+                    username artifactoryUsername
+                    password artifactoryPassword
+                }
+                url artifactoryServer + "plugins-release-local/"
+            }
+            
+            doLast {
+                println "Published ${project.version} at: " + new Date()
+            }
+        }
+    }
+    
+    project.gradle.taskGraph.whenReady {
+        // Only publish to one repository at a time.
+        int publishCount = 0
+        if (project.gradle.taskGraph.hasTask(publishSnapshot)) {
+            publishCount++
+        }
+        if (project.gradle.taskGraph.hasTask(publishRelease)) {
+            publishCount++
+        }
+        if (publishCount > 1) {
+            throw new RuntimeException("Only publish to one repository at a time, because the version number is different.")
+        }
+        
+        // Configure the version number according to which repository we're publishing to.
+        if (project.gradle.taskGraph.hasTask(publishSnapshot)) {
+            def username = System.getProperty("user.name").toLowerCase()
+            project.version = "${username}-SNAPSHOT"
+        }
+        if (project.gradle.taskGraph.hasTask(publishRelease)) {
+            Helper.chooseNextVersionNumberWithUserInput(project)
+        }
+    }
+
+    if (project.tasks.findByPath("test") != null) {
+        task testReport(type: DefaultTask) {
+            dependsOn test
+            group = "Verification"
+            description "Opens the test report and runs the tests."
+            doFirst {
+                project.exec {
+                    commandLine "cmd", "/c", "start", "${testReportDir}/index.html"
+                }
+            }
+        }
+    
+        publishSnapshot.dependsOn test
+        publishRelease.dependsOn test
+    }
+}

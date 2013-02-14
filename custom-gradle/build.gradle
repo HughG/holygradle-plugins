@@ -1,0 +1,70 @@
+import holygradle.util.Helper
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    gradleApi
+    gradleApi.extendsFrom groovy
+    compile.extendsFrom gradleApi
+}
+
+dependencies {
+    gradleApi gradleApi()
+    groovy localGroovy()
+}
+
+def initScriptsPath = 'src/initScripts/'
+def versionedInitScriptsPath = 'src/tempInitScripts/'
+File f = new File(project.projectDir, versionedInitScriptsPath)
+if (!f.exists()) {
+    f.mkdir()
+}
+
+task createVersionedInitScript(type: Copy) {
+    from initScriptsPath
+    into versionedInitScriptsPath
+    filter { String line -> (line =~ /\[\[INIT_SCRIPT_VERSION\]\]/).replaceFirst(project.version) }
+    filter { String line -> (line =~ /\[\[ARTIFACTORY_SERVER\]\]/).replaceFirst(artifactoryServerName) }
+}
+
+task latestInitScript(type: Copy) {
+    dependsOn createVersionedInitScript
+    from versionedInitScriptsPath
+    into 'src/latestInitScript'
+}
+
+task customDistribution(type: Zip) {
+    dependsOn latestInitScript
+    group = "Main"
+    description = 'Creates a custom Gradle distribution containing the custom plugins'
+    // Give this distribution a name that indicates that it is not the standard distribution
+    baseName = "custom-gradle-${gradle.gradleVersion}"
+    into("custom-gradle-${gradle.gradleVersion}") {
+        into('init.d') { 
+            from versionedInitScriptsPath
+            exclude "*- Copy.gradle"
+            exclude "*.bak"
+        }
+        into('custom') { 
+            from 'src/custom'
+        }
+        from gradle.gradleHomeDir
+    }
+    doLast {
+        println "gradle.gradleHomeDir: " + gradle.gradleHomeDir
+        def temp = new File(project.projectDir, versionedInitScriptsPath)
+        for (tempFile in temp.listFiles()) {
+            tempFile.delete()
+        }
+    }
+}
+
+artifacts {
+    compile customDistribution
+}
+
+[publishRelease, publishSnapshot].each { pubTask ->
+    pubTask.configuration = configurations.compile
+}

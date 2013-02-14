@@ -1,0 +1,127 @@
+class HolyGradlePlugins {
+    def buildscript
+    def project
+    def usages = [:]
+    
+    HolyGradlePlugins(buildscript, project) {
+        this.buildscript = buildscript
+        this.project = project
+        if (project.ext.holyGradlePluginsRepository != null) {
+            buildscript.repositories {
+                ivy { url project.ext.holyGradlePluginsRepository }
+            }
+        }
+        if (project.ext.holyGradleRemoteRepository != null) {
+            buildscript.repositories {
+                maven { url project.ext.holyGradleRemoteRepository }
+            }
+        }
+        if (project.hasProperty("holyGradlePluginsSnapshots") && project.ext.holyGradlePluginsSnapshots != null) {
+            buildscript.configurations.all {
+                resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
+                resolutionStrategy.cacheDynamicVersionsFor 1, 'seconds'
+            }
+        } else {
+            buildscript.configurations.all {
+                resolutionStrategy.cacheDynamicVersionsFor 1, 'hours'
+            }
+        }
+    }
+    
+    def use(String plugin_version) {
+        String plugin = null
+        String version = null
+        def error = "Invalid format for 'gplugins.use'. The parameter should be in the form '<module>:<version>'."
+        if (plugin_version.contains(":")) {
+            def split = plugin_version.split(":")
+            if (split.size() == 2) {
+                plugin = split[0]
+                version = split[1]
+            } else {
+                throw new RuntimeException(error)
+            }
+        } else {
+            throw new RuntimeException(error)
+        }
+        use(plugin, version)
+    }
+    
+    public void use(String plugin, String version) {
+        if (usages.size() == 0) {
+            useInternal "custom-gradle-core", "1.0.5.+"
+        }
+        useInternal plugin, version
+    }
+    
+    private void useInternal(String plugin, String version) {
+        if (project.hasProperty("holyGradlePluginsSnapshots") && project.ext.holyGradlePluginsSnapshots != null) {
+            version = "${project.ext.holyGradlePluginsSnapshots}-SNAPSHOT"
+            buildscript.dependencies {
+                classpath("holygradle:${plugin}-plugin:${version}") { changing = true }
+            }
+        } else {
+            buildscript.dependencies {
+                classpath "holygradle:${plugin}-plugin:${version}"
+            }
+        }
+        usages[plugin] = version
+    }
+    
+    public void apply() {
+        // Schedule 'user.gradle' files to be loaded first thing after the projects are evaluated.
+        project.gradle.projectsEvaluated {
+            def userScript = 'user.gradle'
+            def userScriptFile = new File(project.projectDir, userScript)
+            if (userScriptFile.exists()) {
+                project.apply from: userScriptFile.name
+            } else if (project.buildFile != null) {
+                def userBuildScript = project.buildFile.name.replace(".gradle", ".${userScript}")
+                userScriptFile = new File(project.projectDir, userBuildScript)
+                if (userScriptFile.exists()) {
+                    project.apply from: userScriptFile.name
+                }
+            }
+        }
+        
+        usages.each { name, version ->
+            project.apply plugin: name
+        }
+    }  
+}
+
+allprojects {
+    project.ext.initScriptVersion = "[[INIT_SCRIPT_VERSION]]"
+    
+    def defaultPluginsRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/plugins-release/"
+    def defaultRemoteRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/remote-repos/"
+    
+    def pluginsRepo = defaultPluginsRepo
+    if (project.hasProperty("holyGradlePluginsRepository")) {
+        if (holyGradlePluginsRepository != defaultPluginsRepo) {
+            pluginsRepo = new File(project.rootProject.projectDir, holyGradlePluginsRepository).path
+        }
+    }
+    project.ext.holyGradlePluginsRepository = pluginsRepo
+   
+    def remoteRepo = defaultRemoteRepo
+    if (project.hasProperty("holyGradleRemoteRepository")) {
+        if (holyGradleRemoteRepository != defaultRemoteRepo) {
+            remoteRepo = new File(project.rootProject.projectDir, holyGradleRemoteRepository).path
+        }
+    } 
+    project.ext.holyGradleRemoteRepository = remoteRepo
+    
+    project.extensions.create('gplugins', HolyGradlePlugins, buildscript, project)
+}
+
+// Build scripts need to do the following:
+/*
+buildscript {
+    gplugins.use "intrepid:2.0.4.+"
+    gplugins.use "devenv:1.0.9.+"
+}
+gplugins.apply()
+*/
+
+// Unfortunately the plugin needs to be applied outside of the buildscript block. However, once
+// this issue (http://issues.gradle.org/browse/GRADLE-2407) is fixed, we can tidy this up.
