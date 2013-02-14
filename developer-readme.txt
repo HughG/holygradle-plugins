@@ -1,3 +1,6 @@
+Licensing:
+The GNU GENERAL PUBLIC LICENSE applies to this software. See license.txt.
+
 This repository contains:
  - several Gradle plugins
  - two support modules for interacting with the Windows Credential Manager.
