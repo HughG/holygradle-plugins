@@ -49,7 +49,7 @@ subprojects {
                     username artifactoryUsername
                     password artifactoryPassword
                 }
-                url artifactoryServer + "plugins-release-local/"
+                url artifactoryServer + artifactoryPluginRepo + "/"
             }
             
             doLast {

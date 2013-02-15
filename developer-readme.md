@@ -18,6 +18,7 @@ Create 'gradle.properties' in the root of your workspace add define these proper
 ```
 artifactoryServer=<artifactory server> e.g. http://artifact-server/artifactory/
 artifactoryServerName=<name of artifactory server without any http:// or slashes>
+artifactoryPluginRepo=<name of the (non-remote, non-virtual) repository for storing plugins e.g. plugins-release-local>
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
