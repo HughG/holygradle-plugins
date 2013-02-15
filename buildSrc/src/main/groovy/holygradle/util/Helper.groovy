@@ -4,9 +4,9 @@ import org.gradle.api.Project
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 
 class Helper {
-    public static void chooseNextVersionNumberWithUserInput(Project project) {
+    public static String getLatestVersionNumber(Project project, String group, String moduleName) {
         def latestVersion = null
-        def externalDependency = new DefaultExternalModuleDependency(project.group, project.name, "+", "default")
+        def externalDependency = new DefaultExternalModuleDependency(group, moduleName, "+", "default")
         def dependencyConf = project.configurations.detachedConfiguration(externalDependency)
         dependencyConf.resolutionStrategy.cacheDynamicVersionsFor 1, 'seconds'
         
@@ -16,6 +16,12 @@ class Helper {
             }
         } catch (Exception e) {
         }
+        
+        latestVersion
+    }
+    
+    public static void chooseNextVersionNumberWithUserInput(Project project) {
+        def latestVersion = getLatestVersionNumber(project, project.group, project.name)
         
         Console console = System.console()
         if (console == null) {

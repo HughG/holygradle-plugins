@@ -118,7 +118,7 @@ allprojects {
 /*
 buildscript {
     gplugins.use "intrepid:2.0.4.+"
-    gplugins.use "devenv:1.0.9.+"
+    gplugins.use "devenv:1.0.10.+"
 }
 gplugins.apply()
 */

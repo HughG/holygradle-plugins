@@ -14,3 +14,6 @@ credential-store/Release
 ivy.xml
 custom-gradle/src/latestInitScript
 gradle.properties
+wrapper-starter-kit/gradle/gradle-wrapper.jar
+wrapper-starter-kit/gradle/gradle-wrapper.properties
+wrapper-starter-kit/script/build.gradle
