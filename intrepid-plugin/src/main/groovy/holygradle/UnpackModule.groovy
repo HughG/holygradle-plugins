@@ -31,25 +31,29 @@ class UnpackModule {
         
         File ivyFile = null
         
-        // Try to find the ivy file in the gradle cache corresponding to this artifact. This depends upon
-        // the structure of the gradle cache, as well as the Ivy format.
-        def ivyDirInCache = new File(firstArtifact.getFile().parentFile.parentFile.parentFile, "ivy")
-        if (ivyDirInCache.exists()) {
-            // Getting the file from the gradle cache.
-            ivyDirInCache.traverse {
+        if (firstArtifact == null) {
+            // println "Warning: ${resolvedDependency} doesn't have any artifacts. Why are you depending on this configuration?"
+        } else {
+            // Try to find the ivy file in the gradle cache corresponding to this artifact. This depends upon
+            // the structure of the gradle cache, as well as the Ivy format.
+            def ivyDirInCache = new File(firstArtifact.getFile().parentFile.parentFile.parentFile, "ivy")
+            if (ivyDirInCache.exists()) {
+                // Getting the file from the gradle cache.
+                ivyDirInCache.traverse {
+                    if (it.name.startsWith("ivy-") && it.name.endsWith(".xml")) {
+                        ivyFile = it
+                    }
+                }
+            }
+            
+            // Might we be getting the artifact from a local file-system?
+            // If so then the structure is different from the cache - the zip files for a particular
+            // artifact will exist in the same directory as the ivy file.
+            def localIvyDir = firstArtifact.getFile().parentFile
+            localIvyDir.traverse {
                 if (it.name.startsWith("ivy-") && it.name.endsWith(".xml")) {
                     ivyFile = it
                 }
-            }
-        }
-        
-        // Might we be getting the artifact from a local file-system?
-        // If so then the structure is different from the cache - the zip files for a particular
-        // artifact will exist in the same directory as the ivy file.
-        def localIvyDir = firstArtifact.getFile().parentFile
-        localIvyDir.traverse {
-            if (it.name.startsWith("ivy-") && it.name.endsWith(".xml")) {
-                ivyFile = it
             }
         }
         
