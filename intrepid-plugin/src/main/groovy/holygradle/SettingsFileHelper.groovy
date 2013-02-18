@@ -32,7 +32,7 @@ class SettingsFileHelper {
     }
     
     // Returns true if the settings have changed.
-    public static boolean writeSettingsFile(Project project, boolean subprojectScriptsNamedAsFolder) {
+    public static boolean writeSettingsFile(Project project) {
         def settingsFile = new File(project.projectDir, "settings.gradle")
         def previousIncludes = ""
         if (settingsFile.exists()) {

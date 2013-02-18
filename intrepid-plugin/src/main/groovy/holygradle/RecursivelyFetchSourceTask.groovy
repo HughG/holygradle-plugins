@@ -7,7 +7,6 @@ import org.gradle.logging.*
 
 class RecursivelyFetchSourceTask extends DefaultTask {
     boolean generateSettingsFileForSubprojects = true
-    boolean subprojectScriptsNamedAsFolder = true
     boolean recursive = true
     
     RecursivelyFetchSourceTask() {
@@ -27,7 +26,7 @@ class RecursivelyFetchSourceTask extends DefaultTask {
             }
             boolean needToReRun = false
             if (generateSettingsFileForSubprojects) {
-                needToReRun = SettingsFileHelper.writeSettingsFile(project.rootProject, subprojectScriptsNamedAsFolder)
+                needToReRun = SettingsFileHelper.writeSettingsFile(project.rootProject)
                 if (sourceDepTasks.size() > 0) {
                     needToReRun = true
                 }
