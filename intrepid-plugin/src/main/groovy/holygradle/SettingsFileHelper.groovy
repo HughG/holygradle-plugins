@@ -55,11 +55,15 @@ class SettingsFileHelper {
             settings += "\r\nrootProject.children.each {"
             settings += "\r\n    def projName = (it.name =~ /.*?([\\w_\\-]+)\$/)[0][1]"
             settings += "\r\n    // This allows subprojects to be named the same as the directory."
-            settings += "\r\n    it.name = projName"
-            if (subprojectScriptsNamedAsFolder) {
-                settings += "\r\n    // This allows subprojects to name the gradle script the same as the directory e.g. ..\\foo\\foo.gradle"
-                settings += "\r\n    it.buildFileName = projName + '.gradle'"
-            }
+            settings += "\r\n    it.name = projName"            
+            settings += "\r\n    // This allows subprojects to name the gradle script the same as the directory e.g. ..\\foo\\foo.gradle"
+            settings += "\r\n    boolean projectNamedScript = new File(it.projectDir, projName + '.gradle').exists()"
+            settings += "\r\n    boolean defaultNamedScript = new File(it.projectDir, \"build.gradle\").exists()"
+            settings += "\r\n    if (projectNamedScript && defaultNamedScript) {"
+            settings += "\r\n        throw new RuntimeException(\"For \${projName} you have '\${projName}.gradle' AND 'build.gradle'. You should only have one of these.\")"
+            settings += "\r\n    } else if (projectNamedScript) {"
+            settings += "\r\n        it.buildFileName = projName + '.gradle'"
+            settings += "\r\n    }"
             settings += "\r\n}"
             def writer = new FileWriter(settingsFile)
             writer.write(settings)
