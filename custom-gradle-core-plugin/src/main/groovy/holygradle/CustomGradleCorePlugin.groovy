@@ -10,7 +10,7 @@ import org.gradle.api.logging.*
 
 class CustomGradleCorePlugin implements Plugin<Project> {
     String getInitScriptLocation(Project project) {
-        project.gradle.gradleHomeDir.path + "/init.d/holygradle-init.gradle"
+        project.gradle.gradleHomeDir.path + "/init.d/holy-gradle-init.gradle"
     }
     
     void apply(Project project) {
