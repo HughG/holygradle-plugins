@@ -276,34 +276,32 @@ class PackageArtifactBuildScriptHandler {
             def sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
                 def sourceDep = sourceDeps[sourceDepName]
-                buildScript.append("    \"")
-                buildScript.append(sourceDep.getFullTargetPathRelativeToRootProject())
-                buildScript.append("\" {\n")
-                buildScript.append("        dependency \"")
-                buildScript.append(sourceDep.getLatestPublishedDependencyCoordinate(project))
-                buildScript.append("\"\n")
-                buildScript.append("        configuration ")
-                def quoted = packedDependencies[sourceDepName].collect { "\"${it}\"" }
-                buildScript.append(quoted.join(", "))
-                buildScript.append("\n")
-                buildScript.append("    }\n")
+                writePackedDependency(
+                    buildScript,
+                    sourceDep.getFullTargetPathRelativeToRootProject(),
+                    sourceDep.getLatestPublishedDependencyCoordinate(project),
+                    packedDependencies[sourceDepName]
+                )
                 
                 collectSymlinks(project, sourceDep.getTargetName(), allSymlinks)
             }
             def packedDeps = collectPackedDependencies(project, packedDependencies.keySet())
             for (packedDepName in packedDeps.keySet()) {
                 def packedDep = packedDeps[packedDepName]
-                buildScript.append("    \"")
-                buildScript.append(packedDep.getFullTargetPathRelativeToRootProject())
-                buildScript.append("\" {\n")
-                buildScript.append("        dependency \"")
-                buildScript.append(packedDep.getDependencyCoordinate(project))
-                buildScript.append("\"\n")
-                buildScript.append("        configuration ")
-                def quoted = packedDependencies[packedDepName].collect { "\"${it}\"" }
-                buildScript.append(quoted.join(", "))
-                buildScript.append("\n")
-                buildScript.append("    }\n")
+                writePackedDependency(
+                    buildScript, 
+                    packedDep.getFullTargetPathRelativeToRootProject(), 
+                    packedDep.getDependencyCoordinate(project),
+                    packedDependencies[packedDepName]
+                )
+            }
+            // Some packed dependencies will explicitly specify the full coordinate, so just
+            // publish them as-is.
+            packedDependencies.each { packedDepName, packedDepConfigs ->
+                def groupMatch = packedDepName =~ /.+:(.+):.+/
+                if (groupMatch.size() > 0) {
+                    writePackedDependency(buildScript, groupMatch[0][1], packedDepName, packedDepConfigs)
+                }
             }
             buildScript.append("}\n")
         }
@@ -319,5 +317,19 @@ class PackageArtifactBuildScriptHandler {
         }
         
         buildFile.write(buildScript.toString())
+    }
+    
+    private static void writePackedDependency(StringBuilder buildScript, String name, String fullCoordinate, def configs) {
+        buildScript.append("    \"")
+        buildScript.append(name)
+        buildScript.append("\" {\n")
+        buildScript.append("        dependency \"")
+        buildScript.append(fullCoordinate)
+        buildScript.append("\"\n")
+        buildScript.append("        configuration ")
+        def quoted = configs.collect { "\"${it}\"" }
+        buildScript.append(quoted.join(", "))
+        buildScript.append("\n")
+        buildScript.append("    }\n")
     }
 }
