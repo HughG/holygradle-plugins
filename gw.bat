@@ -69,13 +69,20 @@ set CMD_LINE_ARGS=%$
 :execute
 @rem Setup the command line
 
+set NO_DAEMON_OPTION=
+FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
+  if /i "%%a" == "fAD" set NO_DAEMON_OPTION=--no-daemon
+  if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
+)
+
 set CLASSPATH=%APP_HOME%\gradle\gradle-wrapper.jar
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION%
 
 :end
 @rem End local scope for the variables with windows NT shell
+if "%ERRORLEVEL%"=="123456" goto execute
 if "%ERRORLEVEL%"=="0" goto mainEnd
 
 :fail
@@ -88,3 +95,4 @@ exit /b 1
 if "%OS%"=="Windows_NT" endlocal
 
 :omega
+                
