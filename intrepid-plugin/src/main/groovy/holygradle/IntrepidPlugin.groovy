@@ -109,6 +109,9 @@ class IntrepidPlugin implements Plugin<Project> {
         // Define 'packageArtifacts' DSL for the build script.
         def packageArtifacts = PackageArtifactHandler.createContainer(project)
         
+        // Define 'sourceDependencyTasks' DSL
+        def sourceDependencyTasks = SourceDependencyTaskHandler.createContainer(project)
+    
         // Prepare dependencies that this plugin will require.
         def buildScriptDependencies = BuildScriptDependencies.initialize(project)
         buildScriptDependencies.add("hg-credential-store", false)
@@ -237,7 +240,27 @@ class IntrepidPlugin implements Plugin<Project> {
                 }
             }
         }
-               
+        
+        /**************************************
+         * Source dependency commands
+         **************************************/
+        project.gradle.projectsEvaluated {
+            // Define the tasks for sourceDependencies projects
+            Helper.getTransitiveSourceDependencies(project).each { sourceDep ->
+                def sourceDepProj = sourceDep.getSourceDependencyProject(project)
+                if (sourceDepProj != null) {
+                    sourceDependencyTasks.each { command ->
+                        command.defineTask(sourceDepProj)
+                    }
+                }
+            }
+            
+            // Define any tasks for this individual project.
+            sourceDependencyTasks.each { command ->
+                command.defineTask(project)
+            }
+        }
+         
         /**************************************
          * Create symlinks
          **************************************/

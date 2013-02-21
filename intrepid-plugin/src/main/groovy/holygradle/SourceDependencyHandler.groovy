@@ -203,5 +203,9 @@ class SourceDependencyHandler extends DependencyHandler {
         } else {
             "${latest.getGroup()}:${latest.getName()}:${latest.getVersion()}"
         }
-    }    
+    }
+    
+    public Project getSourceDependencyProject(Project project) {
+        project.findProject(getTargetName())
+    }
 }

@@ -2,35 +2,11 @@ package holygradle
 
 import org.gradle.api.*
 import org.gradle.api.tasks.*
-import org.gradle.testfixtures.*
 import java.io.FileWriter
 import java.nio.file.Paths
 
 class SettingsFileHelper {      
-    // Recursively navigates down subprojects to gather the names of all sourceDependencies which
-    // have not specified sourceControlRevisionForPublishedArtifacts.
-    private static def getTransitiveSourceDependencies(Project project, def sourceDependencies) {
-        def transSourceDep = sourceDependencies
-        sourceDependencies.each { sourceDep ->
-            def projName = sourceDep.getTargetName()
-            def proj = project.findProject(projName)
-            if (proj == null) {
-                def projDir = new File("${project.rootProject.projectDir.path}/${projName}")
-                if (projDir.exists()) {
-                    proj = ProjectBuilder.builder().withProjectDir(projDir).build()
-                }
-            }
-            if (proj != null) {
-                def subprojSourceDep = proj.extensions.findByName("sourceDependencies")
-                if (subprojSourceDep != null) {
-                    def transSubprojSourceDep = getTransitiveSourceDependencies(project, subprojSourceDep)
-                    transSourceDep = transSourceDep + transSubprojSourceDep
-                }
-            }
-        }
-        return transSourceDep.unique()
-    }
-    
+        
     public static String writeSettingsFile(File settingsFile, def includePaths) {
         def escapedPaths = includePaths.unique().collect {
             def escapedPath = it.replaceAll(/[\\\/]*$/, '').replace("\\", "\\\\")
@@ -72,8 +48,7 @@ class SettingsFileHelper {
                 previousIncludes.add it[1]
             }
         }
-        def sourceDependencies = project.sourceDependencies
-        def transitiveSubprojects = getTransitiveSourceDependencies(project, sourceDependencies)
+        def transitiveSubprojects = Helper.getTransitiveSourceDependencies(project)
         def newIncludes = transitiveSubprojects.collect {
             Helper.relativizePath(it.getDestinationDir(), project.rootProject.projectDir)
         }
