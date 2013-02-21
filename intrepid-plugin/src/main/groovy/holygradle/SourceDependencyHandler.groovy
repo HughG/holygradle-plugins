@@ -15,6 +15,7 @@ class SourceDependencyPublishingHandler {
     
     public SourceDependencyPublishingHandler(String name) {
         this.name = name
+        configuration("everything")
     }
     
     public void configuration(String config) {

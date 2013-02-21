@@ -124,6 +124,24 @@ class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * Packaging and publishing stuff
          **************************************/
+        
+        // Define an 'everything' configuration which depends on all other configurations.
+        project.configurations {
+            everything
+        }
+        project.gradle.projectsEvaluated {
+            def allConfs = project.configurations.collect { it }          
+            project.configurations {
+                allConfs.each { conf ->
+                    if (conf.name != "everything" && !conf.name.startsWith("private")) {
+                        everything.extendsFrom conf
+                    }
+                }
+            }
+        }
+        
+        // Create an internal 'createPublishNotes' task to create some text files to be included in all
+        // released packages.
         SourceControlRepository repo = SourceControlRepositories.get(project.projectDir)
         def createPublishNotesTask = null
         if (repo != null) {
@@ -131,11 +149,7 @@ class IntrepidPlugin implements Plugin<Project> {
                 group = "Publishing"
                 description = "Creates 'build_info' directory which will be included in published packages."
                 doLast {
-                    def packagesDir = new File(project.projectDir, "packages")
-                    if (!packagesDir.exists()) {
-                        packagesDir.mkdir()
-                    }
-                    def buildInfoDir = new File(packagesDir, "build_info")
+                    def buildInfoDir = new File(project.projectDir, "build_info")
                     if (buildInfoDir.exists()) {
                         buildInfoDir.deleteDir()
                     }
@@ -159,6 +173,14 @@ class IntrepidPlugin implements Plugin<Project> {
         
         // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.
         project.gradle.projectsEvaluated {
+            // Define a 'buildScript' package which is part of the 'everything' configuration.
+            project.packageArtifacts {
+                buildScript {
+                    include project.buildFile.name
+                    configuration = "everything"
+                }
+            }
+            
             def packageEverythingTask = null
             if (packageArtifacts.size() > 0) {
                 packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
@@ -238,14 +260,18 @@ class IntrepidPlugin implements Plugin<Project> {
         // One 'unpack' task per 'packedDependency' block of DSL in the build script.
         project.gradle.projectsEvaluated {
             // Define dependencies for all entries in the 'packedDependencies' DSL in the build script.
-            packedDependencies.each { dep -> 
+            packedDependencies.each { dep ->
+                def depGroup = dep.getGroupName()
+                def depName = dep.getDependencyName()
+                def depVersion = dep.getVersionStr()
+                
                 dep.getConfigurations().each { conf ->
                     def fromConf = conf[0]
                     def toConf = conf[1]
-                    def extDependency = new DefaultExternalModuleDependency(
-                        dep.getGroupName(), dep.getDependencyName(), dep.getVersionStr(), toConf
+                    project.dependencies.add(
+                        fromConf, 
+                        new DefaultExternalModuleDependency(depGroup, depName, depVersion, toConf)
                     )
-                    project.dependencies.add(fromConf, extDependency)
                 }
             }
 

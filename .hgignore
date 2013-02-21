@@ -17,3 +17,5 @@ gradle.properties
 wrapper-starter-kit/gradle/gradle-wrapper.jar
 wrapper-starter-kit/gradle/gradle-wrapper.properties
 wrapper-starter-kit/script/build.gradle
+wrapper-starter-kit/wrapperTemp
+wrapper-starter-kit.zip

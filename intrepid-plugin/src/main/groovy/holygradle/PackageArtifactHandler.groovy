@@ -8,6 +8,12 @@ import org.gradle.util.ConfigureUtil
 interface PackageArtifactDSL {
     void include(String... patterns)
     
+    void includeBuildScript(Closure closure)
+    
+    void includeTextFile(String path, Closure closure)
+    
+    void includeSettingsFile(Closure closure)
+    
     void exclude(String... patterns)
     
     void from(String fromLocation)
@@ -23,6 +29,8 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
     public String fromLocation
     public String toLocation
     public def fromDescriptors = []
+    public PackageArtifactBuildScriptHandler buildScriptHandler = null
+    private def textFileHandlers = []
     
     public PackageArtifactDescriptor(String projectRelativePath) {
         fromLocation = projectRelativePath
@@ -36,6 +44,27 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
                 excludes.remove(p)
             }
         }
+    }
+    
+    public void includeBuildScript(Closure closure) {
+        if (buildScriptHandler == null) {
+            buildScriptHandler = new PackageArtifactBuildScriptHandler()
+            ConfigureUtil.configure(closure, buildScriptHandler)
+        } else {
+            throw new RuntimeException("Can only include one build script per package.")
+        }
+    }
+    
+    public void includeTextFile(String path, Closure closure) {
+        def textFileHandler = new PackageArtifactTextFileHandler(path)
+        ConfigureUtil.configure(closure, textFileHandler)
+        textFileHandlers.add(textFileHandler)
+    }
+    
+    public void includeSettingsFile(Closure closure) {
+        def settingsFileHandler = new PackageArtifactSettingsFileHandler("settings.gradle")
+        ConfigureUtil.configure(closure, settingsFileHandler)
+        textFileHandlers.add(settingsFileHandler)
     }
     
     public void exclude(String... patterns) {
@@ -57,21 +86,49 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
     public void to(String toLocation) {
         this.toLocation = toLocation
     }
+    
+    public void createPackageFiles(Project project, File parentDir) {
+        if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
+            buildScriptHandler.createBuildScript(project, new File(parentDir, "build.gradle"))
+        }
+        for (textFileHandler in textFileHandlers) {
+            textFileHandler.writeFile(parentDir)
+        }
+    }
+    
+    public def collectPackageFilePaths() {
+        def paths = []
+        if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
+            if (toLocation == ".") {
+                paths.add("build.gradle")
+            } else {
+                paths.add("${toLocation}/build.gradle")
+            }
+        }
+        for (textFileHandler in textFileHandlers) {
+            if (toLocation == ".") {
+                paths.add(textFileHandler.name)
+            } else {
+                paths.add("${toLocation}/${textFileHandler.name}")
+            }
+        }
+        for (fromDescriptor in fromDescriptors) {
+            fromDescriptor.collectPackageFilePaths().each {
+                paths.add(it)
+            }
+        }
+        paths
+    }
 }
 
 class PackageArtifactHandler implements PackageArtifactDSL {
     public final String name
-    private PackageArtifactBuildScriptHandler buildScriptHandler
-    private def textFileHandlers = []
     public def configuration
-    private PackageArtifactDSL rootPackageDescriptor = new PackageArtifactDescriptor(".")
+    public PackageArtifactDSL rootPackageDescriptor = new PackageArtifactDescriptor(".")
     
     public static def createContainer(Project project) {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { packageArtifactName ->
-            def packageArtifact = project.packageArtifacts.extensions.create(packageArtifactName, PackageArtifactHandler, packageArtifactName)  
-            def packageArtifactBuildScript = project.packageArtifacts."$packageArtifactName".extensions.create("includeBuildScript", PackageArtifactBuildScriptHandler, packageArtifactName)            
-            packageArtifact.initialize(packageArtifactBuildScript)
-            packageArtifact
+            project.packageArtifacts.extensions.create(packageArtifactName, PackageArtifactHandler, packageArtifactName)
         }
         project.extensions.packageArtifacts
     }
@@ -83,10 +140,6 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     public PackageArtifactHandler(String name) {
         this.name = name
         this.configuration = name
-    }
-    
-    public void initialize(PackageArtifactBuildScriptHandler buildScriptHandler) {
-        this.buildScriptHandler = buildScriptHandler
     }
     
     public void include(String... patterns) {
@@ -130,34 +183,16 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         project.tasks.getByName(getPackageTaskName())
     }
     
+    public void includeBuildScript(Closure closure) {
+        rootPackageDescriptor.includeBuildScript(closure)
+    }
+    
     public void includeTextFile(String path, Closure closure) {
-        def textFileHandler = new PackageArtifactTextFileHandler(path)
-        ConfigureUtil.configure(closure, textFileHandler)
-        textFileHandlers.add(textFileHandler)
+        rootPackageDescriptor.includeTextFile(path, closure)
     }
     
-    public void createBuildScript(Project project, File buildFile) {
-        buildScriptHandler.createBuildScript(project, buildFile)
-    }
-    
-    public void createPackageFiles(Project project, File parentDir) {
-        if (buildScriptHandler.buildScriptRequired()) {
-            buildScriptHandler.createBuildScript(project, new File(parentDir, "build.gradle"))
-        }
-        for (textFileHandler in textFileHandlers) {
-            textFileHandler.writeFile(parentDir)
-        }
-    }
-    
-    public def collectPackageFilePaths() {
-        def paths = []
-        if (buildScriptHandler.buildScriptRequired()) {
-            paths.add("build.gradle")
-        }
-        for (textFileHandler in textFileHandlers) {
-            paths.add(textFileHandler.name)
-        }
-        paths
+    public void includeSettingsFile(Closure closure) {
+        rootPackageDescriptor.includeSettingsFile(closure)
     }
     
     private void configureZipTask(PackageArtifactDSL descriptor, Task zipTask) {
@@ -179,6 +214,11 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         def taskName = getPackageTaskName()
         def t = project.task(taskName, type: Zip) 
         
+        if (createPublishNotesTask != null) {
+            t.dependsOn createPublishNotesTask
+        }
+        
+        t.inputs.property("version", project.version)
         t.destinationDir = new File(project.projectDir, "packages")
         t.baseName = project.name + "-" + name
         t.includeEmptyDirs = false
@@ -188,23 +228,17 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         
         configureZipTask(rootPackageDescriptor, t)
         
-        if (createPublishNotesTask != null) {
-            t.dependsOn createPublishNotesTask
-            t.from("packages/build_info") {
-                into "build_info"
-                include "*.txt"
-            }
-        }
-        
+        t.include "build_info/*.txt"
+                
         def taskDir = new File(t.destinationDir, taskName)
         if (!taskDir.exists()) {
             taskDir.mkdirs()
         }
-        t.doFirst {        
-            createPackageFiles(project, taskDir)
+        t.doFirst {
+            this.rootPackageDescriptor.createPackageFiles(project, taskDir)
         }
         t.from(taskDir.path) {
-            include collectPackageFilePaths()
+            include this.rootPackageDescriptor.collectPackageFilePaths()
             excludes = []
         }
         t.doLast {

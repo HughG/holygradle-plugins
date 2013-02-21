@@ -5,7 +5,6 @@ import org.gradle.api.artifacts.*
 import org.gradle.api.tasks.bundling.*
 
 class PackageArtifactBuildScriptHandler {
-    public final String name
     private boolean atTop = true
     private def textAtTop = []
     private def pinnedSourceDependencies = []
@@ -14,10 +13,11 @@ class PackageArtifactBuildScriptHandler {
     private def ivyRepositories = []
     private String myCredentialsConfig
     private def symlinkPatterns = []
+    private String publishUrl = null
+    private String publishCredentials = null
     public boolean generateSettingsFileForSubprojects = true
     
-    public PackageArtifactBuildScriptHandler(String name) {
-        this.name = name
+    public PackageArtifactBuildScriptHandler() {
     }
     
     public void add(String text) {
@@ -36,6 +36,11 @@ class PackageArtifactBuildScriptHandler {
         ivyRepositories.add(url)
         this.myCredentialsConfig = myCredentialsConfig
         atTop = false
+    }
+    
+    public void addPublishPackages(String url, String myCredentialsConfig) {
+        publishUrl = url
+        publishCredentials = myCredentialsConfig
     }
     
     public void addPinnedSourceDependency(String... sourceDep) {
@@ -309,6 +314,32 @@ class PackageArtifactBuildScriptHandler {
         
         // The 'symlinks' block.
         allSymlinks.writeScript(buildScript)
+        
+        // Generate the 'publishPackages' block:
+        if (publishUrl != null && publishCredentials != null) {
+            buildScript.append('publishPackages {\n')
+            buildScript.append('    group "')
+            buildScript.append(project.group)
+            buildScript.append('"\n')
+            buildScript.append('    nextVersionNumber "')
+            buildScript.append(project.version)
+            buildScript.append('"\n')
+            buildScript.append('    repositories.ivy {\n')
+            buildScript.append('        credentials {\n')
+            buildScript.append('            username my.username("')
+            buildScript.append(publishCredentials)
+            buildScript.append('")\n')
+            buildScript.append('            password my.password("')
+            buildScript.append(publishCredentials)
+            buildScript.append('")\n')
+            buildScript.append('        }\n')
+            buildScript.append('        url "')
+            buildScript.append(publishUrl)
+            buildScript.append('"\n')
+            buildScript.append('    }\n')
+            buildScript.append('}\n')
+            buildScript.append('\n')
+        }
         
         // Text at the bottom of the build script
         textAtBottom.each {
