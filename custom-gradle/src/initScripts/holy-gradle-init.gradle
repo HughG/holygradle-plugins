@@ -95,20 +95,48 @@ allprojects {
     def defaultPluginsRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/plugins-release/"
     def defaultRemoteRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/remote-repos/"
     
+    // Check if we should override use of repositories based on presence of 'local_artifacts' folder.
+    boolean usingLocalArtifacts = false
+    def localArtifactsFile = new File(project.rootProject.projectDir, "local_artifacts")
+    if (project == project.rootProject) {
+        if (localArtifactsFile.exists()) {
+            usingLocalArtifacts = true
+            
+            println "="*75
+            println "Detected '${localArtifactsFile.name}' directory. Overriding usage of non-local repositories..."
+            println "="*75
+        }
+    } else {
+        usingLocalArtifacts = project.rootProject.ext.usingLocalArtifacts
+    }
+    project.ext.usingLocalArtifacts = usingLocalArtifacts
+    
+    if (usingLocalArtifacts) {
+        project.repositories.ivy {
+            url new File(localArtifactsFile, "ivy").path
+        }
+    }
+    
+    // Configure holyGradlePluginsRepository
     def pluginsRepo = defaultPluginsRepo
     if (project.hasProperty("holyGradlePluginsRepository")) {
         if (holyGradlePluginsRepository != defaultPluginsRepo) {
             pluginsRepo = new File(project.rootProject.projectDir, holyGradlePluginsRepository).path
         }
+    } else if (usingLocalArtifacts) {
+        pluginsRepo = new File(localArtifactsFile, "ivy").path
     }
     project.ext.holyGradlePluginsRepository = pluginsRepo
    
+    // Configure holyGradleRemoteRepository
     def remoteRepo = defaultRemoteRepo
     if (project.hasProperty("holyGradleRemoteRepository")) {
         if (holyGradleRemoteRepository != defaultRemoteRepo) {
             remoteRepo = new File(project.rootProject.projectDir, holyGradleRemoteRepository).path
         }
-    } 
+    } else if (usingLocalArtifacts) {
+        remoteRepo = new File(localArtifactsFile, "maven").path
+    }
     project.ext.holyGradleRemoteRepository = remoteRepo
     
     project.extensions.create('gplugins', HolyGradlePlugins, buildscript, project)

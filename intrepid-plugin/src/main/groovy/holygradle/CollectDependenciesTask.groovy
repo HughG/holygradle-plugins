@@ -46,6 +46,37 @@ class CollectDependenciesTask extends Copy {
                 }
             }
         }
+        
+        // Re-write the gradle-wrapper.properties file
+        if (project == project.rootProject) {
+            doLast {
+                def propFile = null
+                
+                def gradleDir = new File(project.projectDir, "gradle")
+                if (gradleDir.exists()) {
+                    gradleDir.traverse {
+                        if (it.name.endsWith(".properties")) {
+                            propFile = it
+                        }
+                    }
+                }
+                
+                if (propFile != null) {
+                    def originalPropText = propFile.text
+                    def backupPropFile = new File(propFile.path + ".original")
+                    backupPropFile.write(originalPropText)
+                    
+                    def newPropText = originalPropText.replaceAll(
+                        "distributionUrl=.*custom-gradle/([\\d\\.]+)/custom-gradle-([\\d\\.\\-]+).zip",
+                        { "distributionUrl=../local_artifacts/custom-gradle/${it[1]}/custom-gradle-${it[2]}.zip" }
+                    )
+                    propFile.write(newPropText)
+                    
+                    println "NOTE: '${propFile.name}' has been rewritten to refer to the 'local_artifacts' version of custom-gradle."
+                    println "A backup has been saved as '${backupPropFile.name}'."
+                }
+            }
+        }
     }
     
     private void processArtifact(ResolvedArtifact artifact) {

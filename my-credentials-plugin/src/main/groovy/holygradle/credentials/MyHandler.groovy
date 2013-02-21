@@ -52,6 +52,9 @@ class MyHandler {
     }
     
     private def getCredentials(String credentialType, boolean forceAskUser) {
+        if (project.ext.usingLocalArtifacts) {
+            return ["empty", "empty"]
+        }
         allCredentialTypes.add(credentialType)
         
         def username = System.getProperty("user.name").toLowerCase()
