@@ -89,7 +89,13 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
     
     public void createPackageFiles(Project project, File parentDir) {
         if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
-            buildScriptHandler.createBuildScript(project, new File(parentDir, "build.gradle"))
+            def buildScriptFile = null
+            if (toLocation == ".") {
+                buildScriptFile = new File(parentDir, "build.gradle")
+            } else {
+                buildScriptFile = new File(parentDir, "/${toLocation}/build.gradle")
+            }
+            buildScriptHandler.createBuildScript(project, buildScriptFile)
         }
         for (textFileHandler in textFileHandlers) {
             textFileHandler.writeFile(parentDir)

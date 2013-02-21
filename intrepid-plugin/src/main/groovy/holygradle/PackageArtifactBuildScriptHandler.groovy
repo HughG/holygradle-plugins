@@ -16,6 +16,7 @@ class PackageArtifactBuildScriptHandler {
     private String publishUrl = null
     private String publishCredentials = null
     public boolean generateSettingsFileForSubprojects = true
+    public boolean unpackToCache = false
     
     public PackageArtifactBuildScriptHandler() {
     }
@@ -161,6 +162,10 @@ class PackageArtifactBuildScriptHandler {
     }
     
     public void createBuildScript(Project project, File buildFile) {
+        if (!buildFile.parentFile.exists()) {
+            buildFile.parentFile.mkdirs()
+        }
+    
         StringBuilder buildScript = new StringBuilder()
         
         // Text at the top of the build script
@@ -271,10 +276,12 @@ class PackageArtifactBuildScriptHandler {
             buildScript.append("\n")
         }
         
-        buildScript.append("packedDependenciesDefault {\n")
-        buildScript.append("    unpackToCache = false\n")
-        buildScript.append("}")
-        buildScript.append("\n")
+        if (!unpackToCache) {
+            buildScript.append("packedDependenciesDefault {\n")
+            buildScript.append("    unpackToCache = false\n")
+            buildScript.append("}")
+            buildScript.append("\n")
+        }
         
         if (packedDependencies.size() > 0) {        
             buildScript.append("packedDependencies {\n")
