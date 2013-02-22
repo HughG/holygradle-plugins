@@ -47,6 +47,8 @@ class SourceDependencyTaskHandler {
         }
         
         def taskDependencies = project.extensions.findByName("taskDependencies")
-        commandTask.dependsOn taskDependencies.get(commandTask.name)
+        if (taskDependencies != null) {
+            commandTask.dependsOn taskDependencies.get(commandTask.name)
+        }
     }
 }
