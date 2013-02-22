@@ -1,0 +1,14 @@
+include '..\foo', 'bar', '../blah/blah'
+rootProject.children.each {
+    def projName = (it.name =~ /.*?([\w_\-]+)$/)[0][1]
+    // This allows subprojects to be named the same as the directory.
+    it.name = projName
+    // This allows subprojects to name the gradle script the same as the directory e.g. ..\foo\foo.gradle
+    boolean projectNamedScript = new File(it.projectDir, projName + '.gradle').exists()
+    boolean defaultNamedScript = new File(it.projectDir, "build.gradle").exists()
+    if (projectNamedScript && defaultNamedScript) {
+        throw new RuntimeException("For ${projName} you have '${projName}.gradle' AND 'build.gradle'. You should only have one of these.")
+    } else if (projectNamedScript) {
+        it.buildFileName = projName + '.gradle'
+    }
+}

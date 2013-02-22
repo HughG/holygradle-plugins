@@ -8,11 +8,7 @@ import java.nio.file.Paths
 class SettingsFileHelper {      
         
     public static String writeSettingsFile(File settingsFile, def includePaths) {
-        def escapedPaths = includePaths.unique().collect {
-            def escapedPath = it.replaceAll(/[\\\/]*$/, '').replace("\\", "\\\\")
-            "'${escapedPath}'"
-        }
-        def newIncludes = "include " + escapedPaths.join(", ")
+        def newIncludes = "include " + includePaths.collect { "'${it}'" }.join(", ")
         def settings = newIncludes
         
         // regex below is: /.*?([\w_\-]+)$/
@@ -50,11 +46,14 @@ class SettingsFileHelper {
         }
         def transitiveSubprojects = Helper.getTransitiveSourceDependencies(project)
         def newIncludes = transitiveSubprojects.collect {
-            Helper.relativizePath(it.getDestinationDir(), project.rootProject.projectDir)
+            def relPath = Helper.relativizePath(it.getDestinationDir(), project.rootProject.projectDir)
+            relPath.replaceAll(/[\\\/]*$/, '').replace("\\", "\\\\")
         }
+        newIncludes = newIncludes.unique()
         if (newIncludes.size() > 0) {
             writeSettingsFile(settingsFile, newIncludes)
         }
+        
         def addedIncludes = newIncludes
         addedIncludes.removeAll(previousIncludes)
         
