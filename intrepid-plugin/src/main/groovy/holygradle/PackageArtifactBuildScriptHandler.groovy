@@ -214,8 +214,10 @@ class PackageArtifactBuildScriptHandler {
             buildScript.append("\n")
         }
         
+        // Collect symlinks for 'this' project.
+        SymlinkHandler allSymlinks = new SymlinkHandler()
         def thisSymlinkHandler = project.extensions.findByName("symlinks")
-        SymlinkHandler allSymlinks = new SymlinkHandler(thisSymlinkHandler)
+        allSymlinks.addFrom(project.name, thisSymlinkHandler)
         
         // sourceDependencies block
         def pinnedSourceDeps = collectSourceDependenciesForPinned(project, pinnedSourceDependencies)
