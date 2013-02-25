@@ -18,6 +18,15 @@ class SymlinkHandler {
         this.fromLocation = fromLocation
     }
     
+    SymlinkHandler(SymlinkHandler that) {
+        this.fromLocation = that.getFromLocation()
+        this.toLocations = that.getToLocations().clone()
+        
+        that.getChildHandlers().each { child ->
+            this.children.add(new SymlinkHandler(child))
+        }
+    }
+    
     public void addFrom(String fromLocation, SymlinkHandler handler) {
         def fromHandler = from(fromLocation)
         for (toLocation in handler.getToLocations()) {
