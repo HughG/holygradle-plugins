@@ -117,6 +117,13 @@ allprojects {
         }
     }
     
+    // Configure holyGradlePluginsSnapshots
+    def holyGradlePluginsSnapshotsValue = null
+    if (project.hasProperty("holyGradlePluginsSnapshots")) {
+        holyGradlePluginsSnapshotsValue = holyGradlePluginsSnapshots
+    }
+    project.ext.holyGradlePluginsSnapshots = holyGradlePluginsSnapshotsValue
+    
     // Configure holyGradlePluginsRepository
     def pluginsRepo = defaultPluginsRepo
     if (project.hasProperty("holyGradlePluginsRepository")) {
