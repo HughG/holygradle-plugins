@@ -6,8 +6,7 @@ import org.gradle.api.Task
 
 class UnpackModuleVersion {
     public ModuleVersionIdentifier moduleVersion = null
-    public boolean includeVersionNumberInPath
-    public boolean conflict = false
+    public boolean includeVersionNumberInPath = false
     public def artifacts = []
     private def dependencyRelativePaths = [:]
     private UnpackModuleVersion parentUnpackModuleVersion
@@ -84,6 +83,8 @@ class UnpackModuleVersion {
         parentUnpackModuleVersion
     }
     
+    // Return a fully configured task for unpacking the module artifacts to the appropriate location.
+    // This could be to the central cache or directly to the workspace.
     public Task getUnpackTask(Project project) {
         boolean shouldApplyUpToDateChecks = false
         def packedDependency = getPackedDependency()
@@ -106,6 +107,8 @@ class UnpackModuleVersion {
         unpackTask
     }
     
+    // Collect all parent, grand-parent, etc symlink tasks for creating symlinks in the workspace, pointing
+    // to the central cache.
     public def collectParentSymlinkTasks(Project project) {
         def symlinkTasks = []
         if (parentUnpackModuleVersion != null) {
@@ -117,6 +120,9 @@ class UnpackModuleVersion {
         symlinkTasks
     }
     
+    // This method returns a fully configured symlink task for creating a symlink in the workspace, pointing
+    // to the central cache. The task will depend on any symlink tasks for parent, grand-parent modules.
+    // Null will be returned if this module is not unpacked to the cache.
     public Task getSymlinkTaskIfUnpackingToCache(Project project) {
         Task symlinkTask = null
         if (shouldUnpackToCache()) {
@@ -161,43 +167,6 @@ class UnpackModuleVersion {
         return parentUnpackModuleVersion.getParentPackedDependency()
     }
     
-    public File getWorkspaceRelativePath(Project project) {
-        if (packedDependency00 != null) {
-            // If we have a packed dependency then we shouldn't chain up to any parent UnpackModuleVersion
-            // instances. Firstly, there won't be any because this isn't a transitive dependency. And
-            // secondly we need to get an absolute path as a starting point for the subsequent relative
-            // paths.
-            return new File(packedDependency00.getRelativePath(project), getTargetDirName())
-        }
-        
-        // If we don't return above then this must be a transitive dependency.
-        // Therefore we must have a parent. Not having a parent is an error.
-        if (parentUnpackModuleVersion == null) {
-            def msg = "Error - module '${getFullCoordinate()}' has no parent module. "
-            if (parent != null) {
-                msg += "(Project: ${project.name})"
-            }
-            throw new RuntimeException(msg)
-        }
-        
-        def relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
-        if (relativePathForDependency == null ||
-            relativePathForDependency.startsWith("/") || 
-            relativePathForDependency.startsWith("\\")
-        ) {
-            // If there is no 'relativePath' or it begins with a slash then revert to the behaviour
-            // of making the path relative to the root project.
-            if (project == null) {
-                return new File(relativePathForDependency)
-            } else {
-                return new File(project.rootProject.projectDir, relativePathForDependency)
-            }
-        } else {
-            // Recursively navigate up the parent hierarchy, appending relative paths.
-            return new File(parentUnpackModuleVersion.getTargetPathInWorkspace(project), relativePathForDependency)
-        }
-    }
-    
     // Return the name of the directory that should be constructed in the workspace for the unpacked artifacts. 
     // Depending on some other configuration, this directory name could be used for a symlink or a real directory.
     public String getTargetDirName() {
@@ -217,11 +186,34 @@ class UnpackModuleVersion {
         if (packedDependency00 != null) {
             // If we have a packed dependency then we can directly construct the target path.
             // We don't need to go looking through transitive dependencies.
-            new File(packedDependency00.getRelativePath(project), targetDirName)
+            return new File(packedDependency00.getRelativePath(project), targetDirName) // FIXME
         } else {
-            // This is a transitive dependency, so we need to recurse upwards through the
-            // parent dependencies to construct a path.
-            new File(getWorkspaceRelativePath(project), targetDirName)
+            // If we don't return above then this must be a transitive dependency.
+            // Therefore we must have a parent. Not having a parent is an error.
+            if (parentUnpackModuleVersion == null) {
+                def msg = "Error - module '${getFullCoordinate()}' has no parent module. "
+                if (parent != null) {
+                    msg += "(Project: ${project.name})"
+                }
+                throw new RuntimeException(msg)
+            }
+            
+            def relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
+            if (relativePathForDependency == null ||
+                relativePathForDependency.startsWith("/") || 
+                relativePathForDependency.startsWith("\\")
+            ) {
+                // If there is no 'relativePath' or it begins with a slash then revert to the behaviour
+                // of making the path relative to the root project.
+                if (project == null) {
+                    return new File(relativePathForDependency, targetDirName)
+                } else {
+                    return new File(project.rootProject.projectDir, relativePathForDependency + targetDirName)
+                }
+            } else {
+                // Recursively navigate up the parent hierarchy, appending relative paths.
+                return new File(parentUnpackModuleVersion.getTargetPathInWorkspace(project), relativePathForDependency + targetDirName)
+            }
         }
     }
     

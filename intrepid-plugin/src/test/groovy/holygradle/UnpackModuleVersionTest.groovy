@@ -74,7 +74,6 @@ class UnpackModuleVersionTest extends TestBase {
         def symlinkTask = symlinkTasks[0]
         assertEquals("symlinkApricot1.1", symlinkTask.name)
         
-        assertEquals(new File(project.projectDir, "apricot"), apricot.getWorkspaceRelativePath(project))
         assertEquals("apricot", apricot.getTargetDirName())
         assertEquals(new File(project.projectDir, "apricot"), apricot.getTargetPathInWorkspace(project))
         
@@ -145,8 +144,6 @@ class UnpackModuleVersionTest extends TestBase {
         
         def targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))
-        
-        assertEquals(new File("/coconut"), date.getWorkspaceRelativePath(null))
-        assertEquals(targetPath, date.getWorkspaceRelativePath(project))
+        assertEquals(new File("/coconut"), coconut.getTargetPathInWorkspace(null))
     }
 }
