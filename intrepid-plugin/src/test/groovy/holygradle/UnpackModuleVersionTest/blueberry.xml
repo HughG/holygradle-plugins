@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="org" module="blueberry" revision="1.2" status="release" publication="20130221160111"/>
+  <configurations>
+    <conf name="default" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="stuff" type="zip" ext="zip" conf="default"/>
+  </publications>
+  <dependencies>
+  </dependencies>
+</ivy-module>

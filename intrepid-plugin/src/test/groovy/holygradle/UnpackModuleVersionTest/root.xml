@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="org" module="root" revision="1.0" status="release" publication="20130221160111"/>
+  <configurations>
+    <conf name="default" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="stuff" type="zip" ext="zip" conf="default"/>
+  </publications>
+  <dependencies>
+    <dependency org="org" name="apricot" rev="1.1" conf="default-&gt;default" relativePath="aa"/>
+    <dependency org="org" name="blueberry" rev="1.2" conf="default-&gt;default" relativePath="sub/bb"/>
+    <dependency org="org" name="coconut" rev="1.3" conf="default-&gt;default" relativePath="sub/"/>
+  </dependencies>
+</ivy-module>

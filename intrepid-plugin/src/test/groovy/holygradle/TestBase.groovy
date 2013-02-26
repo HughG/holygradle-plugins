@@ -10,4 +10,8 @@ class TestBase {
     TestBase() {
         regression = new RegressionFileHelper(this)
     }
+    
+    protected String getTestDir() {
+        return "src/test/groovy/" + getClass().getName().replace(".", "/")
+    }
 }

@@ -12,8 +12,7 @@ class RegressionFileHelper {
     }
     
     private String getBasePath(String testName) {
-        def className = testBase.getClass().getName().replace(".", "/")
-        return "src/test/groovy/${className}_${testName}"
+        return testBase.getTestDir() + "_${testName}"
     }
     
     public File getOkFile(String testName) {

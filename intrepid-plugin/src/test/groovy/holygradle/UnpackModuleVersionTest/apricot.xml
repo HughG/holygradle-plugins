@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="org" module="apricot" revision="1.1" status="release" publication="20130221160111"/>
+  <configurations>
+    <conf name="default" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="stuff" type="zip" ext="zip" conf="default"/>
+  </publications>
+  <dependencies>
+    <dependency org="org" name="eggfruit" rev="1.5" conf="default-&gt;default" relativePath="../"/>
+  </dependencies>
+</ivy-module>
