@@ -231,7 +231,7 @@ class PackageArtifactBuildScriptHandler {
             
             buildScript.append("sourceDependencies {\n")
             for (sourceDep in pinnedSourceDeps) {
-                def repo = SourceControlRepositories.get(sourceDep.getAbolutePath())
+                def repo = SourceControlRepositories.get(sourceDep.getAbsolutePath())
                 if (repo != null) {
                     buildScript.append(" "*4)
                     buildScript.append("\"")

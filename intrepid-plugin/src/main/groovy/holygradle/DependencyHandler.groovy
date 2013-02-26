@@ -33,7 +33,7 @@ class DependencyHandler {
         relativePath
     }
     
-    public File getAbolutePath() {
+    public File getAbsolutePath() {
         new File(project.projectDir, name)
     }
     
