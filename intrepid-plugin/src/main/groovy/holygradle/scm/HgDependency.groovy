@@ -97,8 +97,10 @@ class HgDependency extends SourceDependency {
                 if (!result) {
                     deleteEmptyDir(destinationDir)
                     println "  Well, that didn't work. Your \"Domain Credentials\" are probably invalid."
-                    println "  Have you changed your password recently?"
-                    println "  Please try running the 'cacheCredentials' task."
+                    println "  Have you changed your password recently? If so then run the 'cacheCredentials' task."
+                    println "  It could also be a problem with your 'mercurial.ini'. Make sure that you are able "
+                    println "  to clone this repository from the command line *without* being asked to enter "
+                    println "  credentials. You'll need the 'mercurial_keyring' extension and an [auth] section."
                     throw new RuntimeException("Hg authentication failure.")
                 }
             } else {
