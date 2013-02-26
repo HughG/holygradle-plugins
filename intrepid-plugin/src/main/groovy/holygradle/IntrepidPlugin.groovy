@@ -245,8 +245,9 @@ class IntrepidPlugin implements Plugin<Project> {
          * Source dependency commands
          **************************************/
         project.gradle.projectsEvaluated {
-            // Define the tasks for sourceDependencies projects
-            Helper.getTransitiveSourceDependencies(project).each { sourceDep ->
+            // Define the tasks for source-dependency projects
+            def sourceDeps = Helper.getTransitiveSourceDependencies(project)
+            sourceDeps.each { sourceDep ->
                 def sourceDepProj = sourceDep.getSourceDependencyProject(project)
                 if (sourceDepProj != null) {
                     sourceDependencyTasks.each { command ->
@@ -255,9 +256,24 @@ class IntrepidPlugin implements Plugin<Project> {
                 }
             }
             
-            // Define any tasks for this individual project.
+            // Define any tasks for this project.
             sourceDependencyTasks.each { command ->
                 command.defineTask(project)
+            }
+            
+            // Define the tasks dependencies for source-dependency projects
+            sourceDeps.each { sourceDep ->
+                def sourceDepProj = sourceDep.getSourceDependencyProject(project)
+                if (sourceDepProj != null) {
+                    sourceDependencyTasks.each { command ->
+                        command.configureTaskDependencies(sourceDepProj)
+                    }
+                }
+            }
+            
+            // Define task dependencies for this project.
+            sourceDependencyTasks.each { command ->
+                command.configureTaskDependencies(project)
             }
         }
          
