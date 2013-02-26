@@ -170,4 +170,8 @@ class PackedDependencyHandler extends DependencyHandler {
     public String getTargetNameWithVersionNumber(def versionStr) {
         getTargetName().replace("<version>", versionStr)
     }
+    
+    public String getFullTargetPathWithVersionNumber(def versionStr) {
+        name.replace("<version>", versionStr)
+    }
 }

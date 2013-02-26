@@ -338,7 +338,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 }
                 
                 if (packedDep != null) {
-                    depNode.@relativePath = packedDep.getRelativePath()
+                    depNode.@relativePath = packedDep.getFullTargetPath()
                 }
             }
         }

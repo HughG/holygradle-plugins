@@ -23,26 +23,9 @@ class DependencyHandler {
     public String getFullTargetPathRelativeToRootProject() {
         Helper.relativizePath(new File(project.projectDir, name), project.rootProject.projectDir)
     }
-    
-    public String getRelativePath() {
-        def pathMatch = name =~ /(.*?)([ \w_\-\<\>]+)$/
-        def relativePath = pathMatch[0][1]
-        if (relativePath == "." || relativePath == "./" || relativePath == ".\\") {
-            relativePath = ""
-        }
-        relativePath
-    }
-    
+        
     public File getAbsolutePath() {
         new File(project.projectDir, name)
-    }
-    
-    public File getRelativePath(Project project) { 
-        if (project != null) {
-            new File(project.projectDir, getRelativePath())
-        } else {
-            new File(getRelativePath())
-        }
     }
     
     public String getTargetName() {

@@ -177,7 +177,7 @@ class SourceDependencyHandler extends DependencyHandler {
                     depAttrMap["conf"] = "${fromConfig}->${toConfig}"
                 }
                 
-                def relativePath = getRelativePath()
+                def relativePath = getFullTargetPath()
                 if (relativePath != "/" && relativePath != "\\") {
                     depAttrMap["relativePath"] = relativePath
                 }

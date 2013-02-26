@@ -1,8 +1,8 @@
 package holygradle
 
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.Task
+import org.gradle.api.artifacts.ModuleVersionIdentifier
 
 class UnpackModuleVersion {
     public ModuleVersionIdentifier moduleVersion = null
@@ -58,7 +58,7 @@ class UnpackModuleVersion {
     
     // This method returns the relative path specified in the Ivy file from this module to 
     // the given module.
-    public String getRelativePathForDependency(UnpackModuleVersion moduleVersion) {
+    private String getRelativePathForDependency(UnpackModuleVersion moduleVersion) {
         String coordinate = moduleVersion.getFullCoordinate()
         if (dependencyRelativePaths.containsKey(coordinate)) {
             return dependencyRelativePaths[coordinate]
@@ -97,11 +97,15 @@ class UnpackModuleVersion {
         if (unpackTask == null) {
             // The task hasn't already been defined
             if (shouldApplyUpToDateChecks) {
-                unpackTask = project.task(taskName, type: UnpackTask)
+                unpackTask = project.task(taskName, type: UnpackTask) {
+                    initialize(project, getUnpackDir(project), artifacts)
+                }
             } else {
-                unpackTask = project.task(taskName, type: SpeedyUnpackTask)
+                unpackTask = project.task(taskName, type: SpeedyUnpackTask) {
+                    initialize(project, getUnpackDir(project), getPackedDependency(), artifacts)
+                }
             }
-            unpackTask.initialize(project, this)
+            unpackTask.description = getUnpackDescription()
         }
         
         unpackTask
@@ -182,11 +186,15 @@ class UnpackModuleVersion {
     // Return the full path of the directory that should be constructed in the workspace for the unpacked artifacts. 
     // Depending on some other configuration, this path could be used for a symlink or a real directory.
     public File getTargetPathInWorkspace(Project project) {
-        def targetDirName = getTargetDirName()       
         if (packedDependency00 != null) {
             // If we have a packed dependency then we can directly construct the target path.
             // We don't need to go looking through transitive dependencies.
-            return new File(packedDependency00.getRelativePath(project), targetDirName) // FIXME
+            def targetPath = packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
+            if (project == null) {
+                return new File(targetPath)
+            } else {
+                return new File(project.projectDir, targetPath)
+            }
         } else {
             // If we don't return above then this must be a transitive dependency.
             // Therefore we must have a parent. Not having a parent is an error.
@@ -199,31 +207,42 @@ class UnpackModuleVersion {
             }
             
             def relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
-            if (relativePathForDependency == null ||
-                relativePathForDependency.startsWith("/") || 
+            if (relativePathForDependency == "" ||
+                relativePathForDependency.endsWith("/") || 
+                relativePathForDependency.endsWith("\\")
+            ) {
+                // If the relative path is empty, or ends with a slash then assume that the path does not indicate  
+                // the name of the directory for the module, but only indicates the path to the parent directory.
+                // So we need to add the name of the target directory ourselves.
+                relativePathForDependency = relativePathForDependency + getTargetDirName() 
+            }
+            
+            if (relativePathForDependency.startsWith("/") || 
                 relativePathForDependency.startsWith("\\")
             ) {
                 // If there is no 'relativePath' or it begins with a slash then revert to the behaviour
                 // of making the path relative to the root project.
                 if (project == null) {
-                    return new File(relativePathForDependency, targetDirName)
+                    return new File(relativePathForDependency)
                 } else {
-                    return new File(project.rootProject.projectDir, relativePathForDependency + targetDirName)
+                    return new File(project.rootProject.projectDir, relativePathForDependency)
                 }
             } else {
                 // Recursively navigate up the parent hierarchy, appending relative paths.
-                return new File(parentUnpackModuleVersion.getTargetPathInWorkspace(project), relativePathForDependency + targetDirName)
+                return new File(parentUnpackModuleVersion.getTargetPathInWorkspace(project), relativePathForDependency)
             }
         }
     }
     
-    public boolean shouldUnpackToCache() {
+    // If true this module should be unpacked to the central cache, otherwise it should be unpacked
+    // directly to the workspace.
+    private boolean shouldUnpackToCache() {
         getParentPackedDependency().shouldUnpackToCache()
     }
     
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
     // cache or it could be to somewhere in the workspace.
-    public File getUnpackDir(Project project) {
+    private File getUnpackDir(Project project) {
         if (shouldUnpackToCache()) {
             // Our closest packed-dependency entry (which could be for 'this' module, or any parent module)
             // dictated that we should unpack to the global cache.
@@ -234,7 +253,8 @@ class UnpackModuleVersion {
         }
     }
     
-    public String getUnpackDescription() {
+    // Return a description to be used for the unpack task.
+    private String getUnpackDescription() {
         def version = moduleVersion.getVersion()
         def targetName = moduleVersion.getName()
         if (shouldUnpackToCache()) {

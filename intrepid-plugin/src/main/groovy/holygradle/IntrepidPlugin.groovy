@@ -341,7 +341,6 @@ class IntrepidPlugin implements Plugin<Project> {
                         module.versions.each { versionStr, versionInfo ->
                             print "  ${module.group}:${module.name}:${versionStr} : " + versionInfo.getIncludeInfo() + " -> "
                             versionInfo.includeVersionNumberInPath = true
-                            versionInfo.conflict = true
                             println versionInfo.getIncludeInfo()
                         }
                     }

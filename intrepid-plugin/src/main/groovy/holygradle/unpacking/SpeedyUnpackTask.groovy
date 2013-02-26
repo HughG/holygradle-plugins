@@ -7,19 +7,18 @@ class SpeedyUnpackTask extends DefaultTask {
     File unpackDir
     Task sevenZipTask
     
-    public void initialize(def project, UnpackModuleVersion unpackModuleVersion) {
+    public void initialize(Project project, File unpackDir, PackedDependencyHandler packedDependency, def artifacts) {
+        this.unpackDir = unpackDir
+        def infoFile = new File(unpackDir, "version_info.txt")
+        
         sevenZipTask = project.ext.buildScriptDependencies.getRootUnpackTask("sevenZip")
         dependsOn sevenZipTask
-        unpackDir = unpackModuleVersion.getUnpackDir(project)
-        description = unpackModuleVersion.getUnpackDescription()
-        
-        def infoFile = new File(unpackDir, "version_info.txt")
         
         onlyIf {
             boolean doInvokeTask = false
             if (infoFile.exists()) {
                 def infoText = infoFile.text
-                for (art in unpackModuleVersion.artifacts) { 
+                for (art in artifacts) { 
                     if (!infoText.contains(art.getFile().name)) {
                         doInvokeTask = true
                     }
@@ -46,7 +45,7 @@ class SpeedyUnpackTask extends DefaultTask {
         }
         doLast {
             def sevenZipPath = new File(sevenZipTask.destinationDir, "7z.exe").path
-            unpackModuleVersion.artifacts.each { artifact ->
+            artifacts.each { artifact ->
                 project.exec {
                     commandLine sevenZipPath, "x", artifact.getFile().path, "-o${unpackDir.path}", "-bd", "-y"
                     setStandardOutput new ByteArrayOutputStream()
@@ -57,7 +56,6 @@ class SpeedyUnpackTask extends DefaultTask {
                 writer.close()
             }
             
-            def packedDependency = unpackModuleVersion.getPackedDependency()
             if (packedDependency != null && packedDependency.shouldMakeReadonly()) {
                 Helper.setReadOnlyRecursively(unpackDir)
             }

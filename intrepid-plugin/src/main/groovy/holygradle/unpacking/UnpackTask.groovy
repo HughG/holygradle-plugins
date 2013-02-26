@@ -1,20 +1,20 @@
 package holygradle
 
-import org.gradle.api.tasks.*
+import org.gradle.api.Project
+import org.gradle.api.tasks.Copy
 
 class UnpackTask extends Copy {
     File unpackDir
     
-    public void initialize(def project, UnpackModuleVersion unpackModuleVersion) {
-        unpackDir = unpackModuleVersion.getUnpackDir(project)
-        description = unpackModuleVersion.getUnpackDescription()
-        
+    public void initialize(Project project, File unpackDir, def artifacts) {
+        this.unpackDir = unpackDir
         def infoFile = new File(unpackDir, "version_info.txt")
+        
         doFirst {
             infoFile.delete()
         }
 
-        unpackModuleVersion.artifacts.each { artifact ->
+        artifacts.each { artifact ->
             from project.zipTree(artifact.getFile())
             into unpackDir.path
             doLast {
