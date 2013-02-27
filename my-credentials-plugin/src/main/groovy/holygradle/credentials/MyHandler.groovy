@@ -97,10 +97,15 @@ class MyHandler {
             def credentials = [userCred.getKey(), userCred.getValue()]
             def credStorageValue = "${userCred.getKey()}${separator}${userCred.getValue()}"
             credentialsCache[credStorageKey] = credStorageValue
-            project.exec {
+            def result = project.exec {
                 setIgnoreExitValue true
                 commandLine credStoreExe, currentUserName, credStorageKey, credStorageValue
                 setStandardOutput new ByteArrayOutputStream()
+            }
+            if (result.getExitValue() != 0) {
+                println "Got exit code ${result.getExitValue()} while running ${credStoreExe} to store credentials."
+                println "Maybe you need to install the x86 CRT?"
+                throw new RuntimeException("Failed to store credentials.")
             }
             println "Saved '${credentialType}' credentials for user '${userCred.getKey()}'."
             cleanCredentialTypes.add(credentialType)
