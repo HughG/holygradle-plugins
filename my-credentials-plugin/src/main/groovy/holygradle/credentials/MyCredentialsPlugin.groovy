@@ -31,7 +31,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
         /**************************************
          * Tasks
          **************************************/
-        if (project == project.rootProject) {
+        if (project == project.rootProject && !project.ext.usingLocalArtifacts) {
             def taskName = "cacheCredentials"
             def credTask = project.tasks.findByName(taskName)
             if (credTask == null) {
