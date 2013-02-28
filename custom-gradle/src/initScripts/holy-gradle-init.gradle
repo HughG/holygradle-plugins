@@ -126,22 +126,14 @@ allprojects {
     
     // Configure holyGradlePluginsRepository
     def pluginsRepo = defaultPluginsRepo
-    if (project.hasProperty("holyGradlePluginsRepository")) {
-        if (holyGradlePluginsRepository != defaultPluginsRepo) {
-            pluginsRepo = new File(project.rootProject.projectDir, holyGradlePluginsRepository).path
-        }
-    } else if (usingLocalArtifacts) {
+    if (usingLocalArtifacts) {
         pluginsRepo = new File(localArtifactsFile, "ivy").path
     }
     project.ext.holyGradlePluginsRepository = pluginsRepo
    
     // Configure holyGradleRemoteRepository
     def remoteRepo = defaultRemoteRepo
-    if (project.hasProperty("holyGradleRemoteRepository")) {
-        if (holyGradleRemoteRepository != defaultRemoteRepo) {
-            remoteRepo = new File(project.rootProject.projectDir, holyGradleRemoteRepository).path
-        }
-    } else if (usingLocalArtifacts) {
+    if (usingLocalArtifacts) {
         remoteRepo = new File(localArtifactsFile, "maven").path
     }
     project.ext.holyGradleRemoteRepository = remoteRepo
