@@ -14,4 +14,6 @@ public interface PublishPackagesExtension {
     void nextVersionNumberEnvironmentVariable(String versionNumberEnvVar)
     
     void repositories(def configure)
+    
+    void republish(Closure closure)
 }

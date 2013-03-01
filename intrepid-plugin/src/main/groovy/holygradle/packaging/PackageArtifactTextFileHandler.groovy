@@ -12,7 +12,7 @@ class PackageArtifactTextFileHandler {
         lines.add(text)
     }
   
-    public void writeFile(File parentDir) {
-        new File(parentDir, name).write(lines.join("\n"))
+    public void writeFile(File targetFile) {
+        targetFile.write(lines.join("\n"))
     }
 }

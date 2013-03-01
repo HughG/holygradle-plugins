@@ -3,6 +3,7 @@ package holygradle
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
 import org.gradle.api.tasks.bundling.*
+import org.gradle.util.ConfigureUtil
 
 class PackageArtifactBuildScriptHandler {
     private boolean atTop = true
@@ -11,12 +12,14 @@ class PackageArtifactBuildScriptHandler {
     private def packedDependencies = [:]
     private def textAtBottom = []
     private def ivyRepositories = []
+    private RepublishHandler republishHandler = null
     private String myCredentialsConfig
     private def symlinkPatterns = []
     private String publishUrl = null
     private String publishCredentials = null
     public boolean generateSettingsFileForSubprojects = true
     public boolean unpackToCache = false
+    public boolean createPackedDependenciesSettingsFile = false
     
     public PackageArtifactBuildScriptHandler() {
     }
@@ -54,6 +57,13 @@ class PackageArtifactBuildScriptHandler {
     public void addPackedDependency(String packedDepName, String... configurations) {
         packedDependencies[packedDepName] = configurations
         atTop = false
+    }
+    
+    public void addRepublishing(Closure closure) {
+        if (republishHandler == null) {
+            republishHandler = new RepublishHandler()
+        }
+        ConfigureUtil.configure(closure, republishHandler)
     }
     
     public void includeSymlinks(String... patterns) {
@@ -279,14 +289,15 @@ class PackageArtifactBuildScriptHandler {
             buildScript.append("\n")
         }
         
-        if (!unpackToCache) {
+        if (!unpackToCache || createPackedDependenciesSettingsFile) {
             buildScript.append("packedDependenciesDefault {\n")
-            buildScript.append("    unpackToCache = false\n")
-            buildScript.append("}")
+            if (!unpackToCache) buildScript.append("    unpackToCache = false\n")
+            if (createPackedDependenciesSettingsFile) buildScript.append("    createSettingsFile = true\n")
+            buildScript.append("}\n")
             buildScript.append("\n")
         }
         
-        if (packedDependencies.size() > 0) {        
+        if (packedDependencies.size() > 0) {
             buildScript.append("packedDependencies {\n")
             def sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
@@ -326,27 +337,34 @@ class PackageArtifactBuildScriptHandler {
         allSymlinks.writeScript(buildScript)
         
         // Generate the 'publishPackages' block:
-        if (publishUrl != null && publishCredentials != null) {
+        boolean openPublishPackages = (publishUrl != null && publishCredentials != null) || republishHandler != null
+        
+        if (openPublishPackages) {
             buildScript.append('publishPackages {\n')
-            buildScript.append('    group "')
-            buildScript.append(project.group)
-            buildScript.append('"\n')
-            buildScript.append('    nextVersionNumber "')
-            buildScript.append(project.version)
-            buildScript.append('"\n')
-            buildScript.append('    repositories.ivy {\n')
-            buildScript.append('        credentials {\n')
-            buildScript.append('            username my.username("')
-            buildScript.append(publishCredentials)
-            buildScript.append('")\n')
-            buildScript.append('            password my.password("')
-            buildScript.append(publishCredentials)
-            buildScript.append('")\n')
-            buildScript.append('        }\n')
-            buildScript.append('        url "')
-            buildScript.append(publishUrl)
-            buildScript.append('"\n')
-            buildScript.append('    }\n')
+            if (publishUrl != null && publishCredentials != null) {
+                buildScript.append('    group "')
+                buildScript.append(project.group)
+                buildScript.append('"\n')
+                buildScript.append('    nextVersionNumber "')
+                buildScript.append(project.version)
+                buildScript.append('"\n')
+                buildScript.append('    repositories.ivy {\n')
+                buildScript.append('        credentials {\n')
+                buildScript.append('            username my.username("')
+                buildScript.append(publishCredentials)
+                buildScript.append('")\n')
+                buildScript.append('            password my.password("')
+                buildScript.append(publishCredentials)
+                buildScript.append('")\n')
+                buildScript.append('        }\n')
+                buildScript.append('        url "')
+                buildScript.append(publishUrl)
+                buildScript.append('"\n')
+                buildScript.append('    }\n')
+            }
+            if (republishHandler != null) {
+                republishHandler.writeScript(buildScript, 4)
+            }
             buildScript.append('}\n')
             buildScript.append('\n')
         }

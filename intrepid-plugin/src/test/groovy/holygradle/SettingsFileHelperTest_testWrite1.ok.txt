@@ -1,4 +1,4 @@
-include '..\foo', 'bar', '../blah/blah'
+include '..\\foo', 'bar', '../blah/blah'
 rootProject.children.each {
     def projName = (it.name =~ /.*?([\w_\-]+)$/)[0][1]
     // This allows subprojects to be named the same as the directory.

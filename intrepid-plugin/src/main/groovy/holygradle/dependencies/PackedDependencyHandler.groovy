@@ -14,6 +14,7 @@ class PackedDependencyHandler extends DependencyHandler {
     def applyUpToDateChecks = null
     def readonly = null
     def unpackToCache = null
+    def createSettingsFile = null
     def publishDependency = null
     
     public static def createContainer(Project project) {
@@ -76,6 +77,19 @@ class PackedDependencyHandler extends DependencyHandler {
             }
         } else {
             return unpackToCache
+        }
+    }
+    
+    public boolean shouldCreateSettingsFile() {
+        if (createSettingsFile == null) {
+            def p = getParentHandler()
+            if (p != null) {
+                return p.shouldCreateSettingsFile()
+            } else {
+                return false
+            }
+        } else {
+            return createSettingsFile
         }
     }
     

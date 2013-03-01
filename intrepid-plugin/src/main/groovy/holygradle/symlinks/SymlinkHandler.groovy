@@ -76,8 +76,16 @@ class SymlinkHandler {
         mappings
     }
     
+    private int countToLocations() {
+        int total = toLocations.size()
+        children.each { child ->
+            total += child.countToLocations()
+        }
+        total
+    }
+    
     public void writeScript(StringBuilder str) {
-        if (toLocations.size() > 0 || children.size() > 0) {
+        if (countToLocations() > 0) {
             str.append("symlinks {\n")
             writeScript(str, 4)
             str.append("}\n")

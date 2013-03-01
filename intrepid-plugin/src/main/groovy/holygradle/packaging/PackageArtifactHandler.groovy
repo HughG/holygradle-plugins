@@ -5,128 +5,6 @@ import org.gradle.api.artifacts.*
 import org.gradle.api.tasks.bundling.*
 import org.gradle.util.ConfigureUtil
 
-interface PackageArtifactDSL {
-    void include(String... patterns)
-    
-    void includeBuildScript(Closure closure)
-    
-    void includeTextFile(String path, Closure closure)
-    
-    void includeSettingsFile(Closure closure)
-    
-    void exclude(String... patterns)
-    
-    void from(String fromLocation)
-    
-    void from(String fromLocation, Closure closure)
-    
-    void to(String toLocation)
-}
-
-class PackageArtifactDescriptor implements PackageArtifactDSL {
-    public def includes = []
-    public def excludes = [".gradle", "build.gradle", "packages/**/*", "packages/*"]
-    public String fromLocation
-    public String toLocation
-    public def fromDescriptors = []
-    public PackageArtifactBuildScriptHandler buildScriptHandler = null
-    private def textFileHandlers = []
-    
-    public PackageArtifactDescriptor(String projectRelativePath) {
-        fromLocation = projectRelativePath
-        toLocation = projectRelativePath
-    }
-    
-    public void include(String... patterns) {
-        for (p in patterns) {
-            includes.add(p)
-            if (excludes.contains(p)) {
-                excludes.remove(p)
-            }
-        }
-    }
-    
-    public void includeBuildScript(Closure closure) {
-        if (buildScriptHandler == null) {
-            buildScriptHandler = new PackageArtifactBuildScriptHandler()
-            ConfigureUtil.configure(closure, buildScriptHandler)
-        } else {
-            throw new RuntimeException("Can only include one build script per package.")
-        }
-    }
-    
-    public void includeTextFile(String path, Closure closure) {
-        def textFileHandler = new PackageArtifactTextFileHandler(path)
-        ConfigureUtil.configure(closure, textFileHandler)
-        textFileHandlers.add(textFileHandler)
-    }
-    
-    public void includeSettingsFile(Closure closure) {
-        def settingsFileHandler = new PackageArtifactSettingsFileHandler("settings.gradle")
-        ConfigureUtil.configure(closure, settingsFileHandler)
-        textFileHandlers.add(settingsFileHandler)
-    }
-    
-    public void exclude(String... patterns) {
-        for (p in patterns) {
-            excludes.add(p)
-        }
-    }
-    
-    public void from(String fromLocation) {
-        this.fromLocation = fromLocation
-    }
-    
-    public void from(String fromLocation, Closure closure) {
-        def from = new PackageArtifactDescriptor(this.fromLocation + "/" + fromLocation)
-        fromDescriptors.add(from)
-        ConfigureUtil.configure(closure, from)
-    }
-    
-    public void to(String toLocation) {
-        this.toLocation = toLocation
-    }
-    
-    public void createPackageFiles(Project project, File parentDir) {
-        if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
-            def buildScriptFile = null
-            if (toLocation == ".") {
-                buildScriptFile = new File(parentDir, "build.gradle")
-            } else {
-                buildScriptFile = new File(parentDir, "/${toLocation}/build.gradle")
-            }
-            buildScriptHandler.createBuildScript(project, buildScriptFile)
-        }
-        for (textFileHandler in textFileHandlers) {
-            textFileHandler.writeFile(parentDir)
-        }
-    }
-    
-    public def collectPackageFilePaths() {
-        def paths = []
-        if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
-            if (toLocation == ".") {
-                paths.add("build.gradle")
-            } else {
-                paths.add("${toLocation}/build.gradle")
-            }
-        }
-        for (textFileHandler in textFileHandlers) {
-            if (toLocation == ".") {
-                paths.add(textFileHandler.name)
-            } else {
-                paths.add("${toLocation}/${textFileHandler.name}")
-            }
-        }
-        for (fromDescriptor in fromDescriptors) {
-            fromDescriptor.collectPackageFilePaths().each {
-                paths.add(it)
-            }
-        }
-        paths
-    }
-}
-
 class PackageArtifactHandler implements PackageArtifactDSL {
     public final String name
     public def configuration
@@ -136,6 +14,75 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { packageArtifactName ->
             project.packageArtifacts.extensions.create(packageArtifactName, PackageArtifactHandler, packageArtifactName)
         }
+        
+        // Create an internal 'createPublishNotes' task to create some text files to be included in all
+        // released packages.
+        SourceControlRepository sourceRepo = SourceControlRepositories.get(project.projectDir)
+        def createPublishNotesTask = null
+        if (sourceRepo != null) {
+            createPublishNotesTask = project.task("createPublishNotes", type: DefaultTask) {
+                group = "Publishing"
+                description = "Creates 'build_info' directory which will be included in published packages."
+                doLast {
+                    def buildInfoDir = new File(project.projectDir, "build_info")
+                    if (buildInfoDir.exists()) {
+                        buildInfoDir.deleteDir()
+                    }
+                    buildInfoDir.mkdir()
+                    
+                    new File(buildInfoDir, "source_url.txt").write(sourceRepo.getUrl())
+                    new File(buildInfoDir, "source_revision.txt").write(sourceRepo.getRevision())
+                    
+                    def BUILD_NUMBER = System.getenv("BUILD_NUMBER")
+                    if (BUILD_NUMBER != null) {
+                        new File(buildInfoDir, "build_number.txt").write(BUILD_NUMBER)
+                    }
+                    
+                    def BUILD_URL = System.getenv("BUILD_URL")
+                    if (BUILD_URL != null) {
+                        new File(buildInfoDir, "build_url.txt").write(BUILD_URL)
+                    }
+                }
+            }
+        }          
+        
+        // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.
+        project.gradle.projectsEvaluated {
+            // Define a 'buildScript' package which is part of the 'everything' configuration.
+            project.packageArtifacts {
+                buildScript {
+                    include project.buildFile.name
+                    configuration = "everything"
+                }
+            }
+            
+            def packageEverythingTask = null
+            if (project.packageArtifacts.size() > 0) {
+                packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
+                    group = "Publishing"
+                    description = "Creates all zip packages for project '${project.name}'."
+                }
+            }
+            
+            def publishPackages = project.rootProject.extensions.findByName("publishPackages")
+            if (publishPackages.getRepublishHandler() != null) {
+                def repackageEverythingTask = project.task("repackageEverything", type: DefaultTask) {
+                    group = "Publishing"
+                    description = "As 'packageEverything' but doesn't auto-generate any files."
+                    dependsOn packageEverythingTask
+                }
+                def republishTask = project.tasks.findByName("republish")
+                if (republishTask != null) {
+                    republishTask.dependsOn repackageEverythingTask
+                }
+            }
+            project.packageArtifacts.each { packArt ->
+                def packageTask = packArt.definePackageTask(project, createPublishNotesTask)
+                project.artifacts.add(packArt.getConfigurationName(), packageTask)
+                packageEverythingTask.dependsOn(packageTask)
+            }
+        }
+                
         project.extensions.packageArtifacts
     }
     
@@ -148,8 +95,12 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         this.configuration = name
     }
     
-    public void include(String... patterns) {
+    public PackageArtifactIncludeHandler include(String... patterns) {
         rootPackageDescriptor.include(patterns)
+    }
+    
+     public void include(String pattern, Closure closure) {
+        rootPackageDescriptor.include(pattern, closure)
     }
     
     public void exclude(String... patterns) {
@@ -201,22 +152,47 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         rootPackageDescriptor.includeSettingsFile(closure)
     }
     
-    private void configureZipTask(PackageArtifactDSL descriptor, Task zipTask) {
-        if (descriptor.includes.size() > 0) {
-            zipTask.from(descriptor.fromLocation) {
-                if (descriptor.toLocation != ".") {
-                    into(descriptor.toLocation)
+    public void configureZipTask(PackageArtifactDSL descriptor, Task zipTask, File taskDir, RepublishHandler republish) {
+        zipTask.from(taskDir.path) {
+            include descriptor.collectPackageFilePaths()
+            excludes = []
+            if (republish != null) {
+                republish.getReplacements().each { find, repl ->
+                    filter { String line -> line.replaceAll(find, repl) }
                 }
-                includes = descriptor.includes
-                excludes = descriptor.excludes
+            }
+        }
+        
+        if (descriptor.includeHandlers.size() > 0) {
+            def zipFromLocation = descriptor.fromLocation
+            if (republish != null) {
+                zipFromLocation = descriptor.toLocation
+            }
+            
+            descriptor.includeHandlers.each { includeHandler ->
+                zipTask.from(zipFromLocation) {
+                    if (descriptor.toLocation != ".") {
+                        into(descriptor.toLocation)
+                    }
+                    includes = includeHandler.includePatterns
+                    excludes = descriptor.excludes
+                    if (republish != null) {
+                        republish.getReplacements().each { find, repl ->
+                            filter { String line -> line.replaceAll(find, repl) }
+                        }
+                        includeHandler.replacements.each { find, repl ->
+                            filter { String line -> line.replaceAll(find, repl) }
+                        }
+                    }
+                }
             }
         }
         for (fromDescriptor in descriptor.fromDescriptors) {
-            configureZipTask(fromDescriptor, zipTask)
+            configureZipTask(fromDescriptor, zipTask, taskDir, republish)
         }
     }
     
-    public Task definePackageTask(def project, Task createPublishNotesTask) {
+    public Task definePackageTask(Project project, Task createPublishNotesTask) {
         def taskName = getPackageTaskName()
         def t = project.task(taskName, type: Zip) 
         
@@ -232,21 +208,37 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         // t.group = "Publishing " + project.name
         // t.classifier = name
         
-        configureZipTask(rootPackageDescriptor, t)
+        t.from (project.projectDir) {
+            include "build_info/*.txt"
+        }
         
-        t.include "build_info/*.txt"
-                
         def taskDir = new File(t.destinationDir, taskName)
         if (!taskDir.exists()) {
             taskDir.mkdirs()
         }
-        t.doFirst {
-            this.rootPackageDescriptor.createPackageFiles(project, taskDir)
+        
+        // def autoGeneratedFiles = rootPackageDescriptor.collectPackageFilePaths()
+        // println "autoGeneratedFiles: $autoGeneratedFiles"
+        
+        // If we're publishing then let's generate the auto-generatable files. But if we're 'republishing'
+        // then just make sure that all auto-generated files are present.
+        project.gradle.taskGraph.whenReady {
+            def repackageTask = project.tasks.findByName("repackageEverything")
+            RepublishHandler republishHandler = null
+            if (project.gradle.taskGraph.hasTask(repackageTask)) {
+                republishHandler = project.rootProject.publishPackages.getRepublishHandler()
+                t.doFirst {
+                    rootPackageDescriptor.processPackageFiles(project, taskDir)
+                }
+            } else {
+                t.doFirst {
+                    rootPackageDescriptor.createPackageFiles(project, taskDir)
+                }
+            }
+            
+            configureZipTask(rootPackageDescriptor, t, taskDir, republishHandler)
         }
-        t.from(taskDir.path) {
-            include this.rootPackageDescriptor.collectPackageFilePaths()
-            excludes = []
-        }
+        
         t.doLast {
             println "Created '$archiveName'."
         }

@@ -8,7 +8,11 @@ import java.nio.file.Paths
 class SettingsFileHelper {      
         
     public static String writeSettingsFile(File settingsFile, def includePaths) {
-        def newIncludes = "include " + includePaths.collect { "'${it}'" }.join(", ")
+        def escapedPaths = includePaths.collect {
+            def p = it.replaceAll(/[\\\/]*$/, '').replace("\\", "\\\\")
+            "'${p}'"
+        }
+        def newIncludes = "include " + escapedPaths.join(", ")
         def settings = newIncludes
         
         // regex below is: /.*?([\w_\-]+)$/
@@ -34,29 +38,33 @@ class SettingsFileHelper {
     }
     
     // Returns true if the settings have changed.
-    public static boolean writeSettingsFile(Project project) {
-        def settingsFile = new File(project.projectDir, "settings.gradle")
+    public static boolean writeSettingsFileAndDetectChange(File settingsFile, def includePaths) {
         def previousIncludes = []
         if (settingsFile.exists()) {
             def includeText = settingsFile.text.readLines()[0]
             def matches = includeText =~ /[\'\"](.+?)[\'\"]/
             matches.each {
-                previousIncludes.add it[1]
+                previousIncludes.add it[1].replace("\\\\", "\\")
             }
         }
-        def transitiveSubprojects = Helper.getTransitiveSourceDependencies(project)
-        def newIncludes = transitiveSubprojects.collect {
-            def relPath = Helper.relativizePath(it.getDestinationDir(), project.rootProject.projectDir)
-            relPath.replaceAll(/[\\\/]*$/, '').replace("\\", "\\\\")
-        }
-        newIncludes = newIncludes.unique()
-        if (newIncludes.size() > 0) {
-            writeSettingsFile(settingsFile, newIncludes)
+
+        if (includePaths.size() > 0) {
+            writeSettingsFile(settingsFile, includePaths)
         }
         
-        def addedIncludes = newIncludes
+        def addedIncludes = includePaths.clone()
         addedIncludes.removeAll(previousIncludes)
         
         return addedIncludes.size() > 0
+    }
+    
+    // Returns true if the settings have changed.
+    public static boolean writeSettingsFileAndDetectChange(Project project) {
+        def settingsFile = new File(project.projectDir, "settings.gradle")
+        def transitiveSubprojects = Helper.getTransitiveSourceDependencies(project)
+        def newIncludes = transitiveSubprojects.collect {
+            Helper.relativizePath(it.getDestinationDir(), project.rootProject.projectDir)
+        }
+        writeSettingsFileAndDetectChange(settingsFile, newIncludes.unique())
     }
 }

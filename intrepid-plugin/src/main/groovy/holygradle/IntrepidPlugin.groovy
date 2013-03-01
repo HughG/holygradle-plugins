@@ -11,6 +11,8 @@ import org.gradle.api.publish.plugins.*
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.bundling.*
 
+import java.net.URI
+
 class IntrepidPlugin implements Plugin<Project> {        
     void apply(Project project) {
         /**************************************
@@ -143,61 +145,6 @@ class IntrepidPlugin implements Plugin<Project> {
             }
         }
         
-        // Create an internal 'createPublishNotes' task to create some text files to be included in all
-        // released packages.
-        SourceControlRepository repo = SourceControlRepositories.get(project.projectDir)
-        def createPublishNotesTask = null
-        if (repo != null) {
-            createPublishNotesTask = project.task("createPublishNotes", type: DefaultTask) {
-                group = "Publishing"
-                description = "Creates 'build_info' directory which will be included in published packages."
-                doLast {
-                    def buildInfoDir = new File(project.projectDir, "build_info")
-                    if (buildInfoDir.exists()) {
-                        buildInfoDir.deleteDir()
-                    }
-                    buildInfoDir.mkdir()
-                    
-                    new File(buildInfoDir, "source_url.txt").write(repo.getUrl())
-                    new File(buildInfoDir, "source_revision.txt").write(repo.getRevision())
-                    
-                    def BUILD_NUMBER = System.getenv("BUILD_NUMBER")
-                    if (BUILD_NUMBER != null) {
-                        new File(buildInfoDir, "build_number.txt").write(BUILD_NUMBER)
-                    }
-                    
-                    def BUILD_URL = System.getenv("BUILD_URL")
-                    if (BUILD_URL != null) {
-                        new File(buildInfoDir, "build_url.txt").write(BUILD_URL)
-                    }
-                }
-            }
-        }                    
-        
-        // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.
-        project.gradle.projectsEvaluated {
-            // Define a 'buildScript' package which is part of the 'everything' configuration.
-            project.packageArtifacts {
-                buildScript {
-                    include project.buildFile.name
-                    configuration = "everything"
-                }
-            }
-            
-            def packageEverythingTask = null
-            if (packageArtifacts.size() > 0) {
-                packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
-                    group = "Publishing"
-                    description = "Creates all zip packages for project '${project.name}'."
-                }
-            }
-            packageArtifacts.each { packArt ->
-                def packageTask = packArt.definePackageTask(project, createPublishNotesTask)
-                project.artifacts.add(packArt.getConfigurationName(), packageTask)
-                packageEverythingTask.dependsOn(packageTask)
-            }
-        }
-                
         /**************************************
          * Source dependencies
          **************************************/        
@@ -316,7 +263,7 @@ class IntrepidPlugin implements Plugin<Project> {
 
             // For each artifact that is listed as a dependency, determine if we need to unpack it.
             def unpackModules = UnpackModule.getAllUnpackModules(project)
-                        
+            
             // Check if we have artifacts for each entry in packedDependency.
             if (!offline) {
                 packedDependencies.each { dep -> 
@@ -347,11 +294,11 @@ class IntrepidPlugin implements Plugin<Project> {
                 }
             }
             
+            def pathsForPackedDependencies = []
+            
             // Construct tasks to unpack the artifacts.
             unpackModules.each { module ->                
                 module.versions.each { versionStr, versionInfo ->
-                    def packedDependency = versionInfo.getPackedDependency()
-                                       
                     // Get the unpack task which will unpack the module to the cache or directly to the workspace.
                     def unpackTask = versionInfo.getUnpackTask(project)
                     fetchAllDependenciesTask.dependsOn unpackTask
@@ -365,7 +312,23 @@ class IntrepidPlugin implements Plugin<Project> {
                             Helper.deleteSymlink(versionInfo.getTargetPathInWorkspace(project))
                         }
                     }
+                    
+                    pathsForPackedDependencies.add(Helper.relativizePath(versionInfo.getTargetPathInWorkspace(project), project.rootProject.projectDir))
                 }
+            }
+            
+            pathsForPackedDependencies = pathsForPackedDependencies.unique()
+            if (project == project.rootProject && project.packedDependenciesDefault.shouldCreateSettingsFile()) {
+                def t = project.task("createSettingsFileForPackedDependencies", type: DefaultTask) {
+                    doLast {
+                        SettingsFileHelper.writeSettingsFile(new File(project.projectDir, "settings.gradle"), pathsForPackedDependencies)
+                    }
+                }
+                fetchAllDependenciesTask.dependsOn t
+            }
+            
+            if (project == project.rootProject) {
+                project.publishPackages.defineCheckTask(unpackModules)
             }
             
             /**************************************

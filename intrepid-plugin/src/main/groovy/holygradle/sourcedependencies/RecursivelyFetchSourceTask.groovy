@@ -26,7 +26,7 @@ class RecursivelyFetchSourceTask extends DefaultTask {
             }
             boolean needToReRun = false
             if (generateSettingsFileForSubprojects) {
-                needToReRun = SettingsFileHelper.writeSettingsFile(project.rootProject)
+                needToReRun = SettingsFileHelper.writeSettingsFileAndDetectChange(project.rootProject)
                 if (sourceDepTasks.size() > 0) {
                     needToReRun = true
                 }

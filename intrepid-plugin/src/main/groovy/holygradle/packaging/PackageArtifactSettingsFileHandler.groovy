@@ -14,7 +14,7 @@ class PackageArtifactSettingsFileHandler {
         modules.each { includeModules.add(it) }
     }
   
-    public void writeFile(File parentDir) {
-        SettingsFileHelper.writeSettingsFile(new File(parentDir, name), includeModules)
+    public void writeFile(File targetFile) {
+        SettingsFileHelper.writeSettingsFile(targetFile, includeModules)
     }
 }
