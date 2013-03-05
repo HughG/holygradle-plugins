@@ -15,6 +15,19 @@ class DevEnvPlugin implements Plugin<Project> {
         project.apply plugin: 'custom-gradle-core'
         
         /**************************************
+         * Prerequisites
+         **************************************/
+        def prerequisites = project.extensions.findByName("prerequisites")
+        prerequisites.register("VisualStudio", {checker, params -> 
+            params.each { version ->
+                if (checker.readRegistry("HKLM\\SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null &&
+                    checker.readRegistry("HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null) {
+                    checker.fail "Visual Studio version $version does not appear to be installed. Please install it. Detection was done by looking up the HKLM registry 'SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\${version}' key 'SP'."
+                }
+            }
+        })
+        
+        /**************************************
          * DSL extensions
          **************************************/
         def parentDevEnvHandler = null

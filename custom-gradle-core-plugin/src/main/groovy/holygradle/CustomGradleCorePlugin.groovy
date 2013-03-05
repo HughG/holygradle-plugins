@@ -230,16 +230,29 @@ if "%OS%"=="Windows_NT" endlocal
                 }
             }
             
+            // Task to open the user's global gradle.properties file.
+            project.task("openGradleProperties", type: DefaultTask) {
+                group = "Custom Gradle"
+                description = "Opens the user's system-wide gradle.properties file."
+                doLast {
+                    def homeDir = project.gradle.gradleHomeDir
+                    while (homeDir != null && homeDir.parentFile != null && homeDir.name != ".gradle") {
+                        homeDir = homeDir.parentFile
+                    }
+                    project.exec {
+                        commandLine "cmd", "/c", "start", new File(homeDir, "gradle.properties").path
+                    }
+                }
+            }
+            
+            // Task to check all specified prerequisites.
             project.task("checkPrerequisites", type: DefaultTask) {
                 group = "Custom Gradle"
                 description = "Runs all prerequisite checks."
                 doLast {
                     project.prerequisites.checkAll()
                 }
-            }
-            
-            // Task to allow developer to upgrade to the most recent version of this init script.
-            // TODO    
+            } 
         }
     }
 }
