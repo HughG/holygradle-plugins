@@ -27,7 +27,7 @@ class IntrepidPlugin implements Plugin<Project> {
          **************************************/
         def prerequisites = project.extensions.findByName("prerequisites")
         prerequisites.specify("Java", "1.7").check()
-        prerequisites.specify("HgAuth", {checker, params -> Helper.checkHgAuth(checker)})
+        prerequisites.specify("HgAuth", {checker -> Helper.checkHgAuth(checker)})
     
         /**************************************
          * Configurations
