@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.customgradle
 
 import org.gradle.*
 import org.gradle.api.*

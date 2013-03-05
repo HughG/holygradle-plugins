@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.customgradle
 
 class BuildDependency {
     final String name

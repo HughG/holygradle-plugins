@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.customgradle
 
 import org.gradle.*
 import org.gradle.api.*
@@ -244,15 +244,6 @@ if "%OS%"=="Windows_NT" endlocal
                     }
                 }
             }
-            
-            // Task to check all specified prerequisites.
-            project.task("checkPrerequisites", type: DefaultTask) {
-                group = "Custom Gradle"
-                description = "Runs all prerequisite checks."
-                doLast {
-                    project.prerequisites.checkAll()
-                }
-            } 
         }
     }
 }
