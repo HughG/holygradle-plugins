@@ -11,7 +11,7 @@ class SpeedyUnpackTask extends DefaultTask {
         this.unpackDir = unpackDir
         def infoFile = new File(unpackDir, "version_info.txt")
         
-        sevenZipTask = project.ext.buildScriptDependencies.getRootUnpackTask("sevenZip")
+        sevenZipTask = project.buildScriptDependencies.getUnpackTask("sevenZip")
         dependsOn sevenZipTask
         
         onlyIf {

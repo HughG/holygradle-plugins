@@ -7,7 +7,7 @@ import org.gradle.api.tasks.*
 class BuildScriptDependency {
     private String dependencyName
     private Task unpackTask = null
-    private String dependencyPath = null
+    private File dependencyPath = null
     
     public BuildScriptDependency(Project project, String dependencyName, boolean needsUnpacked) {
         this.dependencyName = dependencyName
@@ -29,9 +29,9 @@ class BuildScriptDependency {
                 into Helper.getGlobalUnpackCacheLocation(project, moduleVersion)
             }
             
-            dependencyPath = unpackTask.destinationDir.path
+            dependencyPath = unpackTask.destinationDir
         } else {
-            dependencyPath = dependencyArtifact.getFile().path
+            dependencyPath = dependencyArtifact.getFile()
         }
     }
     
@@ -43,7 +43,7 @@ class BuildScriptDependency {
         Helper.MakeCamelCase("extract", dependencyName)
     }
     
-    public String getPath() {
+    public File getPath() {
         dependencyPath
     }
 }

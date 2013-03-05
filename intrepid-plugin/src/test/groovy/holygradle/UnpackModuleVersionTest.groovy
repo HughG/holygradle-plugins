@@ -16,7 +16,7 @@ class MockBuildScriptDependencies {
         this.project = project
     }
     
-    public Task getRootUnpackTask(String dependencyName) {
+    public Task getUnpackTask(String dependencyName) {
         return project.task(dependencyName, type: DefaultTask)
     }
 }

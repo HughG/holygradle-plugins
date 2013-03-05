@@ -25,7 +25,11 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         def taskDependenciesExtension = project.extensions.create("taskDependencies", TaskDependenciesExtension, project)
         
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
-        def prerequisitesExtension = project.extensions.create("prerequisites", PrerequisitesExtension, project)
+        if (project == project.rootProject) {
+            PrerequisitesExtension.DefineExtension(project)
+        } else {
+            project.extensions.add("prerequisites", project.rootProject.extensions.findByName("prerequisites"))
+        }
         
         // DSL extension 'pluginUsages' to help determine actual version numbers used
         def pluginUsagesExtension = project.extensions.create("pluginUsages", PluginUsages, project)
@@ -223,6 +227,14 @@ if "%OS%"=="Windows_NT" endlocal
                     project.exec {
                         commandLine "cmd", "/c", "start", getInitScriptLocation(project)
                     }
+                }
+            }
+            
+            project.task("checkPrerequisites", type: DefaultTask) {
+                group = "Custom Gradle"
+                description = "Runs all prerequisite checks."
+                doLast {
+                    project.prerequisites.checkAll()
                 }
             }
             

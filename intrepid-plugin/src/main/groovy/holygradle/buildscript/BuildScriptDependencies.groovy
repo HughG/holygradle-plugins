@@ -8,8 +8,13 @@ class BuildScriptDependencies {
     private def dependencies = [:]
     
     public static BuildScriptDependencies initialize(Project project) {
-        BuildScriptDependencies deps = new BuildScriptDependencies(project)
-        project.ext.buildScriptDependencies = deps
+        BuildScriptDependencies deps
+        if (project == project.rootProject) {
+            deps = new BuildScriptDependencies(project)
+        } else {
+            deps = project.rootProject.extensions.findByName("buildScriptDependencies")
+        }
+        project.extensions.add("buildScriptDependencies", deps)
         deps
     }
     
@@ -17,27 +22,19 @@ class BuildScriptDependencies {
         this.project = project
     }
     
-    public void add(String dependencyName, boolean needsUnpacked) {
-        dependencies[dependencyName] = new BuildScriptDependency(project, dependencyName, needsUnpacked)
+    public void add(String dependencyName, boolean unpack=false) {
+        dependencies[dependencyName] = new BuildScriptDependency(project, dependencyName, unpack)
     }
     
     public Task getUnpackTask(String dependencyName) {
         dependencies[dependencyName].getUnpackTask()
     }
     
-    public Task getRootUnpackTask(String dependencyName) {
-        if (project == project.rootProject) {
-            return getUnpackTask(dependencyName)
-        } else {
-            return project.rootProject.ext.buildScriptDependencies.getUnpackTask(dependencyName)
-        }
-    }
-    
     public String getUnpackTaskName(String dependencyName) {
         Helper.MakeCamelCase("extract", dependencyName)
     }
     
-    public String getPath(String dependencyName) {
+    public File getPath(String dependencyName) {
         dependencies[dependencyName].getPath()
     }
 }

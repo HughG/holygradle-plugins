@@ -107,7 +107,7 @@ class SourceDependencyHandler extends DependencyHandler {
         if (protocol == "svn") {
             sourceDependency = new SvnDependency(project, this)
         } else {
-            sourceDependency = new HgDependency(project, this, buildScriptDependencies.getPath("hg-credential-store"))
+            sourceDependency = new HgDependency(project, this, buildScriptDependencies)
         }
         def fetchTaskName = Helper.MakeCamelCase("fetch", getTargetName())
         def fetchTask = project.task(fetchTaskName, type: FetchSourceDependencyTask)

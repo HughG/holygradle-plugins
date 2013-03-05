@@ -8,11 +8,11 @@ import com.aragost.javahg.commands.flags.CloneCommandFlags
 import com.aragost.javahg.commands.UpdateCommand
 
 class HgDependency extends SourceDependency {
-    private String hgCredentialStorePath = null
+    private final BuildScriptDependencies buildScriptDependencies
     
-    public HgDependency(Project project, SourceDependencyHandler sourceDependency, String hgCredentialStorePath) {
+    public HgDependency(Project project, SourceDependencyHandler sourceDependency, BuildScriptDependencies buildScriptDependencies) {
         super(project, sourceDependency)
-        this.hgCredentialStorePath = hgCredentialStorePath
+        this.buildScriptDependencies = buildScriptDependencies
     }
     
     @Override
@@ -22,6 +22,7 @@ class HgDependency extends SourceDependency {
     
     private void cacheCredentials(String username, String password, String repoUrl) {
         def credUrl = repoUrl.split("@")[0]
+        def hgCredentialStorePath = buildScriptDependencies.getPath("hg-credential-store").path
         // println "${hgCredentialStorePath} ${credUrl} ${username} <password>"
         def execResult = project.exec {
             setIgnoreExitValue true
@@ -39,7 +40,8 @@ class HgDependency extends SourceDependency {
     }
     
     private boolean TryCheckout(def repoConf, String repoUrl, def destinationDir, String repoBranch) {
-        def cmdLine = ["hg", "clone"]
+        def hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
+        def cmdLine = [hgPath, "clone"]
         if (repoBranch != null) { 
             cmdLine.add("--branch")
             cmdLine.add(repoBranch)

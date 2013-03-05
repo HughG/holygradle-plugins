@@ -13,7 +13,8 @@ import org.gradle.api.tasks.bundling.*
 
 import java.net.URI
 
-class IntrepidPlugin implements Plugin<Project> {        
+class IntrepidPlugin implements Plugin<Project> {
+    
     void apply(Project project) {
         /**************************************
          * Apply other plugins
@@ -25,8 +26,9 @@ class IntrepidPlugin implements Plugin<Project> {
          * Prerequisites
          **************************************/
         def prerequisites = project.extensions.findByName("prerequisites")
-        prerequisites.java("1.7")
-        
+        prerequisites.specify("Java", "1.7").check()
+        prerequisites.specify("HgAuth", {checker, params -> Helper.checkHgAuth(checker)})
+    
         /**************************************
          * Configurations
          **************************************/
@@ -62,6 +64,13 @@ class IntrepidPlugin implements Plugin<Project> {
             description = "Retrieves only the first level 'sourceDependencies'."
             recursive = false
         }
+        project.task("fixMercurialIni", type: DefaultTask) {
+            group = "Source Dependencies"
+            description = "Modify/create your mercurial.ini file as required."
+            doLast {
+                Helper.fixMercurialIni()
+            }
+        } 
         
         /*def commitCombo = null
         if (project == project.rootProject) {
@@ -116,12 +125,22 @@ class IntrepidPlugin implements Plugin<Project> {
     
         // Prepare dependencies that this plugin will require.
         def buildScriptDependencies = BuildScriptDependencies.initialize(project)
-        buildScriptDependencies.add("hg-credential-store", false)
         
-        // Define a task for extracting sevenZip, only for the root project.
+        // Only define the build script dependencies for the root project because they're shared
+        // accross all projects.
         if (project == project.rootProject) {
+            // 7zip
             buildScriptDependencies.add("sevenZip", true)
             fetchAllDependenciesTask.dependsOn buildScriptDependencies.getUnpackTask("sevenZip")
+            
+            // Mercurial
+            buildScriptDependencies.add("Mercurial", true)
+            buildScriptDependencies.add("hg-credential-store")
+            def hgUnpackTask = buildScriptDependencies.getUnpackTask("Mercurial")
+            hgUnpackTask.doLast {
+                Helper.addMercurialKeyringToIniFile(buildScriptDependencies.getPath("Mercurial"))
+            }
+            fetchAllDependenciesTask.dependsOn hgUnpackTask
         }
         
         boolean offline = project.gradle.startParameter.isOffline()
@@ -151,11 +170,11 @@ class IntrepidPlugin implements Plugin<Project> {
         project.gradle.projectsEvaluated {
             // Do we have any Hg source dependencies? Need to check for Hg prerequisite.
             if (sourceDependencies.findAll{it.protocol == "hg"}.size() > 0) {
-                fetchAllDependenciesTask.doFirst { 
-                    Helper.verifyHgPrerequisites(project)
+                fetchAllDependenciesTask.doFirst {
+                    prerequisites.check("HgAuth")
                 }
                 fetchFirstLevelSourceDependenciesTask.doFirst { 
-                    Helper.verifyHgPrerequisites(project)
+                    prerequisites.check("HgAuth")
                 }
             }
             
