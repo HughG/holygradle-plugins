@@ -3,68 +3,206 @@
 #include <windows.h>
 #include <wincred.h>
 #include <tchar.h>
+#include <iostream>
+#include <string>
 #pragma hdrstop
 
-int _tmain(int argc, _TCHAR* argv[]) {
-    const _TCHAR* username = NULL;
-    const _TCHAR* key = NULL;
-    const _TCHAR* value = NULL;
-    bool storing = true;
-    
-    if (argc == 3) {
-        storing = false;
-        username = argv[1];
-        key = argv[2];
-    } else if (argc == 4) {
-        storing = true;
-        username = argv[1];
-        key = argv[2];
-        value = argv[3];
-    } else {
-        wprintf(L"Usage for storing: <username> <key> <value>\n");
-        wprintf(L"Usage for retrieving: <username> <key>\n");
+using namespace std;
+
+BOOL StoreCredential(wstring& target_address, wstring& target_password, wstring& target_user) {
+    CREDENTIALW cred = {0};
+    cred.Type = CRED_TYPE_GENERIC;
+    cred.TargetName = (LPWSTR)target_address.c_str();
+    cred.CredentialBlobSize = (DWORD) (target_password.size()*2);
+    cred.CredentialBlob = (LPBYTE) target_password.c_str();
+    cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
+    cred.UserName = (LPWSTR)target_user.c_str();
+
+    return ::CredWriteW(&cred, 0);
+}
+
+BOOL DeleteCredential(LPWSTR target_address) {
+    return ::CredDelete(target_address, CRED_TYPE_GENERIC, 0);
+}
+
+void echo(bool on = true) {
+    DWORD  mode;
+    HANDLE hConIn = GetStdHandle( STD_INPUT_HANDLE );
+    GetConsoleMode( hConIn, &mode );
+    mode = on
+        ? (mode |   ENABLE_ECHO_INPUT )
+        : (mode & ~(ENABLE_ECHO_INPUT));
+    SetConsoleMode( hConIn, mode );
+}
+
+void PrintCredential(PCREDENTIAL pCredential) {
+    //Write the Credential information into the standard output.
+    wcout << "*********************************************" << endl;
+    printf(	"Flags:   %d\r\n"\
+        "Type:    %d\r\n"\
+        "Name:    %ls\r\n"\
+        "Comment: %ls\r\n"\
+        "Persist: %d\r\n"\
+        "User:    %ls\r\n",
+        pCredential->Flags,
+        pCredential->Type,
+        pCredential->TargetName, 
+        pCredential->Comment,
+        pCredential->Persist,
+        pCredential->UserName);
+
+    wcout << "Data: " << endl;
+
+    char szHexBuffer[256] = "";
+    char szAsciiBuffer[256] = "";
+    char szHex[16];
+    char szAscii[2];
+    DWORD dwByte;
+
+    //Write the credential's data as Hex Dump.
+    for (dwByte = 0; dwByte < pCredential->CredentialBlobSize; dwByte++) {
+        BYTE byte1 = pCredential->CredentialBlob[dwByte];
+        sprintf(szHex, "%2.2X ", byte1);
+        szAscii[1] = '\0';
+
+        if (byte1 >= 32 && byte1 < 128)
+            szAscii[0] = (UCHAR)byte1;
+        else
+            szAscii[0] = ' ';
+
+        strcat(szHexBuffer, szHex);
+        strcat(szAsciiBuffer, szAscii);
+
+        if (dwByte == pCredential->CredentialBlobSize - 1 
+            || dwByte % 16 == 15)
+        {
+            printf("%-50s %s\r\n", szHexBuffer, szAsciiBuffer);
+            szHexBuffer[0] = '\0';
+            szAsciiBuffer[0] = '\0';
+        }
+    }
+
+    wcout << "*********************************************" << endl << endl << endl;
+}
+
+void ReadAndPrintCredential(wstring& target_key) {
+    PCREDENTIALW pcred;
+    BOOL ok = ::CredReadW(target_key.c_str(), CRED_TYPE_GENERIC, 0, &pcred);
+    if (!ok) {
+        wcout << "CredRead() - errno " << (ok ? 0 : ::GetLastError()) << endl;
         exit(1);
     }
-    
-    _TCHAR* target_username = new _TCHAR[wcslen(username)+1];
-    wsprintf(target_username, L"%s", username);
-    //wprintf(L"Address: %s\n", target_address);
-    
-    _TCHAR* target_key  = new _TCHAR[wcslen(key)+1];
-    wsprintf(target_key, L"%s", key);
-    //wprintf(L"Target: %s\n", target_name);
-    
-    if (storing) { //--- SAVE
-        _TCHAR* target_value = new _TCHAR[wcslen(value)+1];
-        wsprintf(target_value, L"%s", value);
+    wcout << pcred->UserName << "&&&" << wstring((LPWSTR)pcred->CredentialBlob, pcred->CredentialBlobSize/2);
 
-        CREDENTIALW cred = {0};
-        cred.Type = CRED_TYPE_GENERIC;
-        cred.TargetName = target_key;
-        cred.CredentialBlobSize = (DWORD) (wcslen(target_value)*2)+1;
-        cred.CredentialBlob = (LPBYTE) target_value;
-        cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
-        cred.UserName = target_username;
+    // must free memory allocated by CredRead()!
+    ::CredFree (pcred);
+}
 
-        BOOL ok = ::CredWriteW(&cred, 0);
-        if (ok) {
-            wprintf(L"    Cached key for %s, %s.\n", username, key);
-        } else {
-            DWORD err = ::GetLastError();
-            wprintf(L"Failed to cache key for %s, %s. Errno: %d.\n", username, key, err);
-            exit(err);
+BOOL IsMercurialCredential(wstring& target_name, wstring& username) {
+    BOOL is_mercurial = FALSE;
+    if (target_name.size() > username.size() &&
+        target_name.find(username) == 0 &&
+        target_name.find(L"@@") == username.size() &&
+        target_name.find(L"@Mercurial") == target_name.size() - 10
+    ) {
+        // A Mercurial credential should:
+        //  begin with username
+        //  be followed by "@@"
+        //  end with "@Mercurial"
+        is_mercurial = true;
+    }
+    return is_mercurial;
+}
+
+BOOL IsIntrepidCredential(wstring& target_name) {
+    return target_name.find(L"Intrepid - ") == 0;
+}
+
+int UpdateAllCredentials(wstring& username, wstring& password) {
+    PCREDENTIAL *pCredArray = NULL;
+    DWORD dwCount = 0;
+
+    DeleteCredential(L"Mercurial");
+
+    int update_count = 0;
+
+    //Load all credentials into array.
+    if (::CredEnumerate(NULL, 0, &dwCount, &pCredArray)) {
+        for (DWORD dwIndex = 0; dwIndex < dwCount; dwIndex++) {
+            PCREDENTIAL pCredential = pCredArray[dwIndex];
+
+            wstring target_name(pCredential->TargetName);
+
+            //PrintCredential(pCredential);
+
+            if (IsMercurialCredential(target_name, username)) {
+                wcout << "Updated: " << target_name << endl;
+
+                StoreCredential(target_name, password, wstring(pCredential->UserName));
+                update_count++;
+            } else if (IsIntrepidCredential(target_name)) {
+                // An Intrepid credential starts with "Intrepid - "
+
+                // Ask user for password
+                wcout << "Update '" << target_name << "' with the password you supplied? If so, type 'y': ";
+                string confirm;
+                std::getline(std::cin, confirm);
+                if (confirm[0] == 'y' || confirm[0] == 'Y') {
+                    wcout << "Updated: " << target_name << endl;
+                    StoreCredential(target_name, password, wstring(pCredential->UserName));
+                    update_count++;
+                } else {
+                    wcout << "Skipped: " << target_name << endl;
+                }
+            }
         }
-    } else { //--- RETRIEVE
-        PCREDENTIALW pcred;
-        BOOL ok = ::CredReadW(target_key, CRED_TYPE_GENERIC, 0, &pcred);
-        if (!ok) {
-            wprintf (L"CredRead() - errno %d\n", ok ? 0 : ::GetLastError());
-            exit(1);
-        }
-        wprintf (L"%s", (char*)pcred->CredentialBlob);
-        // must free memory allocated by CredRead()!
-        ::CredFree (pcred);
+
+        //Free the credentials array.
+        ::CredFree(pCredArray);
     }
 
-    //Sleep(500000);
+    return update_count;
+}
+
+int _tmain(int argc, _TCHAR* argv[]) {
+
+    if (argc == 1) {
+        cout << "This program will update all of your Mercurial and Intrepid credentials ";
+        cout << "in the Windows Credential Manager. You will be prompted to confirm ";
+        cout << "updating any Intrepid credentials." << endl << endl;
+        cout << "Usage for storing: <key> <username> <value>" << endl;
+        cout << "Usage for retrieving: <key>" << endl << endl;
+
+        DWORD usernameLen = 100;
+        TCHAR usernameBuffer[100];
+        GetUserName(usernameBuffer, &usernameLen);
+        wstring username(usernameBuffer);
+        wcout << "Using username: " << username << endl;
+
+        wstring password;
+        while (password.size() == 0) {
+            cout << "Enter your password: ";
+            string pw;
+            echo(false);
+            std::getline(std::cin, pw);
+            echo(true);
+            wcout << endl;
+            password = wstring(pw.begin(), pw.end());
+        }
+
+        int update_count = UpdateAllCredentials(username, password);
+        wcout << "---------------------------------------------------------\n";
+        wcout << "Update complete - " << update_count << " credentials modified. Press enter...";
+        cin.get();
+    } else if (argc == 2) {
+        wstring readKey(argv[1]);
+        ReadAndPrintCredential(readKey);
+    } else if (argc == 4) {
+        wstring writeKey(argv[1]);
+        wstring username(argv[2]);
+        wstring password(argv[3]);
+        StoreCredential(writeKey, password, username);
+    } else {
+        exit(1);
+    }
 }

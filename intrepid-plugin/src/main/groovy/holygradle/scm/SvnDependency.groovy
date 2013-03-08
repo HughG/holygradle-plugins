@@ -90,8 +90,8 @@ class SvnDependency extends SourceDependency {
                 println "  Authentication failed. Using credentials from 'my-credentials' plugin..."
                 result = TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir, true, myCredentialsExtension.username(), myCredentialsExtension.password())
                 println "  Well, that didn't work. Your \"Domain Credentials\" are probably out of date."
-                println "  Have you changed your password recently?"
-                println "  Please try running the 'cacheCredentials' task."
+                println "  Have you changed your password recently? If so then please try running "
+                println "  'credential-store.exe' which should be in the root of your workspace."
                 throw new RuntimeException("SVN authentication failure.")
             } else {
                 println "  Authentication failed. Please apply the 'my-credentials' plugin."

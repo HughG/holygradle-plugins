@@ -22,11 +22,11 @@ class HgDependency extends SourceDependency {
     
     private void cacheCredentials(String username, String password, String repoUrl) {
         def credUrl = repoUrl.split("@")[0]
-        def hgCredentialStorePath = buildScriptDependencies.getPath("hg-credential-store").path
-        // println "${hgCredentialStorePath} ${credUrl} ${username} <password>"
+        def credentialStorePath = buildScriptDependencies.getPath("credential-store").path
+        // println "${credentialStorePath} ${credUrl} ${username} <password>"
         def execResult = project.exec {
             setIgnoreExitValue true
-            commandLine hgCredentialStorePath, credUrl, username, password
+            commandLine credentialStorePath, "${username}@@${credUrl}@Mercurial", username, password
         }
         if (execResult.getExitValue() == -1073741515) {
             println "-"*80
@@ -98,11 +98,9 @@ class HgDependency extends SourceDependency {
                 result = TryCheckout(repoConf, repoUrl, destinationDir, repoBranch)
                 if (!result) {
                     deleteEmptyDir(destinationDir)
-                    println "  Well, that didn't work. Your \"Domain Credentials\" are probably invalid."
-                    println "  Have you changed your password recently? If so then run the 'cacheCredentials' task."
-                    println "  It could also be a problem with your 'mercurial.ini'. Make sure that you are able "
-                    println "  to clone this repository from the command line *without* being asked to enter "
-                    println "  credentials. You'll need the 'mercurial_keyring' extension and an [auth] section."
+                    println "  Well, that didn't work. Your \"Domain Credentials\" are probably out of date."
+                    println "  Have you changed your password recently? If so then please try running "
+                    println "  'credential-store.exe' which should be in the root of your workspace."
                     throw new RuntimeException("Hg authentication failure.")
                 }
             } else {

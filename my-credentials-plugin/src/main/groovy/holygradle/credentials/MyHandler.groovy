@@ -31,12 +31,11 @@ class MyHandler {
         if (credentialsCache.containsKey(credStorageKey)) {
             credStorageValue = credentialsCache[credStorageKey]
         } else {
-            def username = System.getProperty("user.name").toLowerCase()
             def credStoreExe = credentialStorePath
             def credentialStoreOutput = new ByteArrayOutputStream()
             def execResult = project.exec {
                 setIgnoreExitValue true
-                commandLine credStoreExe, username, credStorageKey
+                commandLine credStoreExe, credStorageKey
                 setStandardOutput credentialStoreOutput
             }
             if (execResult.getExitValue() == 0) {
@@ -99,7 +98,7 @@ class MyHandler {
             credentialsCache[credStorageKey] = credStorageValue
             def result = project.exec {
                 setIgnoreExitValue true
-                commandLine credStoreExe, currentUserName, credStorageKey, credStorageValue
+                commandLine credStoreExe, credStorageKey, userCred.getKey(), userCred.getValue()
                 setStandardOutput new ByteArrayOutputStream()
             }
             if (result.getExitValue() != 0) {
@@ -112,16 +111,7 @@ class MyHandler {
             return credentials
         }
     }
-    
-    public void refreshAllCredentials() {
-        allCredentialTypes.add(defaultCredentialType)
-        for (credentialType in allCredentialTypes) {
-            if (!cleanCredentialTypes.contains(credentialType)) {
-                getCredentials(credentialType, true)
-            }
-        }
-    }
-    
+
     public String username() {
         username(defaultCredentialType)
     }

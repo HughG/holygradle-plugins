@@ -1,3 +1,0 @@
-artifacts {
-    it."default" file("Release/hg-credential-store.exe")
-}

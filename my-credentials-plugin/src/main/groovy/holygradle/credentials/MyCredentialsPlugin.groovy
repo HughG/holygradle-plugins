@@ -13,13 +13,23 @@ class MyCredentialsPlugin implements Plugin<Project> {
         project.getBuildscript().getConfigurations().each { conf ->
             conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { resolvedDependency ->
                 resolvedDependency.getAllModuleArtifacts().each { art ->
-                    if (art.getName().startsWith("credential-store")) {
+                    def artName = art.getName()
+                    if (artName.startsWith("credential-store")) {
                         credentialStoreArtifact = art
                     }
                 }
             }
         }
         def credentialStorePath = credentialStoreArtifact.getFile().path
+        
+        // Copy the credential-store to the root of the workspace.
+        if (project == project.rootProject) {
+            project.copy {
+                from credentialStoreArtifact.getFile()
+                into project.projectDir
+                rename { "credential-store.exe" }
+            }
+        }
         
         /**************************************
          * DSL extensions
@@ -40,7 +50,9 @@ class MyCredentialsPlugin implements Plugin<Project> {
                 credTask.description = "Refreshes and caches all credentials."
             }
             credTask.doLast {
-                myExtension.refreshAllCredentials()
+                println "-" * 80
+                println "Please use 'credential-store.exe' instead."
+                println "-" * 80
             }
         }
     }

@@ -135,7 +135,7 @@ class IntrepidPlugin implements Plugin<Project> {
             
             // Mercurial
             buildScriptDependencies.add("Mercurial", true)
-            buildScriptDependencies.add("hg-credential-store")
+            buildScriptDependencies.add("credential-store")
             def hgUnpackTask = buildScriptDependencies.getUnpackTask("Mercurial")
             hgUnpackTask.doLast {
                 Helper.addMercurialKeyringToIniFile(buildScriptDependencies.getPath("Mercurial"))
