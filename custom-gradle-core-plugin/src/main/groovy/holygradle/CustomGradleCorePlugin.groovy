@@ -33,6 +33,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         
         // DSL extension 'pluginUsages' to help determine actual version numbers used
         def pluginUsagesExtension = project.extensions.create("pluginUsages", PluginUsages, project)
+        def versionInfoExtension = project.extensions.create("versionInfo", VersionInfo, project)
         
         // Task to create a wrapper 
         project.task("createWrapper", type: Wrapper) {
@@ -180,8 +181,6 @@ if "%OS%"=="Windows_NT" endlocal
                 group = "Custom Gradle"
                 description = "Outputs version information about this instance of Gradle."
                 doLast {
-                    def split = project.gradle.gradleHomeDir.parentFile.parentFile.name.split("-")
-                    def customDistVersion = split[-1]
                     println "Gradle home: "
                     println "  ${project.gradle.gradleHomeDir.path}\n"
                     println "Init script location: "
@@ -191,16 +190,16 @@ if "%OS%"=="Windows_NT" endlocal
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 30
-                    println "Custom distribution version: ".padRight(pad) + customDistVersion
+                    println "Custom distribution version: ".padRight(pad) + versionInfoExtension.getVersion("custom-gradle")
                     println "Init script version: ".padRight(pad) + project.ext.initScriptVersion
-                    def plugins = pluginUsagesExtension.getMapping()
-                    if (plugins.size() > 0) {
-                        println "Usage of Green Gradle plugins:"
-                        plugins.each { plugin, version ->
-                            def p = "    ${plugin} : ".padRight(pad)
-                            println "${p}${version}"
+                    println "Usage of Holy Gradle plugins:"
+                    
+                    def versions = versionInfoExtension.getBuildscriptDependencies()
+                    versions.each { version ->
+                        if (version.getGroup() == "holygradle") {
+                            println "    ${version.getName()} : ".padRight(pad) + version.getVersion()
                         }
-                    }            
+                    }   
                 }
             }
             

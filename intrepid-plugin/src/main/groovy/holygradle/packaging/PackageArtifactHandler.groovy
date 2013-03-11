@@ -42,6 +42,11 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                     if (BUILD_URL != null) {
                         new File(buildInfoDir, "build_url.txt").write(BUILD_URL)
                     }
+                    
+                    def versionInfoExtension = project.extensions.findByName("versionInfo")
+                    if (versionInfoExtension != null) {
+                        versionInfoExtension.writeFile(new File(buildInfoDir, "versions.txt"))
+                    }
                 }
             }
         }          
