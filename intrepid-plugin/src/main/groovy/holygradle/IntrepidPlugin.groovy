@@ -114,6 +114,9 @@ class IntrepidPlugin implements Plugin<Project> {
             "publishPackages", DefaultPublishPackagesExtension, project, publishingExtension, sourceDependencies, packedDependencies
         )
         
+        // Define 'sourceControl' DSL.
+        SourceControlRepositories.createExtension(project)
+        
         // Define 'symlinks' DSL block.
         def symlinks = SymlinkHandler.createExtension(project)
         
