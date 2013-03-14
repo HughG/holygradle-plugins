@@ -7,7 +7,7 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 class UnpackModuleVersion {
     public ModuleVersionIdentifier moduleVersion = null
     public boolean includeVersionNumberInPath = false
-    public def artifacts = []
+    public def artifacts = [:] // a map from artifacts to sets of configurations that include the artifacts
     private def dependencyRelativePaths = [:]
     private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
@@ -46,9 +46,15 @@ class UnpackModuleVersion {
         }
     }
     
-    public void addArtifacts(def arts) {
+    public void addArtifacts(def arts, String conf) {
         for (art in arts) {
-            artifacts.add(art)
+            if (artifacts.containsKey(art)) {
+                if (!artifacts[art].contains(conf)) {
+                    artifacts[art].add(conf)
+                }
+            } else {
+                artifacts[art] = [conf]
+            }
         }
     }
     
@@ -98,11 +104,11 @@ class UnpackModuleVersion {
             // The task hasn't already been defined
             if (shouldApplyUpToDateChecks) {
                 unpackTask = project.task(taskName, type: UnpackTask) {
-                    initialize(project, getUnpackDir(project), artifacts)
+                    initialize(project, getUnpackDir(project), artifacts.keySet())
                 }
             } else {
                 unpackTask = project.task(taskName, type: SpeedyUnpackTask) {
-                    initialize(project, getUnpackDir(project), getPackedDependency(), artifacts)
+                    initialize(project, getUnpackDir(project), getPackedDependency(), artifacts.keySet())
                 }
             }
             unpackTask.description = getUnpackDescription()

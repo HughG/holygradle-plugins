@@ -2,6 +2,7 @@ package holygradle
 
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
+import org.gradle.api.file.*
 import org.gradle.api.tasks.bundling.*
 import org.gradle.util.ConfigureUtil
 
@@ -195,6 +196,26 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         for (fromDescriptor in descriptor.fromDescriptors) {
             configureZipTask(fromDescriptor, zipTask, taskDir, republish)
         }
+    }
+    
+    public void configureCopySpec(Project project, PackageArtifactDSL descriptor, CopySpec copySpec) {
+        descriptor.includeHandlers.each { includeHandler ->
+            def fromDir = project.projectDir
+            if (descriptor.fromLocation != ".") {
+                fromDir = new File(fromDir, descriptor.fromLocation)
+            }
+            copySpec.from(fromDir) {
+                includes = includeHandler.includePatterns
+                excludes = descriptor.excludes
+            }
+        }
+        for (fromDescriptor in descriptor.fromDescriptors) {
+            configureCopySpec(project, fromDescriptor, copySpec)
+        }
+    }
+    
+    public void configureCopySpec(Project project, CopySpec copySpec) {
+        configureCopySpec(project, rootPackageDescriptor, copySpec)
     }
     
     public Task definePackageTask(Project project, Task createPublishNotesTask) {

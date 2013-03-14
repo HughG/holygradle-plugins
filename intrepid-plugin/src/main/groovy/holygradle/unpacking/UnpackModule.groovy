@@ -61,6 +61,7 @@ class UnpackModule {
     }
     
     private static void traverseResolvedDependencies(
+        String conf,
         def packedDependencies,
         def unpackModules,
         Set<ResolvedDependency> dependencies
@@ -111,25 +112,29 @@ class UnpackModule {
                     unpackModule.versions[versionStr] = unpackModuleVersion
                 }
                 
-                unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts())
+                unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), conf)
                 
                 // Recurse down to transitive dependencies.
                 traverseResolvedDependencies(
-                    packedDependencies, unpackModules, resolvedDependency.getChildren()
+                    conf, packedDependencies, unpackModules, resolvedDependency.getChildren()
                 )
             }
         }
     }
     
     public static def getAllUnpackModules(Project project) {
-        // Build a list (without duplicates) of all artifacts the project depends on.
-        def unpackModules = []
+        def unpackModules = project.ext.unpackModules
         
-        project.configurations.each { conf ->                
-            def resConf = conf.resolvedConfiguration
-            traverseResolvedDependencies(
-                project.packedDependencies, unpackModules, resConf.getFirstLevelModuleDependencies()
-            )
+        if (unpackModules == null) {
+            // Build a list (without duplicates) of all artifacts the project depends on.
+            unpackModules = []
+            project.configurations.each { conf ->                
+                def resConf = conf.resolvedConfiguration
+                traverseResolvedDependencies(
+                    conf.name, project.packedDependencies, unpackModules, resConf.getFirstLevelModuleDependencies()
+                )
+            }
+            project.ext.unpackModules = unpackModules
         }
         
         unpackModules        

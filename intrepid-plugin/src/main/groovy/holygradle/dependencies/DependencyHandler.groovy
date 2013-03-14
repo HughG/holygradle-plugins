@@ -1,7 +1,6 @@
 package holygradle
 
 import org.gradle.api.*
-import java.nio.file.Paths
 
 class DependencyHandler {
     public final String name

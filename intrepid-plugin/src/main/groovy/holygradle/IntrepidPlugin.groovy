@@ -42,7 +42,8 @@ class IntrepidPlugin implements Plugin<Project> {
         project.ext.svnConfigPath = System.getenv("APPDATA") + "/Subversion"
         project.ext.hgConfigFile = System.getenv("USERPROFILE") + "/mercurial.ini"
         project.ext.unpackedDependenciesCache = new File(project.gradle.gradleUserHomeDir, "unpackCache")
-
+        project.ext.unpackModules = null
+        
         /**************************************
          * Tasks
          **************************************/
@@ -99,6 +100,20 @@ class IntrepidPlugin implements Plugin<Project> {
             }
         }*/
         
+        project.rootProject.gradle.taskGraph.beforeTask { Task task ->
+            if (task.hasProperty('lazyConfiguration')) {
+                def lazyConfig = task.lazyConfiguration
+                if (lazyConfig != null) {
+                    if (lazyConfig instanceof List) {
+                        lazyConfig.each { task.configure it }
+                    } else {
+                        task.configure lazyConfig
+                    }
+                    task.lazyConfiguration = null
+                }
+            }
+        }
+
         /**************************************
          * DSL extensions
          **************************************/
@@ -122,6 +137,9 @@ class IntrepidPlugin implements Plugin<Project> {
         
         // Define 'packageArtifacts' DSL for the build script.
         def packageArtifacts = PackageArtifactHandler.createContainer(project)
+        
+        // Define 'copyArtifacts' DSL
+        def copyArtifacts = CopyArtifactsHandler.createExtension(project)
         
         // Define 'sourceDependencyTasks' DSL
         def sourceDependencyTasks = SourceDependencyTaskHandler.createContainer(project)
@@ -361,6 +379,11 @@ class IntrepidPlugin implements Plugin<Project> {
                 description = "Collect all non-source dependencies into a 'local_artifacts' folder."
             }
             collectDependenciesTask.initialize(project)
+            
+            /**************************************
+             * Copying artifacts
+             **************************************/
+            copyArtifacts.defineCopyTask(project)
         }
     }
 }
