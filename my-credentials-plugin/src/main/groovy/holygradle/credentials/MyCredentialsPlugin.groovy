@@ -36,7 +36,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
          **************************************/
             
         // Define 'my' DSL to allow user to retrieve secure user-specific settings.
-        def myExtension = MyHandler.defineExtension(project, credentialStorePath)
+        MyHandler.defineExtension(project, credentialStorePath)
         
         /**************************************
          * Tasks

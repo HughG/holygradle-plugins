@@ -14,10 +14,17 @@ class MyHandler {
     private def credentialsCache = [:]
     
     public static def defineExtension(Project project, String credentialStorePath) {
-        def myExtension = project.extensions.create("my", MyHandler, project, credentialStorePath)
-        project.my.extensions.instructions = project.container(InstructionsHandler) { instructionName ->
-            project.packageArtifacts.extensions.create(instructionName, InstructionsHandler, instructionName)
+        def myExtension = null
+        
+        if (project == project.rootProject) {
+            myExtension = project.extensions.create("my", MyHandler, project, credentialStorePath)
+            project.my.extensions.instructions = project.container(InstructionsHandler) { instructionName ->
+                project.packageArtifacts.extensions.create(instructionName, InstructionsHandler, instructionName)
+            }
+        } else {
+            myExtension = project.extensions.add("my", project.rootProject.extensions.findByName("my"))
         }
+        
         myExtension
     }
     
@@ -30,6 +37,7 @@ class MyHandler {
         String credStorageValue = null
         if (credentialsCache.containsKey(credStorageKey)) {
             credStorageValue = credentialsCache[credStorageKey]
+            project.logger.info("Requested credentials for '${credStorageKey}'. Found in cache.")
         } else {
             def credStoreExe = credentialStorePath
             def credentialStoreOutput = new ByteArrayOutputStream()
@@ -41,6 +49,7 @@ class MyHandler {
             if (execResult.getExitValue() == 0) {
                 credStorageValue = credentialStoreOutput.toString()
                 credentialsCache[credStorageKey] = credStorageValue
+                project.logger.info("Requested credentials for '${credStorageKey}'. Retrieved from Credential Manager")
             }
         }
         credStorageValue
@@ -64,6 +73,9 @@ class MyHandler {
         if (credStorageValue != null) {
             credentials = credStorageValue.split(separator)
             username = credentials[0]
+            if (credentials.size() == 3) {
+                credentials = [credentials[1], credentials[2]]
+            }
             if (credentials.size() == 1) {
                 credentials = [credentials[0], ""]
             }
