@@ -25,15 +25,13 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         def taskDependenciesExtension = project.extensions.create("taskDependencies", TaskDependenciesExtension, project)
         
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
-        if (project == project.rootProject) {
-            PrerequisitesExtension.DefineExtension(project)
-        } else {
-            project.extensions.add("prerequisites", project.rootProject.extensions.findByName("prerequisites"))
-        }
-        
-        // DSL extension 'pluginUsages' to help determine actual version numbers used
+        PrerequisitesExtension.defineExtension(project)
+               
+        // DSL extension 'pluginUsages' to help determine actual version numbers used (deprecated, should later replace with versionInfo)
         def pluginUsagesExtension = project.extensions.create("pluginUsages", PluginUsages, project)
-        def versionInfoExtension = project.extensions.create("versionInfo", VersionInfo, project)
+        
+        // DSL extension 'versionInfo' to help determine actual version numbers used
+        def versionInfoExtension = VersionInfo.defineExtension(project)
         
         // Task to create a wrapper 
         project.task("createWrapper", type: Wrapper) {
