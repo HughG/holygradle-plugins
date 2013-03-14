@@ -136,7 +136,7 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
         }
     }
     
-    public def collectPackageFilePaths() {
+    private def collectPackageFilePaths() {
         def paths = []
         if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
             paths.add(getTargetFile(null, "build.gradle").path)
@@ -145,5 +145,45 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
             paths.add(getTargetFile(null, textFileHandler.name).path)
         }
         paths
+    }
+    
+    public void configureZipTask(Task zipTask, File taskDir, RepublishHandler republish) {
+        zipTask.from(taskDir.path) {
+            include collectPackageFilePaths()
+            excludes = []
+            if (republish != null) {
+                republish.getReplacements().each { find, repl ->
+                    filter { String line -> line.replaceAll(find, repl) }
+                }
+            }
+        }
+        
+        if (includeHandlers.size() > 0) {
+            def zipFromLocation = fromLocation
+            if (republish != null) {
+                zipFromLocation = toLocation
+            }
+            
+            includeHandlers.each { includeHandler ->
+                zipTask.from(zipFromLocation) {
+                    if (toLocation != ".") {
+                        into(toLocation)
+                    }
+                    includes = includeHandler.includePatterns
+                    excludes = excludes
+                    if (republish != null) {
+                        republish.getReplacements().each { find, repl ->
+                            filter { String line -> line.replaceAll(find, repl) }
+                        }
+                        includeHandler.replacements.each { find, repl ->
+                            filter { String line -> line.replaceAll(find, repl) }
+                        }
+                    }
+                }
+            }
+        }
+        for (fromDescriptor in fromDescriptors) {
+            fromDescriptor.configureZipTask(zipTask, taskDir, republish)
+        }
     }
 }

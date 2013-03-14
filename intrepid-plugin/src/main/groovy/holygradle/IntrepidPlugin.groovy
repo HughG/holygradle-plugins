@@ -104,6 +104,7 @@ class IntrepidPlugin implements Plugin<Project> {
             if (task.hasProperty('lazyConfiguration')) {
                 def lazyConfig = task.lazyConfiguration
                 if (lazyConfig != null) {
+                    task.logger.info("Applying lazyConfiguration for task ${task.name}.")
                     if (lazyConfig instanceof List) {
                         lazyConfig.each { task.configure it }
                     } else {

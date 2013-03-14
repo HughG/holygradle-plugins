@@ -29,14 +29,6 @@ class CopyArtifactsHandler {
         exc.each { excludes.add(it) }
     }
     
-    public def gatherSourceWildcardPaths(Project project) {
-        project.packageArtifacts.each { packArt ->
-            if (configurations.contains(packArt.configuration.toString())) {
-                
-            }
-        }
-    }
-    
     public static def gatherFiles(CopySpec spec) {
         def files = null
         spec.getAllSpecs().each { childSpec ->
@@ -85,8 +77,12 @@ class CopyArtifactsHandler {
                         collectZipsForConfigurations(sourceDepProject, copyArtifactsExtension.configurations, artifactZips)
                     }
                     collectZipsForConfigurations(project, copyArtifactsExtension.configurations, artifactZips)
+                    def sourceDepFiles = gatherFiles(copySpec)
+                    logger.info("copyArtifacts selected these packed dependency files: ${artifactZips}")
+                    logger.info("copyArtifacts selected these source dependency files: ${sourceDepFiles}")
+                    
                     into(new File(project.projectDir, copyArtifactsExtension.target))
-                    from gatherFiles(copySpec)
+                    from sourceDepFiles
                     artifactZips.each { zip ->
                         from project.zipTree(zip).files
                     }
