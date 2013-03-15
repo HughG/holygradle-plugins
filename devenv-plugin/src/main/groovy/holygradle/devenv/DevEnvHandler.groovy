@@ -12,7 +12,7 @@ class DevEnvHandler {
     private DevEnvHandler parentHandler
     private String devEnvVersion = null
     private String vsSolutionFile = null
-    private String buildPlatform = null
+    private def buildPlatforms = null
     private String incredibuildPath = null
     private def warningRegexes = []
     private def errorRegexes = []
@@ -34,8 +34,13 @@ class DevEnvHandler {
         vsSolutionFile = f
     }
     
-    public void platform(String p) {
-        buildPlatform = p
+    public void platform(String... platforms) {
+        if (buildPlatforms == null) {
+            buildPlatforms = []
+        }
+        for (p in platforms) {
+            buildPlatforms.add(p)
+        }
     }
     
     public void incredibuild(String path) {
@@ -58,15 +63,15 @@ class DevEnvHandler {
         errorRegexes
     }
     
-    public String getPlatform() {
-        if (buildPlatform == null) {
+    public def getPlatforms() {
+        if (buildPlatforms == null) {
             if (parentHandler != null) {
-                parentHandler.getPlatform()
+                parentHandler.getPlatforms()
             } else {
-                "x64"
+                ["x64"]
             }
         } else {
-            buildPlatform
+            buildPlatforms
         }
     }
         
@@ -133,6 +138,40 @@ class DevEnvHandler {
             null
         } else {
             new File(project.projectDir, vsSolutionFile)
+        }
+    }
+    
+    public def defineBuildTasks(Project project, String taskName, String configuration) {
+        [defineBuildTask(project, taskName, configuration, true),
+        defineBuildTask(project, taskName, configuration, false)]
+    }
+    
+    public Task defineBuildTask(Project project, String taskName, String configuration, boolean independently) {
+        if (independently) taskName = "${taskName}Independently"
+        project.task(taskName, type: DevEnvTask) {
+            init(independently, configuration)
+            if (independently) {
+                description = "This task only makes sense for individual projects e.g. gw subproj:b${configuration[0]}I"
+            } else {
+                description = "Builds all dependent projects in $configuration mode."
+            }
+        }
+    }
+    
+    public def defineCleanTasks(Project project, String taskName, String configuration) {
+        [defineCleanTask(project, taskName, configuration, true),
+        defineCleanTask(project, taskName, configuration, false)]
+    }
+    
+    public Task defineCleanTask(Project project, String taskName, String configuration, boolean independently) {
+        if (independently) taskName = "${taskName}Independently"
+        project.task(taskName, type: DevEnvTask) {
+            init(independently, configuration)
+            if (independently) {
+                description = "This task only makes sense for individual projects e.g. gw subproj:c${configuration[0]}I"
+            } else {
+                description = "Cleans all dependent projects in $configuration mode."
+            }
         }
     }
 }

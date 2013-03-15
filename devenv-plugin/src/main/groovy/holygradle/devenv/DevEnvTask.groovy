@@ -10,6 +10,8 @@ import org.gradle.logging.StyledTextOutput
 import org.gradle.logging.StyledTextOutputFactory
 
 class DevEnvTask extends DefaultTask {
+    boolean independently
+    String configuration
     StyledTextOutput output
     
     DevEnvTask() {
@@ -17,33 +19,56 @@ class DevEnvTask extends DefaultTask {
         output = services.get(StyledTextOutputFactory).create(DevEnvTask)
     }
     
-    public void initBuildTask(Project project, DevEnvHandler devEnvHandler, String configuration) {
-        def solutionFile = devEnvHandler.getVsSolutionFile()
-        def targetSwitch = devEnvHandler.useIncredibuild() ? "/Build" : "/build" 
-        def platform = devEnvHandler.getPlatform()
-        def configSwitch = devEnvHandler.useIncredibuild() ? "/cfg=\"${configuration}|${platform}\"" : "${configuration}^|${platform}"
-        def buildToolName = devEnvHandler.useIncredibuild() ? "Incredibuild" : "DevEnv"
+    public void init(boolean independently, String configuration) {
+        this.independently = independently
+        this.configuration = configuration
+    }
+    
+    public void configureBuildTask(DevEnvHandler devEnvHandler, String platform, String configuration) {
+        if (devEnvHandler.getVsSolutionFile() != null) {
+            ext.lazyConfiguration = {
+                dependsOn project.tasks.findByName("rebuildSymlinks")
+                def taskDependencies = project.extensions.findByName("taskDependencies")
+                if (!independently) dependsOn taskDependencies.get(name)
+                configureBuildTask(project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), devEnvHandler.useIncredibuild(), platform, configuration, devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes())       
+            }
+        }
+    }
+    
+    public void configureCleanTask(DevEnvHandler devEnvHandler, String platform, String configuration) {
+        if (devEnvHandler.getVsSolutionFile() != null) {
+            ext.lazyConfiguration = {
+                def taskDependencies = project.extensions.findByName("taskDependencies")
+                if (!independently) dependsOn taskDependencies.get(name)
+                configureCleanTask(project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), devEnvHandler.useIncredibuild(), platform, configuration, devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes())       
+            }
+        }
+    }
+    
+    public void configureBuildTask(Project project, File buildToolPath, File solutionFile, boolean useIncredibuild, String platform, String configuration, def warningRegexes, def errorRegexes) {
+        def targetSwitch = useIncredibuild ? "/Build" : "/build" 
+        def configSwitch = useIncredibuild ? "/cfg=\"${configuration}|${platform}\"" : "${configuration}^|${platform}"
+        def buildToolName = useIncredibuild ? "Incredibuild" : "DevEnv"
         def outputFile = new File(solutionFile.getParentFile(), "build_${configuration}_${platform}.txt")
+        def title = "${project.name} (${platform} ${configuration})"
         
         description = "Builds the solution '${solutionFile.name}' with ${buildToolName} in $configuration mode."
-        initTask(project, devEnvHandler, true, solutionFile, targetSwitch, configSwitch, outputFile) 
+        configureTask(project, title, buildToolPath, solutionFile, targetSwitch, configSwitch, outputFile, warningRegexes, errorRegexes) 
     }
     
-    public void initCleanTask(Project project, DevEnvHandler devEnvHandler, String configuration) {
-        def solutionFile = devEnvHandler.getVsSolutionFile()
+    public void configureCleanTask(Project project, File buildToolPath, File solutionFile, boolean useIncredibuild, String platform, String configuration, def warningRegexes, def errorRegexes) {
         def targetSwitch = "/Clean" 
-        def platform = devEnvHandler.getPlatform()
         def configSwitch = "${configuration}^|${platform}"
         def outputFile = new File(solutionFile.getParentFile(), "clean_${configuration}_${platform}.txt")
+        def title = "${project.name} (${platform} ${configuration})"
         
         description = "Cleans the solution '${solutionFile.name}' with DevEnv in $configuration mode."
-        initTask(project, devEnvHandler, false, solutionFile, targetSwitch, configSwitch, outputFile)
+        configureTask(project, title, buildToolPath, solutionFile, targetSwitch, configSwitch, outputFile, warningRegexes, errorRegexes)
     }
     
-    private void initTask(Project project, DevEnvHandler devEnvHandler, boolean allowIncredibuild, File solutionFile, String targetSwitch, String configSwitch, File outputFile) {
+    private void configureTask(Project project, String title, File buildToolPath, File solutionFile, String targetSwitch, String configSwitch, File outputFile, def warningRegexes, def errorRegexes) {
         doLast {
-            def buildToolPath = devEnvHandler.getBuildToolPath(allowIncredibuild)
-            def devEnvOutput = new ErrorHighlightingOutputStream(project.name, this.output, devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes())
+            def devEnvOutput = new ErrorHighlightingOutputStream(title, this.output, warningRegexes, errorRegexes)
             def result = project.exec {
                 workingDir project.projectDir.path
                 commandLine buildToolPath.path, solutionFile.path, targetSwitch, configSwitch

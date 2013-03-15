@@ -39,48 +39,44 @@ class DevEnvPlugin implements Plugin<Project> {
         /**************************************
          * Tasks
          **************************************/
-        def rebuildSymlinksTask = project.tasks.findByName("rebuildSymlinks")
-        ["Debug", "Release"].each { conf ->
-            project.task("build${conf}", type: DevEnvTask) {
-                description = "Builds all dependent projects in $conf mode."
-                if (rebuildSymlinksTask != null) {
-                    dependsOn rebuildSymlinksTask
-                }
-            }
-            project.task("build${conf}Independently", type: DevEnvTask) {
-                description = "This task only makes sense for individual projects e.g. gw subproj:b${conf[0]}I"
-                if (rebuildSymlinksTask != null) {
-                    dependsOn rebuildSymlinksTask
-                }
-            }
-            project.task("clean${conf}", type: DevEnvTask) {
-                description = "Cleans all dependent projects in $conf mode."
-            }
-            project.task("clean${conf}Independently", type: DevEnvTask) {
-                description = "This task only makes sense for individual projects e.g. gw subproj:c${conf[0]}I"
-            }
-        }
+        
+        def buildDebug = devEnvHandler.defineBuildTasks(project, "buildDebug", "Debug")
+        def buildRelease = devEnvHandler.defineBuildTasks(project, "buildRelease", "Release")
+        def cleanDebug = devEnvHandler.defineCleanTasks(project, "cleanDebug", "Debug")
+        def cleanRelease = devEnvHandler.defineCleanTasks(project, "cleanRelease", "Release")
         
         project.gradle.projectsEvaluated {
-            def taskDependencies = project.extensions.findByName("taskDependencies")
-            if (devEnvHandler.getVsSolutionFile() != null) {
-                ["Debug", "Release"].each { configuration ->
-                    def buildTaskName = "build$configuration"
-                    project.tasks.getByName(buildTaskName) {
-                        dependsOn taskDependencies.get(buildTaskName)
-                        initBuildTask(project, devEnvHandler, configuration)
+            def platforms = devEnvHandler.getPlatforms()
+            
+            if (platforms.size() == 1) {
+                buildDebug.each { it.configureBuildTask(devEnvHandler, platforms[0], "Debug") }
+                buildRelease.each { it.configureBuildTask(devEnvHandler, platforms[0], "Release") }
+                cleanDebug.each { it.configureCleanTask(devEnvHandler, platforms[0], "Debug") }
+                cleanRelease.each { it.configureCleanTask(devEnvHandler, platforms[0], "Release") }
+            } else {
+                platforms.each { p ->
+                    def platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, "build${p}Debug", "Debug")
+                    buildDebug.eachWithIndex { b, i ->
+                        platformBuildDebugTasks[i].configureBuildTask(devEnvHandler, p, "Debug")
+                        b.dependsOn platformBuildDebugTasks[i]
                     }
-                    project.tasks.getByName(buildTaskName + "Independently") {
-                        initBuildTask(project, devEnvHandler, configuration)
+                    
+                    def platformBuildReleaseTasks = devEnvHandler.defineBuildTasks(project, "build${p}Release", "Release")
+                    buildRelease.eachWithIndex { b, i ->
+                        platformBuildReleaseTasks[i].configureBuildTask(devEnvHandler, p, "Release")
+                        b.dependsOn platformBuildReleaseTasks[i]
                     }
-
-                    def cleanTaskName = "clean$configuration"
-                    project.tasks.getByName(cleanTaskName) {
-                        dependsOn taskDependencies.get(cleanTaskName)
-                        initCleanTask(project, devEnvHandler, configuration)
+                    
+                    def platformCleanDebugTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Debug", "Debug")
+                    cleanDebug.eachWithIndex { b, i ->
+                        platformCleanDebugTasks[i].configureCleanTask(devEnvHandler, p, "Debug")
+                        b.dependsOn platformCleanDebugTasks[i]
                     }
-                    project.tasks.getByName(cleanTaskName + "Independently") {
-                        initCleanTask(project, devEnvHandler, configuration)
+                    
+                    def platformCleanReleaseTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Release", "Release")
+                    cleanRelease.eachWithIndex { b, i ->
+                        platformCleanReleaseTasks[i].configureCleanTask(devEnvHandler, p, "Release")
+                        b.dependsOn platformCleanReleaseTasks[i]
                     }
                 }
             }
