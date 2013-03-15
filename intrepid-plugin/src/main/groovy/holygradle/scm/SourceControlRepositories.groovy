@@ -4,20 +4,21 @@ import org.gradle.*
 import org.gradle.api.*
 
 class SourceControlRepositories {
-    public static SourceControlRepository get(File location) {
+    public static SourceControlRepository get(File location, boolean useDummyIfNecessary=false) {
         def svnFile = new File(location, ".svn")
         def hgFile = new File(location, ".hg")
         if (svnFile.exists()) {
             new SvnRepository(location)
         } else if (hgFile.exists()) {
             new HgRepository(location)
-        } else {
-            //throw new RuntimeException("Unknown repository type at location '${location}'.")
+        } else if (useDummyIfNecessary) {
             new DummySourceControl()
+        } else {
+            null
         }
     }
     
     public static def createExtension(Project project) {
-        project.extensions.add("sourceControl", get(project.projectDir))
+        project.extensions.add("sourceControl", get(project.projectDir, true))
     }
 }
