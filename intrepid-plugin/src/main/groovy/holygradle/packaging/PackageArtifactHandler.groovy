@@ -186,11 +186,11 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         if (createPublishNotesTask != null) {
             t.dependsOn createPublishNotesTask
         }
+        t.baseName = project.name + "-" + t.name
+        t.destinationDir = new File(project.projectDir, "packages")
+        t.includeEmptyDirs = false
         
         t.ext.lazyConfiguration = {
-            destinationDir = new File(project.projectDir, "packages")
-            baseName = project.name + "-" + name
-            includeEmptyDirs = false
             // t.group = "Publishing " + project.name
             // t.classifier = name
             
