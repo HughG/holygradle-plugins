@@ -48,7 +48,7 @@ class HolyGradlePlugins {
     
     public void use(String plugin, String version) {
         if (usages.size() == 0 && plugin != "custom-gradle-core") {
-            useInternal "custom-gradle-core", "1.0.7.+"
+            useInternal "custom-gradle-core", "1.0.8.+"
         }
         useInternal plugin, version
     }
