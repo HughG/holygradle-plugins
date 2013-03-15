@@ -24,14 +24,25 @@ class DevEnvTask extends DefaultTask {
         this.configuration = configuration
     }
     
+    private void addStampingDependencyForProject(Project project) {
+        def stampingExtension = project.extensions.findByName("stamping")
+        if (stampingExtension != null && stampingExtension.runPriorToBuild) {
+            dependsOn project.tasks.findByName(stampingExtension.taskName)
+        }
+    }
+    
     public void configureBuildTask(DevEnvHandler devEnvHandler, String platform, String configuration) {
         if (devEnvHandler.getVsSolutionFile() != null) {
-            ext.lazyConfiguration = {
-                dependsOn project.tasks.findByName("rebuildSymlinks")
-                def taskDependencies = project.extensions.findByName("taskDependencies")
-                if (!independently) dependsOn taskDependencies.get(name)
-                configureBuildTask(project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), devEnvHandler.useIncredibuild(), platform, configuration, devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes())       
+            addStampingDependencyForProject(project)
+            if (project != project.rootProject) {
+                addStampingDependencyForProject(project.rootProject)
             }
+            
+            dependsOn project.tasks.findByName("rebuildSymlinks")
+            def taskDependencies = project.extensions.findByName("taskDependencies")
+            if (!independently) dependsOn taskDependencies.get(name)
+            
+            configureBuildTask(project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), devEnvHandler.useIncredibuild(), platform, configuration, devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes())       
         }
     }
     

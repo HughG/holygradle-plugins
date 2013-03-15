@@ -54,7 +54,8 @@ class DevEnvPlugin implements Plugin<Project> {
                 cleanDebug.each { it.configureCleanTask(devEnvHandler, platforms[0], "Debug") }
                 cleanRelease.each { it.configureCleanTask(devEnvHandler, platforms[0], "Release") }
             } else {
-                platforms.each { p ->
+                platforms.each { platform ->
+                    String p = platform[0].toUpperCase() + platform[1..-1]
                     def platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, "build${p}Debug", "Debug")
                     buildDebug.eachWithIndex { b, i ->
                         platformBuildDebugTasks[i].configureBuildTask(devEnvHandler, p, "Debug")
