@@ -1,5 +1,6 @@
-package holygradle
+package holygradle.scm
 
+import holygradle.*
 import org.gradle.api.Project
 import org.junit.Test
 import net.lingala.zip4j.core.ZipFile

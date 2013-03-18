@@ -21,3 +21,5 @@ wrapper-starter-kit/wrapperTemp
 wrapper-starter-kit.zip
 */src/test/**/*.test.txt
 gradle*.properties
+intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
+intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
