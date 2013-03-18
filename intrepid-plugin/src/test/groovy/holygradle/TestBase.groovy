@@ -11,7 +11,7 @@ class TestBase {
         regression = new RegressionFileHelper(this)
     }
     
-    protected String getTestDir() {
-        return "src/test/groovy/" + getClass().getName().replace(".", "/")
+    protected File getTestDir() {
+        return new File("src/test/groovy/" + getClass().getName().replace(".", "/"))
     }
 }
