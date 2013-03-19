@@ -175,9 +175,9 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
                         republish.getReplacements().each { find, repl ->
                             filter { String line -> line.replaceAll(find, repl) }
                         }
-                        includeHandler.replacements.each { find, repl ->
-                            filter { String line -> line.replaceAll(find, repl) }
-                        }
+                    }
+                    includeHandler.replacements.each { find, repl ->
+                        filter { String line -> line.replaceAll(find, repl) }
                     }
                 }
             }
