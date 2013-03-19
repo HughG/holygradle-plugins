@@ -20,15 +20,24 @@ class IntrepidPlugin implements Plugin<Project> {
          * Apply other plugins
          **************************************/
         project.apply plugin: 'ivy-publish'
-        project.apply plugin: 'custom-gradle-core'
+        
+        // In normal usage we should apply the 'custom-gradle-core' plugin, but in unit tests the identifier
+        // is unknown so we can't apply it. But the intrepid plugin can still largely make do without it.
+        try {
+            project.apply plugin: 'custom-gradle-core'
+        } catch (org.gradle.api.plugins.UnknownPluginException e) {
+            println "Haven't applied 'custom-gradle-core' plugin."
+        }
         
         /**************************************
          * Prerequisites
          **************************************/
         def prerequisites = project.extensions.findByName("prerequisites")
-        prerequisites.specify("Java", "1.7").check()
-        prerequisites.specify("HgAuth", {checker -> Helper.checkHgAuth(checker)})
-    
+        if (prerequisites != null) {
+            prerequisites.specify("Java", "1.7").check()
+            prerequisites.specify("HgAuth", {checker -> Helper.checkHgAuth(checker)})
+        }
+        
         /**************************************
          * Configurations
          **************************************/
@@ -323,8 +332,8 @@ class IntrepidPlugin implements Plugin<Project> {
                     if (noIncludesCount > 0) {
                         print "Dependencies have been detected on different versions of the module '${module.name}'. "
                         print "To prevent different versions of this module being unpacked to the same location, the version number will be " 
-                        print "appended to the path as '${module.name}-<version>'. You can make this warning disappear by changing the name " 
-                        print "of the packed dependency yourself to include '<version>' somewhere within the name. "
+                        print "appended to the path as '${module.name}-<version>'. You can make this warning disappear by changing the locations " 
+                        print "to which these dependencies are being unpacked. "
                         println "For your information, here are the details of the affected dependencies:"
                         module.versions.each { versionStr, versionInfo ->
                             print "  ${module.group}:${module.name}:${versionStr} : " + versionInfo.getIncludeInfo() + " -> "

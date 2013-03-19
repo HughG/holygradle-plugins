@@ -1,5 +1,6 @@
-package holygradle
+package holygradle.unpacking
 
+import holygradle.*
 import org.junit.Test
 import org.gradle.api.Project
 import org.gradle.api.DefaultTask 

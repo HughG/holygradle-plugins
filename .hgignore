@@ -23,3 +23,4 @@ wrapper-starter-kit.zip
 gradle*.properties
 intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
+intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsTest/projectB/packages/

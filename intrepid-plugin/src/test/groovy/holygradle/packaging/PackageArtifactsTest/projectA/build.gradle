@@ -1,0 +1,13 @@
+configurations {
+    foo
+    bar.extendsFrom foo
+}
+
+packageArtifacts {
+    foo {
+        include "**/f*"
+    }
+    bar {
+        include "**/b*"
+    }
+}

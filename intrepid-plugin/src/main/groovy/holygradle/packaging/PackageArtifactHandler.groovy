@@ -186,7 +186,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         if (createPublishNotesTask != null) {
             t.dependsOn createPublishNotesTask
         }
-        t.baseName = project.name + "-" + t.name
+        t.baseName = project.name + "-" + name
         t.destinationDir = new File(project.projectDir, "packages")
         t.includeEmptyDirs = false
         
