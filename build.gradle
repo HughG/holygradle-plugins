@@ -93,7 +93,7 @@ subprojects {
             }
         }
     
-        publishSnapshot.dependsOn test
+        // publishSnapshot.dependsOn test
         publishRelease.dependsOn test
     }
 }
