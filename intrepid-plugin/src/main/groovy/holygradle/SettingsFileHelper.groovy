@@ -18,7 +18,6 @@ class SettingsFileHelper {
         // regex below is: /.*?([\w_\-]+)$/
         settings += "\r\nrootProject.children.each {"
         settings += "\r\n    def projName = (it.name =~ /.*?([\\w_\\-]+)\$/)[0][1]"
-        settings += "\r\n    // This allows subprojects to be named the same as the directory."
         settings += "\r\n    it.name = projName"            
         settings += "\r\n    // This allows subprojects to name the gradle script the same as the directory e.g. ..\\foo\\foo.gradle"
         settings += "\r\n    boolean projectNamedScript = new File(it.projectDir, projName + '.gradle').exists()"
