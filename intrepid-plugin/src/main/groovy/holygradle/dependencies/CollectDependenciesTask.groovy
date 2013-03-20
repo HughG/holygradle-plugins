@@ -10,24 +10,26 @@ class CollectDependenciesTask extends Copy {
     public void initialize(Project project) {
         this.project = project
         
-        def dependencyArtifacts = []
-        def collectArtifacts = { conf ->
-            def resConf = conf.resolvedConfiguration
-            resConf.getFirstLevelModuleDependencies().each { resolvedDependency ->
-                resolvedDependency.getAllModuleArtifacts().each { artifact ->
-                    if (!dependencyArtifacts.contains(artifact)) {
-                        dependencyArtifacts.add(artifact)
+        destinationDir = new File(project.rootProject.projectDir, "local_artifacts")
+        ext.lazyConfiguration = {
+            def dependencyArtifacts = []
+            def collectArtifacts = { conf ->
+                def resConf = conf.resolvedConfiguration
+                resConf.getFirstLevelModuleDependencies().each { resolvedDependency ->
+                    resolvedDependency.getAllModuleArtifacts().each { artifact ->
+                        if (!dependencyArtifacts.contains(artifact)) {
+                            dependencyArtifacts.add(artifact)
+                        }
                     }
                 }
             }
-        }
-        
-        project.buildscript.getConfigurations().each collectArtifacts
-        project.configurations.each collectArtifacts
-        
-        destinationDir = new File(project.rootProject.projectDir, "local_artifacts")
-        for (ResolvedArtifact artifact in dependencyArtifacts) { 
-            processArtifact(artifact)
+            
+            project.buildscript.getConfigurations().each collectArtifacts
+            project.configurations.each collectArtifacts
+            
+            for (ResolvedArtifact artifact in dependencyArtifacts) { 
+                processArtifact(artifact)
+            }
         }
         
         // Copy the custom-gradle distribution.
@@ -79,11 +81,13 @@ class CollectDependenciesTask extends Copy {
         }
     }
     
-    private void processArtifact(ResolvedArtifact artifact) {
+    public void processArtifact(ResolvedArtifact artifact) {
         def version = artifact.getModuleVersion().getId()
         def artifactRootDir = artifact.getFile().parentFile.parentFile.parentFile
         def targetPath = null
 
+        logger.info("Processing '${version}' for collectDependencies.")
+        
         def ivyDir = new File(artifactRootDir, "ivy")
         if (ivyDir.exists()) {
             ivyDir.traverse { ivyFile ->
@@ -138,12 +142,11 @@ class CollectDependenciesTask extends Copy {
                 
                 def parentPomRelativePath = parentNode.relativePath.text()
                 def parentPomPath = null
-                if (parentPomRelativePath == null || parentPomRelativePath.isEmpty()) {
-                    def cacheRootDir = pomArtifactRootDir.parentFile.parentFile.parentFile
-                    parentPomPath = new File(new File(new File(cacheRootDir, parentPomGroup), parentPomModuleName), parentPomVersion)
-                } else {
-                    parentPomPath = new File(pomArtifactRootDir.parentFile, parentPomRelativePath)
+                if (parentPomRelativePath != null && !parentPomRelativePath.isEmpty()) {
+                    logger.info "Ignoring relative path for '${pomArtifactRootDir}' : ${parentPomRelativePath}"
                 }
+                def cacheRootDir = pomArtifactRootDir.parentFile.parentFile.parentFile
+                parentPomPath = new File(new File(new File(cacheRootDir, parentPomGroup), parentPomModuleName), parentPomVersion)
                 
                 if (parentPomPath.exists()) {
                     parentPomPath.traverse { parentPomFile ->
