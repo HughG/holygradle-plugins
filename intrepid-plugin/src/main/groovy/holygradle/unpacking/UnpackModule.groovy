@@ -134,6 +134,37 @@ class UnpackModule {
                     conf.name, project.packedDependencies, unpackModules, resConf.getFirstLevelModuleDependencies()
                 )
             }
+            
+            // Check if we have artifacts for each entry in packedDependency.
+            if (!project.gradle.startParameter.isOffline()) {
+                project.packedDependencies.each { dep -> 
+                    if (unpackModules.count { it.name == dep.getDependencyName() } == 0) {
+                        throw new RuntimeException("No artifacts detected for dependency '${dep.name}'. Check that you have correctly defined the configurations.")
+                    }
+                }
+            }
+            
+            // Check if we need to force the version number to be included in the path in order to prevent
+            // two different versions of a module to be unpacked to the same location.
+            unpackModules.each { module ->
+                if (module.versions.size() > 1) {
+                    def noIncludesCount = 0
+                    module.versions.each { versionStr, versionInfo -> if (!versionInfo.includeVersionNumberInPath) noIncludesCount++ }
+                    if (noIncludesCount > 0) {
+                        print "Dependencies have been detected on different versions of the module '${module.name}'. "
+                        print "To prevent different versions of this module being unpacked to the same location, the version number will be " 
+                        print "appended to the path as '${module.name}-<version>'. You can make this warning disappear by changing the locations " 
+                        print "to which these dependencies are being unpacked. "
+                        println "For your information, here are the details of the affected dependencies:"
+                        module.versions.each { versionStr, versionInfo ->
+                            print "  ${module.group}:${module.name}:${versionStr} : " + versionInfo.getIncludeInfo() + " -> "
+                            versionInfo.includeVersionNumberInPath = true
+                            println versionInfo.getIncludeInfo()
+                        }
+                    }
+                }
+            }
+
             project.ext.unpackModules = unpackModules
         }
         

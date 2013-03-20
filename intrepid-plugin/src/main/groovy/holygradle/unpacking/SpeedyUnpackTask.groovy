@@ -8,6 +8,10 @@ class SpeedyUnpackTask extends DefaultTask {
     Task sevenZipTask
     
     public void initialize(Project project, File unpackDir, PackedDependencyHandler packedDependency, def artifacts) {
+        if (unpackDir == null) {
+            throw new RuntimeException("Error: unpackDir is null in SpeedyUnpackTask.initialize.")
+        }
+        
         this.unpackDir = unpackDir
         def infoFile = new File(unpackDir, "version_info.txt")
         

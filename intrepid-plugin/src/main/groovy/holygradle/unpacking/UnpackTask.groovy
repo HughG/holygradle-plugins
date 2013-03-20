@@ -7,6 +7,10 @@ class UnpackTask extends Copy {
     File unpackDir
     
     public void initialize(Project project, File unpackDir, def artifacts) {
+        if (unpackDir == null) {
+            throw new RuntimeException("Error: unpackDir is null in UnpackTask.initialize.")
+        }
+        
         this.unpackDir = unpackDir
         def infoFile = new File(unpackDir, "version_info.txt")
         

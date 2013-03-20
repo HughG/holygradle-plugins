@@ -34,16 +34,7 @@ class PackageArtifactsTest extends TestBase {
             packagesDir.deleteDir()
         }
         
-        GradleConnector connector = GradleConnector.newConnector()
-        connector.forProjectDirectory(projectDir)
-        ProjectConnection connection = connector.connect()
-        try { 
-            BuildLauncher launcher = connection.newBuild()
-            launcher.forTasks("packageEverything")
-            launcher.run()
-        } finally {
-            connection.close()
-        }
+        invokeTask(projectDir, "packageEverything")
         
         assertTrue(packagesDir.exists())
         assertTrue(new File(packagesDir, "projectB-foo.zip").exists())
