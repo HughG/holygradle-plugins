@@ -12,15 +12,13 @@ class CheckPublishedDependenciesTask extends DefaultTask {
         output = services.get(StyledTextOutputFactory).create(CheckPublishedDependenciesTask)
     }
     
-    public void initialize(def unpackModules, def repo) {
+    public void initialize(def unpackModules, String repoUrl, def repoCredentials) {
         doLast {
-            String url = repo.getUrl().toString()
             ArtifactoryHelper helper = new ArtifactoryHelper(
-                url,
-                repo.getCredentials().getUsername(),
-                repo.getCredentials().getPassword()
+                repoUrl,
+                repoCredentials.getUsername(),
+                repoCredentials.getPassword()
             )
-        
             def modules = [:]
             unpackModules.each { module ->
                 module.versions.each { versionStr, versionInfo ->
@@ -33,7 +31,7 @@ class CheckPublishedDependenciesTask extends DefaultTask {
                 int thisTab = (moduleVersion.length() + 8)
                 tab = (thisTab > tab) ? thisTab : tab
             }
-            output.println "The following artifacts are available at '${url}':"
+            output.println "The following artifacts are available at '${repoUrl}':"
             modules.each { moduleVersion, available ->
                 def line = "   ${moduleVersion}" + (" "*(tab-moduleVersion.length()))
                 if (available) {

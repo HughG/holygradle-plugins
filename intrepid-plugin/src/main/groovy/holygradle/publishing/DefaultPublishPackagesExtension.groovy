@@ -76,15 +76,19 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
     
     public Task defineCheckTask(def unpackModules) {
-        def repos = project.publishPackages.getRepositories().matching { repo ->
-            repo instanceof AuthenticationSupported && repo.getCredentials().getUsername() != null
-        }
-        if (repos.size() > 0) {
-            def repo = repos[0]
-            project.task("checkPublishedDependencies", type: CheckPublishedDependenciesTask) {
-                group = "Publishing"
-                description = "Check if all dependencies are accessible in the target repo."
-                initialize(unpackModules, repo)
+        def republishHandler = getRepublishHandler()
+        if (republishHandler != null) {
+            def repoUrl = republishHandler.getToRepository()
+            def repos = project.getRepositories().matching { repo ->
+                repo instanceof AuthenticationSupported && repo.getCredentials().getUsername() != null
+            }
+            if (repos.size() > 0 && repoUrl != null) {
+                def repo = repos[0]
+                project.task("checkPublishedDependencies", type: CheckPublishedDependenciesTask) {
+                    group = "Publishing"
+                    description = "Check if all dependencies are accessible in the target repo."
+                    initialize(unpackModules, repoUrl, repo.getCredentials())
+                }
             }
         }
     }
