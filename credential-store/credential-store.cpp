@@ -3,8 +3,10 @@
 #include <windows.h>
 #include <wincred.h>
 #include <tchar.h>
+#include <locale>
 #include <iostream>
 #include <string>
+#include <algorithm>
 #pragma hdrstop
 
 using namespace std;
@@ -98,10 +100,31 @@ void ReadAndPrintCredential(wstring& target_key) {
     ::CredFree (pcred);
 }
 
+// templated version of my_equal so it could work with both char and wchar_t
+template<typename charT>
+struct my_equal {
+    my_equal( const std::locale& loc ) : loc_(loc) {}
+    bool operator()(charT ch1, charT ch2) {
+        return std::toupper(ch1, loc_) == std::toupper(ch2, loc_);
+    }
+private:
+    const std::locale& loc_;
+};
+
+// find substring (case insensitive)
+template<typename T>
+int ci_find_substr( const T& str1, const T& str2, const std::locale& loc = std::locale() )
+{
+    T::const_iterator it = std::search( str1.begin(), str1.end(), 
+        str2.begin(), str2.end(), my_equal<T::value_type>(loc) );
+    if ( it != str1.end() ) return it - str1.begin();
+    else return -1; // not found
+}
+
 BOOL IsMercurialCredential(wstring& target_name, wstring& username) {
     BOOL is_mercurial = FALSE;
     if (target_name.size() > username.size() &&
-        target_name.find(username) == 0 &&
+        ci_find_substr(target_name, username) == 0 &&
         target_name.find(L"@@") == username.size() &&
         target_name.find(L"@Mercurial") == target_name.size() - 10
     ) {
