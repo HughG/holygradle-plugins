@@ -16,19 +16,16 @@ class HolyGradlePlugins {
                 maven { url project.ext.holyGradleRemoteRepository }
             }
         }
-        if (project.hasProperty("holyGradlePluginsSnapshots") && project.ext.holyGradlePluginsSnapshots != null) {
-            buildscript.configurations.all {
-                resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
-                resolutionStrategy.cacheDynamicVersionsFor 1, 'seconds'
-            }
-        } else {
-            buildscript.configurations.all {
-                resolutionStrategy.cacheDynamicVersionsFor 1, 'hours'
-            }
+
+        // By default, set the resolution strategy for buildscript dependencies
+        // such that those specified with dynamic version nos (e.g. "1.0.+") are cached for 1 hour
+        buildscript.configurations.all {
+            resolutionStrategy.cacheDynamicVersionsFor 1, 'hours'
         }
     }
     
     def use(String plugin_version) {
+        String group = "holygradle"
         String plugin = null
         String version = null
         def error = "Invalid format for 'gplugins.use'. The parameter should be in the form '<module>:<version>'."
@@ -37,31 +34,53 @@ class HolyGradlePlugins {
             if (split.size() == 2) {
                 plugin = split[0]
                 version = split[1]
+            } else if (split.size() == 3) {
+                group = split[0]
+                plugin = split[1]
+                version = split[2]
             } else {
                 throw new RuntimeException(error)
             }
         } else {
             throw new RuntimeException(error)
         }
-        use(plugin, version)
+        useInternal(group, plugin, version)
     }
     
     public void use(String plugin, String version) {
-        if (usages.size() == 0 && plugin != "custom-gradle-core") {
-            useInternal "custom-gradle-core", "1.0.8.+"
-        }
-        useInternal plugin, version
+        useInternal "holygradle", plugin, version
     }
     
-    private void useInternal(String plugin, String version) {
+    private void useInternal(String group, String plugin, String version) {
+        if (usages.size() == 0 && plugin != "custom-gradle-core") {
+            useInternal "holygradle", "custom-gradle-core", "1.0.8.+"
+		}
+        boolean usingSnapshots = false
+        if (version.endsWith("-SNAPSHOT")) {
+            println "Detected a changing (e.g. under development) module due to -SNAPSHOT in version: $plugin $version"            
+            usingSnapshots = true
+        }
         if (project.hasProperty("holyGradlePluginsSnapshots") && project.ext.holyGradlePluginsSnapshots != null) {
             version = "${project.ext.holyGradlePluginsSnapshots}-SNAPSHOT"
+            usingSnapshots = true
+        }
+        if (usingSnapshots) {
             buildscript.dependencies {
-                classpath("holygradle:${plugin}-plugin:${version}") { changing = true }
+                classpath("${group}:${plugin}-plugin:${version}") { changing = true }
+            }
+            
+            // When one or more plugin/dependency versions have been specified with -SNAPSHOT, 
+            // or when a developer has defined "holyGradlePluginsSnapshots=<username>" in gradle.properties,
+            // We know that one or more plugins are in development and volatile.  So we ensure we get the
+            // latest version of any volitle dependency by modifying the "resolution strategy" 
+            // for the build script  as follows (note this may be exercised more than once)
+            buildscript.configurations.classpath {
+                resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
+                resolutionStrategy.cacheDynamicVersionsFor 1, 'seconds'
             }
         } else {
             buildscript.dependencies {
-                classpath "holygradle:${plugin}-plugin:${version}"
+                classpath "${group}:${plugin}-plugin:${version}"
             }
         }
         usages[plugin] = version
