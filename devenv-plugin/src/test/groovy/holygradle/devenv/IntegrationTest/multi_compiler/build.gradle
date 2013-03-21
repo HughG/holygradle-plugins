@@ -1,0 +1,10 @@
+apply from: "..\\..\\..\\testUtil\\header.gradle"
+
+DevEnv {
+    solutionFile("build/foo_vc10.sln") {
+        platform "x64", "Win32"
+    }
+    solutionFile("build/foo_vc9.sln") {
+        platform "Win32"
+    }
+}
