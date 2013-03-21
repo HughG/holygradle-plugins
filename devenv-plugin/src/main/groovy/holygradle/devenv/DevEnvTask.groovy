@@ -38,9 +38,16 @@ class DevEnvTask extends DefaultTask {
                 addStampingDependencyForProject(project.rootProject)
             }
             
-            dependsOn project.tasks.findByName("rebuildSymlinks")
-            def taskDependencies = project.extensions.findByName("taskDependencies")
-            if (!independently) dependsOn taskDependencies.get(name)
+            def rebuildSymlinksTask = project.tasks.findByName("rebuildSymlinks")
+            if (rebuildSymlinksTask != null) {
+                dependsOn rebuildSymlinksTask
+            }
+            if (!independently) {
+                def taskDependencies = project.extensions.findByName("taskDependencies")
+                if (taskDependencies != null) {
+                     dependsOn taskDependencies.get(name)
+                }
+            }
             
             configureBuildTask(project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), devEnvHandler.useIncredibuild(), platform, configuration, devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes())       
         }

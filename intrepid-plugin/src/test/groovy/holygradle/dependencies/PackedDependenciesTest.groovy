@@ -1,6 +1,7 @@
 package holygradle.dependencies
 
 import holygradle.*
+import holygradle.test.*
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.api.Project

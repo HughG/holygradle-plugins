@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.test
 
 import org.junit.Test
 import java.io.File
@@ -18,13 +18,13 @@ class TestBase {
         return new File("src/test/groovy/" + getClass().getName().replace(".", "/"))
     }
     
-    protected void invokeTask(File projectDir, String taskName) {
+    protected void invokeTask(File projectDir, String... taskNames) {
         GradleConnector connector = GradleConnector.newConnector()
         connector.forProjectDirectory(projectDir)
         ProjectConnection connection = connector.connect()
         try { 
             BuildLauncher launcher = connection.newBuild()
-            launcher.forTasks(taskName)
+            launcher.forTasks(taskNames)
             launcher.run()
         } finally {
             connection.close()

@@ -12,20 +12,28 @@ class DevEnvPlugin implements Plugin<Project> {
         /**************************************
          * Apply other plugins
          **************************************/
-        project.apply plugin: 'custom-gradle-core'
+        // In normal usage we should apply the 'custom-gradle-core' plugin, but in unit tests the identifier
+        // is unknown so we can't apply it. But the intrepid plugin can still largely make do without it.
+        try {
+            project.apply plugin: 'custom-gradle-core'
+        } catch (org.gradle.api.plugins.UnknownPluginException e) {
+            println "Haven't applied 'custom-gradle-core' plugin."
+        }
         
         /**************************************
          * Prerequisites
          **************************************/
         def prerequisites = project.extensions.findByName("prerequisites")
-        prerequisites.register("VisualStudio", {checker, params -> 
-            params.each { version ->
-                if (checker.readRegistry("HKLM\\SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null &&
-                    checker.readRegistry("HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null) {
-                    checker.fail "Visual Studio version $version does not appear to be installed. Please install it. Detection was done by looking up the HKLM registry 'SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\${version}' key 'SP'."
+        if (prerequisites != null) {
+            prerequisites.register("VisualStudio", {checker, params -> 
+                params.each { version ->
+                    if (checker.readRegistry("HKLM\\SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null &&
+                        checker.readRegistry("HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null) {
+                        checker.fail "Visual Studio version $version does not appear to be installed. Please install it. Detection was done by looking up the HKLM registry 'SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\${version}' key 'SP'."
+                    }
                 }
-            }
-        })
+            })
+        }
         
         /**************************************
          * DSL extensions

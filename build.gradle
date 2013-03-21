@@ -8,6 +8,7 @@ subprojects {
         dependencies {
             groovy localGroovy()
             compile gradleApi()
+            testCompile files("../buildSrc/build/classes/main/")
         }
     }
 }

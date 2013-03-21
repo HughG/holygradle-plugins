@@ -1,0 +1,7 @@
+buildscript {
+    dependencies {
+        classpath files("..\\..\\..\\..\\..\\..\\..\\build\\classes\\main\\")
+    }
+}
+apply plugin: holygradle.devenv.DevEnvPlugin.class
+println "Applied devenv plugin in header.gradle."

@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.test
 
 import org.junit.Test
 import java.io.File
