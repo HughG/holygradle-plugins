@@ -5,14 +5,13 @@ configurations {
     bar
 }
 
-
 packedDependencies {
     extlib {
-        dependency "holygradle.test:external-lib:1.0"
+        dependency "holygradle.test:external-lib:1.1"
         configuration "foo->compile"
     }
-    extlib {
-        dependency "holygradle.test:external-lib:1.1"
-        configuration "bar->compile"
+    "sub/../extlib" {
+        dependency "holygradle.test:example-framework:1.1"
+        configuration "bar->compileVc10Debug,compileVc10Release"
     }
 }

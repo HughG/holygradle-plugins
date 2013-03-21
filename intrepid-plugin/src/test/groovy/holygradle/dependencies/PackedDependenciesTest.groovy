@@ -12,10 +12,21 @@ import static org.junit.Assert.*
 
 class PackedDependenciesTest extends TestBase {
     @Test
-    public void testConflictingModules() {
-        def projectDir = new File(getTestDir(), "conflicting_modules")
+    public void testConflictingModules1() {
         invokeTaskExpectingFailure(
-            projectDir,
+            new File(getTestDir(), "conflicting_modules1"),
+            "fetchAllDependencies", 
+            "Could not resolve all dependencies for configuration ':everything'.",
+            "A conflict was found between the following modules:",
+            "- holygradle.test:external-lib:1.0",
+            "- holygradle.test:external-lib:1.1"
+        )
+    }
+    
+    @Test
+    public void testConflictingModules2() {
+        invokeTaskExpectingFailure(
+            new File(getTestDir(), "conflicting_modules2"),
             "fetchAllDependencies", 
             "Could not resolve all dependencies for configuration ':everything'.",
             "A conflict was found between the following modules:",
@@ -26,14 +37,12 @@ class PackedDependenciesTest extends TestBase {
     
     @Test
     public void testUnpackingModulesToSameLocation() {
-        def projectDir = new File(getTestDir(), "unpacking_modules_to_same_location")
         invokeTaskExpectingFailure(
-            projectDir,
+            new File(getTestDir(), "unpacking_modules_to_same_location"),
             "fetchAllDependencies", 
-            "Could not resolve all dependencies for configuration ':everything'.",
-            "A conflict was found between the following modules:",
-            "- holygradle.test:external-lib:1.0",
-            "- holygradle.test:external-lib:1.1"
+            "Multiple different modules/versions are targetting the same location.",
+            "unpacking_modules_to_same_location\\extlib' is being targetted by: [holygradle.test:example-framework:1.1, holygradle.test:external-lib:1.1].",
+            "That's not going to work."
         )
     }
 }

@@ -1,0 +1,17 @@
+apply from: "..\\..\\..\\testUtil\\header.gradle"
+
+configurations {
+    foo
+    bar
+}
+
+packedDependencies {
+    extlib10 {
+        dependency "holygradle.test:external-lib:1.0"
+        configuration "foo->compile"
+    }
+    extlib11 {
+        dependency "holygradle.test:external-lib:1.1"
+        configuration "bar->compile"
+    }
+}

@@ -146,10 +146,24 @@ class UnpackModule {
             
             // Check if we need to force the version number to be included in the path in order to prevent
             // two different versions of a module to be unpacked to the same location.
+            def targetLocations = [:]
             unpackModules.each { module ->
+                module.versions.each { versionStr, versionInfo -> 
+                    def targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+                    if (targetLocations.containsKey(targetPath)) {
+                        targetLocations[targetPath].add(versionInfo.getFullCoordinate())
+                    } else {
+                        targetLocations[targetPath] = [versionInfo.getFullCoordinate()]
+                    }
+                }
+                
                 if (module.versions.size() > 1) {
                     def noIncludesCount = 0
-                    module.versions.each { versionStr, versionInfo -> if (!versionInfo.includeVersionNumberInPath) noIncludesCount++ }
+                    module.versions.each { versionStr, versionInfo -> 
+                        if (!versionInfo.includeVersionNumberInPath) {
+                            noIncludesCount++ 
+                        }
+                    }
                     if (noIncludesCount > 0) {
                         print "Dependencies have been detected on different versions of the module '${module.name}'. "
                         print "To prevent different versions of this module being unpacked to the same location, the version number will be " 
@@ -165,6 +179,16 @@ class UnpackModule {
                 }
             }
 
+            // Check if any target locations are used by more than one module/version.
+            targetLocations.each { target, coordinates ->
+                if (coordinates.size() > 1) {
+                    throw new RuntimeException(
+                        "Multiple different modules/versions are targetting the same location. " +
+                        "'${target}' is being targetted by: ${coordinates}. That's not going to work."
+                    )
+                }
+            }
+            
             project.ext.unpackModules = unpackModules
         }
         
