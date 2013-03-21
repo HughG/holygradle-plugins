@@ -63,20 +63,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)\lib\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\intermediate\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)\lib\vc10\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\intermediate\vc10\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)\lib\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\intermediate\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)\lib\vc10\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\intermediate\vc10\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)\lib\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\intermediate\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)\lib\vc10\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\intermediate\vc10\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)\lib\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)\intermediate\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)\lib\vc10\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\intermediate\vc10\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -150,9 +150,6 @@
       <OutputFile>$(OutDir)$(TargetName)_r64$(TargetExt)</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\Thing.h" />
     <ClInclude Include="..\stdafx.h" />
