@@ -101,14 +101,18 @@ class UnpackModuleVersion {
         def taskName = Helper.MakeCamelCase("extract", moduleVersion.getName()+moduleVersion.getVersion())
         def unpackTask = project.tasks.findByName(taskName)
         if (unpackTask == null) {
-            // The task hasn't already been defined
-            if (shouldApplyUpToDateChecks) {
-                unpackTask = project.task(taskName, type: UnpackTask) {
-                    initialize(project, getUnpackDir(project), artifacts.keySet())
-                }
-            } else {
+            // The task hasn't already been defined, so we should define it.
+            boolean speedy = !shouldApplyUpToDateChecks
+            if (project.buildScriptDependencies.getPath("sevenZip") == null) {
+                speedy = false
+            }
+            if (speedy) {
                 unpackTask = project.task(taskName, type: SpeedyUnpackTask) {
                     initialize(project, getUnpackDir(project), getPackedDependency(), artifacts.keySet())
+                }
+            } else {
+                unpackTask = project.task(taskName, type: UnpackTask) {
+                    initialize(project, getUnpackDir(project), artifacts.keySet())
                 }
             }
             unpackTask.description = getUnpackDescription()

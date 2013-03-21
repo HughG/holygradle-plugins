@@ -24,3 +24,5 @@ gradle*.properties
 intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsTest/projectB/packages/
+intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
+credential-store/ipch/

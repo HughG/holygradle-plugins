@@ -20,6 +20,10 @@ class MockBuildScriptDependencies {
     public Task getUnpackTask(String dependencyName) {
         return project.task(dependencyName, type: DefaultTask)
     }
+    
+    public File getPath(String dependencyName) {
+        new File("path/to/${dependencyName}")
+    }
 }
 
 class UnpackModuleVersionTest extends TestBase {
@@ -77,7 +81,6 @@ class UnpackModuleVersionTest extends TestBase {
                 
         def unpackTask = apricot.getUnpackTask(project)
         assertEquals("extractApricot1.1", unpackTask.name)
-        assertTrue("Defaults to SpeedyUnpackTask", unpackTask instanceof SpeedyUnpackTask)
         assertEquals(new File(project.ext.unpackedDependenciesCache, "org/apricot-1.1"), unpackTask.unpackDir)
         assertEquals("Unpacks dependency 'apricot' (version 1.1) to the cache.", unpackTask.description)
         

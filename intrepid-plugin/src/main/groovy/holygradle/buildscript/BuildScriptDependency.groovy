@@ -23,14 +23,15 @@ class BuildScriptDependency {
         }
         
         if (needsUnpacked) {
-            unpackTask = project.task(getUnpackTaskName(), type: Copy) {
-                if (dependencyArtifact != null) { 
+            if (dependencyArtifact == null) { 
+                unpackTask = project.task(getUnpackTaskName(), type: DefaultTask)
+            } else {
+                unpackTask = project.task(getUnpackTaskName(), type: Copy) {
                     from project.zipTree(dependencyArtifact.getFile())
                     into Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.getModuleVersion().getId())
                 }
+                dependencyPath = unpackTask.destinationDir
             }
-            
-            dependencyPath = unpackTask.destinationDir
         } else if (dependencyArtifact != null) {
             dependencyPath = dependencyArtifact.getFile()
         }

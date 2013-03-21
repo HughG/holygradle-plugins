@@ -4,3 +4,8 @@ buildscript {
     }
 }
 apply plugin: holygradle.IntrepidPlugin.class
+println "Applied intrepid plugin in header.gradle."
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
