@@ -9,6 +9,14 @@ dependencies {
     // currently published to a public local even though all necessary resources are
     // already in the public domain.
     runtime group: 'org', name: 'sevenZip', version:'9.20.1', configuration: 'basic'
-    runtime "holygradle:credential-store:1.0.1.4"
     runtime "selenic:Mercurial:2.5.1"
+}
+
+// Can only choose the plugin versions once the task graph has been established because
+// we need to know whether we're publishing a release or a snapshot.
+project.gradle.taskGraph.whenReady {
+    dependencies {
+        runtime holygradle.util.Helper.choosePluginVersion(project, "holygradle", "credential-store")
+        compile holygradle.util.Helper.choosePluginVersion(project, "holygradle", "custom-gradle-core-plugin")
+    }
 }

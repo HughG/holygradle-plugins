@@ -52,9 +52,6 @@ class HolyGradlePlugins {
     }
     
     private void useInternal(String group, String plugin, String version) {
-        if (usages.size() == 0 && plugin != "custom-gradle-core") {
-            useInternal "holygradle", "custom-gradle-core", "1.0.8.+"
-		}
         boolean usingSnapshots = false
         if (version.endsWith("-SNAPSHOT")) {
             println "Detected a changing (e.g. under development) module due to -SNAPSHOT in version: $plugin $version"            
@@ -163,8 +160,8 @@ allprojects {
 // Build scripts need to do the following:
 /*
 buildscript {
-    gplugins.use "intrepid:2.0.4.+"
-    gplugins.use "devenv:1.0.10.+"
+    gplugins.use "intrepid:3.0.6.+"
+    gplugins.use "devenv:2.0.0.+"
 }
 gplugins.apply()
 */

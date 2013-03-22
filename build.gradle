@@ -69,7 +69,7 @@ subprojects {
             publishCount++
         }
         if (publishCount > 1) {
-            throw new RuntimeException("Only publish to one repository at a time, because the version number is different.")
+            throw new RuntimeException("Only publish release or snapshot, but not both at the same time because the version number is different.")
         }
         
         // Configure the version number according to which repository we're publishing to.
