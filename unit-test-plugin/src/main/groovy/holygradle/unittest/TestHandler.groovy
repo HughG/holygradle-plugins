@@ -61,25 +61,29 @@ class TestHandler {
             def testMessage = "Running unit test ${name} (${flavour})..."
             task.doLast {
                 println testMessage
-                project.exec {
-                    def cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
-                    def exePath = new File(cmd[0])
-                    if (!exePath.exists()) {
-                        def tryPath = new File(project.projectDir, cmd[0])
-                        if (tryPath.exists()) {
-                            exePath = tryPath
+                if (commandLineChunks.size() == 0) {
+                    println "    Nothing to run."
+                } else {
+                    project.exec {
+                        def cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
+                        def exePath = new File(cmd[0])
+                        if (!exePath.exists()) {
+                            def tryPath = new File(project.projectDir, cmd[0])
+                            if (tryPath.exists()) {
+                                exePath = tryPath
+                            }
                         }
-                    }
-                    if (!exePath.exists()) {
-                        def tryPath = new File(project.rootProject.projectDir, cmd[0])
-                        if (tryPath.exists()) {
-                            exePath = tryPath
+                        if (!exePath.exists()) {
+                            def tryPath = new File(project.rootProject.projectDir, cmd[0])
+                            if (tryPath.exists()) {
+                                exePath = tryPath
+                            }
                         }
-                    }
-                    cmd[0] = exePath.path
-                    commandLine cmd
-                    if (redirectOutputFilePath != null) {
-                        standardOutput = new FileOutputStream("${project.projectDir}/${replaceFlavour(redirectOutputFilePath, flavour)}") 
+                        cmd[0] = exePath.path
+                        commandLine cmd
+                        if (redirectOutputFilePath != null) {
+                            standardOutput = new FileOutputStream("${project.projectDir}/${replaceFlavour(redirectOutputFilePath, flavour)}") 
+                        }
                     }
                 }
             }
