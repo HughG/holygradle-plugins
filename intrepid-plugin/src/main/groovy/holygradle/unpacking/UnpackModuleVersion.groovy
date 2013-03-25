@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.util.CamelCase
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -98,7 +99,7 @@ class UnpackModuleVersion {
             shouldApplyUpToDateChecks = packedDependency.shouldApplyUpToDateChecks()
         }
         
-        def taskName = Helper.MakeCamelCase("extract", moduleVersion.getName()+moduleVersion.getVersion())
+        def taskName = holygradle.util.CamelCase.build("extract", moduleVersion.getName()+moduleVersion.getVersion())
         def unpackTask = project.tasks.findByName(taskName)
         if (unpackTask == null) {
             // The task hasn't already been defined, so we should define it.
@@ -140,7 +141,7 @@ class UnpackModuleVersion {
     public Task getSymlinkTaskIfUnpackingToCache(Project project) {
         Task symlinkTask = null
         if (shouldUnpackToCache()) {
-            def taskName = Helper.MakeCamelCase("symlink", moduleVersion.getName()+moduleVersion.getVersion())
+            def taskName = holygradle.util.CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
             
             symlinkTask = project.tasks.findByName(taskName)
             if (symlinkTask == null) {

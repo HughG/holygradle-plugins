@@ -1,12 +1,13 @@
 package holygradle
 
+import holygradle.util.*
 import org.gradle.api.*
 import org.gradle.api.tasks.*
 
 class SymlinkTask extends DefaultTask {
     public void configure(def project, File linkDir, File targetDir) {        
         def linkExists = linkDir.exists()
-        def isSymlink = Helper.isJunctionOrSymlink(linkDir)
+        def isSymlink = Symlink.isJunctionOrSymlink(linkDir)
         
         doFirst {
             if (linkExists && !isSymlink) {
@@ -15,7 +16,7 @@ class SymlinkTask extends DefaultTask {
                         "former already exists and is not a symlink. Continuing..."
                 println "-"*80
             } else {
-                Helper.rebuildSymlink(linkDir, targetDir, project)
+                Symlink.rebuild(linkDir, targetDir, project)
             }
         }
     }

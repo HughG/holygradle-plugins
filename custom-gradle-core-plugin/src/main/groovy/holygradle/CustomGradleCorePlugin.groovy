@@ -25,7 +25,9 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         def taskDependenciesExtension = project.extensions.create("taskDependencies", TaskDependenciesExtension, project)
         
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
-        PrerequisitesExtension.defineExtension(project)
+        def prerequisites = PrerequisitesExtension.defineExtension(project)
+               
+        prerequisites.specify("Java", "1.7").check()
                
         // DSL extension 'pluginUsages' to help determine actual version numbers used (deprecated, should later replace with versionInfo)
         def pluginUsagesExtension = project.extensions.create("pluginUsages", PluginUsages, project)

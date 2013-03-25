@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.util.*
 import org.gradle.api.*
 import org.gradle.api.tasks.*
 
@@ -36,7 +37,7 @@ class SpeedyUnpackTask extends DefaultTask {
             
             doFirst {
                 if (unpackDir.exists()) {
-                    if (Helper.isJunctionOrSymlink(unpackDir)) {
+                    if (Symlink.isJunctionOrSymlink(unpackDir)) {
                         unpackDir.delete()
                         unpackDir.mkdir()
                     }

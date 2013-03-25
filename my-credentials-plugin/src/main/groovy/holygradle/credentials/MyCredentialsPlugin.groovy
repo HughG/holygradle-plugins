@@ -24,10 +24,13 @@ class MyCredentialsPlugin implements Plugin<Project> {
         
         // Copy the credential-store to the root of the workspace.
         if (project == project.rootProject) {
-            project.copy {
-                from credentialStoreArtifact.getFile()
-                into project.projectDir
-                rename { "credential-store.exe" }
+            def credStoreFile = new File(project.projectDir, "credential-store.exe")
+            if (!credStoreFile.exists() || credStoreFile.canWrite()) {
+                project.copy {
+                    from credentialStoreArtifact.getFile()
+                    into credStoreFile.parentFile
+                    rename { credStoreFile.name }
+                }
             }
         }
         

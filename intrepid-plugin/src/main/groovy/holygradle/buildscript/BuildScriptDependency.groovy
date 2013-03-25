@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.util.*
 import org.gradle.*
 import org.gradle.api.*
 import org.gradle.api.tasks.*
@@ -42,6 +43,9 @@ class BuildScriptDependency {
     }
     
     public String getUnpackTaskName() {
+        // Unfortunately can't use the CamelCase helper from custom-gradle-core because we're
+        // executing this from the buildscript block before the custom-gradle-core-plugin has
+        // been added to the classpath.
         Helper.MakeCamelCase("extract", dependencyName)
     }
     

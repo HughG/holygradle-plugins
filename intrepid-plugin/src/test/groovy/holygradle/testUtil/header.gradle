@@ -1,6 +1,7 @@
 buildscript {
     dependencies {
         classpath files("..\\..\\..\\..\\..\\..\\..\\build\\classes\\main\\")
+        classpath files("..\\..\\..\\..\\..\\..\\..\\..\\custom-gradle-core-plugin\\build\\classes\\main\\")
     }
 }
 apply plugin: holygradle.IntrepidPlugin.class

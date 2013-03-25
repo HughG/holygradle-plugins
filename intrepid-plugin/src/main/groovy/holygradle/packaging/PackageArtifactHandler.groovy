@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.util.*
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
 import org.gradle.api.file.*
@@ -139,7 +140,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     }
     
     public String getPackageTaskName() {
-        Helper.MakeCamelCase("package", name)
+        holygradle.util.CamelCase.build("package", name)
     }
     
     public Task getPackageTask(def project) {

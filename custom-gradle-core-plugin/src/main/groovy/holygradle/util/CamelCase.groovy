@@ -1,7 +1,7 @@
-package holygradle.customgradle
+package holygradle.util
 
-class Helper {
-    public static String makeCamelCase(def components) {
+public class CamelCase {
+    public static String build(def components) {
         def camelCase = new StringBuilder()
         boolean firstCharacterLowerCase = true
         components.each { component ->
@@ -22,9 +22,9 @@ class Helper {
         return camelCase
     }
     
-    public static String makeCamelCase(String... components) {
+    public static String build(String... components) {
         def componentList = []
         components.each { componentList.add(it) }
-        makeCamelCase(componentList)
+        build(componentList)
     }
 }

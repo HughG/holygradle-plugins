@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.util.*
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
 import org.gradle.api.tasks.bundling.*
@@ -86,7 +87,7 @@ class PackageArtifactBuildScriptHandler {
         def sourceDependencies = project.extensions.findByName("sourceDependencies")
         if (sourceDependencies != null) {
             sourceDependencies.each {
-                if (Helper.wildcardMatch(sourceDepWildcard, it.name)) {
+                if (Wildcard.match(sourceDepWildcard, it.name)) {
                     matches.add(it)
                 }
             }
@@ -105,7 +106,7 @@ class PackageArtifactBuildScriptHandler {
         def packedDependencies = project.extensions.findByName("packedDependencies")
         if (packedDependencies != null) {
             packedDependencies.each {
-                if (Helper.wildcardMatch(packedDepWildcard, it.name)) {
+                if (Wildcard.match(packedDepWildcard, it.name)) {
                     matches.add(it)
                 }
             }
@@ -162,7 +163,7 @@ class PackageArtifactBuildScriptHandler {
     }
     
     private void collectSymlinks(Project project, String sourceDepName, SymlinkHandler allSymlinks) {
-        if (Helper.anyWildcardMatch(symlinkPatterns, sourceDepName)) {
+        if (Wildcard.anyMatch(symlinkPatterns, sourceDepName)) {
             def depProject = project.rootProject.findProject(sourceDepName)
             if (depProject != null) {
                 def depSymlinks = depProject.extensions.findByName("symlinks")

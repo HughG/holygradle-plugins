@@ -20,16 +20,16 @@ class Helper {
         latestVersion
     }
     
-    public static String choosePluginVersion(Project project, String group, String moduleName) {
+    public static void choosePluginVersion(Project project, String confName, String group, String moduleName) {
         if (project.gradle.taskGraph.hasTask(project.publishRelease)) {
             def latestVersion = getLatestVersionNumber(project, group, moduleName)
             if (latestVersion == null) {
                 throw new RuntimeException("${group}:${moduleName} is stated as a dependency, but it has not previously been published. Please publish that module first.")  
             }
-            return "${group}:${moduleName}:${latestVersion}"
+            project.dependencies.add(confName, "${group}:${moduleName}:${latestVersion}")
         } else {
             def username = System.getProperty("user.name").toLowerCase()
-            return "${group}:${moduleName}:${username}-SNAPSHOT"
+            project.dependencies.add(confName, "${group}:${moduleName}:${username}-SNAPSHOT") { changing = true }
         }
     }
     

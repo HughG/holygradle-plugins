@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.util.*
 import org.gradle.*
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
@@ -34,10 +35,9 @@ class IntrepidPlugin implements Plugin<Project> {
          **************************************/
         def prerequisites = project.extensions.findByName("prerequisites")
         if (prerequisites != null) {
-            prerequisites.specify("Java", "1.7").check()
             prerequisites.specify("HgAuth", {checker -> Helper.checkHgAuth(checker)})
         }
-        
+    
         /**************************************
          * Configurations
          **************************************/
@@ -284,7 +284,7 @@ class IntrepidPlugin implements Plugin<Project> {
                 def linkDir = new File(project.projectDir, link)
                 rebuildSymlinksTask.configure(project, linkDir, new File(project.projectDir, target))
                 deleteSymlinksTask.doLast {
-                    Helper.deleteSymlink(linkDir)
+                    Symlink.delete(linkDir)
                 }
             }
         }
@@ -329,7 +329,7 @@ class IntrepidPlugin implements Plugin<Project> {
                     if (symlinkToCacheTask != null) {
                         rebuildSymlinksTask.dependsOn symlinkToCacheTask
                         deleteSymlinksTask.doLast {
-                            Helper.deleteSymlink(versionInfo.getTargetPathInWorkspace(project))
+                            Symlink.delete(versionInfo.getTargetPathInWorkspace(project))
                         }
                     }
                     

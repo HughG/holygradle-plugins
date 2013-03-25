@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.util.*
 import org.gradle.api.*
 import org.gradle.util.*
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -109,7 +110,7 @@ class SourceDependencyHandler extends DependencyHandler {
         } else {
             sourceDependency = new HgDependency(project, this, buildScriptDependencies)
         }
-        def fetchTaskName = Helper.MakeCamelCase("fetch", getTargetName())
+        def fetchTaskName = CamelCase.build("fetch", getTargetName())
         def fetchTask = project.task(fetchTaskName, type: FetchSourceDependencyTask)
         if (overrideWarningMessages.size() > 0) {
             def messages = []
