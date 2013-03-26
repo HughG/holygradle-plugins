@@ -202,7 +202,7 @@ class PackageArtifactBuildScriptHandler {
         buildScript.append("\n")
         
         // Add repositories
-        if (ivyRepositories.size() > 0) {
+        if (ivyRepositories.size() == 1) {
             buildScript.append("repositories.ivy {\n")
             buildScript.append("    credentials {\n")
             buildScript.append("        username my.username(")
@@ -216,10 +216,32 @@ class PackageArtifactBuildScriptHandler {
             }
             buildScript.append(")\n")
             buildScript.append("    }\n")
-            ivyRepositories.each {
-                buildScript.append("    url \"")
-                buildScript.append(it)
+            def repo = ivyRepositories[0]
+            buildScript.append("    url \"")
+            buildScript.append(repo)
+            buildScript.append("\"\n")
+            buildScript.append("}\n")
+            buildScript.append("\n")
+        } else if (ivyRepositories.size() > 1) {
+            buildScript.append("repositories {\n")
+            ivyRepositories.each { repo ->
+                buildScript.append("    ivy {\n")
+                buildScript.append("        credentials {\n")
+                buildScript.append("            username my.username(")
+                if (myCredentialsConfig != null) {
+                    buildScript.append("\"${myCredentialsConfig}\"")
+                }
+                buildScript.append(")\n")
+                buildScript.append("            password my.password(")
+                if (myCredentialsConfig != null) {
+                    buildScript.append("\"${myCredentialsConfig}\"")
+                }
+                buildScript.append(")\n")
+                buildScript.append("        }\n")
+                buildScript.append("        url \"")
+                buildScript.append(repo)
                 buildScript.append("\"\n")
+                buildScript.append("    }\n")
             }
             buildScript.append("}\n")
             buildScript.append("\n")
