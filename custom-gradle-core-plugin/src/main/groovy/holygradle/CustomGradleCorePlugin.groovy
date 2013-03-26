@@ -189,15 +189,15 @@ if "%OS%"=="Windows_NT" endlocal
                     println "  ${project.ext.holyGradlePluginsRepository}\n"
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
-                    int pad = 30
+                    int pad = 35
                     println "Custom distribution version: ".padRight(pad) + versionInfoExtension.getVersion("custom-gradle")
                     println "Init script version: ".padRight(pad) + project.ext.initScriptVersion
                     println "Usage of Holy Gradle plugins:"
                     
                     def versions = versionInfoExtension.getBuildscriptDependencies()
-                    versions.each { version ->
+                    versions.each { version, requestedVersionStr ->
                         if (version.getGroup() == "holygradle") {
-                            println "    ${version.getName()} : ".padRight(pad) + version.getVersion()
+                            println "    ${version.getName()} : ".padRight(pad) + version.getVersion() + " (requested: $requestedVersionStr)"
                         }
                     }   
                 }
