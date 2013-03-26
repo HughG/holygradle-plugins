@@ -140,6 +140,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     
     public void group(String publishGroup) {
         this.publishGroup = publishGroup
+        applyGroupName()
     }
     
     public String getPublishName() {
