@@ -20,7 +20,10 @@ class HolyGradlePlugins {
         // By default, set the resolution strategy for buildscript dependencies
         // such that those specified with dynamic version nos (e.g. "1.0.+") are cached for 1 hour
         buildscript.configurations.all {
-            resolutionStrategy.cacheDynamicVersionsFor 1, 'hours'
+            resolutionStrategy {
+                cacheChangingModulesFor 1, 'seconds'
+                cacheDynamicVersionsFor 1, 'hours'
+            }
         }
     }
     
@@ -52,6 +55,14 @@ class HolyGradlePlugins {
     }
     
     private void useInternal(String group, String plugin, String version) {
+        String pluginFullName = null
+        if (plugin.endsWith("-plugin")) {
+            pluginFullName = plugin
+            plugin = plugin - "-plugin"
+        } else {
+            pluginFullName = "${plugin}-plugin"
+        }
+        
         boolean usingSnapshots = false
         if (version.endsWith("-SNAPSHOT")) {
             println "Detected a changing (e.g. under development) module due to -SNAPSHOT in version: $plugin $version"            
@@ -63,21 +74,11 @@ class HolyGradlePlugins {
         }
         if (usingSnapshots) {
             buildscript.dependencies {
-                classpath("${group}:${plugin}-plugin:${version}") { changing = true }
-            }
-            
-            // When one or more plugin/dependency versions have been specified with -SNAPSHOT, 
-            // or when a developer has defined "holyGradlePluginsSnapshots=<username>" in gradle.properties,
-            // We know that one or more plugins are in development and volatile.  So we ensure we get the
-            // latest version of any volitle dependency by modifying the "resolution strategy" 
-            // for the build script  as follows (note this may be exercised more than once)
-            buildscript.configurations.classpath {
-                resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
-                resolutionStrategy.cacheDynamicVersionsFor 1, 'seconds'
+                classpath("${group}:${pluginFullName}:${version}") { changing = true }
             }
         } else {
             buildscript.dependencies {
-                classpath "${group}:${plugin}-plugin:${version}"
+                classpath "${group}:${pluginFullName}:${version}"
             }
         }
         usages[plugin] = version
