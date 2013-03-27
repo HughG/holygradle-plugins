@@ -11,6 +11,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     public final String name
     public def configuration
     public PackageArtifactDSL rootPackageDescriptor = new PackageArtifactDescriptor(".")
+    private def lazyConfigurations = []
     
     public static def createContainer(Project project) {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { packageArtifactName ->
@@ -102,6 +103,10 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         this.configuration = name
     }
     
+    public void lazy(Closure lazyConfigure) {
+        lazyConfigurations.add(lazyConfigure)
+    }
+    
     public PackageArtifactIncludeHandler include(String... patterns) {
         rootPackageDescriptor.include(patterns)
     }
@@ -190,10 +195,14 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         t.baseName = project.name + "-" + name
         t.destinationDir = new File(project.projectDir, "packages")
         t.includeEmptyDirs = false
+        def localLazyConfigurations = lazyConfigurations
         
         t.ext.lazyConfiguration = {
             // t.group = "Publishing " + project.name
             // t.classifier = name
+            localLazyConfigurations.each {
+                ConfigureUtil.configure(it, rootPackageDescriptor)
+            }
             
             from (project.projectDir) {
                 include "build_info/*.txt"
