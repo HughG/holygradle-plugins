@@ -13,7 +13,9 @@ class IntegrationTest extends TestBase {
         if (libDir.exists()) {
             libDir.deleteDir()
         }
-        invokeTask(projectDir, "buildRelease", "buildDebug")
+        invokeGradle(projectDir) {
+            forTasks("buildRelease", "buildDebug")
+        }
         assertTrue(new File(libDir, "Debug/foo_d32.lib").exists())
         assertTrue(new File(libDir, "Debug/foo_d64.lib").exists())
         assertTrue(new File(libDir, "Release/foo_r64.lib").exists())
@@ -29,7 +31,7 @@ class IntegrationTest extends TestBase {
         }
         // Not implemented this feature yet.
         /*
-        invokeTask(projectDir, "buildRelease", "buildDebug")
+        invokeGradle(projectDir).forTasks("buildRelease", "buildDebug")
         assertTrue(new File(libDir, "vc10/Debug/foo_vc10_d32.lib").exists())
         assertTrue(new File(libDir, "vc10/Debug/foo_vc10_d64.lib").exists())
         assertTrue(new File(libDir, "vc10/Release/foo_vc10_r64.lib").exists())

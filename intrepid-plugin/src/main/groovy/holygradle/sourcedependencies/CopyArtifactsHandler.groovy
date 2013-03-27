@@ -116,7 +116,7 @@ class CopyArtifactsHandler {
                     def targetDir = new File(copyArtifactsTarget)
                     logger.info("copyArtifactsTarget was set to: ${targetDir}")
                     
-                    into "."
+                    into targetDir
                     
                     def alreadyHandled = []
                     copyArtifactsExtension.fromHandlers.each { f ->
@@ -146,13 +146,23 @@ class CopyArtifactsHandler {
                         if (f.relativePath != null) {
                             intoTarget = new File(targetDir, f.relativePath)
                         }
-                        from(sourceDepFiles) {
-                            into intoTarget
-                            artifactZips.each { zip ->
-                                from project.zipTree(zip).files
+                        
+                        if (sourceDepFiles.size() > 0) {
+                            println "sourceDepFiles: $sourceDepFiles"
+                            from(sourceDepFiles) {
+                                includes = f.includes 
+                                excludes = f.excludes 
                             }
-                            includes = f.includes 
-                            excludes = f.excludes 
+                        }
+                        
+                        artifactZips.each { zip ->
+                            println "from: " + project.zipTree(zip)
+                            println "into: $intoTarget"
+                            
+                            from(project.zipTree(zip)) {
+                                includes = f.includes 
+                                excludes = f.excludes 
+                            }
                         }
                     }
                 }

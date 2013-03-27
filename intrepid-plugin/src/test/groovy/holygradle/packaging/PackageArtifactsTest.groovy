@@ -32,7 +32,9 @@ class PackageArtifactsTest extends TestBase {
             packagesDir.deleteDir()
         }
         
-        invokeTask(projectDir, "packageEverything")
+        invokeGradle(projectDir) {
+            forTasks("packageEverything")
+        }
         
         assertTrue(packagesDir.exists())
         assertTrue(new File(packagesDir, "projectB-foo.zip").exists())

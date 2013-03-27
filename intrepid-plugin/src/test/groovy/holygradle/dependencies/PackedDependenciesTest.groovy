@@ -14,36 +14,39 @@ import static org.junit.Assert.*
 class PackedDependenciesTest extends TestBase {
     @Test
     public void testConflictingModules1() {
-        invokeTaskExpectingFailure(
-            new File(getTestDir(), "conflicting_modules1"),
-            "fetchAllDependencies", 
-            "Could not resolve all dependencies for configuration ':everything'.",
-            "A conflict was found between the following modules:",
-            "- holygradle.test:external-lib:1.0",
-            "- holygradle.test:external-lib:1.1"
-        )
+        invokeGradle(new File(getTestDir(), "conflicting_modules1")) {
+            forTasks("fetchAllDependencies")
+            expectFailure(
+                "Could not resolve all dependencies for configuration ':everything'.",
+                "A conflict was found between the following modules:",
+                "- holygradle.test:external-lib:1.0",
+                "- holygradle.test:external-lib:1.1"
+            )
+        }
     }
     
     @Test
     public void testConflictingModules2() {
-        invokeTaskExpectingFailure(
-            new File(getTestDir(), "conflicting_modules2"),
-            "fetchAllDependencies", 
-            "Could not resolve all dependencies for configuration ':everything'.",
-            "A conflict was found between the following modules:",
-            "- holygradle.test:external-lib:1.0",
-            "- holygradle.test:external-lib:1.1"
-        )
+        invokeGradle(new File(getTestDir(), "conflicting_modules2")) {
+            forTasks("fetchAllDependencies")
+            expectFailure(
+                "Could not resolve all dependencies for configuration ':everything'.",
+                "A conflict was found between the following modules:",
+                "- holygradle.test:external-lib:1.0",
+                "- holygradle.test:external-lib:1.1"
+            )
+        }
     }
     
     @Test
     public void testUnpackingModulesToSameLocation() {
-        invokeTaskExpectingFailure(
-            new File(getTestDir(), "unpacking_modules_to_same_location"),
-            "fetchAllDependencies", 
-            "Multiple different modules/versions are targetting the same location.",
-            "unpacking_modules_to_same_location\\extlib' is being targetted by: [holygradle.test:example-framework:1.1, holygradle.test:external-lib:1.1].",
-            "That's not going to work."
-        )
+        invokeGradle(new File(getTestDir(), "unpacking_modules_to_same_location")) {
+            forTasks("fetchAllDependencies")
+            expectFailure(
+                "Multiple different modules/versions are targetting the same location.",
+                "unpacking_modules_to_same_location\\extlib' is being targetted by: [holygradle.test:example-framework:1.1, holygradle.test:external-lib:1.1].",
+                "That's not going to work."
+            )
+        }
     }
 }
