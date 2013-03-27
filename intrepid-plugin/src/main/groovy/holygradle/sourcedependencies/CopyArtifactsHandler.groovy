@@ -148,18 +148,14 @@ class CopyArtifactsHandler {
                         }
                         
                         if (sourceDepFiles.size() > 0) {
-                            println "sourceDepFiles: $sourceDepFiles"
                             from(sourceDepFiles) {
                                 includes = f.includes 
                                 excludes = f.excludes 
                             }
                         }
                         
-                        artifactZips.each { zip ->
-                            println "from: " + project.zipTree(zip)
-                            println "into: $intoTarget"
-                            
-                            from(project.zipTree(zip)) {
+                        artifactZips.each { zip ->                            
+                            from (project.zipTree(zip).files) {
                                 includes = f.includes 
                                 excludes = f.excludes 
                             }

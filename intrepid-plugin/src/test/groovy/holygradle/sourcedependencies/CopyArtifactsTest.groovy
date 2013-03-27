@@ -23,7 +23,7 @@ class CopyArtifactsTest extends TestBase {
         }
         
         assertTrue(testDir.exists())
-        assertTrue(new File(testDir, "src/Thing.h").exists())
-        assertTrue(new File(testDir, "src/Thing.cpp").exists())
+        assertTrue(new File(testDir, "Thing.h").exists())
+        assertTrue(new File(testDir, "Thing.cpp").exists())
     }
 }
