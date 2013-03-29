@@ -15,7 +15,7 @@ class ArtifactoryHelper {
         }
         def server = urlMatch[0][1]
         repository = urlMatch[0][2]
-        http = new HTTPBuilder(server)
+        http = new HTTPBuilder(server + "/")
     }
     
     public ArtifactoryHelper(String repositoryUrl, String username, String password) {
