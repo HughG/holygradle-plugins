@@ -14,7 +14,7 @@ import org.gradle.api.tasks.bundling.*
 
 import java.net.URI
 
-class IntrepidPlugin implements Plugin<Project> {
+public class IntrepidPlugin implements Plugin<Project> {
     
     void apply(Project project) {
         /**************************************

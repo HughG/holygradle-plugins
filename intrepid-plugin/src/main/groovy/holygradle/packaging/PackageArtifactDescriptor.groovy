@@ -151,6 +151,9 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
         zipTask.from(taskDir.path) {
             include collectPackageFilePaths()
             excludes = []
+            // If we're republishing then apply the search & replace rules to all of the
+            // auto-generated files. It's fair to assume that they're text files and wouldn't
+            // mind having filtering applied to them.
             if (republish != null) {
                 republish.getReplacements().each { find, repl ->
                     filter { String line -> line.replaceAll(find, repl) }
@@ -172,8 +175,18 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
                     includes = includeHandler.includePatterns
                     excludes = excludes
                     if (republish != null) {
-                        republish.getReplacements().each { find, repl ->
-                            filter { String line -> line.replaceAll(find, repl) }
+                        // If we're republishing then apply the search & replace rules only to
+                        // *.gradle and *.properties files. To be fair we should really be checking
+                        // if the file is a text file and performing the filtering, but for now it's
+                        // reasonable to assume that we only want filtering applied to these file types.
+                        eachFile { fileInfo ->
+                            if (fileInfo.name.endsWith(".gradle") || fileInfo.name.endsWith(".properties")) {
+                                zipTask.logger.info("Filtering ${fileInfo.path}: ")
+                                republish.getReplacements().each { find, repl ->
+                                    zipTask.logger.info(" - replace '${find}' with '${repl}'.")
+                                    fileInfo.filter { String line -> line.replaceAll(find, repl) }
+                                }
+                            }
                         }
                     }
                     includeHandler.replacements.each { find, repl ->
