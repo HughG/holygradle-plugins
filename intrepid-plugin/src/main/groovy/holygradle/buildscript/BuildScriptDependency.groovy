@@ -27,11 +27,25 @@ class BuildScriptDependency {
             if (dependencyArtifact == null) { 
                 unpackTask = project.task(getUnpackTaskName(), type: DefaultTask)
             } else {
-                unpackTask = project.task(getUnpackTaskName(), type: Copy) {
-                    from project.zipTree(dependencyArtifact.getFile())
-                    into Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.getModuleVersion().getId())
+                def unpackCacheLocation = Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.getModuleVersion().getId())
+                dependencyPath = unpackCacheLocation
+                unpackTask = project.task(getUnpackTaskName(), type: DefaultTask) {
+                    ext.destinationDir = unpackCacheLocation
+                    // Checking if the target dir exists is a pretty crude way to choose whether or not to do
+                    // the unpacking. Normally the 'copy' operation would do this for us, but if another instance
+                    // of Gradle in another command prompt is using this dependency (e.g. extracting a package 
+                    // using 7zip) then the copy operation would fail. So this is really a step towards supporting
+                    // intrepid concurrency but it's not really correct. a) it's still possible for two instances
+                    // to execute 'copy' at the same time, and b) just because the directory exists doesn't necessarily
+                    // mean it's got the right stuff in it (but running 'copy' would fix it up).
+                    // Anyway, just this simple check is good enough for now.
+                    if (!dependencyPath.exists()) {
+                        project.copy {
+                            from project.zipTree(dependencyArtifact.getFile())
+                            into unpackCacheLocation
+                        }
+                    }
                 }
-                dependencyPath = unpackTask.destinationDir
             }
         } else if (dependencyArtifact != null) {
             dependencyPath = dependencyArtifact.getFile()
