@@ -42,14 +42,21 @@ class DevEnvTask extends DefaultTask {
             if (rebuildSymlinksTask != null) {
                 dependsOn rebuildSymlinksTask
             }
-            if (!independently) {
-                def taskDependencies = project.extensions.findByName("taskDependencies")
-                if (taskDependencies != null) {
-                     dependsOn taskDependencies.get(name)
-                }
-            }
             
             configureBuildTask(project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), devEnvHandler.useIncredibuild(), platform, configuration, devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes())       
+        }
+        
+        configureTaskDependencies()
+    }
+    
+    public void configureTaskDependencies() {
+        if (!independently) {
+            def taskDependencies = project.extensions.findByName("taskDependencies")
+            if (taskDependencies != null) {
+                def dependentTasks = taskDependencies.get(name)
+                logger.info "Adding dependency from ${name} to ${dependentTasks}."
+                dependsOn dependentTasks
+            }
         }
     }
     

@@ -88,6 +88,11 @@ class DevEnvPlugin implements Plugin<Project> {
                         b.dependsOn platformCleanReleaseTasks[i]
                     }
                 }
+                
+                buildDebug.each { it.configureTaskDependencies() }
+                buildRelease.each { it.configureTaskDependencies() }
+                cleanDebug.each { it.configureTaskDependencies() }
+                cleanRelease.each { it.configureTaskDependencies() }
             }
         }
     }

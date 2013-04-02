@@ -141,6 +141,8 @@ class DevEnvHandler {
         }
     }
     
+    // Returns two tasks - one for building this project as well as dependent projects, and
+    // another task for building this project independently.
     public def defineBuildTasks(Project project, String taskName, String configuration) {
         [defineBuildTask(project, taskName, configuration, true),
         defineBuildTask(project, taskName, configuration, false)]
@@ -158,6 +160,8 @@ class DevEnvHandler {
         }
     }
     
+    // Returns two tasks - one for cleaning this project as well as dependent projects, and
+    // another task for cleaning this project independently.
     public def defineCleanTasks(Project project, String taskName, String configuration) {
         [defineCleanTask(project, taskName, configuration, true),
         defineCleanTask(project, taskName, configuration, false)]
