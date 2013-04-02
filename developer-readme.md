@@ -36,8 +36,8 @@ artifactoryPassword=<encrypted artifactory password>
 # Testing changes using snapshots
 To avoid annoying people with broken plugins you should test your changes by publishing 'snapshots':
 
- - Use `gw publishSnapshot` to publish a plugin with the version number `<user>-SNAPSHOT`, where <user> is your username. This means that you can do plugin development at the same time as others without conflicts.
- - In your global gradle.properties which lives in your GRADLE_USER_HOME directory, add a line such as: `holyGradlePluginsSnapshots=nm2501`. This will switch you over to using 'plugins-integration-local' for all plugins and automatically change the requested versions to `<user>-SNAPSHOT`.
+ - Use `gw publishSnapshot` to publish a plugin with the version number `<user>-SNAPSHOT`, where <user> is your system username (not your BitBucket username). This means that you can do plugin development at the same time as others without conflicts.
+ - In your global gradle.properties which lives in your GRADLE_USER_HOME directory, add a line such as: `holyGradlePluginsSnapshots=nm2501`. This will switch you over to using 'plugins-integration-local' for all plugins and automatically change the requested versions to `<user>-SNAPSHOT`. (This switch-over is part of the publishing logic in the top-level `build.gradle` script, rather than being part of Gradle itself, and doesn't need the `holy-gradle-plugins` to be built already.)
  - Since the `holyGradlePluginsSnapshots` property affects all holy-gradle plugins you will need to make sure that all of them are published as snapshots in your name. The easiest way to do this is to run 'gw publishSnapshot' on the directory above the individual plugins, so that the task is invoked for all plugins.
  - When you're testing your changes you can tell if it has picked up your new plugin because Gradle will print messages whenever artifacts are downloaded e.g.
 ```
