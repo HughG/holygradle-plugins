@@ -1,5 +1,6 @@
 package holygradle.customgradle
 
+import holygradle.util.*
 import org.gradle.*
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
@@ -190,14 +191,24 @@ if "%OS%"=="Windows_NT" endlocal
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35
-                    println "Custom distribution version: ".padRight(pad) + versionInfoExtension.getVersion("custom-gradle")
+                    print "Custom distribution version: ".padRight(pad)
+                    def latestCustomGradle = VersionNumber.getLatestPlugin(project, "holygradle", "custom-gradle")
+                    println versionInfoExtension.getVersion("custom-gradle") + " (latest: $latestCustomGradle)"
                     println "Init script version: ".padRight(pad) + project.ext.initScriptVersion
                     println "Usage of Holy Gradle plugins:"
                     
+                    // Print out version numbers for all holygradle buildscript dependencies.
+                    // We print out:
+                    //   component name: <actual version> (<requested version> <latest version>)
+                    // e.g.
+                    //   intrepid-plugin: 1.2.3.4 (requested: 1.2.3.+, latest: 1.2.7.7)
                     def versions = versionInfoExtension.getBuildscriptDependencies()
                     versions.each { version, requestedVersionStr ->
                         if (version.getGroup() == "holygradle") {
-                            println "    ${version.getName()} : ".padRight(pad) + version.getVersion() + " (requested: $requestedVersionStr)"
+                            def latest = VersionNumber.getLatestUsingBuildscriptRepositories(
+                                project, version.getGroup(), version.getName()
+                            )
+                            println "    ${version.getName()}: ".padRight(pad) + version.getVersion() + " (requested: $requestedVersionStr, latest: $latest)"
                         }
                     }   
                 }
