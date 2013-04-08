@@ -12,7 +12,7 @@ project.apply plugin: "artifactory-manager"
         
 class DeletionTest {
     public static def folderInfo(String date, def children) {
-        def dateStr = Date.parse("yyyy-MM-dd", date).format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        def dateStr = Date.parse("yyyy-MM-dd", date).format("yyyy-MM-dd'T'HH:mm:ss.SSSX")
         println dateStr
         def childrenStr = children.collect { "{\"uri\":\"${it}\",\"folder\":true}" }.join(",")
         new JsonSlurper().parseText("{\"created\": \"${dateStr}\", \"children\": [${childrenStr}]}")

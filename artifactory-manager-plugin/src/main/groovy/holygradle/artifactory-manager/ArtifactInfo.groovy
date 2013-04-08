@@ -40,7 +40,7 @@ class ArtifactInfo {
     
     public Date getCreationDate() {
         if (creationDate == null) {
-            def dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            def dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
             try {
                 creationDate = dateFormat.parse(json.created)
             } catch (ParseException) {
