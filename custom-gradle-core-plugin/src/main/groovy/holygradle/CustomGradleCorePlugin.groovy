@@ -192,7 +192,7 @@ if "%OS%"=="Windows_NT" endlocal
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35
                     print "Custom distribution version: ".padRight(pad)
-                    def latestCustomGradle = VersionNumber.getLatestPlugin(project, "holygradle", "custom-gradle")
+                    def latestCustomGradle = VersionNumber.getLatestUsingBuildscriptRepositories(project, "holygradle", "custom-gradle")
                     println versionInfoExtension.getVersion("custom-gradle") + " (latest: $latestCustomGradle)"
                     println "Init script version: ".padRight(pad) + project.ext.initScriptVersion
                     println "Usage of Holy Gradle plugins:"
