@@ -57,34 +57,34 @@ class DevEnvPlugin implements Plugin<Project> {
             def platforms = devEnvHandler.getPlatforms()
             
             if (platforms.size() == 1) {
-                buildDebug.each { it.configureBuildTask(devEnvHandler, platforms[0], "Debug") }
-                buildRelease.each { it.configureBuildTask(devEnvHandler, platforms[0], "Release") }
-                cleanDebug.each { it.configureCleanTask(devEnvHandler, platforms[0], "Debug") }
-                cleanRelease.each { it.configureCleanTask(devEnvHandler, platforms[0], "Release") }
+                buildDebug.each { it.configureBuildTask(devEnvHandler, platforms[0]) }
+                buildRelease.each { it.configureBuildTask(devEnvHandler, platforms[0]) }
+                cleanDebug.each { it.configureCleanTask(devEnvHandler, platforms[0]) }
+                cleanRelease.each { it.configureCleanTask(devEnvHandler, platforms[0]) }
             } else {
                 platforms.each { platform ->
                     String p = platform[0].toUpperCase() + platform[1..-1]
                     def platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, "build${p}Debug", "Debug")
                     buildDebug.eachWithIndex { b, i ->
-                        platformBuildDebugTasks[i].configureBuildTask(devEnvHandler, p, "Debug")
+                        platformBuildDebugTasks[i].configureBuildTask(devEnvHandler, p)
                         b.dependsOn platformBuildDebugTasks[i]
                     }
                     
                     def platformBuildReleaseTasks = devEnvHandler.defineBuildTasks(project, "build${p}Release", "Release")
                     buildRelease.eachWithIndex { b, i ->
-                        platformBuildReleaseTasks[i].configureBuildTask(devEnvHandler, p, "Release")
+                        platformBuildReleaseTasks[i].configureBuildTask(devEnvHandler, p)
                         b.dependsOn platformBuildReleaseTasks[i]
                     }
                     
                     def platformCleanDebugTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Debug", "Debug")
                     cleanDebug.eachWithIndex { b, i ->
-                        platformCleanDebugTasks[i].configureCleanTask(devEnvHandler, p, "Debug")
+                        platformCleanDebugTasks[i].configureCleanTask(devEnvHandler, p)
                         b.dependsOn platformCleanDebugTasks[i]
                     }
                     
                     def platformCleanReleaseTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Release", "Release")
                     cleanRelease.eachWithIndex { b, i ->
-                        platformCleanReleaseTasks[i].configureCleanTask(devEnvHandler, p, "Release")
+                        platformCleanReleaseTasks[i].configureCleanTask(devEnvHandler, p)
                         b.dependsOn platformCleanReleaseTasks[i]
                     }
                 }

@@ -19,13 +19,8 @@ class TaskDependenciesExtension {
         Set<Object> buildDeps = new HashSet<Object>()
         def rootProj = project.rootProject
         def buildDependencies = project.extensions.findByName("buildDependencies")
-        buildDependencies.each {
-            def depProj = null
-            for (p in rootProj.allprojects) {
-                if (p.name == it.name) {
-                    depProj = p
-                }
-            }
+        buildDependencies.each { buildDep ->
+            Project depProj = buildDep.getProject(rootProj)
             if (depProj != null) {
                 def depTask = depProj.tasks.findByName(taskName)
                 if (depTask != null) {

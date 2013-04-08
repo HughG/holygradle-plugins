@@ -151,7 +151,7 @@ class DevEnvHandler {
     public Task defineBuildTask(Project project, String taskName, String configuration, boolean independently) {
         if (independently) taskName = "${taskName}Independently"
         project.task(taskName, type: DevEnvTask) {
-            init(independently, configuration)
+            init(independently, "build", configuration)
             if (independently) {
                 description = "This task only makes sense for individual projects e.g. gw subproj:b${configuration[0]}I"
             } else {
@@ -170,7 +170,7 @@ class DevEnvHandler {
     public Task defineCleanTask(Project project, String taskName, String configuration, boolean independently) {
         if (independently) taskName = "${taskName}Independently"
         project.task(taskName, type: DevEnvTask) {
-            init(independently, configuration)
+            init(independently, "clean", configuration)
             if (independently) {
                 description = "This task only makes sense for individual projects e.g. gw subproj:c${configuration[0]}I"
             } else {
