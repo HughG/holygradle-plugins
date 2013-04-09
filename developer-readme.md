@@ -10,13 +10,17 @@ This repository contains:
 
 # Prerequisites
  - Java JDK 1.7 - you do need the dev-kit, not just the run-time.
- - A configured Artifactory server with two Ivy repositories: one for publishing release quality plugins, and one for publishing plugin snapshots for testing modifications to plugins without affecting existing plugin users. If you prefer you could use just one repository.
+ - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
+ - An Artifactory server configured with:
+   - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
+   - a remote repo pointing to Maven Central 
+ one for publishing plugin snapshots for testing modifications to plugins without affecting existing plugin users. If you prefer you could use just one repository.
  
 # Getting started - with a clean checkout
 Create 'gradle.properties' in the root of your workspace add define these properties:
 ```
-artifactoryServer=<artifactory server> e.g. http://artifact-server/artifactory/
-artifactoryServerName=<name of artifactory server without any http:// or slashes>
+artifactoryServer=<fully qualified domain name of artifactory server, including port if necessary> e.g. http://artifact-server.company.com:8081/artifactory/
+artifactoryServerName=<fully qualified domain name of artifactory server without any http:// or slashes, including port if necessary> e.g. artifact-server.company.com:8081
 artifactoryPluginRepo=<name of the (non-remote, non-virtual) repository for storing plugins e.g. plugins-release-local>
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
