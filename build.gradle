@@ -4,7 +4,14 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 subprojects {
     if (project.name.endsWith("plugin")) {
         apply plugin: "groovy"
-        
+
+        test {
+            systemProperties([
+                'holygradle.gradleHomeDir': project.gradle.gradleHomeDir.path,
+                'holygradle.gradleUserHomeDir': project.gradle.gradleUserHomeDir.path
+            ])
+        }
+
         dependencies {
             groovy localGroovy()
             compile gradleApi()
@@ -31,6 +38,11 @@ subprojects {
         }
         maven {
             url artifactoryServer + 'remote-repos/'
+            // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
+            // Artifactory.  If you update dependencies to require a new version of soemthing (such as svnkit) which
+            // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
+            // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
+            // server, that may require credentials.
             credentials {
                 username artifactoryUsername
                 password artifactoryPassword

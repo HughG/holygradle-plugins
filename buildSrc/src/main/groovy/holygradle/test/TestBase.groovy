@@ -1,7 +1,7 @@
 package holygradle.test
 
 import org.junit.Test
-import java.io.File
+
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
@@ -22,17 +22,21 @@ class TestBase {
     protected void invokeGradle(File projectDir, Closure closure) {
         GradleConnector connector = GradleConnector.newConnector()
         connector.forProjectDirectory(projectDir)
+
+        maybeForwardGradleHomeInfo(connector)
+
         ProjectConnection connection = connector.connect()
         try { 
             BuildLauncher launcher = new WrapperBuildLauncher(connection.newBuild())
+            maybeForwardHttpProxyProperties(launcher)
             ConfigureUtil.configure(closure, launcher)
-            
+
             if (launcher.expectedFailures.size() == 0) {
                 launcher.run()
             } else {
                 def errorOutput = new ByteArrayOutputStream()
                 launcher.setStandardError(errorOutput)
-                def error = null
+                String error = null
                 try {
                     launcher.run()
                 } catch (RuntimeException e) {
@@ -49,5 +53,40 @@ class TestBase {
             connection.close()
         }
     }
-    
+
+    /**
+     * Pass on Gradle's user home and installation home if the user has one or both configured.
+     * @param connector The connector to be configured.
+     */
+    private void maybeForwardGradleHomeInfo(GradleConnector connector) {
+        final String gradleUserHome = System.getProperty("holygradle.gradleUserHomeDir")
+        if (gradleUserHome != null) {
+            connector.useGradleUserHomeDir(new File(gradleUserHome))
+        }
+        final String gradleHome = System.getProperty("holygradle.gradleHomeDir")
+        if (gradleHome != null) {
+            connector.useInstallation(new File(gradleHome))
+        }
+    }
+
+    /**
+     * If this process has the system properties {@code http.proxyHost} and/or {@code http.proxyPort} set, this method
+     * adds them to the JVM properties of the {@link BuildLauncher}.
+     * @param launcher The launcher to be configured.
+     */
+    private void maybeForwardHttpProxyProperties(BuildLauncher launcher) {
+        def jvmArguments = []
+        String proxyHost = System.getProperty("http.proxyHost")
+        String proxyPort = System.getProperty("http.proxyPort")
+        if (proxyHost != null) {
+            jvmArguments << proxyHost
+        }
+        if (proxyPort != null) {
+            jvmArguments << proxyPort
+        }
+        if (!jvmArguments.empty) {
+            launcher.setJvmArguments(jvmArguments)
+        }
+    }
+
 }
