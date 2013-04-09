@@ -55,13 +55,16 @@ class DevEnvPlugin implements Plugin<Project> {
         
         project.gradle.projectsEvaluated {
             def platforms = devEnvHandler.getPlatforms()
-            
+
             if (platforms.size() == 1) {
                 buildDebug.each { it.configureBuildTask(devEnvHandler, platforms[0]) }
                 buildRelease.each { it.configureBuildTask(devEnvHandler, platforms[0]) }
                 cleanDebug.each { it.configureCleanTask(devEnvHandler, platforms[0]) }
                 cleanRelease.each { it.configureCleanTask(devEnvHandler, platforms[0]) }
             } else {
+                // If we have more than one platform, add specific tasks for each platform ("buildWin32Release",
+                // "buildx64Release", etc.), and make the original tasks ("buildDebug") depend on all of them, as a
+                // shortcut.
                 platforms.each { platform ->
                     String p = platform[0].toUpperCase() + platform[1..-1]
                     def platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, "build${p}Debug", "Debug")

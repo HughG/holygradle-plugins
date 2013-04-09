@@ -1,24 +1,28 @@
 class HolyGradlePlugins {
-    def buildscript
-    def project
-    def usages = [:]
+    // NOTE 2013-04-03 HughG: May no longer need to be public.
+    public def usages = [:]
+
+    private def buildscript
+    private def project
     
     HolyGradlePlugins(buildscript, project) {
         this.buildscript = buildscript
         this.project = project
+        // Point the buildscript to the Holy Gradle plugins.
         if (project.ext.holyGradlePluginsRepository != null) {
             buildscript.repositories {
                 ivy { url project.ext.holyGradlePluginsRepository }
             }
         }
+        // Point the buildscript to a source of dependencies for the Holy Gradle plugins.
         if (project.ext.holyGradleRemoteRepository != null) {
             buildscript.repositories {
                 maven { url project.ext.holyGradleRemoteRepository }
             }
         }
 
-        // By default, set the resolution strategy for buildscript dependencies
-        // such that those specified with dynamic version nos (e.g. "1.0.+") are cached for 1 hour
+        // By default, set the resolution strategy for buildscript dependencies so that those
+        // specified with dynamic version numbers (e.g. "1.0.+") are cached for 1 hour.
         buildscript.configurations.all {
             resolutionStrategy {
                 cacheChangingModulesFor 1, 'seconds'
@@ -27,7 +31,7 @@ class HolyGradlePlugins {
         }
     }
     
-    def use(String plugin_version) {
+    public void use(String plugin_version) {
         String group = "holygradle"
         String plugin = null
         String version = null
@@ -55,6 +59,7 @@ class HolyGradlePlugins {
     }
     
     private void useInternal(String group, String plugin, String version) {
+        // This allows plugins to be specified as "foo" or "foo-plugin".
         String pluginFullName = null
         if (plugin.endsWith("-plugin")) {
             pluginFullName = plugin
@@ -64,44 +69,44 @@ class HolyGradlePlugins {
         }
         
         boolean usingSnapshots = false
+        // Tell the user if individual plugins are set to SNAPSHOT versions.
         if (version.endsWith("-SNAPSHOT")) {
-            println "Detected a changing (e.g. under development) module due to -SNAPSHOT in version: $plugin $version"            
+            println "Detected a changing module (e.g., under development) due to -SNAPSHOT in version: $plugin $version"
             usingSnapshots = true
         }
-        if (project.hasProperty("holyGradlePluginsSnapshots") && project.ext.holyGradlePluginsSnapshots != null) {
-            version = "${project.ext.holyGradlePluginsSnapshots}-SNAPSHOT"
+        // Set all plugins as SNAPSHOT versions if the global property is set.
+        if (project.hasProperty("holyGradlePluginsSnapshots") && project.holyGradlePluginsSnapshots != null) {
+            version = "${project.holyGradlePluginsSnapshots}-SNAPSHOT"
             usingSnapshots = true
         }
-        if (usingSnapshots) {
-            buildscript.dependencies {
-                classpath("${group}:${pluginFullName}:${version}") { changing = true }
-            }
-        } else {
-            buildscript.dependencies {
-                classpath "${group}:${pluginFullName}:${version}"
-            }
+
+        // Actually add the plugins to the buildscript, and record the version.
+        buildscript.dependencies {
+            classpath("${group}:${pluginFullName}:${version}") { changing = usingSnapshots }
         }
         usages[plugin] = version
     }
     
     public void apply() {
-        // Schedule 'user.gradle' files to be loaded first thing after the projects are evaluated.
+        def localProject = project // allow closures to access class-private
+
+        // Schedule 'user.gradle' files to be applied first thing after the projects are evaluated.
         project.gradle.projectsEvaluated {
             def userScript = 'user.gradle'
-            def userScriptFile = new File(project.projectDir, userScript)
+            def userScriptFile = new File(localProject.projectDir, userScript)
             if (userScriptFile.exists()) {
-                project.apply from: userScriptFile.name
-            } else if (project.buildFile != null) {
-                def userBuildScript = project.buildFile.name.replace(".gradle", ".${userScript}")
-                userScriptFile = new File(project.projectDir, userBuildScript)
+                localProject.apply from: userScriptFile.name
+            } else if (localProject.buildFile != null) {
+                def userBuildScript = localProject.buildFile.name.replace(".gradle", ".${userScript}")
+                userScriptFile = new File(localProject.projectDir, userBuildScript)
                 if (userScriptFile.exists()) {
-                    project.apply from: userScriptFile.name
+                    localProject.apply from: userScriptFile.name
                 }
             }
         }
         
         usages.each { name, version ->
-            project.apply plugin: name
+            localProject.apply plugin: name
         }
     }  
 }
@@ -113,6 +118,7 @@ allprojects {
     def defaultRemoteRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/remote-repos/"
     
     // Check if we should override use of repositories based on presence of 'local_artifacts' folder.
+    // This is to support building projects without access to an Artifactory or similar repository.
     boolean usingLocalArtifacts = false
     def localArtifactsFile = new File(project.rootProject.projectDir, "local_artifacts")
     if (project == project.rootProject) {
@@ -133,13 +139,6 @@ allprojects {
             url new File(localArtifactsFile, "ivy").path
         }
     }
-    
-    // Configure holyGradlePluginsSnapshots
-    def holyGradlePluginsSnapshotsValue = null
-    if (project.hasProperty("holyGradlePluginsSnapshots")) {
-        holyGradlePluginsSnapshotsValue = holyGradlePluginsSnapshots
-    }
-    project.ext.holyGradlePluginsSnapshots = holyGradlePluginsSnapshotsValue
     
     // Configure holyGradlePluginsRepository
     def pluginsRepo = defaultPluginsRepo

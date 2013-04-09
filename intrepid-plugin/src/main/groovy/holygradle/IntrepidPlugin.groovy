@@ -80,35 +80,11 @@ public class IntrepidPlugin implements Plugin<Project> {
             doLast {
                 Helper.fixMercurialIni()
             }
-        } 
-        
-        /*def commitCombo = null
-        if (project == project.rootProject) {
-            commitCombo = project.task("collectSourceCombo", type: DefaultTask) {
-                group = "Commit"
-                description = "Collect the revisions of all source code modules into a single file."
-                doLast {
-                    def versions = []
-                    project.projectDir.listFiles().each {
-                        SourceControlRepository repo = SourceControlRepositories.get(it)
-                        if (repo != null) {
-                            if (repo.hasLocalChanges()) {
-                                println "-"*80
-                                println "WARNING: The repository '${repo.getLocalDir().name}' has uncommitted changes. "
-                                println "The revision numbers captured will not take account of these changes."
-                                println "-"*80
-                            }
-                            versions.add("${repo.getLocalDir().name}->${repo.getUrl()}->${repo.getRevision()}")
-                        }
-                    }
-                    println "Revisions:"
-                    versions.each { println "  $it" }
-                    
-                    new File("source_revisions.txt").write(versions.join("\n"))
-                }
-            }
-        }*/
-        
+        }
+
+        // Lazy configuration is a "secret" internal feature for use by plugins.  If a task adds a ".ext.lazyConfiguration"
+        // property containing a single Closure or a list of them, it/they will be executed just before that specific
+        // task runs.  As long as intrepid-plugin is applied in a build script, this is available to all plugins.
         project.rootProject.gradle.taskGraph.beforeTask { Task task ->
             if (task.hasProperty('lazyConfiguration')) {
                 def lazyConfig = task.lazyConfiguration
@@ -295,7 +271,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         
         // One 'unpack' task per 'packedDependency' block of DSL in the build script.
         project.gradle.projectsEvaluated {
-            // Define dependencies for all entries in the 'packedDependencies' DSL in the build script.
+            // Define ordinary Groovy dependencies for all entries in the 'packedDependencies' DSL in the build script.
             packedDependencies.each { dep ->
                 def depGroup = dep.getGroupName()
                 def depName = dep.getDependencyName()

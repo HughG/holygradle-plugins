@@ -52,8 +52,11 @@ class SourceDependencyHandler extends DependencyHandler {
     
     public static def createContainer(Project project) {
         project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { sourceDepName ->
+            // Explicitly create the SourceDependencyHandler so we can add SourceDependencyPublishingHandler.
             def sourceDep = project.sourceDependencies.extensions.create(sourceDepName, SourceDependencyHandler, sourceDepName, project)  
             def sourceDepPublishing = project.sourceDependencies."$sourceDepName".extensions.create("publishing", SourceDependencyPublishingHandler, sourceDepName)
+            // Create a corresponding buildDependencies for the project, so custom-gradle-core can
+            // offer useful functionality for it, to build scripts and other plugins.
             def buildDependencies = project.extensions.findByName("buildDependencies")
             if (buildDependencies != null) {
                 buildDependencies.create(sourceDep.getTargetName())

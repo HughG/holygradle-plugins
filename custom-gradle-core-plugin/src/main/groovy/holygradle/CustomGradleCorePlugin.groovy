@@ -33,7 +33,8 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         // DSL extension 'pluginUsages' to help determine actual version numbers used (deprecated, should later replace with versionInfo)
         def pluginUsagesExtension = project.extensions.create("pluginUsages", PluginUsages, project)
         
-        // DSL extension 'versionInfo' to help determine actual version numbers used
+        // DSL extension 'versionInfo' to help determine actual version numbers used (of anything relevant for
+        // re-constructing the build, e.g., system configuration, plugin versions, prerequisite versions, etc.).
         def versionInfoExtension = VersionInfo.defineExtension(project)
         
         // Task to create a wrapper 

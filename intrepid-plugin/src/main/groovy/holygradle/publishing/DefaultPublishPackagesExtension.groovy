@@ -37,7 +37,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             this.applyModuleName()
             this.applyVersionNumber()
             
-            //if (repositories.any { it instanceof AuthenticationSupported && it.getCredentials().getUsername() != null }) { 
             def ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
                 this.includeSourceDependencies(project, sourceDependencies)
@@ -55,7 +54,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 }
             }
             
-            // Fix the group and description for 'publish'
+            // Override the group and description for the ivy-publish plugin's 'publish' task.
             def publishTask = project.tasks.findByName("publish")
             if (publishTask != null) {
                 publishTask.group = "Publishing"
@@ -270,7 +269,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
         return currentVersionNumber
     }
-    
+
+    // For every source dependency we have, add equivalent binary dependencies in the published module descriptor.
     public void includeSourceDependencies(def project, def sourceDependencies) {
         mainIvyDescriptor.withXml { xml ->
             def newDependencies = []
@@ -291,7 +291,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
         }
     }
-    
+
+    // Remove dependencies which were explicitly specified as "publishDependency = false", or whose configuration
+    // name starts with "private".
     public void removeUnwantedDependencies(def project, def packedDependencies) {
         def unwantedDependencies = []
         packedDependencies.each { packedDep ->
@@ -310,7 +312,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
         }
     }
-    
+
+    // Remove whole configurations, whose names start with "private".
     public void removePrivateConfigurations() {
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().configurations.conf.each { confNode ->
@@ -321,10 +324,10 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
         }
     }
-    
+
     private static String getDependencyVersion(def project, String group, String module) {
         String version = null
-        project.configurations.each { conf ->                
+        project.configurations.each { conf ->
             conf.resolvedConfiguration.getResolvedArtifacts().each { artifact ->
                 def ver = artifact.getModuleVersion().getId()
                 if (ver.getGroup() == group && ver.getName() == module) {
@@ -334,7 +337,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
         return version
     }
-    
+
+    // Replace the version of any dependencies which were specified with dynamic version numbers, so they have fixed
+    // version numbers as resolved for the build which is to be published.
     public void freezeDynamicDependencyVersions(def project, def packedDependencies) {
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
@@ -344,7 +349,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
         }
     }
-    
+
+    // See cookbook example: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/HolyGradleCookbook#!i-need-to-use-multiple-versions-of-the-same-component
     public void fixUpConflictConfigurations() {
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
@@ -361,7 +367,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
         }
     }
-    
+
+    // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or symlinked) to.
     public void addDependencyRelativePaths(def packedDependencies) {
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->

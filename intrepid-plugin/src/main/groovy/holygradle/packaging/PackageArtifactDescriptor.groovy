@@ -151,9 +151,11 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
         zipTask.from(taskDir.path) {
             include collectPackageFilePaths()
             excludes = []
-            // If we're republishing then apply the search & replace rules to all of the
-            // auto-generated files. It's fair to assume that they're text files and wouldn't
-            // mind having filtering applied to them.
+            // If we're republishing then apply the search & replace rules to all of the auto-generated files. It's fair
+            // to assume that they're text files and wouldn't mind having filtering applied to them.
+            //
+            // getReplacements() returns the substitutions to carry out, and "filter" configures the zip task to apply
+            // them to the zipped files.
             if (republish != null) {
                 republish.getReplacements().each { find, repl ->
                     filter { String line -> line.replaceAll(find, repl) }
