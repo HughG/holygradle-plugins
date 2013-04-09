@@ -1,28 +1,36 @@
 syntax: glob
+# Gradle / Java
 .gradle
 *.class
 build
+# Visual Studio / ReSharper
 *.ReSharper.user
 *.sdf
 *.suo
 *.vcxproj.user
+# IntelliJ Idea
+*.iml
+.idea
+# Other
 *.bak
-hg-credential-store/Release
-hg-credential-store/_ReSharper.hg-credential-store
-credential-store/_ReSharper.credential-store/
-credential-store/Release
-ivy.xml
-custom-gradle/src/latestInitScript
-gradle.properties
-wrapper-starter-kit/gradle/gradle-wrapper.jar
-wrapper-starter-kit/gradle/gradle-wrapper.properties
-wrapper-starter-kit/script/build.gradle
-wrapper-starter-kit/wrapperTemp
-wrapper-starter-kit.zip
 */src/test/**/*.test.txt
-gradle*.properties
-intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
-intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
-intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsTest/projectB/packages/
-intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
-credential-store/ipch/
+
+syntax: regexp
+^hg-credential-store/Release
+^hg-credential-store/_ReSharper.hg-credential-store
+^credential-store/_ReSharper.credential-store/
+^credential-store/Release
+^ivy\.xml
+^custom-gradle/src/latestInitScript
+# Ignore any gradle[-foo].properties, as they may contain company-specific information.
+^gradle.*\.properties
+^wrapper-starter-kit/gradle/gradle-wrapper\.jar
+^wrapper-starter-kit/gradle/gradle-wrapper\.properties
+^wrapper-starter-kit/script/build\.gradle
+^wrapper-starter-kit/wrapperTemp
+^wrapper-starter-kit\.zip
+^intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
+^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
+^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsTest/projectB/packages/
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
+(^|/)ipch/
