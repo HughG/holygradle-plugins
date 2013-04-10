@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.dependencies
 
 import org.gradle.api.*
 import org.gradle.api.artifacts.*

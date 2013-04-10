@@ -1,9 +1,11 @@
-package holygradle
+package holygradle.scm
 
 import org.gradle.api.*
 import org.tmatesoft.svn.core.*
 import org.tmatesoft.svn.core.wc.*
 import org.tmatesoft.svn.core.internal.wc.*
+import holygradle.source_dependencies.SourceDependency
+import holygradle.source_dependencies.SourceDependencyHandler
 
 class SvnDependency extends SourceDependency {
     public boolean export = false

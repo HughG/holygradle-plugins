@@ -1,11 +1,16 @@
-package holygradle
+package holygradle.source_dependencies
 
-import holygradle.util.*
-import org.gradle.api.*
-import org.gradle.util.*
+import holygradle.Helper
+import holygradle.buildscript.BuildScriptDependencies
+import holygradle.dependencies.DependencyHandler
+import holygradle.scm.HgDependency
+import holygradle.scm.SvnDependency
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
+import holygradle.custom_gradle.util.CamelCase
 
 class SourceDependencyPublishingHandler {
     public final String name

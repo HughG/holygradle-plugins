@@ -1,11 +1,11 @@
-package holygradle
+package holygradle.source_dependencies
 
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.tasks.Copy
 import org.gradle.api.file.CopySpec
-import org.gradle.api.file.FileCollection
 import org.gradle.util.ConfigureUtil
+import holygradle.unpacking.UnpackModule
 
 class CopyArtifactsFromHandler {
     public String dependencyName

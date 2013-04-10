@@ -1,7 +1,7 @@
-package holygradle
+package holygradle.source_dependencies
 
 import org.gradle.api.*
-import org.gradle.api.tasks.*
+import holygradle.Helper
 
 class SourceDependency {
     SourceDependencyHandler sourceDependency

@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.packaging
 
 class PackageArtifactIncludeHandler {
     public def includePatterns = []

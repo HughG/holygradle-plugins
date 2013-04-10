@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.symlinks
 
 import org.gradle.api.*
 import org.gradle.util.ConfigureUtil

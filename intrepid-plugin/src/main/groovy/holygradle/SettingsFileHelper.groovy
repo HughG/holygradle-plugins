@@ -1,11 +1,8 @@
 package holygradle
 
-import org.gradle.api.*
-import org.gradle.api.tasks.*
-import java.io.FileWriter
-import java.nio.file.Paths
+import org.gradle.api.Project
 
-class SettingsFileHelper {      
+class SettingsFileHelper {
         
     public static String writeSettingsFile(File settingsFile, def includePaths) {
         def escapedPaths = includePaths.collect {

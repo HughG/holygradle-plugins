@@ -1,8 +1,6 @@
-package holygradle
+package holygradle.publishing
 
 import org.gradle.api.*
-import org.gradle.api.artifacts.repositories.AuthenticationSupported
-import org.gradle.util.ConfigureUtil
 
 class RepublishHandler {
     private def replacements = [:]

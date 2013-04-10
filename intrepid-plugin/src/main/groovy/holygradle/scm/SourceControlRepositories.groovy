@@ -1,6 +1,5 @@
-package holygradle
+package holygradle.scm
 
-import org.gradle.*
 import org.gradle.api.*
 
 public class SourceControlRepositories {

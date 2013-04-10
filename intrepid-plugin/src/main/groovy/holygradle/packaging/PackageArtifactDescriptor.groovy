@@ -1,9 +1,8 @@
-package holygradle
+package holygradle.packaging
 
 import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import org.gradle.api.tasks.bundling.*
 import org.gradle.util.ConfigureUtil
+import holygradle.publishing.RepublishHandler
 
 class PackageArtifactDescriptor implements PackageArtifactDSL {
     public def includeHandlers = []

@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.unpacking
 
 import org.gradle.api.Project
 import org.gradle.api.tasks.Copy

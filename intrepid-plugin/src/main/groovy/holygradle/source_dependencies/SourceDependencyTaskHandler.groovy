@@ -1,8 +1,7 @@
-package holygradle
+package holygradle.source_dependencies
 
-import org.gradle.api.*
-import org.gradle.api.tasks.*
-import org.gradle.process.ExecResult
+import org.gradle.api.Project
+import org.gradle.api.Task
 
 class SourceDependencyTaskHandler {
     public final String name

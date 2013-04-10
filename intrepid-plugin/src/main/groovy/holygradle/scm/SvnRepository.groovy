@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.scm
 
 import org.tmatesoft.svn.core.wc.SVNClientManager
 

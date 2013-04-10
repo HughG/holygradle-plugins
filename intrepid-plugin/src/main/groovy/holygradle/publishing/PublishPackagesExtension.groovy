@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.publishing
 
 public interface PublishPackagesExtension {
     void group(String publishGroup)

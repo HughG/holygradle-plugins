@@ -1,7 +1,4 @@
-package holygradle
-
-import org.gradle.*
-import org.gradle.api.*
+package holygradle.scm
 
 class DummySourceControl implements SourceControlRepository {
     public File getLocalDir() { null }

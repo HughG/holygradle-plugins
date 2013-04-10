@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.packaging
 
 class PackageArtifactTextFileHandler {
     public final String name

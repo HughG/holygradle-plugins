@@ -1,5 +1,3 @@
-import holygradle.util.Helper
-
 repositories {
     mavenCentral()
 }

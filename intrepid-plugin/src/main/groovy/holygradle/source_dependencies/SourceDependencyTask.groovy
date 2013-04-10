@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.source_dependencies
 
 import org.gradle.api.DefaultTask
 import org.gradle.process.ExecResult

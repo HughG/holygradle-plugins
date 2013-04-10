@@ -1,11 +1,10 @@
-package holygradle
+package holygradle.publishing
 
 import org.gradle.api.*
 import org.gradle.api.artifacts.dsl.*
 import org.gradle.api.artifacts.repositories.*
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.util.ConfigureUtil
-import java.io.File
 
 public class DefaultPublishPackagesExtension implements PublishPackagesExtension {
     private final Project project

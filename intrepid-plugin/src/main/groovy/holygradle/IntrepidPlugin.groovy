@@ -1,18 +1,25 @@
 package holygradle
 
-import holygradle.util.*
-import org.gradle.*
-import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import org.gradle.api.artifacts.dsl.*
-import org.gradle.api.artifacts.repositories.*
+import holygradle.buildscript.BuildScriptDependencies
+import holygradle.dependencies.PackedDependencyHandler
+import holygradle.packaging.PackageArtifactHandler
+import holygradle.publishing.DefaultPublishPackagesExtension
+import holygradle.scm.SourceControlRepositories
+import holygradle.source_dependencies.CopyArtifactsHandler
+import holygradle.source_dependencies.RecursivelyFetchSourceTask
+import holygradle.source_dependencies.SourceDependencyHandler
+import holygradle.source_dependencies.SourceDependencyTaskHandler
+import holygradle.symlinks.SymlinkHandler
+import holygradle.symlinks.SymlinkTask
+import org.gradle.api.DefaultTask
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import org.gradle.api.publish.*
-import org.gradle.api.publish.plugins.*
-import org.gradle.api.tasks.*
-import org.gradle.api.tasks.bundling.*
-
-import java.net.URI
+import org.gradle.api.publish.PublishingExtension
+import holygradle.custom_gradle.util.Symlink
+import holygradle.unpacking.UnpackModule
+import holygradle.dependencies.CollectDependenciesTask
 
 public class IntrepidPlugin implements Plugin<Project> {
     

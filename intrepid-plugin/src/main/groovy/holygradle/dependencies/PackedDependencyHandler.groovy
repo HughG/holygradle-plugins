@@ -1,8 +1,8 @@
-package holygradle
+package holygradle.dependencies
 
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
-import org.gradle.api.artifacts.ModuleVersionIdentifier
+import holygradle.Helper
 
 class PackedDependencyHandler extends DependencyHandler {
     private Project projectForHandler

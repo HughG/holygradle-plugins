@@ -1,8 +1,9 @@
-package holygradle
+package holygradle.dependencies
 
+import holygradle.Helper
 import org.gradle.api.*
 
-class DependencyHandler {
+abstract class DependencyHandler {
     public final String name
     private final Project project
     

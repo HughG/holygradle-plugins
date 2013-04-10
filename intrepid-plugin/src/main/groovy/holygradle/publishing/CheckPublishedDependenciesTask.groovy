@@ -1,9 +1,9 @@
-package holygradle
+package holygradle.publishing
 
 import org.gradle.api.DefaultTask
 import org.gradle.logging.StyledTextOutput
 import org.gradle.logging.StyledTextOutputFactory
-import org.gradle.logging.StyledTextOutput.Style
+import holygradle.ArtifactoryHelper
 
 class CheckPublishedDependenciesTask extends DefaultTask {
     StyledTextOutput output

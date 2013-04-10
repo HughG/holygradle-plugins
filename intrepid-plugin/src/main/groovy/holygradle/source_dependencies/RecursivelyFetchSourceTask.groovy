@@ -1,9 +1,8 @@
-package holygradle
+package holygradle.source_dependencies
 
 import org.gradle.*
 import org.gradle.api.*
-import org.gradle.testfixtures.*
-import org.gradle.logging.*
+import holygradle.SettingsFileHelper
 
 class RecursivelyFetchSourceTask extends DefaultTask {
     boolean generateSettingsFileForSubprojects = true

@@ -1,8 +1,9 @@
-package holygradle
+package holygradle.unpacking
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedDependency
+import holygradle.dependencies.PackedDependencyHandler
 
 class UnpackModule {
     public def group

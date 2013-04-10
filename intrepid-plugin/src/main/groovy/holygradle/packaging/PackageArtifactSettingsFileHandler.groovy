@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.packaging
 
 import holygradle.SettingsFileHelper
 

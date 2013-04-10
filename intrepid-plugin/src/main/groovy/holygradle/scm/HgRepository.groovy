@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.scm
 
 import com.aragost.javahg.Changeset
 import com.aragost.javahg.Repository

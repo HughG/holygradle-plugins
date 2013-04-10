@@ -1,11 +1,12 @@
-package holygradle
+package holygradle.scm
 
-import org.gradle.api.*
-import org.gradle.api.tasks.*
-import com.aragost.javahg.*
-import com.aragost.javahg.commands.CloneCommand
-import com.aragost.javahg.commands.flags.CloneCommandFlags
+import com.aragost.javahg.Repository
+import com.aragost.javahg.RepositoryConfiguration
 import com.aragost.javahg.commands.UpdateCommand
+import holygradle.buildscript.BuildScriptDependencies
+import holygradle.source_dependencies.SourceDependency
+import holygradle.source_dependencies.SourceDependencyHandler
+import org.gradle.api.Project
 
 class HgDependency extends SourceDependency {
     private final BuildScriptDependencies buildScriptDependencies

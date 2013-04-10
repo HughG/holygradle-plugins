@@ -1,6 +1,5 @@
 package holygradle.unpacking
 
-import holygradle.*
 import holygradle.test.*
 import org.junit.Test
 import org.gradle.api.Project
@@ -10,6 +9,7 @@ import org.gradle.testfixtures.ProjectBuilder
 import static org.junit.Assert.*
 
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
+import holygradle.dependencies.PackedDependencyHandler
 
 class MockBuildScriptDependencies {
     private final Project project
@@ -32,9 +32,9 @@ class UnpackModuleVersionTest extends TestBase {
     // root (org:root:1.0) [apricot: "aa", blueberry: "sub/bb", coconut: "sub/"]
     // +---aa (org:apricot:1.1) [eggfruit: "../"]
     // +---sub
-    // ¦   +---bb (org:blueberry:1.2)
-    // ¦   +---coconut (org:coconut:1.3) [date: ""]
-    // ¦       +---date (org:date:1.4)
+    // |   +---bb (org:blueberry:1.2)
+    // |   +---coconut (org:coconut:1.3) [date: ""]
+    // |       +---date (org:date:1.4)
     // +---eggfruit (org:eggfruit:1.5)
     private def getTestModules() {
         def modules = [:]

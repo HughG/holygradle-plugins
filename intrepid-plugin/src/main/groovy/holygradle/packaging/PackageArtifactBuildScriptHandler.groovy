@@ -1,10 +1,14 @@
-package holygradle
+package holygradle.packaging
 
-import holygradle.util.*
-import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import org.gradle.api.tasks.bundling.*
+import holygradle.custom_gradle.util.Wildcard
+import holygradle.dependencies.PackedDependencyHandler
+import holygradle.publishing.RepublishHandler
+import holygradle.source_dependencies.SourceDependencyHandler
+import holygradle.symlinks.SymlinkHandler
+import org.gradle.api.Project
 import org.gradle.util.ConfigureUtil
+import holygradle.Helper
+import holygradle.scm.SourceControlRepositories
 
 class PackageArtifactBuildScriptHandler {
     private boolean atTop = true

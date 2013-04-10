@@ -1,4 +1,4 @@
-package holygradle
+package holygradle.source_dependencies
 
 enum ExitCodeBehaviour {
     ignoreFailure,

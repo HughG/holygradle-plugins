@@ -1,9 +1,7 @@
-package holygradle
+package holygradle.buildscript
 
-import holygradle.util.*
-import org.gradle.*
+import holygradle.Helper
 import org.gradle.api.*
-import org.gradle.api.tasks.*
 
 class BuildScriptDependency {
     private String dependencyName

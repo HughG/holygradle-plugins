@@ -1,8 +1,7 @@
-package holygradle
+package holygradle.symlinks
 
-import holygradle.util.*
-import org.gradle.api.*
-import org.gradle.api.tasks.*
+import holygradle.custom_gradle.util.Symlink
+import org.gradle.api.DefaultTask
 
 class SymlinkTask extends DefaultTask {
     public void configure(def project, File linkDir, File targetDir) {        

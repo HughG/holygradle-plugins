@@ -1,6 +1,5 @@
 package holygradle
 
-import com.sun.jna.*
 import java.nio.file.Files
 import java.nio.file.Paths
 import org.gradle.api.Project
