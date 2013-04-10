@@ -1,6 +1,5 @@
 package holygradle.unittest
 
-import org.gradle.*
 import org.gradle.api.*
 
 class UnitTestPlugin implements Plugin<Project> {        

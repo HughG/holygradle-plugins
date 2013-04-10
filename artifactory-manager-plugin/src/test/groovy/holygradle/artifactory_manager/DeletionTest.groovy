@@ -1,4 +1,4 @@
-package holygradle.artifactorymanager
+package holygradle.artifactory_manager
 
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder

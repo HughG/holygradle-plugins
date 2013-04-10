@@ -1,4 +1,4 @@
-package holygradle.util
+package holygradle.custom_gradle.util
 
 public class CamelCase {
     public static String build(def components) {

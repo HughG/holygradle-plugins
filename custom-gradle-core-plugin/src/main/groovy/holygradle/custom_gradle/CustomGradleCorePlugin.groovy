@@ -1,4 +1,4 @@
-package holygradle.customgradle
+package holygradle.custom_gradle
 
 import holygradle.util.*
 import org.gradle.*
@@ -8,8 +8,14 @@ import org.gradle.api.tasks.*
 import org.gradle.api.tasks.bundling.*
 import org.gradle.api.tasks.wrapper.*
 import org.gradle.api.logging.*
+import holygradle.custom_gradle.util.VersionNumber
 
 class CustomGradleCorePlugin implements Plugin<Project> {
+    /**
+     * Returns the path to the <tt>custom-gradle</tt> init script.
+     * @param project The project to which this plugin is applied.
+     * @return The path to the <tt>custom-gradle</tt> init script.
+     */
     String getInitScriptLocation(Project project) {
         project.gradle.gradleHomeDir.path + "/init.d/holy-gradle-init.gradle"
     }

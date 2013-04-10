@@ -1,4 +1,4 @@
-package holygradle.util
+package holygradle.custom_gradle.util
 
 import java.nio.file.Files
 import java.nio.file.Paths

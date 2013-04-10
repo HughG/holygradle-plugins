@@ -1,4 +1,4 @@
-package holygradle.artifactorymanager
+package holygradle.artifactory_manager
 
 interface ArtifactoryAPI {
     String getRepository();

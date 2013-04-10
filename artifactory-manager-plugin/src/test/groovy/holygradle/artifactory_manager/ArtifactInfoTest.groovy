@@ -1,4 +1,4 @@
-package holygradle.artifactorymanager
+package holygradle.artifactory_manager
 
 import java.util.Calendar
 import java.util.Date

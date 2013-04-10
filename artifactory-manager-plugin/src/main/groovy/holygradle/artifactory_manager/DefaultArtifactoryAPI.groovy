@@ -1,4 +1,4 @@
-package holygradle.artifactorymanager
+package holygradle.artifactory_manager
 
 import org.gradle.*
 import org.gradle.api.*

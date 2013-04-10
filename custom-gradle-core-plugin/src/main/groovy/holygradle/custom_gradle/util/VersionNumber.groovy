@@ -1,4 +1,4 @@
-package holygradle.util
+package holygradle.custom_gradle.util
 
 import org.gradle.api.Project
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency

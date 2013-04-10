@@ -1,4 +1,4 @@
-package holygradle.customgradle
+package holygradle.custom_gradle
 
 import org.gradle.*
 import org.gradle.api.*
@@ -14,7 +14,9 @@ class TaskDependenciesExtension {
     TaskDependenciesExtension(Project project) {
         this.project = project
     }
-    
+
+    // Returns all tasks with the same name, in projects for which dependencies have been added as BuildDependency info.
+    // It returns a Set<Object> because that's the type accepted by Task.dependsOn().
     public Set<Object> get(String taskName) {
         Set<Object> buildDeps = new HashSet<Object>()
         def rootProj = project.rootProject

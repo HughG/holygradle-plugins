@@ -1,4 +1,4 @@
-package holygradle.util
+package holygradle.custom_gradle.util
 
 public class Wildcard {
     public static boolean match(String pattern, String input) {
