@@ -14,11 +14,6 @@ public class Wildcard {
     }
     
     public static boolean anyMatch(def patterns, String input) {
-        for (pattern in patterns) {
-            if (wildcardMatch(pattern, input)) {
-                return true
-            }
-        }
-        return false
+        return patterns.any { match(it, input) }
     }
 }
