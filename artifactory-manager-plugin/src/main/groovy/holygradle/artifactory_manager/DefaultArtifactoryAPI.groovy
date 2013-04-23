@@ -7,7 +7,6 @@ import groovy.text.SimpleTemplateEngine
 import groovyx.net.http.AuthConfig
 import groovyx.net.http.ParserRegistry
 import groovyx.net.http.RESTClient
-import groovy.json.JsonSlurper
 
 class DefaultArtifactoryAPI implements ArtifactoryAPI {
     private RESTClient client 
@@ -51,7 +50,7 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
             println query
             System.exit(-1)
         }
-        new JsonSlurper().parseText(resp.data.toString())
+        return resp.data
     }
     
     public void removeItem(String path) {
