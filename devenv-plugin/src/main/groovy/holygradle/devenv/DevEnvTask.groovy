@@ -1,5 +1,6 @@
 package holygradle.devenv
 
+import holygradle.custom_gradle.BuildDependency
 import org.gradle.*
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
@@ -71,23 +72,29 @@ class DevEnvTask extends DefaultTask {
     }
     
     public void configureTaskDependencies() {
-        if (!independently) {
-            // Add dependencies to tasks with the same configuration and operation in 
-            // dependent projects.
-            def buildDependencies = project.extensions.findByName("buildDependencies")
-            if (buildDependencies != null) {
-                buildDependencies.each { buildDep ->
-                    Project depProj = buildDep.getProject(project)
-                    depProj.tasks.each { t ->
-                        if (t instanceof DevEnvTask &&
-                            !t.independently &&
-                            t.operation == operation &&
-                            t.configuration == configuration &&
-                            (t.platform == platform || t.platform == "any")
-                        ) {
-                            dependsOn t
-                        }
-                    }
+        if (independently) {
+            return
+        }
+        // Add dependencies to tasks with the same configuration and operation in
+        // dependent projects.
+        def buildDependencies = project.extensions.findByName("buildDependencies")
+        if (buildDependencies == null) {
+            return
+        }
+        buildDependencies.each { BuildDependency buildDep ->
+            Project depProj = buildDep.getProject(project)
+            if (depProj == null) {
+                return
+            }
+
+            depProj.tasks.each { t ->
+                if (t instanceof DevEnvTask &&
+                    !t.independently &&
+                    t.operation == operation &&
+                    t.configuration == configuration &&
+                    (t.platform == platform || t.platform == "any")
+                ) {
+                    dependsOn t
                 }
             }
         }
