@@ -9,8 +9,6 @@ class MyHandler {
     private final String separator = "&&&"
     private final String defaultCredentialType = "Domain Credentials"
     private String userPassword = null
-    private def allCredentialTypes = new HashSet<String>()
-    private def cleanCredentialTypes = new HashSet<String>()
     private def credentialsCache = [:]
     
     public static def defineExtension(Project project, String credentialStorePath) {
@@ -33,6 +31,7 @@ class MyHandler {
         this.credentialStorePath = credentialStorePath
     }
         
+    // This method returns username&&&password (raw)
     private String getCachedCredentials(String credStorageKey) {
         String credStorageValue = null
         if (credentialsCache.containsKey(credStorageKey)) {
@@ -55,15 +54,10 @@ class MyHandler {
         credStorageValue
     }
     
-    private def getCredentials(String credentialType) {
-        getCredentials(credentialType, false)
-    }
-    
-    private def getCredentials(String credentialType, boolean forceAskUser) {
+    private def getCredentials(String credentialType, boolean forceAskUser = false) {
         if (project.ext.usingLocalArtifacts) {
             return ["empty", "empty"]
         }
-        allCredentialTypes.add(credentialType)
         
         def username = System.getProperty("user.name").toLowerCase()
         def credStorageKey = getCredentialStorageKey(credentialType)
@@ -74,6 +68,7 @@ class MyHandler {
             credentials = credStorageValue.split(separator)
             username = credentials[0]
             if (credentials.size() == 3) {
+                project.logger.info("Warning: Attempting to get credentials from store, got 3 fields")
                 credentials = [credentials[1], credentials[2]]
             }
             if (credentials.size() == 1) {
@@ -119,7 +114,6 @@ class MyHandler {
                 throw new RuntimeException("Failed to store credentials.")
             }
             println "Saved '${credentialType}' credentials for user '${userCred.getKey()}'."
-            cleanCredentialTypes.add(credentialType)
             return credentials
         }
     }

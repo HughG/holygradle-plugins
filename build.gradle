@@ -34,7 +34,7 @@ subprojects {
     
     repositories {
         ivy {
-            url artifactoryServer + 'plugins-release/'
+            url artifactoryServer + artifactoryPluginRepo
         }
         maven {
             url artifactoryServer + 'remote-repos/'
@@ -66,7 +66,7 @@ subprojects {
                     username artifactoryUsername
                     password artifactoryPassword
                 }
-                url artifactoryServer + artifactoryPluginRepo + "/"
+                url artifactoryServer + artifactoryPluginPublishRepo + "/"
             }
             
             doLast {
