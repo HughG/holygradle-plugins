@@ -26,6 +26,9 @@ class UnpackModule {
         return null
     }
     
+    // Get the ivy file for the resolved dependency.  This may either be in the
+    // gradle cache, or exist locally in "localArtifacts" (which we create for
+    // those who may not have access to the artifact repository)
     private static File getIvyFile(ResolvedDependency resolvedDependency) {
         // Get the first artifact from the set of module artifacts.
         def firstArtifact = resolvedDependency.getModuleArtifacts().find { true }
@@ -51,9 +54,11 @@ class UnpackModule {
             // If so then the structure is different from the cache - the zip files for a particular
             // artifact will exist in the same directory as the ivy file.
             def localIvyDir = firstArtifact.getFile().parentFile
-            localIvyDir.traverse {
-                if (it.name.startsWith("ivy-") && it.name.endsWith(".xml")) {
-                    ivyFile = it
+            if (localIvyDir.exists()) {
+                localIvyDir.traverse {
+                    if (it.name.startsWith("ivy-") && it.name.endsWith(".xml")) {
+                        ivyFile = it
+                    }
                 }
             }
         }
@@ -72,10 +77,12 @@ class UnpackModule {
             def moduleGroup = moduleVersion.getGroup()
             def moduleName = moduleVersion.getName()
             def versionStr = moduleVersion.getVersion()
-            
-            PackedDependencyHandler thisPackedDep = packedDependencies.find {
-                it.getDependencyName() == moduleName
-            }
+                                     
+            // println "Processing project: ${proj.name}: ${moduleVersion}"
+            // println "  Children are:"
+            // proj.childProjects.each {k, v -> println "  ${k}"}
+            // println "  buildDependencies are:"
+            // proj.buildDependencies.each {k -> println "  ${k.name}"}
             
             // Is there an ivy file corresponding to this dependency? 
             File ivyFile = getIvyFile(resolvedDependency)
@@ -109,6 +116,13 @@ class UnpackModule {
                 if (unpackModule.versions.containsKey(versionStr)) {
                     unpackModuleVersion = unpackModule.versions[versionStr]
                 } else {
+                
+                    // If this resolved dependency is a transitive dependency, "thisPackedDep"
+                    // below will be null
+                    PackedDependencyHandler thisPackedDep = packedDependencies.find {
+                        it.getDependencyName() == moduleName
+                    }
+                
                     unpackModuleVersion = new UnpackModuleVersion(moduleVersion, ivyFile, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[versionStr] = unpackModuleVersion
                 }

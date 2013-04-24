@@ -2,6 +2,7 @@ package holygradle.dependencies
 
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
+import holygradle.Helper
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 
