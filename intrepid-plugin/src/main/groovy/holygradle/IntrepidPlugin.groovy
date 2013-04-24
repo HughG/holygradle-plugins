@@ -278,21 +278,6 @@ public class IntrepidPlugin implements Plugin<Project> {
         
         // One 'unpack' task per 'packedDependency' block of DSL in the build script.
         project.gradle.projectsEvaluated {
-            // Define ordinary Groovy dependencies for all entries in the 'packedDependencies' DSL in the build script.
-            packedDependencies.each { dep ->
-                def depGroup = dep.getGroupName()
-                def depName = dep.getDependencyName()
-                def depVersion = dep.getVersionStr()
-                
-                dep.getConfigurations().each { conf ->
-                    def fromConf = conf[0]
-                    def toConf = conf[1]
-                    project.dependencies.add(
-                        fromConf, 
-                        new DefaultExternalModuleDependency(depGroup, depName, depVersion, toConf)
-                    )
-                }
-            }
 
             // For each artifact that is listed as a dependency, determine if we need to unpack it.
             def unpackModules = UnpackModule.getAllUnpackModules(project)

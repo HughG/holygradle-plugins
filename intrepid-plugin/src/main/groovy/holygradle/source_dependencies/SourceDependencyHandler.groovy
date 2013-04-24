@@ -14,19 +14,36 @@ import holygradle.custom_gradle.util.CamelCase
 
 class SourceDependencyPublishingHandler {
     public final String name
+    private final Project project
     public def originalConfigurations = []
     public def configurations = []
     public String publishVersion = null
     public String publishGroup = null
     
-    public SourceDependencyPublishingHandler(String name) {
+    public SourceDependencyPublishingHandler(String name, Project project) {
         this.name = name
+        this.project = project
         configuration("everything")
     }
     
     public void configuration(String config) {
         originalConfigurations.add(config)
-        Helper.processConfiguration(config, configurations, "Formatting error for '$name' in 'sourceDependencies'.")
+        ArrayList newConfig = []
+        Helper.processConfiguration(config, newConfig, "Formatting error for '$name' in 'sourceDependencies'.")
+        configurations.addAll(newConfig)
+        
+        // Add project depedencies between "sourceDependency"s, but only if they exist (e.g. after fAD)
+        Project depProject = this.project.rootProject.findProject(":${this.name}") 
+        if ((depProject != null) && depProject.projectDir.exists())
+        {
+            for (conf in newConfig) {
+                def fromConf = conf[0]
+                def toConf = conf[1]
+                this.project.dependencies.add( fromConf, this.project.rootProject.dependencies.project(path: ":${this.name}", configuration: toConf) )
+            }
+        } else {
+            project.logger.info "ignoring any project dependencies between ${project.name} --> ${this.name} as project yet to be fetched"
+        }
     }
     
     public void configuration(String... configs) {
@@ -59,7 +76,7 @@ class SourceDependencyHandler extends DependencyHandler {
         project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { sourceDepName ->
             // Explicitly create the SourceDependencyHandler so we can add SourceDependencyPublishingHandler.
             def sourceDep = project.sourceDependencies.extensions.create(sourceDepName, SourceDependencyHandler, sourceDepName, project)  
-            def sourceDepPublishing = project.sourceDependencies."$sourceDepName".extensions.create("publishing", SourceDependencyPublishingHandler, sourceDepName)
+            def sourceDepPublishing = project.sourceDependencies."$sourceDepName".extensions.create("publishing", SourceDependencyPublishingHandler, sourceDep.getTargetName(), project)
             // Create a corresponding buildDependencies for the project, so custom-gradle-core can
             // offer useful functionality for it, to build scripts and other plugins.
             def buildDependencies = project.extensions.findByName("buildDependencies")

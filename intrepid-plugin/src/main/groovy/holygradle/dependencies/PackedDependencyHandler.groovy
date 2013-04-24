@@ -2,7 +2,8 @@ package holygradle.dependencies
 
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
-import holygradle.Helper
+import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 
 class PackedDependencyHandler extends DependencyHandler {
     private Project projectForHandler
@@ -148,7 +149,17 @@ class PackedDependencyHandler extends DependencyHandler {
     }
         
     public void configuration(String config) {
-        Helper.processConfiguration(config, configurations, "Formatting error for '$name' in 'packedDependencies'.")
+        def newConfigs = []
+        Helper.processConfiguration(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
+        configurations.addAll newConfigs
+        for (conf in newConfigs) {
+            def fromConf = conf[0]
+            def toConf = conf[1]
+            projectForHandler.dependencies.add(
+                fromConf, 
+                new DefaultExternalModuleDependency(dependencyGroup, dependencyModule, dependencyVersion, toConf)
+            )
+        }
     }
     
     public void configuration(String... configs) {
