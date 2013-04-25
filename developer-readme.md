@@ -21,9 +21,11 @@ Create 'gradle.properties' in the root of your workspace add define these proper
 ```
 artifactoryServer=<fully qualified domain name of artifactory server, including port if necessary> e.g. http://artifact-server.company.com:8081/artifactory/
 artifactoryServerName=<fully qualified domain name of artifactory server without any http:// or slashes, including port if necessary> e.g. artifact-server.company.com:8081
-artifactoryPluginRepo=<name of the (non-remote, non-virtual) repository for storing plugins e.g. plugins-release-local>
+artifactoryPluginRepo=<name of the repository for obtaining dependent plugins, e.g. plugins-release>
+artifactoryPluginPublishRepo=<name of the (non-remote, non-virtual) repository for publishing plugins e.g. plugins-release-local>
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
+
 ```
 
 # Getting started - if the plugins have never been published before within your organisation:
