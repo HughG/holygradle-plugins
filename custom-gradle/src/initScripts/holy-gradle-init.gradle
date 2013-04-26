@@ -111,12 +111,34 @@ class HolyGradlePlugins {
     }  
 }
 
+String holyGradleInitScriptVersion = "[[INIT_SCRIPT_VERSION]]"
+String holyGradleInitScriptSourceVersion = "[[INIT_SCRIPT_SOURCE_VERSION]]"
+
+projectsLoaded {
+    // We need to guard this, because the init script is run twice each time, once with "buildSrc"
+    // as the root (even if there's no "buildSrc" directory) and once for the actual root project.
+    if (rootProject.name != "buildSrc") {
+        return
+    }
+    getLogger().lifecycle("Holy Gradle init script version: ${holyGradleInitScriptVersion}")
+    getLogger().lifecycle("Holy Gradle init script source version: ${holyGradleInitScriptSourceVersion}")
+    if (holyGradleInitScriptVersion.endsWith("-SNAPSHOT")) {
+        getLogger().warn(
+            "Using SNAPSHOT version. " +
+            "Gradle wrapper will NOT automatically download the latest. " +
+            "You must manually delete entries in \"" + 
+            (new File(getGradleUserHomeDir(), "wrapper")).toString() + "\"."
+        )
+    }
+}
+
 allprojects {
-    project.ext.initScriptVersion = "[[INIT_SCRIPT_VERSION]]"
+    project.ext.holyGradleInitScriptVersion = holyGradleInitScriptVersion
+    project.ext.holyGradleInitScriptSourceVersion = holyGradleInitScriptSourceVersion
     
     def defaultPluginsRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/plugins-release/"
     def defaultRemoteRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/remote-repos/"
-    
+
     // Check if we should override use of repositories based on presence of 'local_artifacts' folder.
     // This is to support building projects without access to an Artifactory or similar repository.
     boolean usingLocalArtifacts = false

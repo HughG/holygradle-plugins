@@ -23,8 +23,8 @@ class VersionInfo {
         specifyPowershell("Windows", "[System.Environment]::OSVersion.VersionString.Trim()")
         specify("gradle", project.gradle.gradleVersion)
         specify("custom-gradle", project.gradle.gradleHomeDir.parentFile.parentFile.name.split("-")[-1])
-        if (project.hasProperty("initScriptVersion")) {
-            specify("custom-gradle (init script)", project.ext.initScriptVersion)
+        if (project.hasProperty("holyGradleInitScriptVersion")) {
+            specify("custom-gradle (init script)", project.holyGradleInitScriptVersion)
         }
     }
     

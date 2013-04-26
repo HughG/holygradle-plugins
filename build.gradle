@@ -23,6 +23,33 @@ project("custom-gradle") {
     apply plugin: "groovy"
 }
 
+task setHgVersionInfo {
+    new ByteArrayOutputStream().withStream { os ->
+        String hgInfoString = "unknown"
+        exec {
+            executable = "hg"
+            args = ["paths", "default"]
+            standardOutput = os
+        }
+        (new PrintStream(os)).withStream { it.print(" ") }
+        exec {
+            executable = "hg"
+            args = ["id", "-ibt"]
+            standardOutput = os
+        }
+
+        // Store both command outputs in one string with no line breaks.
+        project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
+
+        // Write the version to a file, so that the file can be seen as changed (or not) by other tasks, to force them
+        // to re-run.
+        project.ext.hgVersionInfoFile = new File('hgVersionInfo.txt')
+        project.hgVersionInfoFile.text = project.hgVersionInfo
+    }
+}
+
+setHgVersionInfo.outputs.upToDateWhen { false }
+
 subprojects {
     if (configurations.findByName("default") == null) {
         configurations {
@@ -53,7 +80,25 @@ subprojects {
     configurations.all {
         resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
     }
-    
+
+    if (project.path == ":custom-gradle") {
+        project.afterEvaluate {
+            project.createVersionedInitScript.dependsOn setHgVersionInfo
+        }
+    } else if (project.path == ":credential-store") {
+        project.afterEvaluate {
+            project.createProjectVersionFile.dependsOn setHgVersionInfo
+        }
+    } else if (project.plugins.hasPlugin("groovy")) {
+        // We don't need an "afterEvaluate" here because "jar" is a standard task for "groovy" projects.
+        project.jar {
+            dependsOn setHgVersionInfo
+            manifest {
+                attributes(["Implementation-Version": rootProject.hgVersionInfo])
+            }
+        }
+    }
+
     ["publishRelease", "publishSnapshot"].each { taskName ->
         project.task(taskName, type: Upload) {
             configuration = configurations.default

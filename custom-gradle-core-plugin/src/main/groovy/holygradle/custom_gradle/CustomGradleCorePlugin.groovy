@@ -47,9 +47,9 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.task("createWrapper", type: Wrapper) {
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            def customGradleVersion = project.gradle.gradleVersion + "-" + project.ext.initScriptVersion
+            def customGradleVersion = project.gradle.gradleVersion + "-" + project.ext.holyGradleInitScriptVersion
             gradleVersion customGradleVersion
-            distributionUrl project.ext.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.ext.initScriptVersion}/custom-gradle-${customGradleVersion}.zip"
+            distributionUrl project.ext.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.ext.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
             jarFile "${project.projectDir}/gradle/gradle-wrapper.jar"
             scriptFile "${project.projectDir}/gw"
             doLast {
@@ -201,7 +201,7 @@ if "%OS%"=="Windows_NT" endlocal
                     print "Custom distribution version: ".padRight(pad)
                     def latestCustomGradle = VersionNumber.getLatestUsingBuildscriptRepositories(project, "holygradle", "custom-gradle")
                     println versionInfoExtension.getVersion("custom-gradle") + " (latest: $latestCustomGradle)"
-                    println "Init script version: ".padRight(pad) + project.ext.initScriptVersion
+                    println "Init script version: ".padRight(pad) + project.ext.holyGradleInitScriptVersion
                     println "Usage of Holy Gradle plugins:"
                     
                     // Print out version numbers for all holygradle buildscript dependencies.

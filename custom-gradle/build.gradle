@@ -14,7 +14,7 @@ dependencies {
 }
 
 def initScriptsPath = 'src/initScripts/'
-def versionedInitScriptsPath = 'src/tempInitScripts/'
+def versionedInitScriptsPath = 'build/tmp/tempInitScripts/'
 File f = new File(project.projectDir, versionedInitScriptsPath)
 if (!f.exists()) {
     f.mkdir()
@@ -22,7 +22,12 @@ if (!f.exists()) {
 
 task createVersionedInitScript(type: Copy) {
     from initScriptsPath
+    // We don't need the hgVersionInfoFile, except to force this task to re-run if it's changed.
+    from(rootProject.projectDir) {
+        include rootProject.hgVersionInfoFile.toString()
+    }
     into versionedInitScriptsPath
+    filter { String line -> (line =~ /\[\[INIT_SCRIPT_SOURCE_VERSION\]\]/).replaceFirst(rootProject.hgVersionInfo) }
     filter { String line -> (line =~ /\[\[INIT_SCRIPT_VERSION\]\]/).replaceFirst(project.version) }
     filter { String line -> (line =~ /\[\[ARTIFACTORY_SERVER\]\]/).replaceFirst(artifactoryServerName) }
 }
@@ -30,7 +35,7 @@ task createVersionedInitScript(type: Copy) {
 task latestInitScript(type: Copy) {
     dependsOn createVersionedInitScript
     from versionedInitScriptsPath
-    into 'src/latestInitScript'
+    into 'build/tmp/latestInitScript'
 }
 
 task customDistribution(type: Zip) {

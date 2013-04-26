@@ -11,15 +11,17 @@ build
 # IntelliJ Idea
 *.iml
 .idea
+# Generated
+credential-store/project_version_info.h
+credential-store/release_version_info.h
+hgVersionInfo.txt
 # Other
 *.bak
 */src/test/**/*.test.txt
 
 syntax: regexp
-^hg-credential-store/Release
-^hg-credential-store/_ReSharper.hg-credential-store
 ^credential-store/_ReSharper.credential-store/
-^credential-store/Release
+^credential-store/(Debug|Release)
 ^ivy\.xml
 ^custom-gradle/src/latestInitScript
 # Ignore any gradle[-foo].properties, as they may contain company-specific information.

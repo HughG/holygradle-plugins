@@ -14,7 +14,7 @@ class PackageArtifactsTest extends TestBase {
         def projectDir = new File(getTestDir(), "projectA")
         
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
-        project.ext.initScriptVersion = "1.2.3.4" // Required by custom-gradle-core-plugin.
+        project.ext.holyGradleInitScriptVersion = "1.2.3.4" // Required by custom-gradle-core-plugin.
         project.ext.holyGradlePluginsRepository = ""
         project.apply plugin: 'intrepid'
         
