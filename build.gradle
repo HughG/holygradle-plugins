@@ -23,6 +23,18 @@ project("custom-gradle") {
     apply plugin: "groovy"
 }
 
+/**
+ * This task puts the Hg master repo URL and working directory version/branch/tags into a property and text file, which
+ * feed into the packaging tasks for all sub-projects, so all build outputs are stamped with info on where they came
+ * from.
+ *
+ *   - JAR files put it in META-INF/MANIFEST/MF.
+ *   - custom-gradle puts it in the init.d/holy-gradle-init.gradle.
+ *   - credential-store puts it in the Windows file properties of the generated EXE.
+ *
+ * If you change the form or location of this info, please update not only this comment but also the wiki page at
+ * https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home.
+ */
 task setHgVersionInfo {
     new ByteArrayOutputStream().withStream { os ->
         String hgInfoString = "unknown"
