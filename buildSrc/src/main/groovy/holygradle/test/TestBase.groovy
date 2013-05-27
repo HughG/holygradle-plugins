@@ -43,7 +43,7 @@ class TestBase {
                     error = errorOutput.toString()
                 }
                 if (error == null) {
-                    fail("Expected failure when running '${taskName}' in '${projectDir}' but there was none.")
+                    fail("Expected failure but there was none.")
                 }
                 launcher.expectedFailures.each {
                     assertTrue("Error message should contain '${it}' but it contained: ${error}.", error.contains(it))
