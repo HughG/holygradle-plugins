@@ -50,9 +50,11 @@ class UnpackModule {
                 }
             }
             
-            // Might we be getting the artifact from a local file-system?
-            // If so then the structure is different from the cache - the zip files for a particular
-            // artifact will exist in the same directory as the ivy file.
+            // Might we be getting the artifact from a local file-system?  If so then the structure is different from
+            // the cache: the zip files for a particular artifact will exist in the same directory as the ivy file.
+            // (The localIvyDir for the artifact may not exist if it's a dependency of a sourceDependency which has been
+            // fetched in the current run.  We assume it will be present when Gradle is re-run, so just return null for
+            // now.)
             def localIvyDir = firstArtifact.getFile().parentFile
             if (localIvyDir.exists()) {
                 localIvyDir.traverse {
@@ -77,13 +79,7 @@ class UnpackModule {
             def moduleGroup = moduleVersion.getGroup()
             def moduleName = moduleVersion.getName()
             def versionStr = moduleVersion.getVersion()
-                                     
-            // println "Processing project: ${proj.name}: ${moduleVersion}"
-            // println "  Children are:"
-            // proj.childProjects.each {k, v -> println "  ${k}"}
-            // println "  buildDependencies are:"
-            // proj.buildDependencies.each {k -> println "  ${k.name}"}
-            
+
             // Is there an ivy file corresponding to this dependency? 
             File ivyFile = getIvyFile(resolvedDependency)
             if (ivyFile != null && ivyFile.exists()) {
