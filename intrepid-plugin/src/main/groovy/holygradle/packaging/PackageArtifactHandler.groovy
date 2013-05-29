@@ -17,9 +17,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     private def lazyConfigurations = []
     
     public static def createContainer(Project project) {
-        project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { packageArtifactName ->
-            project.packageArtifacts.extensions.create(packageArtifactName, PackageArtifactHandler, packageArtifactName)
-        }
+        project.extensions.packageArtifacts = project.container(PackageArtifactHandler)
         
         // Create an internal 'createPublishNotes' task to create some text files to be included in all
         // released packages.

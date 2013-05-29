@@ -179,7 +179,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     
     public void applyModuleName() {
         if (publishName != null) {
-            // Can't do anything here because of http://issues.gradle.org/browse/GRADLE-2412
+            // We'll implement this once the Gradle issue is fixed, and we can upgrade.
+            throw new RuntimeException("Cannot apply module name because of http://issues.gradle.org/browse/GRADLE-2412")
         }
     }
     

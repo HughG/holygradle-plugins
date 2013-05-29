@@ -152,6 +152,10 @@ subprojects {
         }
         if (project.gradle.taskGraph.hasTask(publishRelease)) {
             Helper.chooseNextVersionNumberWithUserInput(project)
+
+            println()
+            println "Publishing '${project.group}:${project.name}:${project.version}'..."
+            println()
         }
     }
 

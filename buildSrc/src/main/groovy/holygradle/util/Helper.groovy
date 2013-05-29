@@ -67,7 +67,5 @@ class Helper {
         } else {
             project.version = userVersionNumber
         }
-        
-        console.printf "\nPublishing '${project.group}:${project.name}:${project.version}'...\n\n"
     }
 }
