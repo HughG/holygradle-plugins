@@ -62,6 +62,15 @@ task setHgVersionInfo {
 
 setHgVersionInfo.outputs.upToDateWhen { false }
 
+subprojects { 
+    project.gradle.taskGraph.whenReady {
+        if (project.gradle.taskGraph.hasTask(publishRelease)) {
+            println "You will now be asked for a publishing version for each sub-project,"
+            println "before any of them are built and published."
+        }
+    }
+}
+
 subprojects {
     if (configurations.findByName("default") == null) {
         configurations {
@@ -146,6 +155,10 @@ subprojects {
         }
         
         // Configure the version number according to which repository we're publishing to.
+        //
+        // NOTE 2013-06-06 HughG: This has to be done now, rather than in a "doFirst" block,
+        // otherwise the project version will be changed after Gradle has decided on the filename
+        // for the JAR file, and we'll end up publishing the ivy.xml but no JAR.
         if (project.gradle.taskGraph.hasTask(publishSnapshot)) {
             def username = System.getProperty("user.name").toLowerCase()
             project.version = "${username}-SNAPSHOT"

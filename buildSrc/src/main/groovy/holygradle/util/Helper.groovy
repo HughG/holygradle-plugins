@@ -43,7 +43,9 @@ class Helper {
             println "It prevents acquiring user input. Please use: --no-daemon"
             throw new RuntimeException("Beware the daemon.")
         }
-        
+
+        console.println()
+        console.println("Choose the version for publishing ${project.group}:${project.name}.")
         def proposedVersion = null
         if (latestVersion == null) {
             proposedVersion = "1.0.0.0"
@@ -51,7 +53,7 @@ class Helper {
             println "Maybe you can't connect to your repository, or maybe you've never published this"
             println "module before. Proposing '${proposedVersion}' as the version number."
         } else {
-            console.printf "\n\nLatest version   : ${latestVersion}"
+            console.println("Latest version   : ${latestVersion}")
             def versionStr = latestVersion
             int lastDot = versionStr.lastIndexOf('.')
             int nextVersion = versionStr[lastDot+1..-1].toInteger() + 1
@@ -59,9 +61,9 @@ class Helper {
             proposedVersion = firstChunk + nextVersion.toString()
         }
         
-        console.printf "\nProposed version : ${proposedVersion}"
+        console.println("Proposed version : ${proposedVersion}")
         
-        def userVersionNumber = console.readLine("\nIs this ok? (Press enter to accept, or type in a new version number.) : ")
+        def userVersionNumber = console.readLine("Is this ok? Press enter to accept, or type in a new version number: ")
         if (userVersionNumber == null || userVersionNumber == "") {
             project.version = proposedVersion
         } else {
