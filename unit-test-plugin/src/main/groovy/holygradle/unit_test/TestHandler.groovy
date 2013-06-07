@@ -1,4 +1,4 @@
-package holygradle.unittest
+package holygradle.unit_test
 
 import org.gradle.api.*
 

@@ -1,4 +1,4 @@
-package holygradle.sourcedependencies
+package holygradle.source_dependencies
 
 import holygradle.*
 import holygradle.test.*
