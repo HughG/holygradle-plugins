@@ -3,7 +3,7 @@ package holygradle.custom_gradle
 import org.gradle.api.*
 
 class BuildDependency {
-    final String name
+    private final String name
     
     BuildDependency(String dep_name) {
         this.name = dep_name

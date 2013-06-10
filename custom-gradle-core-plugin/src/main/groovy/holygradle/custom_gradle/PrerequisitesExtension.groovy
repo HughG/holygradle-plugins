@@ -1,19 +1,21 @@
 package holygradle.custom_gradle
-import holygradle.util.*
-import org.gradle.*
-import org.gradle.api.*
+
 import holygradle.custom_gradle.util.CamelCase
+import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.Task
+
 class PrerequisitesExtension {
     private final Project project
-    private final def checkers = [:]
-    private final def statedPrerequisites = []
+    private final Map<String, PrerequisitesChecker> checkers = [:]
+    private final List<StatedPrerequisite> statedPrerequisites = []
     
     public static PrerequisitesExtension defineExtension(Project project) {
         if (project == project.rootProject) {
             project.extensions.create("prerequisites", PrerequisitesExtension, project)
              
             // Task to check all specified prerequisites.
-            def checkPrerequisitesTask = project.task("checkPrerequisites", type: DefaultTask) {
+            Task checkPrerequisitesTask = project.task("checkPrerequisites", type: DefaultTask) {
                 group = "Custom Gradle"
                 description = "Runs all prerequisite checks."
             }
@@ -21,38 +23,51 @@ class PrerequisitesExtension {
                 // We won't get this far to print this reassuring message, if any dependent tasks failed.
                 println "All prerequisites satisfied."
             }
-            
-            project.prerequisites.register("Java", { checker, params -> 
-                def minVersion = params[0]
-                def javaVersion = checker.readProperty("java.version")
-                def javaVerComponents = javaVersion.split("\\.")
-                def minVerComponents = minVersion.split("\\.")
+
+            getPrerequisites(project).register("Java", { PrerequisitesChecker checker, Object[] params ->
+                String minVersion = params[0] as String
+                String javaVersion = checker.readProperty("java.version")
+                String[] javaVerComponents = javaVersion.split("\\.")
+                String[] minVerComponents = minVersion.split("\\.")
                 minVerComponents.eachWithIndex { item, index ->
                     int minVerInt = (int)item
                     int curVerInt = (int)javaVerComponents[index]
                     if (minVerInt > curVerInt) {
-                        checker.fail "Java version prerequisite not met. Minimum version required is '${minVersion}', but found '${javaVersion}'. Please ensure that you have installed at least version '${minVersion}' of the Java run-time. (You can go to www.java.com/getjava/ where it might be referred to as Version ${minVerComponents[1]} Update X. Or use a Java SDK of your choice). After the appropriate version of the Java runtime has been installed please set the JAVA_HOME environment variable to the location of your new installation of Java (for example C:\\Program Files\\Java\\jdk1.7.0_07). Afterwards, please start a new command prompt and re-run the same command."
+                        checker.fail """Java version prerequisite not met.
+Minimum version required is '${minVersion}', but found '${javaVersion}'. Please
+ensure that you have installed at least version '${minVersion}' of the Java
+run-time. (You can go to www.java.com/getjava/ where it might be referred to
+as Version ${minVerComponents[1]} Update X; or use a Java SDK of your
+choice). After the appropriate version of the Java runtime has been installed
+please set the JAVA_HOME environment variable to the location of your new
+installation of Java (for example C:\\Program Files\\Java\\jdk1.7.0_07).
+Afterwards, please start a new command prompt and re-run the same command."""
                     }
                 }
             })
-            
-            project.prerequisites.register("Windows", { checker, versions -> 
-                def os = checker.readProperty("os.name")
+
+            getPrerequisites(project).register("Windows", { checker, versions ->
+                String os = checker.readProperty("os.name")
                 if (!versions.contains(os)) {
-                    checker.fail "The operating system is '${os}' which is not supported. The supported operating systems are: ${versions}"
+                    checker.fail "The operating system is '${os}', which is not supported. " +
+                            "The supported operating systems are: ${versions}."
                 }
             })
         } else {
             project.extensions.add("prerequisites", project.rootProject.extensions.findByName("prerequisites"))
         }
         
-        project.rootProject.extensions.findByName("prerequisites")
+        getPrerequisites(project)
     }
     
     public PrerequisitesExtension(Project project) {
         this.project = project
     }
-    
+
+    public static PrerequisitesExtension getPrerequisites(Project project) {
+        project.rootProject.extensions.findByName("prerequisites") as PrerequisitesExtension
+    }
+
     // Register a new type of prerequisite checker. The checker closure will be supplied parameters.
     public void register(String prerequisite, Closure checkerClosure) {
         checkers[prerequisite] = new PrerequisitesChecker(project, prerequisite, checkerClosure)
@@ -82,10 +97,8 @@ class PrerequisitesExtension {
     // called by the checkPrerequisites task.
     public StatedPrerequisite specify(String prerequisiteName, String... params) {
         if (checkers.containsKey(prerequisiteName)) {
-            def checker = checkers[prerequisiteName]
-            def paramList = []
-            params.each { paramList.add(it) }
-            def prerequisite = new StatedPrerequisite(checker, paramList)
+            PrerequisitesChecker checker = checkers[prerequisiteName]
+            StatedPrerequisite prerequisite = new StatedPrerequisite(checker, Arrays.asList(params))
             addStatedPrerequisite(prerequisite)
             return prerequisite
         } else {
@@ -98,20 +111,22 @@ class PrerequisitesExtension {
         if (statedPrerequisites.contains(prerequisiteName)) {
             throw new RuntimeException("The prerequisite '${prerequisiteName}' has already been specified.")
         }
-        def prerequisite = new StatedPrerequisite(new PrerequisitesChecker(project, prerequisiteName, checkerClosure))
+        StatedPrerequisite prerequisite = new StatedPrerequisite(
+            new PrerequisitesChecker(project, prerequisiteName, checkerClosure)
+        )
         addStatedPrerequisite(prerequisite)
         return prerequisite
     }
     
     // Return a task that checks all prerequisites of this type
     public Task getTask(String prerequisiteName) {
-        def prerequisites = statedPrerequisites.findAll { it.name == prerequisiteName }
+        Collection<StatedPrerequisite> prerequisites = statedPrerequisites.findAll { it.name == prerequisiteName }
         if (prerequisites.size() == 0) {
             throw new RuntimeException("Unknown prerequisite '${prerequisiteName}'.")
         } else if (prerequisites.size() == 1) {
             return prerequisites[0].getTask()
         } else {
-            def uberTask = project.task(CamelCase.build("checkPrerequisite", prerequisiteName), type: DefaultTask)
+            Task uberTask = project.task(CamelCase.build("checkPrerequisite", prerequisiteName), type: DefaultTask)
             prerequisites.each { prerequisite ->
                 uberTask.dependsOn prerequisite.getTask()
             }
@@ -122,7 +137,7 @@ class PrerequisitesExtension {
     // Runs the check for previously specified prerequisites of the given type. For any given type of
     // prerequisite there may be multiple StatedPrerequisite instances.
     public void check(String prerequisite) {
-        def prerequisites = statedPrerequisites.findAll { it.name == prerequisite }
+        List<StatedPrerequisite> prerequisites = statedPrerequisites.findAll { it.name == prerequisite }
         if (prerequisites.size() == 0) {
             throw new RuntimeException("Unknown prerequisite '${prerequisite}'.")
         } else {
@@ -133,14 +148,7 @@ class PrerequisitesExtension {
     // Check all stated prerequisites, printing out failure messages and counting failures. An exception will
     // be thrown at the end if there were any failures.
     public boolean checkAll() {
-        int fails = 0
-        for (prerequisite in statedPrerequisites) {
-            if (!prerequisite.check(true)) {
-                fails++
-            }
-        }
-        
-        if (fails == 0) {
+        if (statedPrerequisites.count({ !it.check() })) {
             println "All prerequisites satisfied."
         } else {
             throw new RuntimeException("Some prerequisites were not met.")

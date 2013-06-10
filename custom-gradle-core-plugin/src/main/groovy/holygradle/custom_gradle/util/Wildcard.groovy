@@ -13,7 +13,7 @@ public class Wildcard {
         return true
     }
     
-    public static boolean anyMatch(def patterns, String input) {
+    public static boolean anyMatch(List<String> patterns, String input) {
         return patterns.any { match(it, input) }
     }
 }

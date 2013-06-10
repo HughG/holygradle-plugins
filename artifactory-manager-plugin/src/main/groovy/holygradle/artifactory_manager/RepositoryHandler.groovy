@@ -1,7 +1,5 @@
 package holygradle.artifactory_manager
 
-import java.text.SimpleDateFormat
-import net.sf.json.JSON
 import org.gradle.util.ConfigureUtil
 
 class RepositoryHandler {
@@ -9,7 +7,7 @@ class RepositoryHandler {
     private String repository
     private String username
     private String password
-    private def deleteRequests = []
+    private List<DeleteRequest> deleteRequests = []
 
     public RepositoryHandler(String repository, ArtifactoryManagerHandler artifactoryManager) {
         this.repository = repository

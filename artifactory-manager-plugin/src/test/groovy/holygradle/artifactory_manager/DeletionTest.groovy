@@ -1,31 +1,30 @@
 package holygradle.artifactory_manager
 
-import org.junit.Test
-import org.gradle.testfixtures.ProjectBuilder
 import groovy.json.JsonSlurper
-import static org.junit.Assert.*
+import org.junit.Test
+
 import static org.mockito.Mockito.*
-        
+
 /*def project = ProjectBuilder.builder().build()
 project.apply plugin: "artifactory-manager"
 */
         
 class DeletionTest {
-    public static def folderInfo(String date, def children) {
+    private static Map folderInfo(String date, def children) {
         def dateStr = Date.parse("yyyy-MM-dd", date).format("yyyy-MM-dd'T'HH:mm:ss.SSSX")
         println dateStr
         def childrenStr = children.collect { "{\"uri\":\"${it}\",\"folder\":true}" }.join(",")
-        new JsonSlurper().parseText("{\"created\": \"${dateStr}\", \"children\": [${childrenStr}]}")
+        new JsonSlurper().parseText("{\"created\": \"${dateStr}\", \"children\": [${childrenStr}]}") as Map
     }
     
-    private static def getMockArtifactory(String date) {
+    private static ArtifactoryAPI getMockArtifactory(String date) {
         ArtifactoryAPI artifactory = mock(ArtifactoryAPI.class)
         when(artifactory.getNow()).thenReturn(Date.parse("yyyy-MM-dd", date))
         artifactory
     }
     
     @Test
-    public void testDeleteOlderThanOneWeek() {        
+    public void testDeleteOlderThanOneWeek() {
         def artifactory = getMockArtifactory("2012-12-25")
         when(artifactory.getFolderInfoJson("org/foo")).thenReturn(folderInfo("2012-11-01", ["/1.1", "/1.2"]))
         when(artifactory.getFolderInfoJson("org/foo/1.1")).thenReturn(folderInfo("2012-12-19", []))
@@ -122,7 +121,7 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/foo/1.2")).thenReturn(folderInfo("2012-09-20", []))
         when(artifactory.getFolderInfoJson("org/foo/1.3")).thenReturn(folderInfo("2012-10-09", []))
         when(artifactory.getFolderInfoJson("org/foo/1.4")).thenReturn(folderInfo("2012-10-22", []))
-        
+
         def artifactoryManager = new ArtifactoryManagerHandler(artifactory)
         
         artifactoryManager.delete {
@@ -159,7 +158,7 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/bar/1.5")).thenReturn(folderInfo("2012-10-22", []))
         when(artifactory.getFolderInfoJson("org/bar/1.6")).thenReturn(folderInfo("2012-10-24", []))
         when(artifactory.getFolderInfoJson("org/bar/1.7")).thenReturn(folderInfo("2012-12-02", []))
-        
+
         def artifactoryManager = new ArtifactoryManagerHandler(artifactory)
         
         artifactoryManager.delete("org:foo,org:bar") {

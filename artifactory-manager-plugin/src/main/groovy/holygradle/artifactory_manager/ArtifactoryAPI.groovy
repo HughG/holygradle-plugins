@@ -5,7 +5,7 @@ interface ArtifactoryAPI {
     
     Date getNow();
     
-    def getFolderInfoJson(String path);
+    Map getFolderInfoJson(String path);
     
     void removeItem(String path);
 }

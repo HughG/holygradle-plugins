@@ -11,7 +11,7 @@ class DeleteRequest {
     private String keepExplanation = ""
     private int keepCount = 0
     private String keepInterval = null
-    private def versionsToKeep = []
+    private List<String> versionsToKeep = []
     
     public DeleteRequest(String modules) {
         this.modules = modules
@@ -29,10 +29,9 @@ class DeleteRequest {
     }
     
     private static Date getLatestDateForSlidingWindow(Date date, String units) {
-        def calendar = date.toCalendar().clearTime()
-        calendar.setLenient(true)
+        Calendar calendar = date.toCalendar().clearTime()
+        calendar.lenient = true;
         
-        Date latestDate = null
         switch (units) {
             case "week":
             case "weeks":
@@ -54,14 +53,13 @@ class DeleteRequest {
                 throw new RuntimeException("Unknown unit '${units}'")
         }
         
-        return calendar.getTime()
+        return calendar.time
     }
-    
+
     private static Date subtractDate(Date date, int countUnits, String units) {
-        def calendar = date.toCalendar().clearTime()
-        calendar.setLenient(true)
-        
-        Date newDate = null
+        Calendar calendar = date.toCalendar().clearTime()
+        calendar.lenient = true;
+
         switch (units) {
             case "day":
             case "days":
@@ -83,7 +81,7 @@ class DeleteRequest {
                 throw new RuntimeException("Unknown unit '${units}'")
         }
         
-        return calendar.getTime()
+        return calendar.time
     }
     
     public void keepOneBuildPer(int countUnits, String units) {
@@ -97,11 +95,11 @@ class DeleteRequest {
     }
     
     public void process(ArtifactoryAPI artifactoryApi) {
-        def moduleGroup = modules.split(",")
+        String[] moduleGroup = modules.split(",")
         println "  Deleting artifacts for '${moduleGroup.join(", ")}'"
         println "  when they are ${deleteExplanation}${keepExplanation}."
         
-        def cutoffDate = null
+        Date cutoffDate = null
         if (deleteBeforeDate != null) {
             cutoffDate = deleteBeforeDate
         } else if (deleteUnits != null) {
@@ -112,24 +110,24 @@ class DeleteRequest {
         }
         
         // Gather deletion candidates for each module.
-        def moduleDeleteCandidates = [:]
+        Map<String, ArtifactInfo> moduleDeleteCandidates = [:]
         Date earliestDateFound = artifactoryApi.getNow()
         moduleGroup.each { module ->
-            def path = module.replace(":", "/")            
-            def deleteCandidate = new ArtifactInfo(artifactoryApi, path)
+            String path = module.replace(":", "/")
+            ArtifactInfo deleteCandidate = new ArtifactInfo(artifactoryApi, path)
             
             //println "newest"
-            deleteCandidate.filter { 
+            deleteCandidate.filter { ArtifactInfo it ->
                 // Filter out any folders which represent the newest 
-                (it.parent != null) && (it == it.parent.getNewestChild())
+                (it.parent != null) && (it == it.parent.newestChild)
             }
             //println "after cutoff"
-            deleteCandidate.filter { 
+            deleteCandidate.filter { ArtifactInfo it ->
                 // Filter out any folders that were created after our cut-off date.
-                if (it.getVersion() == null) {
+                if (it.version == null) {
                     false
                 } else {
-                    def creationDate = it.getCreationDate()
+                    Date creationDate = it.creationDate
                     if (creationDate.before(earliestDateFound)) {
                         earliestDateFound = creationDate
                     }
@@ -149,13 +147,13 @@ class DeleteRequest {
             while (laterDate.after(earliestDateFound)) {
                 //println "    Checking period ${earlierDate} to ${laterDate}..."
                 boolean anythingInRange = false
-                def modulePathsInRange = [:]
+                Map<String, List<ArtifactInfo>> modulePathsInRange = [:]
                 moduleDeleteCandidates.each { module, deleteCandidate ->
-                    def inRange = []
+                    List<ArtifactInfo> inRange = []
                     //println "looking at module $module"
-                    deleteCandidate.all {
-                        if (it.getVersion() != null) {
-                            Date date = it.getCreationDate()
+                    deleteCandidate.all { ArtifactInfo it ->
+                        if (it.version != null) {
+                            Date date = it.creationDate
                             if (date.after(earlierDate) && laterDate.after(date)) {
                                 //println "  ${it.path} - ${date}"
                                 inRange.add(it)
@@ -167,10 +165,10 @@ class DeleteRequest {
                 }
                 
                 if (anythingInRange) {
-                    def commonVersions = null
+                    List<String> commonVersions = null
                     modulePathsInRange.each { module, inRange ->
                         if (inRange.size() > 0) {
-                            def versions = inRange.collect { it.getVersion() }
+                            List<String> versions = inRange.collect { it.version }
                             if (commonVersions == null) {
                                 commonVersions = versions
                             } else {
@@ -180,12 +178,12 @@ class DeleteRequest {
                     }
                     
                     if (commonVersions != null && commonVersions.size() > 0) {
-                        def versionToSave = commonVersions[0]
+                        String versionToSave = commonVersions[0]
                         //println "      Saving version: ${versionToSave}"
                         moduleDeleteCandidates.each { module, deleteCandidate ->
-                            deleteCandidate.filter { 
+                            deleteCandidate.filter { ArtifactInfo it ->
                                 // Filter out any versioned artifacts that we should save
-                                it.getVersion() == versionToSave
+                                it.version == versionToSave
                             }
                         }
                     } else {
@@ -202,17 +200,17 @@ class DeleteRequest {
         
         // We may have a hard-coded list of versions to keep.
         versionsToKeep.each { versionToKeep ->
-            moduleDeleteCandidates.each { module, deleteCandidate ->
-                deleteCandidate.filter { 
+            moduleDeleteCandidates.each { String module, ArtifactInfo deleteCandidate ->
+                deleteCandidate.filter { ArtifactInfo it ->
                     // Filter out any versioned artifacts that we should save
-                    it.getVersion() == versionToKeep
+                    it.version == versionToKeep
                 }
             }
         }
         
         // Delete all candidates that remain.
-        moduleDeleteCandidates.each { module, deleteCandidate ->
-            deleteCandidate.all {
+        moduleDeleteCandidates.each { String module, ArtifactInfo deleteCandidate ->
+            deleteCandidate.all { ArtifactInfo it ->
                 // Only delete folders that look like a versioned artifact i.e. 
                 // using a version number for the folder name.
                 if (it.getVersion() != null) {

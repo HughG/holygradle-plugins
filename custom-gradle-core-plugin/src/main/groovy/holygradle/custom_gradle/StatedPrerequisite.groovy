@@ -1,12 +1,12 @@
 package holygradle.custom_gradle
-import holygradle.util.*
-import org.gradle.*
-import org.gradle.api.*
+
 import holygradle.custom_gradle.util.CamelCase
+import org.gradle.api.Task
+
 class StatedPrerequisite {
     public final String name
     private final PrerequisitesChecker checker
-    public final def params = null
+    public final Object[] params = null
     private boolean hasRun = false
     private boolean ok = false
     private Task checkTask = null
@@ -16,7 +16,7 @@ class StatedPrerequisite {
         this.checker = checker
     }
     
-    StatedPrerequisite(PrerequisitesChecker checker, def params) {
+    StatedPrerequisite(PrerequisitesChecker checker, Object[] params) {
         this(checker)
         this.params = params
     }
@@ -38,8 +38,8 @@ class StatedPrerequisite {
                 nameComponents.addAll(params)
             }
             def taskName = CamelCase.build(nameComponents)
-            checkTask = checker.project.task(taskName, type: StatedPrerequisiteTask) {
-                initialize(this)
+            checkTask = checker.project.task(taskName, type: StatedPrerequisiteTask) { StatedPrerequisiteTask task ->
+                task.initialize(this)
             }
         }
         checkTask

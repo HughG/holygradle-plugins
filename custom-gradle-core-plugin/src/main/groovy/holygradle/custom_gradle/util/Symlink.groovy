@@ -1,5 +1,9 @@
 package holygradle.custom_gradle.util
 
+import org.gradle.api.Project
+import org.gradle.process.ExecResult
+import org.gradle.process.ExecSpec
+
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -14,7 +18,7 @@ public class Symlink {
         }
     }
     
-    public static void rebuild(File link, File target, def project, boolean fileLink=false) {
+    public static void rebuild(File link, File target, Project project, boolean fileLink=false) {
         File canonicalLink = link.getCanonicalFile()
         
         // Delete the symlink if it exists
@@ -23,26 +27,27 @@ public class Symlink {
         }
         
         // Make sure the parent directory exists
-        File shouldExist = canonicalLink.parentFile
-        if (canonicalLink.parentFile != null) {
-            if (!canonicalLink.parentFile.exists()) {
-                canonicalLink.parentFile.mkdirs()
+        final File shouldExist = canonicalLink.parentFile
+        if (shouldExist != null) {
+            if (!shouldExist.exists()) {
+                shouldExist.mkdirs()
             }
         }
         
         // Run 'mklink'
-        def execResult = project.exec {
+        ExecResult execResult = project.exec { ExecSpec it ->
             if (fileLink) {
-                commandLine "cmd", "/c", "mklink", '"' + canonicalLink.path + '"', '"' + target.path + '"' 
+                it.commandLine "cmd", "/c", "mklink", '"' + canonicalLink.path + '"', '"' + target.path + '"'
             } else {
-                commandLine "cmd", "/c", "mklink", "/D", '"' + canonicalLink.path + '"', '"' + target.path + '"' 
+                it.commandLine "cmd", "/c", "mklink", "/D", '"' + canonicalLink.path + '"', '"' + target.path + '"'
             }
-            setStandardOutput new ByteArrayOutputStream()
-            setErrorOutput new ByteArrayOutputStream()
-            setIgnoreExitValue true
+            it.setStandardOutput new ByteArrayOutputStream()
+            it.setErrorOutput new ByteArrayOutputStream()
+            it.setIgnoreExitValue true
         }
         if (execResult.getExitValue() != 0) {
-            println "Failed to create symlink at location '${canonicalLink}' pointing to '${target}'. This could be due to User Account Control, or failing to use an Administrator command prompt."
+            println "Failed to create symlink at location '${canonicalLink}' pointing to '${target}'. " +
+                "This could be due to User Account Control, or failing to use an Administrator command prompt."
             execResult.rethrowFailure()
         }
     }

@@ -9,14 +9,14 @@ public class VersionNumber {
     public static String getLatestUsingBuildscriptRepositories(
         Project project, String group, String moduleName
     ) {
-        def latestVersion = null
+        String latestVersion = null
         def externalDependency = new DefaultExternalModuleDependency(group, moduleName, "+", "default")
         def dependencyConf = project.buildscript.configurations.detachedConfiguration(externalDependency)
         dependencyConf.resolutionStrategy.cacheDynamicVersionsFor 1, 'seconds'
         
         try {
-            dependencyConf.getResolvedConfiguration().getFirstLevelModuleDependencies().each {
-                latestVersion = it.getModuleVersion()
+            dependencyConf.resolvedConfiguration.firstLevelModuleDependencies.each {
+                latestVersion = it.moduleVersion
             }
         } catch (Exception e) {
             project.logger.info "Failed to determine latest version of '$group:$moduleName': $e"

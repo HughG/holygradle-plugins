@@ -1,13 +1,14 @@
 package holygradle.artifactory_manager
 
+import java.text.ParseException
 import java.text.SimpleDateFormat
 
 class ArtifactInfo {
     public final String path
     private Date creationDate = null
-    public def json
-    public ArtifactInfo parent
-    public def children = []
+    private Map json
+    private ArtifactInfo parent
+    private List<ArtifactInfo> children = []
     
     public ArtifactInfo(ArtifactoryAPI artifactory, String path) {
         this.path = path
@@ -22,17 +23,21 @@ class ArtifactInfo {
     
     private void initialize(ArtifactoryAPI artifactory) {
         //println "ArtifactInfo: '$path'"
-        json = artifactory.getFolderInfoJson(path)        
+        json = artifactory.getFolderInfoJson(path)
         for (child in json.children) {
             if (child.folder) {
                 children.add(new ArtifactInfo(this, artifactory, path + child.uri))
             }
         }
     }
-    
+
+    public ArtifactInfo getParent() {
+        return this.parent
+    }
+
     public String getVersion() {
         if (path ==~ /.*\/([\d\w\.]+\d+)/) {
-            path.split("/")[-1]
+            path.split("/").last()
         } else {
             null
         }
@@ -42,9 +47,9 @@ class ArtifactInfo {
         if (creationDate == null) {
             def dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
             try {
-                creationDate = dateFormat.parse(json.created)
-            } catch (ParseException) {
-                println "Failed to parse date '${json.created}'."
+                creationDate = dateFormat.parse(json.created as String)
+            } catch (ParseException e) {
+                println "Failed to parse date '${json.created}': " + e.toString()
                 creationDate = new Date()
             }
         }

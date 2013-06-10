@@ -1,7 +1,6 @@
 package holygradle.custom_gradle
 
-import org.gradle.*
-import org.gradle.api.*
+import org.gradle.api.DefaultTask
 
 class StatedPrerequisiteTask extends DefaultTask {
     private StatedPrerequisite statedPrerequisite

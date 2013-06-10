@@ -1,12 +1,15 @@
 package holygradle.custom_gradle
-import org.gradle.*
-import org.gradle.api.*
+
+import org.gradle.api.Project
+import org.gradle.process.ExecResult
+import org.gradle.process.ExecSpec
+
 class PrerequisitesChecker {
-    public final String name
-    public final Project project
+    private final String name
+    private final Project project
     private final Closure checkClosure
     private boolean ok = true
-    public boolean checkingAllPrerequisites = false
+    private boolean checkingAllPrerequisites = false
     
     PrerequisitesChecker(Project project, String name, Closure checkClosure) {
         this.project = project
@@ -14,10 +17,11 @@ class PrerequisitesChecker {
         this.checkClosure = checkClosure
         
         project.gradle.taskGraph.whenReady {
-            checkingAllPrerequisites = project.gradle.taskGraph.hasTask(project.prerequisites.getCheckAllPrerequisitesTask())
+            final PrerequisitesExtension prerequisites = PrerequisitesExtension.getPrerequisites(project)
+            checkingAllPrerequisites = project.gradle.taskGraph.hasTask(prerequisites.getCheckAllPrerequisitesTask())
         }
     }
-    public boolean run(def params) {
+    public boolean run(Object[] params) {
         // The 'ok' variable is not really stateful. Its purpose is to determine the return value for this method.
         // It will be set to false if the fail method is called.
         ok = true
@@ -37,16 +41,16 @@ class PrerequisitesChecker {
     }
     
     public String readRegistry(String location, String key) {
-        def regOutput = new ByteArrayOutputStream()
-        def execResult = project.exec {
-            commandLine "cmd", "/c", "reg", "query", "\"${location}\"", "/v", key
-            setStandardOutput regOutput
-            setErrorOutput new ByteArrayOutputStream()
-            setIgnoreExitValue true
+        OutputStream regOutput = new ByteArrayOutputStream()
+        ExecResult execResult = project.exec { ExecSpec it ->
+            it.commandLine "cmd", "/c", "reg", "query", "\"${location}\"", "/v", key
+            it.setStandardOutput regOutput
+            it.setErrorOutput new ByteArrayOutputStream()
+            it.setIgnoreExitValue true
         }
         if (execResult.getExitValue() == 0) {
-            String line = regOutput.toString().readLines()[2]
-            return line.split()[-1]
+            String line = regOutput.toString().readLines().getAt(2)
+            return line.split().last()
         }
         return null
     }
@@ -60,7 +64,7 @@ class PrerequisitesChecker {
     }
     
     public String readFile(String path) {
-        def f = new File(path)
+        File f = new File(path)
         if (f.exists() && f.isFile()) {
             return f.text
         } else {
@@ -69,12 +73,12 @@ class PrerequisitesChecker {
     }
     
     public String readFileVersion(String path) {
-        def powershellOutput = new ByteArrayOutputStream()
-        def execResult = project.exec {
-            commandLine "powershell", "-Command", "(Get-Item '${path}').VersionInfo.FileVersion"
-            setStandardOutput powershellOutput
-            setErrorOutput new ByteArrayOutputStream()
-            setIgnoreExitValue true
+        OutputStream powershellOutput = new ByteArrayOutputStream()
+        ExecResult execResult = project.exec { ExecSpec it ->
+            it.commandLine "powershell", "-Command", "(Get-Item '${path}').VersionInfo.FileVersion"
+            it.setStandardOutput powershellOutput
+            it.setErrorOutput new ByteArrayOutputStream()
+            it.setIgnoreExitValue true
         }
         if (execResult.getExitValue() == 0) {
             return powershellOutput.toString().trim()
@@ -83,11 +87,11 @@ class PrerequisitesChecker {
     }
     
     public void assertOnPath(String shouldBeOnPath, String failureMessage = null) {
-        def execResult = project.exec {
-            commandLine "cmd", "/c", "where", shouldBeOnPath
-            setStandardOutput new ByteArrayOutputStream()
-            setErrorOutput new ByteArrayOutputStream()
-            setIgnoreExitValue true
+        ExecResult execResult = project.exec { ExecSpec it ->
+            it.commandLine "cmd", "/c", "where", shouldBeOnPath
+            it.setStandardOutput new ByteArrayOutputStream()
+            it.setErrorOutput new ByteArrayOutputStream()
+            it.setIgnoreExitValue true
         }
         if (execResult.getExitValue() != 0) {
             fail "Failed to find '${shouldBeOnPath}' on the path. ", failureMessage
@@ -101,11 +105,11 @@ class PrerequisitesChecker {
     }
      
     public void assertEnvironmentVariableRefersToDirectory(String envVar, String failureMessage = null) {
-        def env = readEnvironment(envVar)
+        String env = readEnvironment(envVar)
         if (env == null) {
             fail "The environment variable '${envVar}' has not been set. ", failureMessage
         } else {
-            def dir = new File(env)
+            File dir = new File(env)
             if (dir.exists()) {
                 if (!dir.isDirectory()) {
                     fail "The environment variable '${envVar}' is set, contains '{env}' but that is not a directory. ", failureMessage
@@ -137,13 +141,13 @@ class PrerequisitesChecker {
         }
     }
     
-    public void wrapMessage(String text, int columns = 80) {
+    public static void wrapMessage(String text, int columns = 80) {
         println "-"*columns
         text.eachLine { lnText ->
-            def line = ""
+            String line = ""
             lnText.split(" ").each { word ->
                 if (word.length() > columns) {
-                    def part = word.substring(0, columns - line.length())
+                    String part = word.substring(0, columns - line.length())
                     line += part
                     word = word.substring(part.length())
                 }

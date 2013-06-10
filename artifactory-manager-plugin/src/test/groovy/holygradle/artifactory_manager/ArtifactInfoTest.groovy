@@ -11,8 +11,8 @@ import static org.mockito.Mockito.*
 import groovy.json.JsonSlurper
 
 class ArtifactInfoTest {
-    public static def folderInfo(String date) {
-        new JsonSlurper().parseText("{\"created\": \"${date}\"}")
+    public static Map folderInfo(String date) {
+        new JsonSlurper().parseText("{\"created\": \"${date}\"}") as Map
     }
 
     private static ArtifactoryAPI getMockArtifactory() {

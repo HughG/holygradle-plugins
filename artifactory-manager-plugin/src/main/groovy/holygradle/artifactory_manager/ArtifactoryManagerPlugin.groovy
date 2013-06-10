@@ -1,7 +1,8 @@
 package holygradle.artifactory_manager
 
-import org.gradle.*
-import org.gradle.api.*
+import org.gradle.api.DefaultTask
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
 class ArtifactoryManagerPlugin implements Plugin<Project> {        
     void apply(Project project) {        
@@ -18,12 +19,12 @@ class ArtifactoryManagerPlugin implements Plugin<Project> {
         project.gradle.projectsEvaluated {
             if (artifactoryManagerExtension.canDelete()) {
                 project.task("cleanupArtifactory", type: DefaultTask) {
-                    doLast {
+                    it.doLast {
                         artifactoryManagerExtension.doDelete(false)
                     }
                 }
                 project.task("cleanupArtifactoryDryRun", type: DefaultTask) {
-                    doLast {
+                    it.doLast {
                         artifactoryManagerExtension.doDelete(true)
                     }
                 }

@@ -1,41 +1,49 @@
-class HolyGradlePlugins {
-    // NOTE 2013-04-03 HughG: May no longer need to be public.
-    public def usages = [:]
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.initialization.dsl.ScriptHandler
 
-    private def buildscript
-    private def project
+class HolyGradlePlugins {
+    // NOTE 2013-06-07 HughG: Referenced by holygradle.custom_gradle.VersionInfo.
+    public Map<String,String> usages = [:]
+
+    private ScriptHandler buildscript
+    private Project project
     
-    HolyGradlePlugins(buildscript, project) {
+    HolyGradlePlugins(ScriptHandler buildscript, Project project) {
         this.buildscript = buildscript
         this.project = project
         // Point the buildscript to the Holy Gradle plugins.
         if (project.ext.holyGradlePluginsRepository != null) {
-            buildscript.repositories {
-                ivy { url project.ext.holyGradlePluginsRepository }
+            buildscript.repositories { RepositoryHandler repoHandler ->
+                repoHandler.ivy { IvyArtifactRepository repo ->
+                    repo.url = project.ext.holyGradlePluginsRepository
+                }
             }
         }
         // Point the buildscript to a source of dependencies for the Holy Gradle plugins.
         if (project.ext.holyGradleRemoteRepository != null) {
-            buildscript.repositories {
-                maven { url project.ext.holyGradleRemoteRepository }
+            buildscript.repositories { RepositoryHandler repoHandler ->
+                repoHandler.maven { MavenArtifactRepository repo ->
+                    repo.url = project.ext.holyGradleRemoteRepository
+                }
             }
         }
 
         // By default, set the resolution strategy for buildscript dependencies so that those
         // specified with dynamic version numbers (e.g. "1.0.+") are cached for 1 hour.
-        buildscript.configurations.all {
-            resolutionStrategy {
-                cacheChangingModulesFor 1, 'seconds'
-                cacheDynamicVersionsFor 1, 'hours'
+        buildscript.configurations.all { Configuration conf ->
+            conf.resolutionStrategy { ResolutionStrategy res ->
+                res.cacheChangingModulesFor 1, 'seconds'
+                res.cacheDynamicVersionsFor 1, 'hours'
             }
         }
     }
     
     public void use(String plugin_version) {
         String group = "holygradle"
-        String plugin = null
-        String version = null
-        def error = "Invalid format for 'gplugins.use'. The parameter should be in the form '<module>:<version>'."
+        String plugin
+        String version
+        final String error = "Invalid format for 'gplugins.use'. The parameter should be in the form '<module>:<version>'."
         if (plugin_version.contains(":")) {
             def split = plugin_version.split(":")
             if (split.size() == 2) {
@@ -81,14 +89,16 @@ class HolyGradlePlugins {
         }
 
         // Actually add the plugins to the buildscript, and record the version.
-        buildscript.dependencies {
-            classpath("${group}:${pluginFullName}:${version}") { changing = usingSnapshots }
+        buildscript.dependencies { DependencyHandler depHandler ->
+            depHandler.add("classpath", "${group}:${pluginFullName}:${version}") { ExternalModuleDependency dep ->
+                dep.changing = usingSnapshots
+            }
         }
         usages[plugin] = version
     }
     
     public void apply() {
-        def localProject = project // allow closures to access class-private
+        Project localProject = project // allow closures to access class-private
 
         // Schedule 'user.gradle' files to be applied first thing after the projects are evaluated.
         project.gradle.projectsEvaluated {
@@ -114,10 +124,10 @@ class HolyGradlePlugins {
 String holyGradleInitScriptVersion = "[[INIT_SCRIPT_VERSION]]"
 String holyGradleInitScriptSourceVersion = "[[INIT_SCRIPT_SOURCE_VERSION]]"
 
-projectsLoaded {
+projectsLoaded { Gradle gradle ->
     // We need to guard this, because the init script is run twice each time, once with "buildSrc"
     // as the root (even if there's no "buildSrc" directory) and once for the actual root project.
-    if (rootProject.name != "buildSrc") {
+    if (gradle.rootProject.name != "buildSrc") {
         return
     }
     getLogger().lifecycle("Holy Gradle init script version: ${holyGradleInitScriptVersion}")
@@ -127,12 +137,12 @@ projectsLoaded {
             "Using SNAPSHOT version. " +
             "Gradle wrapper will NOT automatically download the latest. " +
             "You must manually delete entries in \"" + 
-            (new File(getGradleUserHomeDir(), "wrapper")).toString() + "\"."
+            (new File(gradle.getGradleUserHomeDir(), "wrapper")).toString() + "\"."
         )
     }
 }
 
-allprojects {
+allprojects { Project project ->
     project.ext.holyGradleInitScriptVersion = holyGradleInitScriptVersion
     project.ext.holyGradleInitScriptSourceVersion = holyGradleInitScriptSourceVersion
     
@@ -157,8 +167,8 @@ allprojects {
     project.ext.usingLocalArtifacts = usingLocalArtifacts
     
     if (usingLocalArtifacts) {
-        project.repositories.ivy {
-            url new File(localArtifactsFile, "ivy").path
+        project.repositories.ivy { IvyArtifactRepository it ->
+            it.url = new File(localArtifactsFile, "ivy").path
         }
     }
     

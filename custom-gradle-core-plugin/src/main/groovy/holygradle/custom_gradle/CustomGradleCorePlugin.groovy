@@ -1,14 +1,12 @@
 package holygradle.custom_gradle
 
-import holygradle.util.*
-import org.gradle.*
-import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import org.gradle.api.tasks.*
-import org.gradle.api.tasks.bundling.*
-import org.gradle.api.tasks.wrapper.*
-import org.gradle.api.logging.*
 import holygradle.custom_gradle.util.VersionNumber
+import org.gradle.api.DefaultTask
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.wrapper.Wrapper
+import org.gradle.process.ExecSpec
 
 class CustomGradleCorePlugin implements Plugin<Project> {
     /**
@@ -25,11 +23,10 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         
         // DSL extension to specify build dependencies
         project.extensions.buildDependencies = project.container(BuildDependency)
-        def buildDependencies = project.extensions.buildDependencies
-        
+
         // DSL extension 'taskDependencies' to allow build script to configure task dependencies
         // according to inter-project dependencies defined using 'buildDependencies'.
-        def taskDependenciesExtension = project.extensions.create("taskDependencies", TaskDependenciesExtension, project)
+        project.extensions.create("taskDependencies", TaskDependenciesExtension, project)
         
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
         def prerequisites = PrerequisitesExtension.defineExtension(project)
@@ -37,22 +34,22 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         prerequisites.specify("Java", "1.7").check()
                
         // DSL extension 'pluginUsages' to help determine actual version numbers used (deprecated, should later replace with versionInfo)
-        def pluginUsagesExtension = project.extensions.create("pluginUsages", PluginUsages, project)
+        project.extensions.create("pluginUsages", PluginUsages, project)
         
         // DSL extension 'versionInfo' to help determine actual version numbers used (of anything relevant for
         // re-constructing the build, e.g., system configuration, plugin versions, prerequisite versions, etc.).
         def versionInfoExtension = VersionInfo.defineExtension(project)
         
         // Task to create a wrapper 
-        project.task("createWrapper", type: Wrapper) {
+        project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
             def customGradleVersion = project.gradle.gradleVersion + "-" + project.ext.holyGradleInitScriptVersion
-            gradleVersion customGradleVersion
-            distributionUrl project.ext.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.ext.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
-            jarFile "${project.projectDir}/gradle/gradle-wrapper.jar"
-            scriptFile "${project.projectDir}/gw"
-            doLast {
+            wrapper.gradleVersion = customGradleVersion
+            wrapper.distributionUrl = project.ext.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.ext.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
+            wrapper.jarFile = "${project.projectDir}/gradle/gradle-wrapper.jar"
+            wrapper.scriptFile = "${project.projectDir}/gw"
+            wrapper.doLast {
                 def gwContent = """\
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
@@ -160,17 +157,17 @@ if "%OS%"=="Windows_NT" endlocal
         if (project == project.rootProject) {
             // Create a task to allow user to ask for help 
             def helpUrl = "http://ediwiki/mediawiki/index.php/Gradle"
-            project.task("pluginHelp", type: Exec) {
+            project.task("pluginHelp", type: Exec) { ExecSpec spec ->
                 group = "Custom Gradle"
                 description = "Opens the help page '${helpUrl}' in your favourite browser."
-                commandLine "cmd", "/c", "start", helpUrl
+                spec.commandLine "cmd", "/c", "start", helpUrl
             }
             
             // Task to help the user to use 'gw' from any directory.
-            project.task("doskey", type: DefaultTask) {
+            project.task("doskey", type: DefaultTask) { DefaultTask task ->
                 group = "Custom Gradle"
                 description = "Helps you configure doskey to allow 'gw' to be used from any directory."
-                doLast {
+                task.doLast {
                     def doskeyFile = new File("gwdoskey.bat")
                     doskeyFile.write(
                         "@echo off\r\n" +
@@ -185,10 +182,10 @@ if "%OS%"=="Windows_NT" endlocal
             }
             
             // Task to print some version information.
-            project.task("versionInfo", type: DefaultTask) {
+            project.task("versionInfo", type: DefaultTask) { DefaultTask task ->
                 group = "Custom Gradle"
                 description = "Outputs version information about this instance of Gradle."
-                doLast {
+                task.doLast {
                     println "Gradle home: "
                     println "  ${project.gradle.gradleHomeDir.path}\n"
                     println "Init script location: "
@@ -222,14 +219,14 @@ if "%OS%"=="Windows_NT" endlocal
             }
             
             // Task to open all buildscripts in the workspace.
-            project.task("openAllBuildscripts", type: DefaultTask) {
+            project.task("openAllBuildscripts", type: DefaultTask) { DefaultTask task ->
                 group = "Custom Gradle"
                 description = "Opens all build-scripts in this workspace using the default program for '.gradle' files."
-                doLast {
+                task.doLast {
                     project.rootProject.allprojects.each { p ->
                         if (p.buildFile != null) {
-                            project.exec {
-                                commandLine "cmd", "/c", "start", p.buildFile.path
+                            project.exec { ExecSpec spec ->
+                                spec.commandLine "cmd", "/c", "start", p.buildFile.path
                             }
                         }
                     }
@@ -237,27 +234,27 @@ if "%OS%"=="Windows_NT" endlocal
             }
             
             // Task to open the init script
-            project.task("openInitScript", type: DefaultTask) {
+            project.task("openInitScript", type: DefaultTask) { DefaultTask task ->
                 group = "Custom Gradle"
                 description = "Opens the init script using the default program for '.gradle' files."
-                doLast {
-                    project.exec {
-                        commandLine "cmd", "/c", "start", getInitScriptLocation(project)
+                task.doLast {
+                    project.exec { ExecSpec spec ->
+                        spec.commandLine "cmd", "/c", "start", getInitScriptLocation(project)
                     }
                 }
             }
             
             // Task to open the user's global gradle.properties file.
-            project.task("openGradleProperties", type: DefaultTask) {
+            project.task("openGradleProperties", type: DefaultTask) { DefaultTask task ->
                 group = "Custom Gradle"
                 description = "Opens the user's system-wide gradle.properties file."
-                doLast {
+                task.doLast {
                     def homeDir = project.gradle.gradleHomeDir
                     while (homeDir != null && homeDir.parentFile != null && homeDir.name != ".gradle") {
                         homeDir = homeDir.parentFile
                     }
-                    project.exec {
-                        commandLine "cmd", "/c", "start", new File(homeDir, "gradle.properties").path
+                    project.exec { ExecSpec spec ->
+                        spec.commandLine "cmd", "/c", "start", new File(homeDir, "gradle.properties").path
                     }
                 }
             }

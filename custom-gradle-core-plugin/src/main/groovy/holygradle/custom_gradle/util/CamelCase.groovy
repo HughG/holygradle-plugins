@@ -1,7 +1,7 @@
 package holygradle.custom_gradle.util
 
 public class CamelCase {
-    public static String build(def components) {
+    public static String build(List<String> components) {
         def camelCase = new StringBuilder()
         boolean firstCharacterLowerCase = true
         components.each { component ->
