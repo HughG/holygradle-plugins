@@ -1,14 +1,13 @@
 package holygradle.devenv
 
 import holygradle.custom_gradle.BuildDependency
-import org.gradle.*
-import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import org.gradle.api.tasks.*
-import org.gradle.api.tasks.bundling.*
-import org.gradle.api.logging.*
+import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.logging.StyledTextOutput
 import org.gradle.logging.StyledTextOutputFactory
+import org.gradle.process.ExecResult
+import org.gradle.process.ExecSpec
 
 class DevEnvTask extends DefaultTask {
     // Should this task depend on similarly named tasks in dependent projects?
@@ -48,7 +47,7 @@ class DevEnvTask extends DefaultTask {
             throw new RuntimeException("Expected task to have been initialised with 'build' operation.")
         }
         this.platform = platform
-        
+
         if (devEnvHandler.getVsSolutionFile() != null) {
             addStampingDependencyForProject(project)
             if (project != project.rootProject) {
@@ -56,7 +55,7 @@ class DevEnvTask extends DefaultTask {
             }
             
             // We should rebuild symlinks before running any build task.
-            def rebuildSymlinksTask = project.tasks.findByName("rebuildSymlinks")
+            Task rebuildSymlinksTask = project.tasks.findByName("rebuildSymlinks")
             if (rebuildSymlinksTask != null) {
                 dependsOn rebuildSymlinksTask
             }
@@ -65,7 +64,7 @@ class DevEnvTask extends DefaultTask {
                 project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(),
                 devEnvHandler.useIncredibuild(), platform, configuration, 
                 devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
-            )       
+            )
         }
         
         configureTaskDependencies()
@@ -94,7 +93,7 @@ class DevEnvTask extends DefaultTask {
                     t.configuration == configuration &&
                     (t.platform == platform || t.platform == "any")
                 ) {
-                    dependsOn t
+                    this.dependsOn t
                 }
             }
         }
@@ -118,13 +117,13 @@ class DevEnvTask extends DefaultTask {
     
     private void configureBuildTask(
         Project project, File buildToolPath, File solutionFile, boolean useIncredibuild, 
-        String platform, String configuration, def warningRegexes, def errorRegexes
+        String platform, String configuration, Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
-        def targetSwitch = useIncredibuild ? "/Build" : "/build" 
-        def configSwitch = useIncredibuild ? "/cfg=\"${configuration}|${platform}\"" : "${configuration}^|${platform}"
-        def buildToolName = useIncredibuild ? "Incredibuild" : "DevEnv"
-        def outputFile = new File(solutionFile.getParentFile(), "build_${configuration}_${platform}.txt")
-        def title = "${project.name} (${platform} ${configuration})"
+        String targetSwitch = useIncredibuild ? "/Build" : "/build"
+        GString configSwitch = useIncredibuild ? "/cfg=\"${configuration}|${platform}\"" : "${configuration}^|${platform}"
+        String buildToolName = useIncredibuild ? "Incredibuild" : "DevEnv"
+        File outputFile = new File(solutionFile.getParentFile(), "build_${configuration}_${platform}.txt")
+        GString title = "${project.name} (${platform} ${configuration})"
         
         description = "Builds the solution '${solutionFile.name}' with ${buildToolName} in $configuration mode."
         configureTask(
@@ -135,12 +134,12 @@ class DevEnvTask extends DefaultTask {
     
     private void configureCleanTask(
         Project project, File buildToolPath, File solutionFile, boolean useIncredibuild, 
-        String platform, String configuration, def warningRegexes, def errorRegexes
+        String platform, String configuration, Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
-        def targetSwitch = "/Clean" 
-        def configSwitch = "${configuration}^|${platform}"
-        def outputFile = new File(solutionFile.getParentFile(), "clean_${configuration}_${platform}.txt")
-        def title = "${project.name} (${platform} ${configuration})"
+        String targetSwitch = "/Clean"
+        GString configSwitch = "${configuration}^|${platform}"
+        File outputFile = new File(solutionFile.getParentFile(), "clean_${configuration}_${platform}.txt")
+        GString title = "${project.name} (${platform} ${configuration})"
         
         description = "Cleans the solution '${solutionFile.name}' with DevEnv in $configuration mode."
         configureTask(
@@ -152,25 +151,28 @@ class DevEnvTask extends DefaultTask {
     private void configureTask(
         Project project, String title, File buildToolPath, File solutionFile, 
         String targetSwitch, String configSwitch, File outputFile, 
-        def warningRegexes, def errorRegexes
+        Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
-        def styledOutput = this.output
+        StyledTextOutput styledOutput = this.output
         doLast {
-            def devEnvOutput = new ErrorHighlightingOutputStream(title, styledOutput, warningRegexes, errorRegexes)
-            def result = project.exec {
-                workingDir project.projectDir.path
-                commandLine buildToolPath.path, solutionFile.path, targetSwitch, configSwitch
-                setStandardOutput devEnvOutput
-                setIgnoreExitValue true
+            ErrorHighlightingOutputStream devEnvOutput = new ErrorHighlightingOutputStream(
+                title, styledOutput, warningRegexes, errorRegexes
+            )
+
+            ExecResult result = project.exec { ExecSpec spec ->
+                spec.workingDir project.projectDir.path
+                spec.commandLine buildToolPath.path, solutionFile.path, targetSwitch, configSwitch
+                spec.setStandardOutput devEnvOutput
+                spec.setIgnoreExitValue true
             }
-            
+
             // Summarise errors and warnings.
             devEnvOutput.summarise()
             
             // Write the entire output to a file.
             outputFile.write(devEnvOutput.getFullStreamString())
             
-            def exit = result.getExitValue()
+            int exit = result.getExitValue()
             if (exit != 0) {
                 throw new RuntimeException("${buildToolPath.name} exited with code $exit.")
             }

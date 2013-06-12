@@ -3,38 +3,48 @@ package holygradle.stamper
 import java.util.regex.Pattern
 
 class Replacer {
-    String m_filePattern
-    File m_file
-    def regexFindAndReplace = []
+    private class Pair {
+        public Pattern pattern
+        public String replacement
+        Pair (Pattern first, String second) {
+            pattern = first
+            replacement = second
+        }
+    }
+
+    private String filePattern
+    private File file
+    private Collection<Pair> regexFindAndReplace = []
     
     Replacer(String filePattern) {
-        m_filePattern = filePattern
+        this.filePattern = filePattern
     }
+
     Replacer(File file) {
-        m_file = file
+        this.file = file
     }
     
-    void replaceRegex (Pattern regex, String replacementString) {
+    void replaceRegex(Pattern regex, String replacementString) {
         regexFindAndReplace.add(new Pair(regex, replacementString))
     }
 
     void doPatternReplacement() {
-        doStringReplacementInFile(m_file)
+        doStringReplacementInFile(file)
     }
     
-    void doPatternReplacement(File file) {        
-        if (file.name.endsWith(m_filePattern)) {
+    void doPatternReplacement(File file) {
+        if (file.name.endsWith(filePattern)) {
             doStringReplacementInFile(file)
         }
     }
     
     void doStringReplacementInFile(File file) {
-        def origRcText = file.text
-        def rcText = origRcText
+        String origRcText = file.text
+        String rcText = origRcText
         for (replacement in regexFindAndReplace) {
-            if(replacement.m_second) {                    
-                rcText = rcText.replaceAll(replacement.m_first as Pattern) { 
-                    all, start, end -> "${start}${replacement.m_second}${end}"
+            if (replacement.replacement) {
+                rcText = rcText.replaceAll(replacement.pattern) {
+                    all, start, end -> "${start}${replacement.replacement}${end}"
                 }
             }
         }

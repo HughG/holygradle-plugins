@@ -1,21 +1,17 @@
 package holygradle.devenv
 
-import org.gradle.*
-import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import org.gradle.api.tasks.*
-import org.gradle.api.tasks.bundling.*
-import org.gradle.api.logging.*
+import org.gradle.api.Project
+import org.gradle.api.Task
 
 class DevEnvHandler {
     private Project project
     private DevEnvHandler parentHandler
     private String devEnvVersion = null
     private String vsSolutionFile = null
-    private def buildPlatforms = null
+    private List<String> buildPlatforms = null
     private String incredibuildPath = null
-    private def warningRegexes = []
-    private def errorRegexes = []
+    private List<String> warningRegexes = []
+    private List<String> errorRegexes = []
     
     public DevEnvHandler(Project project, DevEnvHandler parentHandler) {
         this.project = project
@@ -38,32 +34,30 @@ class DevEnvHandler {
         if (buildPlatforms == null) {
             buildPlatforms = []
         }
-        for (p in platforms) {
-            buildPlatforms.add(p)
-        }
+        buildPlatforms.addAll(platforms)
     }
     
     public void incredibuild(String path) {
         incredibuildPath = path
     }
     
-    public void defineWarningRegex(def regex) {
+    public void defineWarningRegex(String regex) {
         warningRegexes.add(regex)
     }
     
-    public void defineErrorRegex(def regex) {
+    public void defineErrorRegex(String regex) {
         errorRegexes.add(regex)
     }
     
-    public def getWarningRegexes() {
+    public List<String> getWarningRegexes() {
         warningRegexes
     }
     
-    public def getErrorRegexes() {
+    public List<String> getErrorRegexes() {
         errorRegexes
     }
     
-    public def getPlatforms() {
+    public List<String> getPlatforms() {
         if (buildPlatforms == null) {
             if (parentHandler != null) {
                 parentHandler.getPlatforms()
@@ -88,13 +82,13 @@ class DevEnvHandler {
     }
     
     public File getDevEnvPath() {
-        def chosenDevEnvVersion = getDevEnvVersion()
-        def envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
+        String chosenDevEnvVersion = getDevEnvVersion()
+        String envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
         if (envVarComnTools == null || envVarComnTools == "") {
             throw new RuntimeException("'version' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
         }
-        def comnToolsPath = new File(envVarComnTools)
-        def devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")
+        File comnToolsPath = new File(envVarComnTools)
+        File devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")
         if (!devEnvPath.exists()) {
             throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
         }
@@ -143,15 +137,15 @@ class DevEnvHandler {
     
     // Returns two tasks - one for building this project as well as dependent projects, and
     // another task for building this project independently.
-    public def defineBuildTasks(Project project, String taskName, String configuration) {
+    public List<DevEnvTask> defineBuildTasks(Project project, String taskName, String configuration) {
         [defineBuildTask(project, taskName, configuration, true),
         defineBuildTask(project, taskName, configuration, false)]
     }
     
-    public Task defineBuildTask(Project project, String taskName, String configuration, boolean independently) {
+    public DevEnvTask defineBuildTask(Project project, String taskName, String configuration, boolean independently) {
         if (independently) taskName = "${taskName}Independently"
-        project.task(taskName, type: DevEnvTask) {
-            init(independently, "build", configuration)
+        (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
+            it.init(independently, "build", configuration)
             if (independently) {
                 description = "This task only makes sense for individual projects e.g. gw subproj:b${configuration[0]}I"
             } else {
@@ -162,15 +156,15 @@ class DevEnvHandler {
     
     // Returns two tasks - one for cleaning this project as well as dependent projects, and
     // another task for cleaning this project independently.
-    public def defineCleanTasks(Project project, String taskName, String configuration) {
+    public List<DevEnvTask> defineCleanTasks(Project project, String taskName, String configuration) {
         [defineCleanTask(project, taskName, configuration, true),
         defineCleanTask(project, taskName, configuration, false)]
     }
     
-    public Task defineCleanTask(Project project, String taskName, String configuration, boolean independently) {
+    public DevEnvTask defineCleanTask(Project project, String taskName, String configuration, boolean independently) {
         if (independently) taskName = "${taskName}Independently"
-        project.task(taskName, type: DevEnvTask) {
-            init(independently, "clean", configuration)
+        (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
+            it.init(independently, "clean", configuration)
             if (independently) {
                 description = "This task only makes sense for individual projects e.g. gw subproj:c${configuration[0]}I"
             } else {

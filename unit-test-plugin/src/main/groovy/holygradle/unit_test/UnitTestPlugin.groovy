@@ -8,10 +8,10 @@ class UnitTestPlugin implements Plugin<Project> {
          * DSL extensions
          **************************************/
         // Define 'testFlavours' DSL to allow tests to define the flavours for tests (e.g. Debug, Release)
-        def testFlavoursExtension = TestFlavourHandler.createContainer(project)
+        TestFlavourHandler.createContainer(project)
         
         // Define 'tests' DSL to allow tests to be configured easily
-        def testsExtension = TestHandler.createContainer(project)
+        TestHandler.createContainer(project)
         
         /**************************************
          * Tasks

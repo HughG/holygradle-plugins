@@ -2,7 +2,6 @@ package holygradle.devenv
 
 import org.gradle.api.Project
 import org.junit.Test
-import java.io.File
 import org.gradle.testfixtures.ProjectBuilder
 import static org.junit.Assert.*
 
@@ -15,13 +14,13 @@ class DevEnvHandlerTest {
     
     @Test
     public void testSolutionFile() {
-        def proj = getProject("single_solution_file")
-        def devenv = new DevEnvHandler(proj, null)
+        Project project = getProject("single_solution_file")
+        DevEnvHandler devenv = new DevEnvHandler(project, null)
          
         assertEquals(null, devenv.getVsSolutionFile())
         
         devenv.solutionFile "blah.sln"
         
-        assertEquals(new File(proj.projectDir, "blah.sln"), devenv.getVsSolutionFile())
+        assertEquals(new File(project.projectDir, "blah.sln"), devenv.getVsSolutionFile())
     }
 }

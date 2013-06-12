@@ -1,15 +1,20 @@
 package holygradle.unit_test
 
+import holygradle.custom_gradle.BuildDependency
+import holygradle.custom_gradle.TaskDependenciesExtension
 import org.gradle.api.*
+import org.gradle.process.ExecSpec
 
 
 class TestHandler {
+    public static final Collection<String> DEFAULT_FLAVOURS = Collections.unmodifiableCollection(["Debug", "Release"])
+
     public final String name
-    private def commandLineChunks = []
+    private Collection<String> commandLineChunks = []
     private String redirectOutputFilePath = null
-    private def selectedFlavours = ["Debug", "Release"]
+    private Collection<String> selectedFlavours = new ArrayList<String>(DEFAULT_FLAVOURS)
     
-    public static def createContainer(Project project) {
+    public static TestHandler createContainer(Project project) {
         project.extensions.tests = project.container(TestHandler)
         project.extensions.tests
     }
@@ -19,49 +24,42 @@ class TestHandler {
     }
     
     public void commandLine(String... cmdLine) {
-        for (c in cmdLine) {
-            commandLineChunks.add(c)
-        }
+        commandLineChunks.addAll(cmdLine)
     }
     
     public void redirectOutputToFile(String outputFilePath) {
         redirectOutputFilePath = outputFilePath
     }
     
-    public void flavour(String... newflavours) {
+    public void flavour(String... newFlavours) {
         selectedFlavours.clear()
-        for (f in newflavours) {
-            selectedFlavours.add(f)
-        }
+        selectedFlavours.addAll(newFlavours)
     }
     
     private void configureTask(Project project, String flavour, Task task) {
         if (selectedFlavours.contains(flavour)) {
-            def testMessage = "Running unit test ${name} (${flavour})..."
+            GString testMessage = "Running unit test ${name} (${flavour})..."
             task.doLast {
                 println testMessage
                 if (commandLineChunks.size() == 0) {
                     println "    Nothing to run."
                 } else {
-                    project.exec {
-                        def cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
-                        def exePath = new File(cmd[0])
-                        if (!exePath.exists()) {
-                            def tryPath = new File(project.projectDir, cmd[0])
-                            if (tryPath.exists()) {
-                                exePath = tryPath
-                            }
-                        }
-                        if (!exePath.exists()) {
-                            def tryPath = new File(project.rootProject.projectDir, cmd[0])
-                            if (tryPath.exists()) {
-                                exePath = tryPath
-                            }
-                        }
+                    project.exec { ExecSpec spec ->
+                        List<String> cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
+                        // Look for the command one of three places:
+                        File exePath = [
+                            new File("."),
+                            project.projectDir,
+                            project.rootProject.projectDir
+                        ]
+                            .collect({ new File(it, cmd[0]) })
+                            .find({ it.exists() })
                         cmd[0] = exePath.path
-                        commandLine cmd
+                        spec.commandLine cmd
                         if (redirectOutputFilePath != null) {
-                            standardOutput = new FileOutputStream("${project.projectDir}/${replaceFlavour(redirectOutputFilePath, flavour)}") 
+                            spec.standardOutput = new FileOutputStream(
+                                "${project.projectDir}/${replaceFlavour(redirectOutputFilePath, flavour)}"
+                            )
                         }
                     }
                 }
@@ -76,12 +74,13 @@ class TestHandler {
     }
     
     public static void defineTasks(Project project) {
-        def allFlavours = TestFlavourHandler.getAllFlavours(project)
+        Collection<String> allFlavours = TestFlavourHandler.getAllFlavours(project)
         for (flavour in allFlavours) {
-            def buildDependencies = project.extensions.findByName("buildDependencies")
+            Collection<BuildDependency> buildDependencies =
+                project.extensions.findByName("buildDependencies") as Collection<BuildDependency>
             boolean anyBuildDependencies = buildDependencies.size() > 0
             
-            def unitTestThisProject = null
+            Task unitTestThisProject
             if (anyBuildDependencies) {
                 unitTestThisProject = project.task("unitTest${flavour}Independently", type: DefaultTask)
             } else {
@@ -95,20 +94,21 @@ class TestHandler {
             }
             
             if (anyBuildDependencies) {
-                def task = project.task("unitTest${flavour}", type: DefaultTask)
+                Task task = project.task("unitTest${flavour}", type: DefaultTask)
                 task.group = "Unit Test"
                 task.description = "Run the ${flavour} unit tests for '${project.name}' and all dependent projects."
                 task.dependsOn unitTestThisProject
-                
-                def taskDependencies = project.extensions.findByName("taskDependencies")
+
+                TaskDependenciesExtension taskDependencies =
+                    project.extensions.findByName("taskDependencies") as TaskDependenciesExtension
                 taskDependencies.configureNow("unitTest${flavour}")
             }
         }
         if (allFlavours.size() > 1) {
-            def buildReleaseTask = project.tasks.findByName("buildRelease")
-            def buildDebugTask = project.tasks.findByName("buildDebug")
+            Task buildReleaseTask = project.tasks.findByName("buildRelease")
+            Task buildDebugTask = project.tasks.findByName("buildDebug")
             if (buildReleaseTask != null && buildDebugTask != null) {
-                def buildAndTestAll = project.task("buildAndTestAll", type: DefaultTask) {
+                Task buildAndTestAll = project.task("buildAndTestAll", type: DefaultTask) {
                     description = "Build '${project.name}' and all dependent projects in Debug and Release, and run unit tests."
                 }
                 for (flavour in allFlavours) {

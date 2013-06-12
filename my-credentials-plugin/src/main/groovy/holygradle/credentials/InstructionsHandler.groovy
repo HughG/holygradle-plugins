@@ -1,11 +1,8 @@
 package holygradle.credentials
 
-import org.gradle.*
-import org.gradle.api.*
-
 class InstructionsHandler {
     public final String name
-    private def instructions = []
+    private final Collection<String> instructions = []
     
     public InstructionsHandler(String name) {
         this.name = name
@@ -15,7 +12,7 @@ class InstructionsHandler {
         instructions.add(instruction)
     }
     
-    public String[] getInstructions() {
-        instructions as String[]
+    public Collection<String> getInstructions() {
+        instructions
     }
 }

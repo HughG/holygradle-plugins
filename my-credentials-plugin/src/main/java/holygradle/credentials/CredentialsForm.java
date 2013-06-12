@@ -3,18 +3,18 @@ package holygradle.credentials;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.AbstractMap;
+import java.util.*;
 import java.util.Timer;
- 
+
 public class CredentialsForm {
-    public static AbstractMap.SimpleEntry<String, String> getCredentialsFromUser(
-        String frameTitle, String[] instructions, String initialUserName
+    public static Credentials getCredentialsFromUser(
+        String frameTitle, Collection<String> instructions, String initialUserName
     ) {
         return getCredentialsFromUser(frameTitle, instructions, initialUserName, -1);
     }
     
-    public static AbstractMap.SimpleEntry<String, String> getCredentialsFromUser(
-        String frameTitle, String[] instructions, String initialUserName, int timeoutSeconds
+    public static Credentials getCredentialsFromUser(
+        String frameTitle, Collection<String> instructions, String initialUserName, int timeoutSeconds
     ) {
         Timer hideDialogTimer = new Timer();
         final JDialog frame = new JDialog();
@@ -112,27 +112,19 @@ public class CredentialsForm {
         hideDialogTimer.cancel();
 
         if (timeoutTask.didFire()) {
-            throw new RuntimeException("Timeout occurred while displaying a credentials dialog to the user. Now throwing an exception to kill the Gradle process because if this happens to be an autobuild then we don't want it to hang forever.");
+            throw new RuntimeException(
+                "Timeout occurred while displaying a credentials dialog to the user." +
+                "Now throwing an exception to kill the Gradle process because if this happens " +
+                "to be an autobuild then we don't want it to hang forever."
+            );
         }
         
         if (okActionListener.didFire()) {
-            return new AbstractMap.SimpleEntry<String, String>(
-                    userNameTextField.getText(),
-                    new String(passwordField.getPassword())
+            return new Credentials(
+                userNameTextField.getText(),
+                new String(passwordField.getPassword())
             );
         }
         return null;
     }
-
-    /*public static void main(String[] args) {
-        String frameTitle = "Enter credentials";
-        String initialUserName = null;
-        if (args.length >= 1) {
-            frameTitle = args[0];
-        }
-        if (args.length >= 2) {
-            initialUserName = args[1];
-        }
-        getCredentialsFromUser(frameTitle, initialUserName);
-    }*/
 }

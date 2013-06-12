@@ -1,18 +1,22 @@
 package holygradle.credentials
 
-import org.gradle.*
-import org.gradle.api.*
+import org.gradle.api.DefaultTask
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.file.CopySpec
 
-class MyCredentialsPlugin implements Plugin<Project> {        
+class MyCredentialsPlugin implements Plugin<Project> {
     void apply(Project project) {
         /**************************************
          * Dependencies
          **************************************/
         
-        def credentialStoreArtifact = null
+        ResolvedArtifact credentialStoreArtifact = null
         project.getBuildscript().getConfigurations().each { conf ->
             conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { resolvedDependency ->
-                resolvedDependency.getAllModuleArtifacts().each { art ->
+                resolvedDependency.getAllModuleArtifacts().each { ResolvedArtifact art ->
                     def artName = art.getName()
                     if (artName.startsWith("credential-store")) {
                         credentialStoreArtifact = art
@@ -20,16 +24,16 @@ class MyCredentialsPlugin implements Plugin<Project> {
                 }
             }
         }
-        def credentialStorePath = credentialStoreArtifact.getFile().path
+        String credentialStorePath = credentialStoreArtifact.getFile().path
         
         // Copy the credential-store to the root of the workspace.
         if (project == project.rootProject) {
             def credStoreFile = new File(project.projectDir, "credential-store.exe")
             if (!credStoreFile.exists() || credStoreFile.canWrite()) {
-                project.copy {
-                    from credentialStoreArtifact.getFile()
-                    into credStoreFile.parentFile
-                    rename { credStoreFile.name }
+                project.copy { CopySpec spec ->
+                    spec.from credentialStoreArtifact.getFile()
+                    spec.into credStoreFile.parentFile
+                    spec.rename { credStoreFile.name }
                 }
             }
         }
@@ -45,8 +49,8 @@ class MyCredentialsPlugin implements Plugin<Project> {
          * Tasks
          **************************************/
         if (project == project.rootProject && !project.ext.usingLocalArtifacts) {
-            def taskName = "cacheCredentials"
-            def credTask = project.tasks.findByName(taskName)
+            String taskName = "cacheCredentials"
+            Task credTask = project.tasks.findByName(taskName)
             if (credTask == null) {
                 credTask = project.task(taskName, type: DefaultTask)
                 credTask.group = "Credentials"

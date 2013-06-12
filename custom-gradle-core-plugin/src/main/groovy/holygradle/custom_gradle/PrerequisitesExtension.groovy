@@ -24,7 +24,7 @@ class PrerequisitesExtension {
                 println "All prerequisites satisfied."
             }
 
-            getPrerequisites(project).register("Java", { PrerequisitesChecker checker, Object[] params ->
+            getPrerequisites(project).register("Java", { PrerequisitesChecker checker, Object... params ->
                 String minVersion = params[0] as String
                 String javaVersion = checker.readProperty("java.version")
                 String[] javaVerComponents = javaVersion.split("\\.")
@@ -95,10 +95,10 @@ Afterwards, please start a new command prompt and re-run the same command."""
     // the parameters. Later on check() can be called on PrerequisitesExtension or on the StatedPrerequisite 
     // returned by this method. Another way the prequisite can be checked is by calling checkAll, which is 
     // called by the checkPrerequisites task.
-    public StatedPrerequisite specify(String prerequisiteName, String... params) {
+    public StatedPrerequisite specify(String prerequisiteName, Object... params) {
         if (checkers.containsKey(prerequisiteName)) {
             PrerequisitesChecker checker = checkers[prerequisiteName]
-            StatedPrerequisite prerequisite = new StatedPrerequisite(checker, Arrays.asList(params))
+            StatedPrerequisite prerequisite = new StatedPrerequisite(checker, params.clone())
             addStatedPrerequisite(prerequisite)
             return prerequisite
         } else {

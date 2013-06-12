@@ -1,29 +1,22 @@
 package holygradle.devenv
 
-import org.gradle.*
-import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import org.gradle.api.tasks.*
-import org.gradle.api.tasks.bundling.*
-import org.gradle.api.logging.*
+import holygradle.custom_gradle.CustomGradleCorePlugin
+import holygradle.custom_gradle.PrerequisitesExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.plugins.UnknownPluginException
 
 class DevEnvPlugin implements Plugin<Project> {
     void apply(Project project) {
         /**************************************
          * Apply other plugins
          **************************************/
-        // In normal usage we should apply the 'custom-gradle-core' plugin, but in unit tests the identifier
-        // is unknown so we can't apply it. But the intrepid plugin can still largely make do without it.
-        try {
-            project.apply plugin: 'custom-gradle-core'
-        } catch (org.gradle.api.plugins.UnknownPluginException e) {
-            println "Haven't applied 'custom-gradle-core' plugin."
-        }
-        
+        project.apply plugin: CustomGradleCorePlugin.class
+
         /**************************************
          * Prerequisites
          **************************************/
-        def prerequisites = project.extensions.findByName("prerequisites")
+        PrerequisitesExtension prerequisites = PrerequisitesExtension.getPrerequisites(project)
         if (prerequisites != null) {
             prerequisites.register("VisualStudio", {checker, params -> 
                 params.each { version ->
@@ -34,27 +27,27 @@ class DevEnvPlugin implements Plugin<Project> {
                 }
             })
         }
-        
+
         /**************************************
          * DSL extensions
          **************************************/
-        def parentDevEnvHandler = null
+        DevEnvHandler parentDevEnvHandler = null
         if (project != project.rootProject) {
-            parentDevEnvHandler = project.rootProject.extensions.findByName("DevEnv")
+            parentDevEnvHandler = project.rootProject.extensions.findByName("DevEnv") as DevEnvHandler
         }
-        def devEnvHandler = project.extensions.create("DevEnv", DevEnvHandler, project, parentDevEnvHandler)  
-                
+        DevEnvHandler devEnvHandler = project.extensions.create("DevEnv", DevEnvHandler, project, parentDevEnvHandler)
+
         /**************************************
          * Tasks
          **************************************/
-        
-        def buildDebug = devEnvHandler.defineBuildTasks(project, "buildDebug", "Debug")
-        def buildRelease = devEnvHandler.defineBuildTasks(project, "buildRelease", "Release")
-        def cleanDebug = devEnvHandler.defineCleanTasks(project, "cleanDebug", "Debug")
-        def cleanRelease = devEnvHandler.defineCleanTasks(project, "cleanRelease", "Release")
+
+        List<DevEnvTask> buildDebug = devEnvHandler.defineBuildTasks(project, "buildDebug", "Debug")
+        List<DevEnvTask> buildRelease = devEnvHandler.defineBuildTasks(project, "buildRelease", "Release")
+        List<DevEnvTask> cleanDebug = devEnvHandler.defineCleanTasks(project, "cleanDebug", "Debug")
+        List<DevEnvTask> cleanRelease = devEnvHandler.defineCleanTasks(project, "cleanRelease", "Release")
         
         project.gradle.projectsEvaluated {
-            def platforms = devEnvHandler.getPlatforms()
+            List<String> platforms = devEnvHandler.getPlatforms()
 
             if (platforms.size() == 1) {
                 buildDebug.each { it.configureBuildTask(devEnvHandler, platforms[0]) }
@@ -67,25 +60,25 @@ class DevEnvPlugin implements Plugin<Project> {
                 // shortcut.
                 platforms.each { platform ->
                     String p = platform[0].toUpperCase() + platform[1..-1]
-                    def platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, "build${p}Debug", "Debug")
+                    List<DevEnvTask> platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, "build${p}Debug", "Debug")
                     buildDebug.eachWithIndex { b, i ->
                         platformBuildDebugTasks[i].configureBuildTask(devEnvHandler, p)
                         b.dependsOn platformBuildDebugTasks[i]
                     }
                     
-                    def platformBuildReleaseTasks = devEnvHandler.defineBuildTasks(project, "build${p}Release", "Release")
+                    List<DevEnvTask> platformBuildReleaseTasks = devEnvHandler.defineBuildTasks(project, "build${p}Release", "Release")
                     buildRelease.eachWithIndex { b, i ->
                         platformBuildReleaseTasks[i].configureBuildTask(devEnvHandler, p)
                         b.dependsOn platformBuildReleaseTasks[i]
                     }
                     
-                    def platformCleanDebugTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Debug", "Debug")
+                    List<DevEnvTask> platformCleanDebugTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Debug", "Debug")
                     cleanDebug.eachWithIndex { b, i ->
                         platformCleanDebugTasks[i].configureCleanTask(devEnvHandler, p)
                         b.dependsOn platformCleanDebugTasks[i]
                     }
                     
-                    def platformCleanReleaseTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Release", "Release")
+                    List<DevEnvTask> platformCleanReleaseTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Release", "Release")
                     cleanRelease.eachWithIndex { b, i ->
                         platformCleanReleaseTasks[i].configureCleanTask(devEnvHandler, p)
                         b.dependsOn platformCleanReleaseTasks[i]

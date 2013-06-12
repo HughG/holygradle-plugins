@@ -2,9 +2,9 @@ package holygradle.custom_gradle.util
 
 public class CamelCase {
     public static String build(List<String> components) {
-        def camelCase = new StringBuilder()
+        StringBuilder camelCase = new StringBuilder()
         boolean firstCharacterLowerCase = true
-        components.each { component ->
+        components.each { String component ->
             component.split("[_\\-\\s\\/]+").each { chunk ->
                 if (chunk != null && chunk.length() > 0) {
                     if (firstCharacterLowerCase) {

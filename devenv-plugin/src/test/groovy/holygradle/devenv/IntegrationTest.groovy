@@ -1,20 +1,21 @@
 package holygradle.devenv
 
-import holygradle.*
-import holygradle.test.*
+import holygradle.test.TestBase
+import org.gradle.tooling.BuildLauncher
 import org.junit.Test
-import static org.junit.Assert.*
+
+import static org.junit.Assert.assertTrue
 
 class IntegrationTest extends TestBase {
     @Test
     public void testVc10MultiPlatform() { 
-        def projectDir = new File(getTestDir(), "vc10_multi_platform")
-        def libDir = new File(projectDir, "build/lib")
+        File projectDir = new File(getTestDir(), "vc10_multi_platform")
+        File libDir = new File(projectDir, "build/lib")
         if (libDir.exists()) {
             libDir.deleteDir()
         }
-        invokeGradle(projectDir) {
-            forTasks("buildRelease", "buildDebug")
+        invokeGradle(projectDir) { BuildLauncher launcher ->
+            launcher.forTasks("buildRelease", "buildDebug")
         }
         assertTrue(new File(libDir, "Debug/foo_d32.lib").exists())
         assertTrue(new File(libDir, "Debug/foo_d64.lib").exists())
@@ -24,8 +25,8 @@ class IntegrationTest extends TestBase {
     
     @Test
     public void testMultiCompiler() { 
-        def projectDir = new File(getTestDir(), "multi_compiler")
-        def libDir = new File(projectDir, "build/lib")
+        File projectDir = new File(getTestDir(), "multi_compiler")
+        File libDir = new File(projectDir, "build/lib")
         if (libDir.exists()) {
             libDir.deleteDir()
         }

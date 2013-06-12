@@ -1,19 +1,15 @@
 package holygradle.devenv
 
-import org.gradle.*
-import org.gradle.api.*
 import org.gradle.logging.StyledTextOutput
-import org.gradle.logging.StyledTextOutputFactory
-import org.gradle.logging.StyledTextOutput.Style
 
 class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
     private ByteArrayOutputStream fullStream
     private String projectName
     private StyledTextOutput output
-    private def errors = []
-    private def warnings = []
-    private def warningRegexes
-    private def errorRegexes
+    private List<String> errors = []
+    private List<String> warnings = []
+    private List<String> warningRegexes
+    private List<String> errorRegexes
     
     ErrorHighlightingOutputStream(String projectName, StyledTextOutput output, def warningRegexes, def errorRegexes) {
         fullStream = new ByteArrayOutputStream()
@@ -34,7 +30,7 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
     }
     
     @Override
-    public void write(byte[] b, int off, int len) {
+    public synchronized void write(byte[] b, int off, int len) {
         super.write(b, off, len)
         fullStream.write(b, off, len)
         
@@ -62,36 +58,31 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
         
         reset() 
     }
-    
+
     public void summarise() {
-        def lineLength = 75
+        output.println()
         if (errors.size() > 0) {
-            output.println()
-            def msg = " ${projectName}: ${errors.size()} errors "
-            def firstDashes = (int)(lineLength - msg.length())/2
-            def secondDashes = (lineLength - msg.length()) - firstDashes
-            def o = output.withStyle(StyledTextOutput.Style.Failure)
-            o.println("="*firstDashes + msg + "="*secondDashes)
-            errors.each {
-                o.println(it)
-            }
-            o.println("="*lineLength)
-            output.println()
+            summarise(errors, "errors", StyledTextOutput.Style.Failure)
         }
         if (warnings.size() > 0) {
-            def msg = " ${projectName}: ${warnings.size()} warnings "
-            def firstDashes = (int)(lineLength - msg.length())/2
-            def secondDashes = (lineLength - msg.length()) - firstDashes
-            def o = output.withStyle(StyledTextOutput.Style.Info)
-            o.println("="*firstDashes + msg + "="*secondDashes)
-            warnings.each {
-                o.println(it)
-            }
-            o.println("="*lineLength)
-            output.println()
-        }        
+            summarise(warnings, "warnings", StyledTextOutput.Style.Info)
+        }
     }
-    
+
+    private void summarise(List<String> messages, String type, StyledTextOutput.Style style) {
+        final int LINE_LENGTH = 75
+        String msg = " ${projectName}: ${messages.size()} ${type} "
+        int firstDashes = (int) (LINE_LENGTH - msg.length()) / 2
+        int secondDashes = (LINE_LENGTH - msg.length()) - firstDashes
+        StyledTextOutput o = output.withStyle(style)
+        o.println("=" * firstDashes + msg + "=" * secondDashes)
+        messages.each {
+            o.println(it)
+        }
+        o.println("=" * LINE_LENGTH)
+        output.println()
+    }
+
     public String getFullStreamString() {
         fullStream.toString()
     }

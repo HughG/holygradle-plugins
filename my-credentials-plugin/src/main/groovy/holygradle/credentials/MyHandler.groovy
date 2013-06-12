@@ -1,23 +1,23 @@
 package holygradle.credentials
 
-import org.gradle.*
-import org.gradle.api.*
+import org.gradle.api.Project
+import org.gradle.process.ExecResult
+import org.gradle.process.ExecSpec
 
 class MyHandler {
     private final Project project
     private final String credentialStorePath
     private final String separator = "&&&"
     private final String defaultCredentialType = "Domain Credentials"
-    private String userPassword = null
-    private def credentialsCache = [:]
+    private Map<String,String> credentialsCache = [:]
     
-    public static def defineExtension(Project project, String credentialStorePath) {
-        def myExtension = null
-        
+    public static MyHandler defineExtension(Project project, String credentialStorePath) {
+        MyHandler myExtension
+
         if (project == project.rootProject) {
             myExtension = project.extensions.create("my", MyHandler, project, credentialStorePath)
             project.my.extensions.instructions = project.container(InstructionsHandler) { instructionName ->
-                project.packageArtifacts.extensions.create(instructionName, InstructionsHandler, instructionName)
+                project.my.extensions.create(instructionName, InstructionsHandler, instructionName)
             }
         } else {
             myExtension = project.extensions.add("my", project.rootProject.extensions.findByName("my"))
@@ -38,12 +38,12 @@ class MyHandler {
             credStorageValue = credentialsCache[credStorageKey]
             project.logger.info("Requested credentials for '${credStorageKey}'. Found in cache.")
         } else {
-            def credStoreExe = credentialStorePath
-            def credentialStoreOutput = new ByteArrayOutputStream()
-            def execResult = project.exec {
-                setIgnoreExitValue true
-                commandLine credStoreExe, credStorageKey
-                setStandardOutput credentialStoreOutput
+            String credStoreExe = credentialStorePath
+            OutputStream credentialStoreOutput = new ByteArrayOutputStream()
+            ExecResult execResult = project.exec { ExecSpec spec ->
+                spec.setIgnoreExitValue true
+                spec.commandLine credStoreExe, credStorageKey
+                spec.setStandardOutput credentialStoreOutput
             }
             if (execResult.getExitValue() == 0) {
                 credStorageValue = credentialStoreOutput.toString()
@@ -54,67 +54,66 @@ class MyHandler {
         credStorageValue
     }
     
-    private def getCredentials(String credentialType, boolean forceAskUser = false) {
+    private Credentials getCredentials(String credentialType, boolean forceAskUser = false) {
         if (project.ext.usingLocalArtifacts) {
-            return ["empty", "empty"]
+            return new Credentials("empty", "empty")
         }
         
-        def username = System.getProperty("user.name").toLowerCase()
-        def credStorageKey = getCredentialStorageKey(credentialType)
-        
-        def credentials = null
-        def credStorageValue = getCachedCredentials(credStorageKey)
-        if (credStorageValue != null) {
-            credentials = credStorageValue.split(separator)
-            username = credentials[0]
-            if (credentials.size() == 3) {
-                project.logger.info("Warning: Attempting to get credentials from store, got 3 fields")
-                credentials = [credentials[1], credentials[2]]
-            }
-            if (credentials.size() == 1) {
-                credentials = [credentials[0], ""]
-            }
-        } 
-        
-        if (forceAskUser || credentials == null) {
-            credentials = getCredentialsFromUserAndStore(credentialType, username)
+        String username = System.getProperty("user.name").toLowerCase()
+        String password
+        String credStorageKey = getCredentialStorageKey(credentialType)
+        String credStorageValue = getCachedCredentials(credStorageKey)
+
+        if (forceAskUser || credStorageValue == null) {
+            return getCredentialsFromUserAndStore(credentialType, username)
         }
-        
-        credentials
+
+        String[] credentials = credStorageValue.split(separator)
+        username = credentials[0]
+        if (credentials.size() == 3) {
+            project.logger.info("Warning: Attempting to get credentials from store, got 3 fields")
+            username = credentials[1]
+            password = credentials[2]
+        } else if (credentials.size() == 1) {
+            password = ""
+        } else {
+            password = credentials[1]
+        }
+
+        return new Credentials(username, password)
     }
     
     private String getCredentialStorageKey(String credentialType) {
         "Intrepid - ${credentialType}"
     }
     
-    private def getCredentialsFromUserAndStore(String credentialType, String currentUserName) {
-        def instructionsHandler = project.my.instructions.findByName(credentialType)
-        def instructions = null
+    private Credentials getCredentialsFromUserAndStore(String credentialType, String currentUserName) {
+        InstructionsHandler instructionsHandler = project.my.instructions.findByName(credentialType)
+        Collection<String> instructions = null
         if (instructionsHandler != null) {
             instructions = instructionsHandler.getInstructions()
         }
-        def userCred = CredentialsForm.getCredentialsFromUser(credentialType, instructions, currentUserName, 60 * 3)
+        Credentials userCred = CredentialsForm.getCredentialsFromUser(credentialType, instructions, currentUserName, 60 * 3)
         if (userCred == null) {
             println "No change to credentials '${credentialType}'."
             return null
         } else {
-            def credStoreExe = credentialStorePath
-            def credStorageKey = getCredentialStorageKey(credentialType)
-            def credentials = [userCred.getKey(), userCred.getValue()]
-            def credStorageValue = "${userCred.getKey()}${separator}${userCred.getValue()}"
+            String credStoreExe = credentialStorePath
+            String credStorageKey = getCredentialStorageKey(credentialType)
+            def credStorageValue = "${userCred.userName}${separator}${userCred.password}"
             credentialsCache[credStorageKey] = credStorageValue
-            def result = project.exec {
-                setIgnoreExitValue true
-                commandLine credStoreExe, credStorageKey, userCred.getKey(), userCred.getValue()
-                setStandardOutput new ByteArrayOutputStream()
+            def result = project.exec { ExecSpec spec ->
+                spec.setIgnoreExitValue true
+                spec.commandLine credStoreExe, credStorageKey, userCred.userName, userCred.password
+                spec.setStandardOutput new ByteArrayOutputStream()
             }
             if (result.getExitValue() != 0) {
                 println "Got exit code ${result.getExitValue()} while running ${credStoreExe} to store credentials."
                 println "Maybe you need to install the x86 CRT?"
                 throw new RuntimeException("Failed to store credentials.")
             }
-            println "Saved '${credentialType}' credentials for user '${userCred.getKey()}'."
-            return credentials
+            println "Saved '${credentialType}' credentials for user '${userCred.userName}'."
+            return userCred
         }
     }
 
@@ -127,12 +126,10 @@ class MyHandler {
     }
     
     public String username(String credentialType) {
-        def cred = getCredentials(credentialType)
-        (cred == null) ? null : cred[0]
+        getCredentials(credentialType)?.userName
     }
     
     public String password(String credentialType) {
-        def cred = getCredentials(credentialType)
-        (cred == null) ? null : cred[1]
+        getCredentials(credentialType)?.password
     }
 }
