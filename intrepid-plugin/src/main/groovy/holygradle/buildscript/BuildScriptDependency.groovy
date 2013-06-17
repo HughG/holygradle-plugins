@@ -1,7 +1,12 @@
 package holygradle.buildscript
 
 import holygradle.Helper
+import holygradle.custom_gradle.util.CamelCase
 import org.gradle.api.*
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.artifacts.ResolvedDependency
+import org.gradle.api.file.CopySpec
 
 class BuildScriptDependency {
     private String dependencyName
@@ -10,11 +15,11 @@ class BuildScriptDependency {
     
     public BuildScriptDependency(Project project, String dependencyName, boolean needsUnpacked) {
         this.dependencyName = dependencyName
-        def dependencyArtifact = null
-        project.getBuildscript().getConfigurations().each { conf ->
-            conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { resolvedDependency ->
-                resolvedDependency.getAllModuleArtifacts().each { art ->
-                    if (art.getName().startsWith(dependencyName)) {
+        ResolvedArtifact dependencyArtifact = null
+        project.buildscript.configurations.each { Configuration conf ->
+            conf.resolvedConfiguration.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
+                resolvedDependency.allModuleArtifacts.each { ResolvedArtifact art ->
+                    if (art.name.startsWith(dependencyName)) {
                         dependencyArtifact = art
                     }
                 }
@@ -25,10 +30,10 @@ class BuildScriptDependency {
             if (dependencyArtifact == null) { 
                 unpackTask = project.task(getUnpackTaskName(), type: DefaultTask)
             } else {
-                def unpackCacheLocation = Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.getModuleVersion().getId())
+                File unpackCacheLocation = Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.getModuleVersion().getId())
                 dependencyPath = unpackCacheLocation
                 unpackTask = project.task(getUnpackTaskName(), type: DefaultTask) {
-                    ext.destinationDir = unpackCacheLocation
+                    project.ext.destinationDir = unpackCacheLocation
                     // Checking if the target dir exists is a pretty crude way to choose whether or not to do
                     // the unpacking. Normally the 'copy' operation would do this for us, but if another instance
                     // of Gradle in another command prompt is using this dependency (e.g. extracting a package 
@@ -38,9 +43,9 @@ class BuildScriptDependency {
                     // mean it's got the right stuff in it (but running 'copy' would fix it up).
                     // Anyway, just this simple check is good enough for now.
                     if (!dependencyPath.exists()) {
-                        project.copy {
-                            from project.zipTree(dependencyArtifact.getFile())
-                            into unpackCacheLocation
+                        project.copy { CopySpec spec ->
+                            spec.from project.zipTree(dependencyArtifact.getFile())
+                            spec.into unpackCacheLocation
                         }
                     }
                 }
@@ -53,12 +58,9 @@ class BuildScriptDependency {
     public Task getUnpackTask() {
         unpackTask
     }
-    
+
     public String getUnpackTaskName() {
-        // Unfortunately can't use the CamelCase helper from custom-gradle-core because we're
-        // executing this from the buildscript block before the custom-gradle-core-plugin has
-        // been added to the classpath.
-        Helper.MakeCamelCase("extract", dependencyName)
+        CamelCase.build(["extract", dependencyName] as String[])
     }
     
     public File getPath() {

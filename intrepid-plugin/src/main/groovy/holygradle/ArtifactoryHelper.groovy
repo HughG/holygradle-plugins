@@ -1,6 +1,9 @@
 package holygradle
 
 import groovyx.net.http.HTTPBuilder
+
+import java.util.regex.Matcher
+
 import static groovyx.net.http.Method.GET
 import static groovyx.net.http.ContentType.TEXT
 
@@ -9,11 +12,11 @@ class ArtifactoryHelper {
     private final String repository
     
     public ArtifactoryHelper(String repositoryUrl) {
-        def urlMatch = repositoryUrl =~ /(http\w*[:\/]+[\w\.]+)\/.*\/([\w\-]+)/
+        Matcher urlMatch = repositoryUrl =~ /(http\w*[:\/]+[\w\.]+)\/.*\/([\w\-]+)/
         if (urlMatch.size() == 0) {
             throw new RuntimeException("Failed to parse URL for server and repository")
         }
-        def server = urlMatch[0][1]
+        String server = urlMatch[0][1]
         repository = urlMatch[0][2]
         http = new HTTPBuilder(server + "/")
     }
@@ -24,8 +27,8 @@ class ArtifactoryHelper {
         // Would be preferable to do: client.auth.basic username, password
         // but due to http://josephscott.org/archives/2011/06/http-basic-auth-with-httplib2/
         // we have to manually include the authorization header.
-        def auth = "${username}:${password}".toString()
-        def authEncoded = auth.bytes.encodeBase64().toString()
+        String auth = "${username}:${password}".toString()
+        String authEncoded = auth.bytes.encodeBase64().toString()
         http.setHeaders( ['Authorization' : 'Basic ' + authEncoded ] )    
     }
     
@@ -35,12 +38,12 @@ class ArtifactoryHelper {
     
     public boolean artifactExists(String artifactPath) {
         boolean exists = false
-        http.request( GET, TEXT ) { req ->
-            uri.path = "artifactory/${repository}/${artifactPath}"
-            response.success = { resp, reader ->
+        http.request( GET, TEXT ) { HTTPBuilder.RequestConfigDelegate req ->
+            req.uri.path = "artifactory/${repository}/${artifactPath}"
+            req.response.success = { resp, reader ->
                 exists = true
             }
-            response.failure = { }
+            req.response.failure = { }
         }
         exists
     }

@@ -28,8 +28,8 @@ class SourceDependencyPublishingHandler {
     
     public void configuration(String config) {
         originalConfigurations.add(config)
-        ArrayList newConfig = []
-        Helper.processConfiguration(config, newConfig, "Formatting error for '$dependencyName' in 'sourceDependencies'.")
+        Collection<AbstractMap.SimpleEntry<String, String>> newConfig = []
+        Helper.parseConfigurationMapping(config, newConfig, "Formatting error for '$dependencyName' in 'sourceDependencies'.")
         configurations.addAll(newConfig)
         
         // Add project dependencies between "sourceDependency"s, but only if they exist (e.g. after fAD).  This allows
@@ -52,8 +52,8 @@ class SourceDependencyPublishingHandler {
         Project depProject = rootProject.findProject(":${this.dependencyName}")
         if ((depProject != null) && depProject.projectDir.exists()) {
             for (conf in newConfig) {
-                String fromConf = conf[0]
-                String toConf = conf[1]
+                String fromConf = conf.key
+                String toConf = conf.value
                 this.fromProject.dependencies.add(
                     fromConf,
                     rootProject.dependencies.project(path: ":${this.dependencyName}", configuration: toConf)
@@ -95,7 +95,7 @@ class SourceDependencyHandler extends DependencyHandler {
     private File destinationDir
     private def overrideWarningMessages = []
     
-    public static def createContainer(Project project) {
+    public static Collection<SourceDependencyHandler> createContainer(Project project) {
         project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { sourceDepName ->
             // Explicitly create the SourceDependencyHandler so we can add SourceDependencyPublishingHandler.
             def sourceDep = project.sourceDependencies.extensions.create(sourceDepName, SourceDependencyHandler, sourceDepName, project)  

@@ -5,14 +5,14 @@ import org.gradle.api.*
 
 class BuildScriptDependencies {
     private final Project project
-    private def dependencies = [:]
+    private Map<String, BuildScriptDependency> dependencies = [:]
     
     public static BuildScriptDependencies initialize(Project project) {
         BuildScriptDependencies deps
         if (project == project.rootProject) {
             deps = new BuildScriptDependencies(project)
         } else {
-            deps = project.rootProject.extensions.findByName("buildScriptDependencies")
+            deps = project.rootProject.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
         }
         project.extensions.add("buildScriptDependencies", deps)
         deps
@@ -29,14 +29,7 @@ class BuildScriptDependencies {
     public Task getUnpackTask(String dependencyName) {
         dependencies[dependencyName].getUnpackTask()
     }
-    
-    public String getUnpackTaskName(String dependencyName) {
-        // Unfortunately can't use the CamelCase helper from custom-gradle-core because we're
-        // executing this from the buildscript block before the custom-gradle-core-plugin has
-        // been added to the classpath.
-        Helper.MakeCamelCase("extract", dependencyName)
-    }
-    
+
     public File getPath(String dependencyName) {
         dependencies[dependencyName].getPath()
     }

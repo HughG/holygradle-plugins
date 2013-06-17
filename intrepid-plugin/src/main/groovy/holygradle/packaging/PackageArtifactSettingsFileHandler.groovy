@@ -2,16 +2,16 @@ package holygradle.packaging
 
 import holygradle.SettingsFileHelper
 
-class PackageArtifactSettingsFileHandler {
+class PackageArtifactSettingsFileHandler implements PackageArtifactTextFileHandler {
     public final String name
-    private def includeModules = []
+    private Collection<String> includeModules = []
 
     public PackageArtifactSettingsFileHandler(String name) {
         this.name = name
     }
     
     public void include(String... modules) {
-        modules.each { includeModules.add(it) }
+        includeModules.addAll(modules)
     }
   
     public void writeFile(File targetFile) {

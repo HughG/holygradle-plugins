@@ -2,11 +2,12 @@ package holygradle.symlinks
 
 import holygradle.custom_gradle.util.Symlink
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
 
 class SymlinkTask extends DefaultTask {
-    public void configure(def project, File linkDir, File targetDir) {        
-        def linkExists = linkDir.exists()
-        def isSymlink = Symlink.isJunctionOrSymlink(linkDir)
+    public void configure(Project project, File linkDir, File targetDir) {
+        boolean linkExists = linkDir.exists()
+        boolean isSymlink = Symlink.isJunctionOrSymlink(linkDir)
         
         doFirst {
             if (linkExists && !isSymlink) {

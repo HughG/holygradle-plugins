@@ -1,46 +1,49 @@
 package holygradle
 
+import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Project
+
+import java.util.regex.Matcher
 
 class SettingsFileHelper {
         
-    public static String writeSettingsFile(File settingsFile, def includePaths) {
-        def escapedPaths = includePaths.collect {
-            def p = it.replaceAll(/[\\\/]*$/, '').replace("\\", "\\\\")
+    public static String writeSettingsFile(File settingsFile, Collection<String> includePaths) {
+        Collection<String> escapedPaths = includePaths.collect {
+            String p = it.replaceAll(/[\\\/]*$/, '').replace("\\", "\\\\")
             "'${p}'"
         }
-        def newIncludes = "include " + escapedPaths.join(", ")
-        def settings = newIncludes
-        
-        // regex below is: /.*?([\w_\-]+)$/
-        settings += "\r\nrootProject.children.each {"
-        settings += "\r\n    def projName = (it.name =~ /.*?([\\w_\\-]+)\$/)[0][1]"
-        settings += "\r\n    it.name = projName"            
-        settings += "\r\n    // This allows subprojects to name the gradle script the same as the directory e.g. ..\\foo\\foo.gradle"
-        settings += "\r\n    boolean projectNamedScript = new File(it.projectDir, projName + '.gradle').exists()"
-        settings += "\r\n    boolean defaultNamedScript = new File(it.projectDir, \"build.gradle\").exists()"
-        settings += "\r\n    if (projectNamedScript && defaultNamedScript) {"
-        settings += "\r\n        throw new RuntimeException(\"For \${projName} you have '\${projName}.gradle' AND 'build.gradle'. You should only have one of these.\")"
-        settings += "\r\n    } else if (projectNamedScript) {"
-        settings += "\r\n        it.buildFileName = projName + '.gradle'"
-        settings += "\r\n    }"
-        settings += "\r\n}"
-        
-        def writer = new FileWriter(settingsFile)
-        writer.write(settings)
-        writer.close()
-        
+        String newIncludes = "include " + escapedPaths.join(", ")
+        final String settingsFileBody = """rootProject.children.each { Project it ->
+    String projName = (it.name =~ /.*?([\\w_\\-]+)\$/)[0][1]
+    it.name = projName
+    // This allows subprojects to name the gradle script the same as the directory e.g. ..\\foo\\foo.gradle
+    boolean projectNamedScript = new File(it.projectDir, projName + '.gradle').exists()
+    boolean defaultNamedScript = new File(it.projectDir, "build.gradle").exists()
+    if (projectNamedScript && defaultNamedScript) {
+        throw new RuntimeException("For \${projName} you have '\${projName}.gradle' AND 'build.gradle'. You should only have one of these.")
+    } else if (projectNamedScript) {
+        it.buildFileName = projName + '.gradle'
+    }
+}"""
+
+        settingsFile.withPrintWriter { w ->
+            w.println(newIncludes)
+            // We pull the lines out of the string and write them individually to be sure we get platform-specific
+            // line endings right.
+            settingsFileBody.readLines().each { w.println(it) }
+        }
+
         return newIncludes
     }
     
     // Returns true if the settings have changed.
-    public static boolean writeSettingsFileAndDetectChange(File settingsFile, def includePaths) {
-        def previousIncludes = []
+    public static boolean writeSettingsFileAndDetectChange(File settingsFile, Collection<String> includePaths) {
+        List<String> previousIncludes = []
         if (settingsFile.exists()) {
-            def includeText = settingsFile.text.readLines()[0]
-            def matches = includeText =~ /[\'\"](.+?)[\'\"]/
-            matches.each {
-                previousIncludes.add it[1].replace("\\\\", "\\")
+            String includeText = settingsFile.text.readLines()[0]
+            Matcher matches = includeText =~ /[\'\"](.+?)[\'\"]/
+            matches.each { List<String> groups ->
+                previousIncludes.add groups[1].replace("\\\\", "\\")
             }
         }
 
@@ -48,7 +51,7 @@ class SettingsFileHelper {
             writeSettingsFile(settingsFile, includePaths)
         }
         
-        def addedIncludes = includePaths.clone()
+        List<String> addedIncludes = (List<String>)includePaths.clone()
         addedIncludes.removeAll(previousIncludes)
         
         return addedIncludes.size() > 0
@@ -56,9 +59,9 @@ class SettingsFileHelper {
     
     // Returns true if the settings have changed.
     public static boolean writeSettingsFileAndDetectChange(Project project) {
-        def settingsFile = new File(project.projectDir, "settings.gradle")
-        def transitiveSubprojects = Helper.getTransitiveSourceDependencies(project)
-        def newIncludes = transitiveSubprojects.collect {
+        File settingsFile = new File(project.projectDir, "settings.gradle")
+        Collection<SourceDependencyHandler> transitiveSubprojects = Helper.getTransitiveSourceDependencies(project)
+        Collection<String> newIncludes = transitiveSubprojects.collect {
             Helper.relativizePath(it.getDestinationDir(), project.rootProject.projectDir)
         }
         writeSettingsFileAndDetectChange(settingsFile, newIncludes.unique())

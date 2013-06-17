@@ -1,18 +1,7 @@
 package holygradle.packaging
 
-class PackageArtifactTextFileHandler {
-    public final String name
-    private def lines = []
+interface PackageArtifactTextFileHandler {
+    final String name
 
-    public PackageArtifactTextFileHandler(String name) {
-        this.name = name
-    }
-    
-    public void add(String text) {
-        lines.add(text)
-    }
-  
-    public void writeFile(File targetFile) {
-        targetFile.write(lines.join("\n"))
-    }
+    void writeFile(File targetFile)
 }

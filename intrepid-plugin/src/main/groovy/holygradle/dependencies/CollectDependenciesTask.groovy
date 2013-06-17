@@ -1,5 +1,7 @@
 package holygradle.dependencies
 
+import groovy.util.slurpersupport.GPathResult
+import groovy.util.slurpersupport.NodeChild
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
 import org.gradle.api.tasks.*
@@ -11,20 +13,23 @@ class CollectDependenciesTask extends Copy {
         this.project = project
         
         destinationDir = new File(project.rootProject.projectDir, "local_artifacts")
-        ext.lazyConfiguration = {
-            def dependencyArtifacts = []
-            def collectArtifacts = { conf ->
-                def resConf = conf.resolvedConfiguration
-                resConf.getFirstLevelModuleDependencies().each { resolvedDependency ->
-                    resolvedDependency.getAllModuleArtifacts().each { artifact ->
+        this.ext.lazyConfiguration = {
+
+            // TODO 2013-06-13 HughG: Duplication with BuildScriptDependency constructor.
+
+            Collection<ResolvedArtifact> dependencyArtifacts = []
+            Closure<Set<ResolvedDependency>> collectArtifacts = { Configuration conf ->
+                ResolvedConfiguration resConf = conf.resolvedConfiguration
+                resConf.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
+                    resolvedDependency.allModuleArtifacts.each { ResolvedArtifact artifact ->
                         if (!dependencyArtifacts.contains(artifact)) {
                             dependencyArtifacts.add(artifact)
                         }
                     }
                 }
             }
-            
-            project.buildscript.getConfigurations().each collectArtifacts
+
+            project.buildscript.configurations.each collectArtifacts
             project.configurations.each collectArtifacts
             
             for (ResolvedArtifact artifact in dependencyArtifacts) { 
@@ -36,9 +41,9 @@ class CollectDependenciesTask extends Copy {
         if (project == project.rootProject) {
             // Will be something like: 
             // C:\Users\nmcm\.gradle\wrapper\dists\custom-gradle-1.3-1.0.1.10\j5dmdk875e2rad4dnud3sriop\custom-gradle-1.3
-            def gradleHomeDir = project.gradle.gradleHomeDir.parentFile
-            def split = gradleHomeDir.parentFile.name.split("-")
-            def customDistVersion = split[-1]
+            File gradleHomeDir = project.gradle.gradleHomeDir.parentFile
+            String[] split = gradleHomeDir.parentFile.name.split("-")
+            String customDistVersion = split[-1]
             
             gradleHomeDir.traverse {
                 if (it.name.endsWith(".zip")) {
@@ -52,9 +57,9 @@ class CollectDependenciesTask extends Copy {
         // Re-write the gradle-wrapper.properties file
         if (project == project.rootProject) {
             doLast {
-                def propFile = null
+                File propFile = null
                 
-                def gradleDir = new File(project.projectDir, "gradle")
+                File gradleDir = new File(project.projectDir, "gradle")
                 if (gradleDir.exists()) {
                     gradleDir.traverse {
                         if (it.name.endsWith(".properties")) {
@@ -64,11 +69,11 @@ class CollectDependenciesTask extends Copy {
                 }
                 
                 if (propFile != null) {
-                    def originalPropText = propFile.text
-                    def backupPropFile = new File(propFile.path + ".original")
+                    String originalPropText = propFile.text
+                    File backupPropFile = new File(propFile.path + ".original")
                     backupPropFile.write(originalPropText)
                     
-                    def newPropText = originalPropText.replaceAll(
+                    String newPropText = originalPropText.replaceAll(
                         "distributionUrl=.*custom-gradle/([\\d\\.]+)/custom-gradle-([\\d\\.\\-]+).zip",
                         { "distributionUrl=../local_artifacts/custom-gradle/${it[1]}/custom-gradle-${it[2]}.zip" }
                     )
@@ -82,13 +87,13 @@ class CollectDependenciesTask extends Copy {
     }
     
     public void processArtifact(ResolvedArtifact artifact) {
-        def version = artifact.getModuleVersion().getId()
-        def artifactRootDir = artifact.getFile().parentFile.parentFile.parentFile
-        def targetPath = null
+        ModuleVersionIdentifier version = artifact.getModuleVersion().getId()
+        File artifactRootDir = artifact.getFile().parentFile.parentFile.parentFile
+        String targetPath = null
 
         logger.info("Processing '${version}' for collectDependencies.")
         
-        def ivyDir = new File(artifactRootDir, "ivy")
+        File ivyDir = new File(artifactRootDir, "ivy")
         if (ivyDir.exists()) {
             ivyDir.traverse { ivyFile ->
                 if (ivyFile.name == "ivy-${version.getVersion()}.xml") {
@@ -100,12 +105,12 @@ class CollectDependenciesTask extends Copy {
             }
         }
             
-        def pomDir = new File(artifactRootDir, "pom")
+        File pomDir = new File(artifactRootDir, "pom")
         if (pomDir.exists()) {
             pomDir.traverse { pomFile ->
-                if (pomFile.name == "${version.getName()}-${version.getVersion()}.pom") {
-                    def groupPath = version.getGroup().replaceAll("\\.", "/")
-                    targetPath = "maven/${groupPath}/${version.getName()}/${version.getVersion()}"
+                if (pomFile.name == "${version.name}-${version.version}.pom") {
+                    String groupPath = version.group.replaceAll("\\.", "/")
+                    targetPath = "maven/${groupPath}/${version.name}/${version.version}"
                     from (pomFile) {
                         into targetPath
                     }
@@ -123,35 +128,40 @@ class CollectDependenciesTask extends Copy {
     // Read the POM file to determine its parents. Navigate to parent POM files and copy those too.
     // Recursively call this method for grand-parents etc.
     public void processPomFileParents(File pomFile) {
-        def pomArtifactRootDir = pomFile.parentFile.parentFile.parentFile
-        def pomXml = null
+        File pomArtifactRootDir = pomFile.parentFile.parentFile.parentFile
+        GPathResult pomXml = null
         
         try {
             pomXml = new XmlSlurper(false, false).parseText(pomFile.text)
-        } catch (e) {
+        } catch (Exception e) {
             doLast {
-                println "Warning: error while parsing XML in ${pomFile}."
+                println "Warning: error while parsing XML in ${pomFile}: " + e.toString()
             }
         }
         
         if (pomXml != null) {
-            pomXml.parent.each { parentNode ->
-                def parentPomGroup = parentNode.groupId.text()
-                def parentPomModuleName = parentNode.artifactId.text()
-                def parentPomVersion = parentNode.version.text()
+            pomXml.parent().each { GPathResult parentNode ->
+                String parentPomGroup = (parentNode.groupId as NodeChild).text()
+                String parentPomModuleName = (parentNode.artifactId as NodeChild).text()
+                String parentPomVersion = (parentNode.version as NodeChild).text()
                 
-                def parentPomRelativePath = parentNode.relativePath.text()
-                def parentPomPath = null
+                String parentPomRelativePath = (parentNode.relativePath as NodeChild).text()
                 if (parentPomRelativePath != null && !parentPomRelativePath.isEmpty()) {
                     logger.info "Ignoring relative path for '${pomArtifactRootDir}' : ${parentPomRelativePath}"
                 }
-                def cacheRootDir = pomArtifactRootDir.parentFile.parentFile.parentFile
-                parentPomPath = new File(new File(new File(cacheRootDir, parentPomGroup), parentPomModuleName), parentPomVersion)
+                File cacheRootDir = pomArtifactRootDir.parentFile.parentFile.parentFile
+                File parentPomPath = new File(
+                    new File(
+                        new File(cacheRootDir, parentPomGroup),
+                        parentPomModuleName
+                    ),
+                    parentPomVersion
+                )
                 
                 if (parentPomPath.exists()) {
                     parentPomPath.traverse { parentPomFile ->
                         if (parentPomFile.name.endsWith(".pom")) {
-                            def groupPath = parentPomGroup.replaceAll("\\.", "/")
+                            String groupPath = parentPomGroup.replaceAll("\\.", "/")
                             from (parentPomFile) {
                                 into "maven/${groupPath}/${parentPomModuleName}/${parentPomVersion}"
                             }

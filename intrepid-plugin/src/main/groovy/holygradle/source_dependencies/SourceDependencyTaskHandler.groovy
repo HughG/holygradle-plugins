@@ -7,10 +7,8 @@ class SourceDependencyTaskHandler {
     public final String name
     public def invocations = []
     
-    public static def createContainer(Project project) {
-        project.extensions.sourceDependencyTasks = project.container(SourceDependencyTaskHandler)  { taskName ->
-            def sourceDep = project.sourceDependencies.extensions.create(taskName, SourceDependencyTaskHandler, taskName)  
-        }
+    public static Collection<SourceDependencyTaskHandler> createContainer(Project project) {
+        project.extensions.sourceDependencyTasks = project.container(SourceDependencyTaskHandler)
         project.extensions.sourceDependencyTasks
     }
     

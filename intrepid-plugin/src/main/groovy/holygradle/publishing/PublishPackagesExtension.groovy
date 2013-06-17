@@ -1,5 +1,10 @@
 package holygradle.publishing
 
+import holygradle.unpacking.UnpackModule
+import org.gradle.api.Action
+import org.gradle.api.Task
+import org.gradle.api.artifacts.dsl.RepositoryHandler
+
 public interface PublishPackagesExtension {
     void group(String publishGroup)
     
@@ -13,7 +18,11 @@ public interface PublishPackagesExtension {
     
     void nextVersionNumberEnvironmentVariable(String versionNumberEnvVar)
     
-    void repositories(def configure)
+    void repositories(Action<RepositoryHandler> configure)
     
     void republish(Closure closure)
+
+    RepublishHandler getRepublishHandler()
+
+    Task defineCheckTask(Iterable<UnpackModule> unpackModules)
 }

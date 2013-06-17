@@ -4,9 +4,19 @@ import org.gradle.api.*
 import org.gradle.util.ConfigureUtil
 
 class SymlinkHandler {
+    class Mapping {
+        final String linkPath
+        final String targetPath
+
+        Mapping(String linkPath, String targetPath) {
+            this.linkPath = linkPath
+            this.targetPath = targetPath
+        }
+    }
+
     private String fromLocation = "."
-    private def toLocations = []
-    private def children = []
+    private Collection<String> toLocations = []
+    private Collection<SymlinkHandler> children = []
     
     public static SymlinkHandler createExtension(Project project) {
         project.extensions.create("symlinks", SymlinkHandler)
@@ -70,18 +80,14 @@ class SymlinkHandler {
         children
     }
     
-    public def getMappings() {
-        def mappings = []
+    public Collection<Mapping> getMappings() {
+        Collection<Mapping> mappings = []
         getMappings(mappings)
         mappings
     }
     
     private int countToLocations() {
-        int total = toLocations.size()
-        children.each { child ->
-            total += child.countToLocations()
-        }
-        total
+        (int)children.sum(toLocations.size()) { SymlinkHandler it -> it.countToLocations() }
     }
     
     public void writeScript(StringBuilder str) {
@@ -120,7 +126,7 @@ class SymlinkHandler {
     }
         
     private String getLinkPath(String toLocation) {
-        def last = toLocation.split("/")[-1]
+        String last = toLocation.split("/")[-1]
         if (fromLocation == ".") {
             last
         } else {
@@ -136,9 +142,9 @@ class SymlinkHandler {
         }
     }
     
-    private void getMappings(def mappings) {
+    private void getMappings(Collection<Mapping> mappings) {
         for (toLocation in toLocations) {
-            mappings.add([getLinkPath(toLocation), getTargetPath(toLocation)])
+            mappings.add(new Mapping(getLinkPath(toLocation), getTargetPath(toLocation)))
         }
         for (child in children) {
             child.getMappings(mappings)

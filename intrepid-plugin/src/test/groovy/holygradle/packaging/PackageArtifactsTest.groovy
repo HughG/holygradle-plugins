@@ -1,12 +1,12 @@
 package holygradle.packaging
 
-import holygradle.*
-import holygradle.test.*
-import org.junit.Test
-import org.gradle.testfixtures.ProjectBuilder
+import holygradle.test.TestBase
 import org.gradle.api.Project
-import org.gradle.api.tasks.Upload
-import static org.junit.Assert.*
+import org.gradle.testfixtures.ProjectBuilder
+import org.junit.Test
+
+import static org.junit.Assert.assertNotNull
+import static org.junit.Assert.assertTrue
 
 class PackageArtifactsTest extends TestBase {
     @Test

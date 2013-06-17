@@ -1,8 +1,10 @@
 package holygradle.packaging
 
+import holygradle.custom_gradle.PluginUsages
 import holygradle.custom_gradle.util.Wildcard
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.publishing.RepublishHandler
+import holygradle.scm.SourceControlRepository
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.symlinks.SymlinkHandler
 import org.gradle.api.Project
@@ -10,16 +12,18 @@ import org.gradle.util.ConfigureUtil
 import holygradle.Helper
 import holygradle.scm.SourceControlRepositories
 
+import java.util.regex.Matcher
+
 class PackageArtifactBuildScriptHandler {
     private boolean atTop = true
-    private def textAtTop = []
-    private def pinnedSourceDependencies = []
-    private def packedDependencies = [:]
-    private def textAtBottom = []
-    private def ivyRepositories = []
+    private Collection<String> textAtTop = []
+    private Collection<String> pinnedSourceDependencies = []
+    private Map<String, Collection<String>> packedDependencies = [:]
+    private Collection<String> textAtBottom = []
+    private Collection<String> ivyRepositories = []
     private RepublishHandler republishHandler = null
     private String myCredentialsConfig
-    private def symlinkPatterns = []
+    private List<String> symlinkPatterns = []
     private String publishUrl = null
     private String publishCredentials = null
     public boolean generateSettingsFileForSubprojects = true
@@ -53,9 +57,7 @@ class PackageArtifactBuildScriptHandler {
     }
     
     public void addPinnedSourceDependency(String... sourceDep) {
-        for (s in sourceDep) {
-            pinnedSourceDependencies.add(s)
-        }
+        pinnedSourceDependencies.addAll(sourceDep)
         atTop = false
     }
     
@@ -84,11 +86,12 @@ class PackageArtifactBuildScriptHandler {
     private static List<SourceDependencyHandler> findSourceDependencies(Project project, String sourceDepWildcard) {
         List<SourceDependencyHandler> matches = new LinkedList<SourceDependencyHandler>()
         
-        project.subprojects { p ->
+        project.subprojects { Project p ->
             matches.addAll(findSourceDependencies(p, sourceDepWildcard))
         }
         
-        def sourceDependencies = project.extensions.findByName("sourceDependencies")
+        Collection<SourceDependencyHandler> sourceDependencies =
+            project.extensions.findByName("sourceDependencies") as Collection<SourceDependencyHandler>
         if (sourceDependencies != null) {
             sourceDependencies.each {
                 if (Wildcard.match(sourceDepWildcard, it.name)) {
@@ -103,11 +106,12 @@ class PackageArtifactBuildScriptHandler {
     private static List<PackedDependencyHandler> findPackedDependencies(Project project, String packedDepWildcard) {
         List<PackedDependencyHandler> matches = new LinkedList<PackedDependencyHandler>()
         
-        project.subprojects { p ->
+        project.subprojects { Project p ->
             matches.addAll(findPackedDependencies(p, packedDepWildcard))
         }
-        
-        def packedDependencies = project.extensions.findByName("packedDependencies")
+
+        Collection<PackedDependencyHandler> packedDependencies =
+            project.extensions.findByName("packedDependencies") as Collection<PackedDependencyHandler>
         if (packedDependencies != null) {
             packedDependencies.each {
                 if (Wildcard.match(packedDepWildcard, it.name)) {
@@ -118,30 +122,14 @@ class PackageArtifactBuildScriptHandler {
         
         matches
     }
-    
-    private static def collectSourceDependenciesForPinned(Project project, def dependencyWildcards) {
-        def allSourceDeps = [:]
-        dependencyWildcards.each { wildcard ->
-            findSourceDependencies(project.rootProject, wildcard).each { sourceDep ->
-                def targetPath = sourceDep.name
-                if (allSourceDeps.containsKey(targetPath)) {
-                    int curConf = allSourceDeps[targetPath].publishingHandler.configurations.size()
-                    int itConf = sourceDep.publishingHandler.configurations.size()
-                    if (itConf > curConf) {
-                        allSourceDeps[targetPath] = sourceDep
-                    }
-                } else {
-                    allSourceDeps[targetPath] = sourceDep
-                }
-            }
-        }
-        allSourceDeps.values()
-    }
-    
-    private static def collectSourceDependenciesForPacked(Project project, def sourceDepNames) {
-        def allSourceDeps = [:]
-        sourceDepNames.each { sourceDepName ->
-            findSourceDependencies(project.rootProject, sourceDepName).each { sourceDep ->
+
+    private static Map<String, SourceDependencyHandler> collectSourceDependenciesForPacked(
+        Project project,
+        Iterable<String> sourceDepNames
+    ) {
+        Map<String, SourceDependencyHandler> allSourceDeps = [:]
+        sourceDepNames.each { String sourceDepName ->
+            findSourceDependencies(project.rootProject, sourceDepName).each { SourceDependencyHandler sourceDep ->
                 if (allSourceDeps.containsKey(sourceDepName)) {
                     int curConf = allSourceDeps[sourceDepName].publishingHandler.configurations.size()
                     int itConf = sourceDep.publishingHandler.configurations.size()
@@ -155,10 +143,35 @@ class PackageArtifactBuildScriptHandler {
         }
         allSourceDeps
     }
-    
-    private static def collectPackedDependencies(Project project, def packedDepNames) {
-        def allPackedDeps = [:]
-        packedDepNames.each { packedDepName ->
+
+    private static Collection<SourceDependencyHandler> collectSourceDependenciesForPinned(
+        Project project,
+        Iterable<String> dependencyWildcards
+    ) {
+        Map<String, SourceDependencyHandler> allSourceDeps = [:]
+        dependencyWildcards.each { String wildcard ->
+            findSourceDependencies(project.rootProject, wildcard).each { SourceDependencyHandler sourceDep ->
+                String targetPath = sourceDep.name
+                if (allSourceDeps.containsKey(targetPath)) {
+                    int curConf = allSourceDeps[targetPath].publishingHandler.configurations.size()
+                    int itConf = sourceDep.publishingHandler.configurations.size()
+                    if (itConf > curConf) {
+                        allSourceDeps[targetPath] = sourceDep
+                    }
+                } else {
+                    allSourceDeps[targetPath] = sourceDep
+                }
+            }
+        }
+        allSourceDeps.values()
+    }
+
+    private static Map<String, PackedDependencyHandler> collectPackedDependencies(
+        Project project,
+        Collection<String> packedDepNames
+    ) {
+        Map<String, PackedDependencyHandler> allPackedDeps = [:]
+        packedDepNames.each { String packedDepName ->
             findPackedDependencies(project.rootProject, packedDepName).each {
                 allPackedDeps[packedDepName] = it
             }
@@ -168,9 +181,9 @@ class PackageArtifactBuildScriptHandler {
     
     private void collectSymlinks(Project project, String sourceDepName, SymlinkHandler allSymlinks) {
         if (Wildcard.anyMatch(symlinkPatterns, sourceDepName)) {
-            def depProject = project.rootProject.findProject(sourceDepName)
+            Project depProject = project.rootProject.findProject(sourceDepName)
             if (depProject != null) {
-                def depSymlinks = depProject.extensions.findByName("symlinks")
+                SymlinkHandler depSymlinks = depProject.extensions.findByName("symlinks") as SymlinkHandler
                 allSymlinks.addFrom(sourceDepName, depSymlinks)
             }
         }
@@ -191,9 +204,9 @@ class PackageArtifactBuildScriptHandler {
         
         // Include plugins
         buildScript.append("buildscript {\n")
-        def pluginUsagesExtension = project.extensions.findByName("pluginUsages")
-        ["intrepid", "my-credentials"].each { pluginName ->
-            def pluginVersion = project.gplugins.usages[pluginName]
+        PluginUsages pluginUsagesExtension = project.extensions.findByName("pluginUsages") as PluginUsages
+        ["intrepid", "my-credentials"].each { String pluginName ->
+            String pluginVersion = project.gplugins.usages[pluginName] as String
             if (pluginUsagesExtension != null) {
                 pluginVersion = pluginUsagesExtension.getVersion(pluginName)
             }
@@ -206,58 +219,37 @@ class PackageArtifactBuildScriptHandler {
         buildScript.append("\n")
         
         // Add repositories
-        if (ivyRepositories.size() == 1) {
-            buildScript.append("repositories.ivy {\n")
-            buildScript.append("    credentials {\n")
-            buildScript.append("        username my.username(")
+        buildScript.append("repositories {\n")
+        ivyRepositories.each { repo ->
+            buildScript.append("    ivy {\n")
+            buildScript.append("        credentials {\n")
+            buildScript.append("            username my.username(")
             if (myCredentialsConfig != null) {
                 buildScript.append("\"${myCredentialsConfig}\"")
             }
             buildScript.append(")\n")
-            buildScript.append("        password my.password(")
+            buildScript.append("            password my.password(")
             if (myCredentialsConfig != null) {
                 buildScript.append("\"${myCredentialsConfig}\"")
             }
             buildScript.append(")\n")
-            buildScript.append("    }\n")
-            def repo = ivyRepositories[0]
-            buildScript.append("    url \"")
+            buildScript.append("        }\n")
+            buildScript.append("        url \"")
             buildScript.append(repo)
             buildScript.append("\"\n")
-            buildScript.append("}\n")
-            buildScript.append("\n")
-        } else if (ivyRepositories.size() > 1) {
-            buildScript.append("repositories {\n")
-            ivyRepositories.each { repo ->
-                buildScript.append("    ivy {\n")
-                buildScript.append("        credentials {\n")
-                buildScript.append("            username my.username(")
-                if (myCredentialsConfig != null) {
-                    buildScript.append("\"${myCredentialsConfig}\"")
-                }
-                buildScript.append(")\n")
-                buildScript.append("            password my.password(")
-                if (myCredentialsConfig != null) {
-                    buildScript.append("\"${myCredentialsConfig}\"")
-                }
-                buildScript.append(")\n")
-                buildScript.append("        }\n")
-                buildScript.append("        url \"")
-                buildScript.append(repo)
-                buildScript.append("\"\n")
-                buildScript.append("    }\n")
-            }
+            buildScript.append("    }\n")
             buildScript.append("}\n")
             buildScript.append("\n")
         }
         
         // Collect symlinks for 'this' project.
         SymlinkHandler allSymlinks = new SymlinkHandler()
-        def thisSymlinkHandler = project.extensions.findByName("symlinks")
+        SymlinkHandler thisSymlinkHandler = project.extensions.findByName("symlinks") as SymlinkHandler
         allSymlinks.addFrom(project.name, thisSymlinkHandler)
         
         // sourceDependencies block
-        def pinnedSourceDeps = collectSourceDependenciesForPinned(project, pinnedSourceDependencies)
+        Collection<SourceDependencyHandler> pinnedSourceDeps =
+            collectSourceDependenciesForPinned(project, pinnedSourceDependencies)
         if (pinnedSourceDeps.size() > 0) {
             if (!generateSettingsFileForSubprojects) {
                 buildScript.append("fetchAllDependencies {\n")
@@ -268,7 +260,7 @@ class PackageArtifactBuildScriptHandler {
             
             buildScript.append("sourceDependencies {\n")
             for (sourceDep in pinnedSourceDeps) {
-                def repo = SourceControlRepositories.get(sourceDep.getAbsolutePath())
+                SourceControlRepository repo = SourceControlRepositories.get(sourceDep.getAbsolutePath())
                 if (repo != null) {
                     buildScript.append(" "*4)
                     buildScript.append("\"")
@@ -291,15 +283,15 @@ class PackageArtifactBuildScriptHandler {
         }
         
         if (packedDependencies.size() > 0) {
-            def allConfs = []
+            Collection<AbstractMap.SimpleEntry<String, String>> allConfs = []
             packedDependencies.each { depName, depConfs ->
                 for (c in depConfs) {
-                    Helper.processConfiguration(c, allConfs, "Formatting error for '$depName' in 'addPackedDependency'.")
+                    Helper.parseConfigurationMapping(c, allConfs, "Formatting error for '$depName' in 'addPackedDependency'.")
                 }
             }
-            def confSet = new HashSet<String>()
+            Set<String> confSet = new HashSet<String>()
             for (c in allConfs) {
-                confSet.add(c[0])
+                confSet.add(c.key)
             }
             
             buildScript.append("configurations {\n")
@@ -326,9 +318,9 @@ class PackageArtifactBuildScriptHandler {
         
         if (packedDependencies.size() > 0) {
             buildScript.append("packedDependencies {\n")
-            def sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
+            Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
-                def sourceDep = sourceDeps[sourceDepName]
+                SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
                 writePackedDependency(
                     buildScript,
                     sourceDep.getFullTargetPathRelativeToRootProject(),
@@ -338,22 +330,23 @@ class PackageArtifactBuildScriptHandler {
                 
                 collectSymlinks(project, sourceDep.getTargetName(), allSymlinks)
             }
-            def packedDeps = collectPackedDependencies(project, packedDependencies.keySet())
+            Map<String, PackedDependencyHandler> packedDeps = collectPackedDependencies(project, packedDependencies.keySet())
             for (packedDepName in packedDeps.keySet()) {
-                def packedDep = packedDeps[packedDepName]
+                PackedDependencyHandler packedDep = packedDeps[packedDepName]
                 writePackedDependency(
                     buildScript, 
                     packedDep.getFullTargetPathRelativeToRootProject(), 
-                    packedDep.getDependencyCoordinate(project),
+                    packedDep.getDependencyCoordinate(),
                     packedDependencies[packedDepName]
                 )
             }
             // Some packed dependencies will explicitly specify the full coordinate, so just
             // publish them as-is.
             packedDependencies.each { packedDepName, packedDepConfigs ->
-                def groupMatch = packedDepName =~ /.+:(.+):.+/
+                Matcher groupMatch = packedDepName =~ /.+:(.+):.+/
                 if (groupMatch.size() > 0) {
-                    writePackedDependency(buildScript, groupMatch[0][1], packedDepName, packedDepConfigs)
+                    final List<String> match = (List<String>) groupMatch[0]
+                    writePackedDependency(buildScript, match[1], packedDepName, packedDepConfigs)
                 }
             }
             buildScript.append("}\n")
@@ -405,7 +398,12 @@ class PackageArtifactBuildScriptHandler {
         buildFile.write(buildScript.toString())
     }
     
-    private static void writePackedDependency(StringBuilder buildScript, String name, String fullCoordinate, def configs) {
+    private static void writePackedDependency(
+        StringBuilder buildScript,
+        String name,
+        String fullCoordinate,
+        Collection<String> configs
+    ) {
         buildScript.append("    \"")
         buildScript.append(name)
         buildScript.append("\" {\n")
@@ -413,7 +411,7 @@ class PackageArtifactBuildScriptHandler {
         buildScript.append(fullCoordinate)
         buildScript.append("\"\n")
         buildScript.append("        configuration ")
-        def quoted = configs.collect { "\"${it}\"" }
+        List<GString> quoted = configs.collect { "\"${it}\"" }
         buildScript.append(quoted.join(", "))
         buildScript.append("\n")
         buildScript.append("    }\n")

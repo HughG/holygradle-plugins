@@ -1,13 +1,11 @@
 package holygradle.packaging
 
 class PackageArtifactIncludeHandler {
-    public def includePatterns = []
-    public def replacements = [:]
+    public Collection<String> includePatterns = []
+    public Map<String, String> replacements = [:]
     
-    PackageArtifactIncludeHandler(def includePatterns) {
-        includePatterns.each { inc ->
-            this.includePatterns.add(inc)
-        }
+    PackageArtifactIncludeHandler(String... includePatterns) {
+        this.includePatterns.addAll(includePatterns)
     }
     
     public void replace(String find, String replace) {

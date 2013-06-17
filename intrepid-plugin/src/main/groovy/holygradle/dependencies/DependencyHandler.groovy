@@ -1,7 +1,8 @@
 package holygradle.dependencies
 
 import holygradle.Helper
-import org.gradle.api.*
+import org.gradle.api.Project
+import java.util.regex.Matcher
 
 abstract class DependencyHandler {
     public final String name
@@ -29,7 +30,7 @@ abstract class DependencyHandler {
     }
     
     public String getTargetName() {
-        def pathMatch = name =~ /(.*?)([ \w_\-\<\>]+)$/
+        Matcher pathMatch = name =~ /(.*?)([ \w_\-\<\>]+)$/
         pathMatch[0][2]
     }
 }

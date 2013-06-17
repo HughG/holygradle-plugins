@@ -3,7 +3,7 @@ package holygradle.publishing
 import org.gradle.api.*
 
 class RepublishHandler {
-    private def replacements = [:]
+    private Map<String, String> replacements = [:]
     private String fromRepo = null
     private String toRepo = null
     
@@ -25,8 +25,8 @@ class RepublishHandler {
         toRepo = toUrl
     }
     
-    public def getReplacements() {
-        def repl = replacements.clone()
+    public Map<String, String> getReplacements() {
+        Map<String, String> repl = replacements.clone() as Map<String, String>
         if (fromRepo != null && toRepo != null) {
             repl[fromRepo] = toRepo
         }

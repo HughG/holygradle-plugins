@@ -79,7 +79,7 @@ class CopyArtifactsHandler {
         files
     }
     
-    public static def createExtension(Project project) {
+    public static CopyArtifactsHandler createExtension(Project project) {
         project.extensions.create("copyArtifacts", CopyArtifactsHandler)
     }
     

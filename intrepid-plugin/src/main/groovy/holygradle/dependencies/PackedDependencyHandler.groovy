@@ -1,56 +1,72 @@
 package holygradle.dependencies
 
-import org.gradle.api.*
-import org.gradle.api.artifacts.*
-import holygradle.Helper
+import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
+import holygradle.Helper
+
+import java.util.regex.Matcher
 
 class PackedDependencyHandler extends DependencyHandler {
     private Project projectForHandler
-    private def configurations = []
-    private String dependencyCoordinate
+    private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
     private String dependencyGroup
     private String dependencyModule
     private String dependencyVersion
-    def applyUpToDateChecks = null
-    def readonly = null
-    def unpackToCache = null
-    def createSettingsFile = null
-    def publishDependency = null
+    public Boolean applyUpToDateChecks = null
+    public Boolean readonly = null
+    public Boolean unpackToCache = null
+    public Boolean createSettingsFile = null
+    public Boolean publishDependency = null
     
-    public static def createContainer(Project project) {
-        def packedDependenciesDefault = null
+    public static Collection<PackedDependencyHandler> createContainer(Project project) {
         if (project == project.rootProject) {
-            packedDependenciesDefault = project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "rootDefault")
+            project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "rootDefault")
         } else {
-            packedDependenciesDefault = project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "default", project.rootProject)
+            project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "default", project.rootProject)
         }
-        project.extensions.packedDependencies = project.container(PackedDependencyHandler) { packedDepName ->
-            project.packedDependencies.extensions.create(packedDepName, PackedDependencyHandler, packedDepName, project)  
+        project.extensions.packedDependencies = project.container(PackedDependencyHandler) { String name ->
+            new PackedDependencyHandler(name, project)
         }
+        project.extensions.packedDependencies
     }
-    
+
     public PackedDependencyHandler(String depName) {
         super(depName)
+
+        //throw new RuntimeException("No project for PackedDependencyHandler for $depName")
+
     }
     
     public PackedDependencyHandler(String depName, Project projectForHandler) {
         super(depName, projectForHandler)
+
+        if (projectForHandler == null) {
+            throw new RuntimeException("Null project for PackedDependencyHandler for $depName")
+        }
+
         this.projectForHandler = projectForHandler
         dependencyModule = depName
     }
     
-    public PackedDependencyHandler(String depName, Project projectForHandler, String dependencyCoordinate, def configurations) {
-        super(depName, projectForHandler)
+    public PackedDependencyHandler(
+        String depName,
+        Project projectForHandler,
+        String dependencyCoordinate,
+        Collection<AbstractMap.SimpleEntry<String, String>> configurations
+    ) {
+        this(depName, projectForHandler)
         this.projectForHandler = projectForHandler
         parseDependencyCoordinate(dependencyCoordinate)
         this.configurations = configurations
     }
     
-    public PackedDependencyHandler(String depName, Project projectForHandler, ModuleVersionIdentifier dependencyCoordinate) {
-        super(depName, projectForHandler)
-        this.projectForHandler = projectForHandler
+    public PackedDependencyHandler(
+        String depName,
+        Project projectForHandler,
+        ModuleVersionIdentifier dependencyCoordinate
+    ) {
+        this(depName, projectForHandler)
         dependencyGroup = dependencyCoordinate.getGroup()
         dependencyModule = dependencyCoordinate.getName()
         dependencyVersion = dependencyCoordinate.getVersion()
@@ -70,10 +86,9 @@ class PackedDependencyHandler extends DependencyHandler {
     
     public boolean shouldUnpackToCache() {
         if (unpackToCache == null) {
-            def p = getParentHandler()
+            PackedDependencyHandler p = getParentHandler()
             if (p != null) {
-                def should = p.shouldUnpackToCache()
-                return should
+                return p.shouldUnpackToCache()
             } else {
                 return true
             }
@@ -84,7 +99,7 @@ class PackedDependencyHandler extends DependencyHandler {
     
     public boolean shouldCreateSettingsFile() {
         if (createSettingsFile == null) {
-            def p = getParentHandler()
+            PackedDependencyHandler p = getParentHandler()
             if (p != null) {
                 return p.shouldCreateSettingsFile()
             } else {
@@ -97,7 +112,7 @@ class PackedDependencyHandler extends DependencyHandler {
     
     public boolean shouldMakeReadonly() {
         if (readonly == null) {
-            def p = getParentHandler()
+            PackedDependencyHandler p = getParentHandler()
             if (p != null) {
                 return p.shouldMakeReadonly()
             } else {
@@ -135,13 +150,14 @@ class PackedDependencyHandler extends DependencyHandler {
     }
     
     private void parseDependencyCoordinate(String dependencyCoordinate) {
-        def groupMatch = dependencyCoordinate =~ /(.+):(.+):(.+)/
+        Matcher groupMatch = dependencyCoordinate =~ /(.+):(.+):(.+)/
         if (groupMatch.size() == 0) {
             throw new RuntimeException("Incorrect dependency coordinate format: '$dependencyCoordinate'")
         } else {
-            dependencyGroup = groupMatch[0][1]
-            dependencyModule = groupMatch[0][2]
-            dependencyVersion = groupMatch[0][3]
+            final List<String> match = groupMatch[0] as List<String>
+            dependencyGroup = match[1]
+            dependencyModule = match[2]
+            dependencyVersion = match[3]
         }
     }
         
@@ -150,14 +166,14 @@ class PackedDependencyHandler extends DependencyHandler {
     }
         
     public void configuration(String config) {
-        def newConfigs = []
-        Helper.processConfiguration(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
+        Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
+        Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
         configurations.addAll newConfigs
         for (conf in newConfigs) {
-            def fromConf = conf[0]
-            def toConf = conf[1]
+            def fromConf = conf.key
+            def toConf = conf.value
             projectForHandler.dependencies.add(
-                fromConf, 
+                fromConf,
                 new DefaultExternalModuleDependency(dependencyGroup, dependencyModule, dependencyVersion, toConf)
             )
         }
@@ -185,7 +201,7 @@ class PackedDependencyHandler extends DependencyHandler {
         dependencyVersion
     }
     
-    public String getDependencyCoordinate(Project project) {
+    public String getDependencyCoordinate() {
         "${dependencyGroup}:${dependencyModule}:${dependencyVersion}"
     }
     
@@ -193,11 +209,11 @@ class PackedDependencyHandler extends DependencyHandler {
         getTargetName().contains("<version>")
     }
     
-    public String getTargetNameWithVersionNumber(def versionStr) {
+    public String getTargetNameWithVersionNumber(String versionStr) {
         getTargetName().replace("<version>", versionStr)
     }
     
-    public String getFullTargetPathWithVersionNumber(def versionStr) {
+    public String getFullTargetPathWithVersionNumber(String versionStr) {
         name.replace("<version>", versionStr)
     }
 }

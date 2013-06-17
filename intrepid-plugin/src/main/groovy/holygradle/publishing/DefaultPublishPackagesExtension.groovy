@@ -1,9 +1,13 @@
 package holygradle.publishing
 
+import holygradle.dependencies.PackedDependencyHandler
+import holygradle.source_dependencies.SourceDependencyHandler
+import holygradle.unpacking.UnpackModule
 import org.gradle.api.*
 import org.gradle.api.artifacts.dsl.*
 import org.gradle.api.artifacts.repositories.*
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.util.ConfigureUtil
 
 public class DefaultPublishPackagesExtension implements PublishPackagesExtension {
@@ -21,13 +25,14 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public DefaultPublishPackagesExtension(
         Project project,
         PublishingExtension publishingExtension,
-        def sourceDependencies,
-        def packedDependencies
+        Collection<PackedDependencyHandler> packedDependencies,
+        Collection<SourceDependencyHandler> sourceDependencies
     ) {
         this.project = project
         this.publishingExtension = publishingExtension
         this.repositories = publishingExtension.getRepositories()
-        mainIvyDescriptor = publishingExtension.getPublications().getByName("ivy").getDescriptor()
+        final IvyPublication mainIvyPublication = (IvyPublication)publishingExtension.getPublications().getByName("ivy")
+        mainIvyDescriptor = mainIvyPublication.getDescriptor()
                 
         // Configure the publish task to deal with the version number, include source dependencies and convert 
         // dynamic dependency versions to fixed version numbers.
@@ -36,7 +41,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             this.applyModuleName()
             this.applyVersionNumber()
             
-            def ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
+            Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
                 this.includeSourceDependencies(project, sourceDependencies)
                 this.removeUnwantedDependencies(project, packedDependencies)
@@ -54,7 +59,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
             
             // Override the group and description for the ivy-publish plugin's 'publish' task.
-            def publishTask = project.tasks.findByName("publish")
+            Task publishTask = project.tasks.findByName("publish")
             if (publishTask != null) {
                 publishTask.group = "Publishing"
                 publishTask.description = "Publishes all publications for this module."
@@ -62,30 +67,33 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             
             // Define a 'republish' task.
             if (getRepublishHandler() != null) {
-                project.task("republish", type: DefaultTask) {
-                    group = "Publishing"
-                    description = "'Republishes' the artifacts for the module."
+                project.task("republish", type: DefaultTask) { Task task ->
+                    task.group = "Publishing"
+                    task.description = "'Republishes' the artifacts for the module."
                     if (ivyPublishTask != null) {
-                        dependsOn ivyPublishTask
+                        task.dependsOn ivyPublishTask
                     }
                 }
             }
         }
     }
     
-    public Task defineCheckTask(def unpackModules) {
-        def republishHandler = getRepublishHandler()
+    public Task defineCheckTask(Iterable<UnpackModule> unpackModules) {
+        RepublishHandler republishHandler = getRepublishHandler()
         if (republishHandler != null) {
-            def repoUrl = republishHandler.getToRepository()
-            def repos = project.getRepositories().matching { repo ->
+            String repoUrl = republishHandler.getToRepository()
+            Collection<ArtifactRepository> repos = project.getRepositories().matching { repo ->
                 repo instanceof AuthenticationSupported && repo.getCredentials().getUsername() != null
             }
             if (repos.size() > 0 && repoUrl != null) {
-                def repo = repos[0]
-                project.task("checkPublishedDependencies", type: CheckPublishedDependenciesTask) {
-                    group = "Publishing"
-                    description = "Check if all dependencies are accessible in the target repo."
-                    initialize(unpackModules, repoUrl, repo.getCredentials())
+                AuthenticationSupported repo = (AuthenticationSupported)repos[0]
+                project.task(
+                    "checkPublishedDependencies",
+                    type: CheckPublishedDependenciesTask
+                ) { CheckPublishedDependenciesTask it ->
+                    it.group = "Publishing"
+                    it.description = "Check if all dependencies are accessible in the target repo."
+                    it.initialize(unpackModules, repoUrl, repo.getCredentials())
                 }
             }
         }
@@ -114,7 +122,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return repositories
     }
     
-    public void repositories(def configure) {
+    public void repositories(Action<RepositoryHandler> configure) {
         configure.execute(repositories)
     }
     

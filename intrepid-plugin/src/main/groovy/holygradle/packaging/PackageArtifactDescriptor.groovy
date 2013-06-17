@@ -1,17 +1,19 @@
 package holygradle.packaging
 
-import org.gradle.api.*
+import org.gradle.api.Project
+import org.gradle.api.file.CopySpec
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.util.ConfigureUtil
 import holygradle.publishing.RepublishHandler
 
-class PackageArtifactDescriptor implements PackageArtifactDSL {
-    public def includeHandlers = []
-    public def excludes = [".gradle", "build.gradle", "packages/**/*", "packages/*"]
-    public String fromLocation
-    public String toLocation
-    public def fromDescriptors = []
-    public PackageArtifactBuildScriptHandler buildScriptHandler = null
-    private def textFileHandlers = []
+class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
+    private Collection<PackageArtifactIncludeHandler> includeHandlers = []
+    private Collection<String> excludes = [".gradle", "build.gradle", "packages/**/*", "packages/*"]
+    private String fromLocation
+    private String toLocation
+    private Collection<PackageArtifactDescriptor> fromDescriptors = []
+    private PackageArtifactBuildScriptHandler buildScriptHandler = null
+    private Collection<PackageArtifactTextFileHandler> textFileHandlers = []
     
     public PackageArtifactDescriptor(String projectRelativePath) {
         fromLocation = projectRelativePath
@@ -45,13 +47,13 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
     }
     
     public void includeTextFile(String path, Closure closure) {
-        def textFileHandler = new PackageArtifactTextFileHandler(path)
+        PackageArtifactPlainTextFileHandler textFileHandler = new PackageArtifactPlainTextFileHandler(path)
         ConfigureUtil.configure(closure, textFileHandler)
         textFileHandlers.add(textFileHandler)
     }
     
     public void includeSettingsFile(Closure closure) {
-        def settingsFileHandler = new PackageArtifactSettingsFileHandler("settings.gradle")
+        PackageArtifactSettingsFileHandler settingsFileHandler = new PackageArtifactSettingsFileHandler("settings.gradle")
         ConfigureUtil.configure(closure, settingsFileHandler)
         textFileHandlers.add(settingsFileHandler)
     }
@@ -61,7 +63,7 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
             excludes.add(p)
         }
     }
-    
+
     public void from(String fromLocation) {
         this.fromLocation = fromLocation
     }
@@ -75,7 +77,23 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
     public void to(String toLocation) {
         this.toLocation = toLocation
     }
-    
+
+    public Collection<PackageArtifactIncludeHandler> getIncludeHandlers() {
+        return includeHandlers
+    }
+
+    public Collection<String> getExcludes() {
+        return Collections.unmodifiableCollection(excludes)
+    }
+
+    public String getFromLocation() {
+        return fromLocation
+    }
+
+    public Collection<PackageArtifactDescriptor> getFromDescriptors() {
+        return Collections.unmodifiableCollection(fromDescriptors)
+    }
+
     private File getTargetFile(File parentDir, String fileName) {
         if (toLocation == ".") {
             if (parentDir == null) {
@@ -146,35 +164,37 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
         paths
     }
     
-    public void configureZipTask(Task zipTask, File taskDir, RepublishHandler republish) {
-        zipTask.from(taskDir.path) {
-            include collectPackageFilePaths()
-            excludes = []
+    public void configureZipTask(Zip zipTask, File taskDir, RepublishHandler republish) {
+        zipTask.from(taskDir.path) { CopySpec spec ->
+            spec.include collectPackageFilePaths()
+            spec.excludes = []
             // If we're republishing then apply the search & replace rules to all of the auto-generated files. It's fair
             // to assume that they're text files and wouldn't mind having filtering applied to them.
             //
             // getReplacements() returns the substitutions to carry out, and "filter" configures the zip task to apply
             // them to the zipped files.
             if (republish != null) {
-                republish.getReplacements().each { find, repl ->
-                    filter { String line -> line.replaceAll(find, repl) }
+                republish.replacements.each { String find, String repl ->
+                    spec.filter { String line -> line.replaceAll(find, repl) }
                 }
             }
         }
         
         if (includeHandlers.size() > 0) {
-            def zipFromLocation = fromLocation
+            String zipFromLocation = fromLocation
             if (republish != null) {
                 zipFromLocation = toLocation
             }
-            
+
+            Collection<String> descriptorExcludes = this.excludes // capture private for closure
+            String descriptorToLocation = this.toLocation // capture private for closure
             includeHandlers.each { includeHandler ->
-                zipTask.from(zipFromLocation) {
-                    if (toLocation != ".") {
-                        into(toLocation)
+                zipTask.from(zipFromLocation) { CopySpec spec ->
+                    if (descriptorToLocation != ".") {
+                        into(descriptorToLocation)
                     }
-                    includes = includeHandler.includePatterns
-                    excludes = excludes
+                    spec.includes = includeHandler.includePatterns
+                    spec.excludes = descriptorExcludes
                     if (republish != null) {
                         // If we're republishing then apply the search & replace rules only to
                         // *.gradle and *.properties files. To be fair we should really be checking
@@ -183,15 +203,15 @@ class PackageArtifactDescriptor implements PackageArtifactDSL {
                         eachFile { fileInfo ->
                             if (fileInfo.name.endsWith(".gradle") || fileInfo.name.endsWith(".properties")) {
                                 zipTask.logger.info("Filtering ${fileInfo.path}: ")
-                                republish.getReplacements().each { find, repl ->
+                                republish.replacements.each { String find, String repl ->
                                     zipTask.logger.info(" - replace '${find}' with '${repl}'.")
                                     fileInfo.filter { String line -> line.replaceAll(find, repl) }
                                 }
                             }
                         }
                     }
-                    includeHandler.replacements.each { find, repl ->
-                        filter { String line -> line.replaceAll(find, repl) }
+                    includeHandler.replacements.each { String find, String repl ->
+                        spec.filter { String line -> line.replaceAll(find, repl) }
                     }
                 }
             }

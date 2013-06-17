@@ -27,10 +27,10 @@ public class Symlink {
         }
         
         // Make sure the parent directory exists
-        final File shouldExist = canonicalLink.parentFile
-        if (shouldExist != null) {
-            if (!shouldExist.exists()) {
-                shouldExist.mkdirs()
+        final File linkParentDir = canonicalLink.parentFile
+        if (linkParentDir != null) {
+            if (!linkParentDir.exists()) {
+                linkParentDir.mkdirs()
             }
         }
         

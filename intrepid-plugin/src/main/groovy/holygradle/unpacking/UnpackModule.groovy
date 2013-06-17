@@ -2,13 +2,14 @@ package holygradle.unpacking
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.api.artifacts.ResolvedDependency
 import holygradle.dependencies.PackedDependencyHandler
 
 class UnpackModule {
     public def group
     public def name
-    public def versions = [:]
+    public Map<String, UnpackModuleVersion> versions = [:]
     
     UnpackModule(def group, def name) {
         this.group = group
@@ -70,8 +71,8 @@ class UnpackModule {
     
     private static void traverseResolvedDependencies(
         String conf,
-        def packedDependencies,
-        def unpackModules,
+        Collection<PackedDependencyHandler> packedDependencies,
+        Collection<UnpackModule> unpackModules,
         Set<ResolvedDependency> dependencies
     ) {
         dependencies.each { resolvedDependency ->
@@ -134,33 +135,41 @@ class UnpackModule {
     }
     
     public static def getAllUnpackModules(Project project) {
-        def unpackModules = project.ext.unpackModules
+        Collection<UnpackModule> unpackModules = project.ext.unpackModules as Collection<UnpackModule>
         
         if (unpackModules == null) {
+            final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
+
             // Build a list (without duplicates) of all artifacts the project depends on.
             unpackModules = []
-            project.configurations.each { conf ->                
-                def resConf = conf.resolvedConfiguration
+            project.configurations.each { conf ->
+                ResolvedConfiguration resConf = conf.resolvedConfiguration
                 traverseResolvedDependencies(
-                    conf.name, project.packedDependencies, unpackModules, resConf.getFirstLevelModuleDependencies()
+                    conf.name,
+                    packedDependencies,
+                    unpackModules,
+                    resConf.getFirstLevelModuleDependencies()
                 )
             }
             
             // Check if we have artifacts for each entry in packedDependency.
             if (!project.gradle.startParameter.isOffline()) {
-                project.packedDependencies.each { dep -> 
-                    if (unpackModules.count { it.name == dep.getDependencyName() } == 0) {
-                        throw new RuntimeException("No artifacts detected for dependency '${dep.name}'. Check that you have correctly defined the configurations.")
+                packedDependencies.each { dep ->
+                    if (!unpackModules.any { it.name == dep.getDependencyName() }) {
+                        throw new RuntimeException(
+                            "No artifacts detected for dependency '${dep.name}'. " +
+                            "Check that you have correctly defined the configurations."
+                        )
                     }
                 }
             }
             
             // Check if we need to force the version number to be included in the path in order to prevent
             // two different versions of a module to be unpacked to the same location.
-            def targetLocations = [:]
-            unpackModules.each { module ->
-                module.versions.each { versionStr, versionInfo -> 
-                    def targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+            Map<File, Collection<String>> targetLocations = [:]
+            unpackModules.each { UnpackModule module ->
+                module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
+                    File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
                     if (targetLocations.containsKey(targetPath)) {
                         targetLocations[targetPath].add(versionInfo.getFullCoordinate())
                     } else {
@@ -169,11 +178,9 @@ class UnpackModule {
                 }
                 
                 if (module.versions.size() > 1) {
-                    def noIncludesCount = 0
-                    module.versions.each { versionStr, versionInfo -> 
-                        if (!versionInfo.includeVersionNumberInPath) {
-                            noIncludesCount++ 
-                        }
+                    int noIncludesCount = 0
+                    module.versions.any { String versionStr, UnpackModuleVersion versionInfo ->
+                        !versionInfo.includeVersionNumberInPath
                     }
                     if (noIncludesCount > 0) {
                         print "Dependencies have been detected on different versions of the module '${module.name}'. "
@@ -181,7 +188,7 @@ class UnpackModule {
                         print "appended to the path as '${module.name}-<version>'. You can make this warning disappear by changing the locations " 
                         print "to which these dependencies are being unpacked. "
                         println "For your information, here are the details of the affected dependencies:"
-                        module.versions.each { versionStr, versionInfo ->
+                        module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
                             print "  ${module.group}:${module.name}:${versionStr} : " + versionInfo.getIncludeInfo() + " -> "
                             versionInfo.includeVersionNumberInPath = true
                             println versionInfo.getIncludeInfo()
@@ -191,7 +198,7 @@ class UnpackModule {
             }
 
             // Check if any target locations are used by more than one module/version.
-            targetLocations.each { target, coordinates ->
+            targetLocations.each { File target, Collection<String> coordinates ->
                 if (coordinates.size() > 1) {
                     throw new RuntimeException(
                         "Multiple different modules/versions are targetting the same location. " +
@@ -203,6 +210,6 @@ class UnpackModule {
             project.ext.unpackModules = unpackModules
         }
         
-        unpackModules        
+        unpackModules
     }
 }
