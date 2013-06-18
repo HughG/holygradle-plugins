@@ -1,12 +1,14 @@
 package holygradle.source_dependencies
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.Task
 import org.gradle.process.ExecResult
+import org.gradle.process.ExecSpec
 
 class SourceDependencyTask extends DefaultTask {
-    public boolean isRootTask = true
-    public SourceDependencyInvocationHandler invocation
-    public ExecResult failureResult = null
+    private boolean isRootTask = true
+    private SourceDependencyInvocationHandler invocation
+    private ExecResult failureResult = null
     
     public void addDependentTask(SourceDependencyTask t) {
         dependsOn(t)
@@ -14,8 +16,8 @@ class SourceDependencyTask extends DefaultTask {
     }
     
     
-    public def collectDependentTasks() {
-        def taskCollection = []
+    public Collection<SourceDependencyTask> collectDependentTasks() {
+        Collection<SourceDependencyTask> taskCollection = new ArrayList<SourceDependencyTask>()
         taskCollection.add(this)
         
         getDependsOn().each { t ->
@@ -28,9 +30,9 @@ class SourceDependencyTask extends DefaultTask {
         return taskCollection.unique()
     }
     
-    public def collectFailures() {
-        def allFailures = [:]
-        collectDependentTasks().each { t ->
+    public Map<Task, ExecResult> collectFailures() {
+        Map<Task, ExecResult> allFailures = [:]
+        collectDependentTasks().each { SourceDependencyTask t ->
             if (t.failureResult != null) {
                 allFailures[t] = t.failureResult
             }
@@ -39,14 +41,16 @@ class SourceDependencyTask extends DefaultTask {
     }
     
     private void initializeInternal() {
-        doLast {
-            if (invocation != null && invocation.exitCodeBehaviour == ExitCodeBehaviour.failAtEnd && isRootTask) {
-                def allFailures = collectFailures()
+        doLast { SourceDependencyTask it ->
+            if (it.invocation != null &&
+                it.invocation.exitCodeBehaviour == ExitCodeBehaviour.failAtEnd && it.isRootTask
+            ) {
+                Map<Task, ExecResult> allFailures = collectFailures()
                 String failureMessage = null
                 if (allFailures.size() == 1) {
-                    failureMessage = "There was a failure while running ${invocation.getDescription()}."
+                    failureMessage = "There was a failure while running ${it.invocation.description}."
                 } else if (allFailures.size() > 1) {
-                    failureMessage = "There were ${allFailures.size()} failures while running ${invocation.getDescription()}."
+                    failureMessage = "There were ${allFailures.size()} failures while running ${it.invocation.description}."
                 }
                 println failureMessage
                 allFailures.each { failedTask, failureResult ->
@@ -62,17 +66,17 @@ class SourceDependencyTask extends DefaultTask {
     public void initialize(SourceDependencyInvocationHandler invocation) {
         this.invocation = invocation
 
-        doLast {
+        doLast { SourceDependencyTask it ->
             println "Invoking ${invocation.getDescription()} on '${project.name}'..."
-            ExecResult result = project.exec {
-                commandLine = invocation.cmdLine
-                ignoreExitValue = invocation.exitCodeBehaviour != ExitCodeBehaviour.failImmediately
+            ExecResult result = project.exec { ExecSpec spec ->
+                spec.commandLine = invocation.cmdLine
+                spec.ignoreExitValue = invocation.exitCodeBehaviour != ExitCodeBehaviour.failImmediately
             }
             if (invocation.exitCodeBehaviour == ExitCodeBehaviour.failImmediately) {
                 result.assertNormalExitValue()
             } else if (invocation.exitCodeBehaviour == ExitCodeBehaviour.failAtEnd) {
                 if (result.getExitValue() != 0) {
-                    failureResult = result
+                    it.failureResult = result
                 }
             }
             println ""
@@ -81,9 +85,9 @@ class SourceDependencyTask extends DefaultTask {
         initializeInternal()
     }
     
-    public void initialize(def invocations, def invocationTasks) {
+    public void initialize(Iterable<SourceDependencyInvocationHandler> invocations, Iterable<Task> invocationTasks) {
         group = "Source Dependencies"
-        def cmdLineDescription = invocations.collect { it.getDescription() }.join(", ")
+        String cmdLineDescription = invocations.collect { it.description }.join(", ")
         description = "Invoke ${cmdLineDescription} on '${project.name}' and dependencies."
 
         invocationTasks.each { t ->

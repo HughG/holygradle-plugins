@@ -1,5 +1,6 @@
 package holygradle.scm
 
+import holygradle.custom_gradle.plugin_apis.CredentialSource
 import org.gradle.api.*
 import org.tmatesoft.svn.core.*
 import org.tmatesoft.svn.core.wc.*
@@ -20,23 +21,36 @@ class SvnDependency extends SourceDependency {
         "Retrieves an SVN Checkout for '${sourceDependency.name}' into your workspace."
     }
     
-    private def TryCheckout(def destinationFile, String repoUrl, String repoRevision, def svnConfigDir, def depth, def username, def password) {
+    private boolean TryCheckout(
+        File destinationFile,
+        String repoUrl,
+        String repoRevision,
+        File svnConfigDir,
+        SVNDepth depth,
+        String username,
+        String password
+    ) {
         try {
             boolean storeCredentials = false
             if (username != null && password != null) {
                 storeCredentials = true
             }
             
-            def svnRevision = SVNRevision.HEAD
+            SVNRevision svnRevision = SVNRevision.HEAD
             if (repoRevision != null) {
                 svnRevision = SVNRevision.create(Long.parseLong(repoRevision))
             }
             
-            def svnUrl = SVNURL.parseURIEncoded(repoUrl)
-            def authManager = new DefaultSVNAuthenticationManager(svnConfigDir, storeCredentials, username, password)                        
-            def options = SVNWCUtil.createDefaultOptions(true)
-            def clientManager = SVNClientManager.newInstance(options, authManager)
-            def updateClient = clientManager.getUpdateClient()
+            SVNURL svnUrl = SVNURL.parseURIEncoded(repoUrl)
+            DefaultSVNAuthenticationManager authManager = new DefaultSVNAuthenticationManager(
+                svnConfigDir,
+                storeCredentials,
+                username,
+                password
+            )
+            DefaultSVNOptions options = SVNWCUtil.createDefaultOptions(true)
+            SVNClientManager clientManager = SVNClientManager.newInstance(options, authManager)
+            SVNUpdateClient updateClient = clientManager.getUpdateClient()
             updateClient.setIgnoreExternals(ignoreExternals)
             if (sourceDependency.export) {
                 updateClient.doExport(svnUrl, destinationFile, svnRevision, svnRevision, "\n", false, depth)
@@ -45,7 +59,7 @@ class SvnDependency extends SourceDependency {
             }
             clientManager.dispose()
             
-            def writeVersion = sourceDependency.export
+            boolean writeVersion = sourceDependency.export
             if (sourceDependency.writeVersionInfoFile != null) {
                 writeVersion = sourceDependency.writeVersionInfoFile
             }
@@ -53,25 +67,25 @@ class SvnDependency extends SourceDependency {
                 writeVersionInfoFile()
             }
             return true
-        } catch (SVNAuthenticationException e) {
+        } catch (SVNAuthenticationException ignored) {
             return false
         }
     }
     
-    private def TryCheckout(def destinationDir, String repoUrl, String repoRevision, def svnConfigDir) {
+    private boolean TryCheckout(File destinationDir, String repoUrl, String repoRevision, File svnConfigDir) {
         TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir, SVNDepth.INFINITY, null, null)
     }
 
-    private def getSvnConfigDir() {
+    private File getSvnConfigDir() {
         // Get SVN-config path.
-        def svnConfigDir = new File(project.ext.svnConfigPath)
+        File svnConfigDir = new File((String)project.ext.svnConfigPath)
         if (!svnConfigDir.exists()) {
             svnConfigDir.mkdir()
         }
         return svnConfigDir
     }
     
-    private def getSvnCommandName() {
+    private def String getSvnCommandName() {
         if (export) "export" else "checkout"
     }
     
@@ -82,19 +96,30 @@ class SvnDependency extends SourceDependency {
     
     @Override
     protected boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
-        def svnConfigDir = getSvnConfigDir()
+        File svnConfigDir = getSvnConfigDir()
         
-        def result = TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir)
+        boolean result = TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir)
         
         if (!result) {
-            def myCredentialsExtension = project.extensions.findByName("my")
+            CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
             if (myCredentialsExtension != null) {
                 println "  Authentication failed. Using credentials from 'my-credentials' plugin..."
-                result = TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir, true, myCredentialsExtension.username(), myCredentialsExtension.password())
-                println "  Well, that didn't work. Your \"Domain Credentials\" are probably out of date."
-                println "  Have you changed your password recently? If so then please try running "
-                println "  'credential-store.exe' which should be in the root of your workspace."
-                throw new RuntimeException("SVN authentication failure.")
+                result = TryCheckout(
+                    destinationDir,
+                    repoUrl,
+                    repoRevision,
+                    svnConfigDir,
+                    SVNDepth.INFINITY,
+                    myCredentialsExtension.username,
+                    myCredentialsExtension.password
+                )
+                if (!result) {
+                    deleteEmptyDir(destinationDir)
+                    println "  Well, that didn't work. Your \"Domain Credentials\" are probably out of date."
+                    println "  Have you changed your password recently? If so then please try running "
+                    println "  'credential-store.exe' which should be in the root of your workspace."
+                    throw new RuntimeException("SVN authentication failure.")
+                }
             } else {
                 println "  Authentication failed. Please apply the 'my-credentials' plugin."
             }

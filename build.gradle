@@ -5,6 +5,7 @@ subprojects {
     if (project.name.endsWith("plugin")) {
         apply plugin: "groovy"
 
+        // Set helper properties for unit tests.
         test {
             systemProperties([
                 'holygradle.gradleHomeDir': project.gradle.gradleHomeDir.path,
@@ -12,6 +13,7 @@ subprojects {
             ])
         }
 
+        // Specify common dependencies for all projects.
         dependencies {
             groovy localGroovy()
             compile gradleApi()
@@ -19,7 +21,9 @@ subprojects {
         }
     }
 }
-project("custom-gradle") {
+
+// The custom-gradle project also needs the groovy plugin, even though it's not a "-plugin" itself.
+project(":custom-gradle") {
     apply plugin: "groovy"
 }
 
@@ -60,8 +64,11 @@ task setHgVersionInfo {
     }
 }
 
+// Force the setHgVersionInfo to always execute.
 setHgVersionInfo.outputs.upToDateWhen { false }
 
+// If we're publishing, print out an explanatory message before we launch into asking the user for
+// version numbers for each plugin.
 subprojects { 
     project.gradle.taskGraph.whenReady {
         if (project.gradle.taskGraph.hasTask(publishRelease)) {
@@ -72,14 +79,17 @@ subprojects {
 }
 
 subprojects {
+    // Add a default configuration for any subprojects which don't have one.
     if (configurations.findByName("default") == null) {
         configurations {
             it."default"
         }
     }
 
+    // Set a common group.
     group = "holygradle"
     
+    // Set common repo info for dependencies.
     repositories {
         ivy {
             url artifactoryServer + artifactoryPluginRepo
@@ -98,19 +108,14 @@ subprojects {
         }
     }
     
+    // Don't cache SNAPSHOT dependencies for any length of time.
+    // TODO 2013-16-18 HughG: Really, we shouldn't use any SNAPSHOT dependencies.
     configurations.all {
         resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
     }
 
-    if (project.path == ":custom-gradle") {
-        project.afterEvaluate {
-            project.createVersionedInitScript.dependsOn setHgVersionInfo
-        }
-    } else if (project.path == ":credential-store") {
-        project.afterEvaluate {
-            project.createProjectVersionFile.dependsOn setHgVersionInfo
-        }
-    } else if (project.plugins.hasPlugin("groovy")) {
+    // Add source version information for each plugin JAR.
+    if (project.plugins.hasPlugin("groovy")) {
         // We don't need an "afterEvaluate" here because "jar" is a standard task for "groovy" projects.
         project.jar {
             dependsOn setHgVersionInfo
@@ -120,6 +125,7 @@ subprojects {
         }
     }
 
+    // Set up publish tasks for each subproject.
     ["publishRelease", "publishSnapshot"].each { taskName ->
         project.task(taskName, type: Upload) {
             configuration = configurations.default
@@ -141,6 +147,7 @@ subprojects {
         }
     }
     
+    // Pick a version number for each subproject, if we're publishing.
     project.gradle.taskGraph.whenReady {
         // Only publish to one repository at a time.
         int publishCount = 0
@@ -172,8 +179,9 @@ subprojects {
         }
     }
 
+    // For any projects with a "test" task, add a task to launch the test report then run tests.
     if (project.tasks.findByPath("test") != null) {
-        task testReport(type: DefaultTask) {
+        task testAndShowReport(type: DefaultTask) {
             dependsOn test
             group = "Verification"
             description "Opens the test report and runs the tests."
@@ -186,5 +194,26 @@ subprojects {
     
         // publishSnapshot.dependsOn test
         publishRelease.dependsOn test
+    }
+}
+
+// Add source version info for the two non-JAR subprojects.
+project(":custom-gradle") {
+    afterEvaluate {
+        createVersionedInitScript.dependsOn setHgVersionInfo
+    }
+}
+project(":credential-store") {
+    afterEvaluate {
+        createProjectVersionFile.dependsOn setHgVersionInfo
+    }
+}
+
+// Set up inter-project dependencies.
+["devenv", "intrepid", "my-credentials", "stamper", "unit-test"].each {
+    project(":${it}-plugin") {
+        dependencies {
+            compile project(":custom-gradle-core-plugin")
+        }
     }
 }

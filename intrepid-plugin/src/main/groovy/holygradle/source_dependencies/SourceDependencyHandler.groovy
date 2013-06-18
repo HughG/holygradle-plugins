@@ -2,11 +2,15 @@ package holygradle.source_dependencies
 
 import holygradle.Helper
 import holygradle.buildscript.BuildScriptDependencies
+import holygradle.custom_gradle.BuildDependency
 import holygradle.dependencies.DependencyHandler
 import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
@@ -15,10 +19,10 @@ import holygradle.custom_gradle.util.CamelCase
 class SourceDependencyPublishingHandler {
     private final String dependencyName
     private final Project fromProject
-    public def originalConfigurations = []
-    public def configurations = []
-    public String publishVersion = null
-    public String publishGroup = null
+    private Collection<String> originalConfigurations = []
+    private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
+    private String publishVersion = null
+    private String publishGroup = null
     
     public SourceDependencyPublishingHandler(String dependencyName, Project fromProject) {
         this.dependencyName = dependencyName
@@ -28,9 +32,9 @@ class SourceDependencyPublishingHandler {
     
     public void configuration(String config) {
         originalConfigurations.add(config)
-        Collection<AbstractMap.SimpleEntry<String, String>> newConfig = []
-        Helper.parseConfigurationMapping(config, newConfig, "Formatting error for '$dependencyName' in 'sourceDependencies'.")
-        configurations.addAll(newConfig)
+        Collection<AbstractMap.SimpleEntry<String, String>> newConfigs = []
+        Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$dependencyName' in 'sourceDependencies'.")
+        configurations.addAll(newConfigs)
         
         // Add project dependencies between "sourceDependency"s, but only if they exist (e.g. after fAD).  This allows
         // Gradle's dependency resolution system to spot any conflicts between any _other_ dependencies in the
@@ -51,7 +55,7 @@ class SourceDependencyPublishingHandler {
         Project rootProject = this.fromProject.rootProject
         Project depProject = rootProject.findProject(":${this.dependencyName}")
         if ((depProject != null) && depProject.projectDir.exists()) {
-            for (conf in newConfig) {
+            for (conf in newConfigs) {
                 String fromConf = conf.key
                 String toConf = conf.value
                 this.fromProject.dependencies.add(
@@ -60,7 +64,7 @@ class SourceDependencyPublishingHandler {
                 )
             }
         } else {
-            if (!newConfig.empty) {
+            if (!newConfigs.empty) {
                 this.fromProject.logger.warn(
                     "Ignoring any project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
                     "because ${this.dependencyName} has not yet been fetched."
@@ -78,9 +82,21 @@ class SourceDependencyPublishingHandler {
     public void version(String ver) {
         publishVersion = ver
     }
-    
+
     public void group(String g) {
         publishGroup = g
+    }
+
+    public String getPublishVersion() {
+        publishVersion
+    }
+
+    public String getPublishGroup() {
+        publishGroup
+    }
+
+    public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
+        return configurations
     }
 }
 
@@ -88,23 +104,27 @@ class SourceDependencyHandler extends DependencyHandler {
     public String protocol = null
     public String url = null
     public String branch = null
-    public def writeVersionInfoFile = null
-    public def export = false
+    public Boolean writeVersionInfoFile = null
+    public boolean export = false
     public SourceDependencyPublishingHandler publishingHandler
     public boolean usePublishedVersion = false
     private File destinationDir
-    private def overrideWarningMessages = []
+    private Collection<String> overrideWarningMessages = []
     
     public static Collection<SourceDependencyHandler> createContainer(Project project) {
-        project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { sourceDepName ->
+        project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { String sourceDepName ->
             // Explicitly create the SourceDependencyHandler so we can add SourceDependencyPublishingHandler.
-            def sourceDep = project.sourceDependencies.extensions.create(sourceDepName, SourceDependencyHandler, sourceDepName, project)  
-            def sourceDepPublishing = project.sourceDependencies."$sourceDepName".extensions.create("publishing", SourceDependencyPublishingHandler, sourceDep.getTargetName(), project)
+            SourceDependencyHandler sourceDep = new SourceDependencyHandler(sourceDepName, project)
+            SourceDependencyPublishingHandler sourceDepPublishing = new SourceDependencyPublishingHandler(
+                sourceDep.targetName,
+                project
+            )
             // Create a corresponding buildDependencies for the project, so custom-gradle-core can
             // offer useful functionality for it, to build scripts and other plugins.
-            def buildDependencies = project.extensions.findByName("buildDependencies")
+            NamedDomainObjectContainer<BuildDependency> buildDependencies =
+                project.extensions.findByName("buildDependencies") as Collection<BuildDependency>
             if (buildDependencies != null) {
-                buildDependencies.create(sourceDep.getTargetName())
+                buildDependencies.create(sourceDep.targetName)
             }
             sourceDep.initialize(sourceDepPublishing)
             sourceDep  
@@ -150,18 +170,23 @@ class SourceDependencyHandler extends DependencyHandler {
             url = svnUrl
         }
     }
-    
+
+    public SourceDependencyPublishingHandler getPublishing() {
+        return publishingHandler
+    }
+
     public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {
-        def sourceDependency = null
+        SourceDependency sourceDependency
         if (protocol == "svn") {
             sourceDependency = new SvnDependency(project, this)
         } else {
             sourceDependency = new HgDependency(project, this, buildScriptDependencies)
         }
-        def fetchTaskName = CamelCase.build("fetch", getTargetName())
-        def fetchTask = project.task(fetchTaskName, type: FetchSourceDependencyTask)
+        String fetchTaskName = CamelCase.build("fetch", getTargetName())
+        FetchSourceDependencyTask fetchTask =
+            (FetchSourceDependencyTask)project.task(fetchTaskName, type: FetchSourceDependencyTask)
         if (overrideWarningMessages.size() > 0) {
-            def messages = []
+            Collection<String> messages = []
             messages.add "-"*80
             messages.add "Warning: source dependency '${name}' was configured with multiple urls."
             messages.add  "The first url (which is what will be used) is: '${protocol}' - '${url}'."
@@ -182,14 +207,14 @@ class SourceDependencyHandler extends DependencyHandler {
     public ModuleVersionIdentifier getLatestPublishedModule(Project project) {
         ModuleVersionIdentifier identifier = null
         if (publishingHandler.configurations.size() > 0) {
-            def group = project.group
-            def targetName = getTargetName()
-            def firstConfig = publishingHandler.configurations[0][1]
+            String groupName = project.group.toString()
+            String targetName = getTargetName()
+            String firstTargetConfig = publishingHandler.configurations.find().value
             if (!usePublishedVersion) {
-                def dependencyProject = project.rootProject.findProject(targetName)
-                group = dependencyProject.group
+                Project dependencyProject = project.rootProject.findProject(targetName)
+                groupName = dependencyProject.group.toString()
             }
-            def version = publishingHandler.publishVersion
+            String version = publishingHandler.publishVersion
             if (version == null) {
                 version = project.version
             }
@@ -197,26 +222,26 @@ class SourceDependencyHandler extends DependencyHandler {
                 version = "+"
             }
             if (version.endsWith("+")) {
-                def externalDependency = new DefaultExternalModuleDependency(group, targetName, version, firstConfig)
-                def dependencyConf = project.configurations.detachedConfiguration(externalDependency)                
-                dependencyConf.getResolvedConfiguration().getFirstLevelModuleDependencies().each {
-                    version = it.getModuleVersion()
+                Dependency externalDependency = new DefaultExternalModuleDependency(groupName, targetName, version, firstTargetConfig)
+                Configuration dependencyConf = project.configurations.detachedConfiguration(externalDependency)
+                dependencyConf.resolvedConfiguration.firstLevelModuleDependencies.each {
+                    version = it.moduleVersion
                 }
             }
-            identifier = new DefaultModuleVersionIdentifier(group, targetName, version)
+            identifier = new DefaultModuleVersionIdentifier(groupName, targetName, version)
         }
         identifier
     }
     
-    public def getDependenciesForPublishing(Project project) {
-        def newDependencies = []
+    public Collection<Map<String, String>> getDependenciesForPublishing(Project project) {
+        Collection<Map<String, String>> newDependencies = []
         if (publishingHandler.configurations.size() > 0) {
-            def latestPublishedModule = getLatestPublishedModule(project)
+            ModuleVersionIdentifier latestPublishedModule = getLatestPublishedModule(project)
            
             println "Published version for '${name}' is: ${latestPublishedModule.getVersion()}."
             
-            publishingHandler.configurations.each { fromConfig, toConfig ->
-                def depAttrMap = [:]
+            publishingHandler.configurations.each { String fromConfig, String toConfig ->
+                Map<String, String> depAttrMap = [:]
                 depAttrMap["org"] = latestPublishedModule.getGroup()
                 depAttrMap["name"] = latestPublishedModule.getName()
                 depAttrMap["rev"] = latestPublishedModule.getVersion()
@@ -226,7 +251,7 @@ class SourceDependencyHandler extends DependencyHandler {
                     depAttrMap["conf"] = "${fromConfig}->${toConfig}"
                 }
                 
-                def relativePath = getFullTargetPath()
+                String relativePath = getFullTargetPath()
                 if (relativePath != "/" && relativePath != "\\") {
                     depAttrMap["relativePath"] = relativePath
                 }
@@ -238,7 +263,7 @@ class SourceDependencyHandler extends DependencyHandler {
     }
     
     public String getDynamicPublishedDependencyCoordinate(Project project) {
-        def group = publishingHandler.publishGroup
+        String group = publishingHandler.publishGroup
         if (group == null) {
             group = project.group
         }
@@ -246,7 +271,7 @@ class SourceDependencyHandler extends DependencyHandler {
     }
     
     public String getLatestPublishedDependencyCoordinate(Project project) {
-        def latest = getLatestPublishedModule(project)
+        ModuleVersionIdentifier latest = getLatestPublishedModule(project)
         if (latest == null) {
             "${project.group}:${name} ??"
         } else {

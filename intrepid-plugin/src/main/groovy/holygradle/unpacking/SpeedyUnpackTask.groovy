@@ -4,28 +4,35 @@ import org.gradle.api.*
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.Helper
 import holygradle.custom_gradle.util.Symlink
+import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.process.ExecSpec
 
 class SpeedyUnpackTask extends DefaultTask {
     File unpackDir
     Task sevenZipTask
     
-    public void initialize(Project project, File unpackDir, PackedDependencyHandler packedDependency, def artifacts) {
+    public void initialize(
+        Project project,
+        File unpackDir,
+        PackedDependencyHandler packedDependency,
+        Iterable<ResolvedArtifact> artifacts
+    ) {
         if (unpackDir == null) {
             throw new RuntimeException("Error: unpackDir is null in SpeedyUnpackTask.initialize.")
         }
         
         this.unpackDir = unpackDir
-        def infoFile = new File(unpackDir, "version_info.txt")
+        File infoFile = new File(unpackDir, "version_info.txt")
         
         sevenZipTask = project.buildScriptDependencies.getUnpackTask("sevenZip")
         dependsOn sevenZipTask
         
-        ext.lazyConfiguration = {
-            onlyIf {
+        ext.lazyConfiguration = { Task it ->
+            it.onlyIf {
                 boolean doInvokeTask = false
                 if (infoFile.exists()) {
-                    def infoText = infoFile.text
-                    for (art in artifacts) { 
+                    String infoText = infoFile.text
+                    for (art in artifacts) {
                         if (!infoText.contains(art.getFile().name)) {
                             doInvokeTask = true
                         }
@@ -36,7 +43,7 @@ class SpeedyUnpackTask extends DefaultTask {
                 doInvokeTask
             }
             
-            doFirst {
+            it.doFirst {
                 if (unpackDir.exists()) {
                     if (Symlink.isJunctionOrSymlink(unpackDir)) {
                         unpackDir.delete()
@@ -50,17 +57,18 @@ class SpeedyUnpackTask extends DefaultTask {
                     infoFile.createNewFile()
                 }
             }
-            doLast {
-                def sevenZipPath = new File(sevenZipTask.destinationDir, "7z.exe").path
+
+            it.doLast {
+                String sevenZipPath = new File(sevenZipTask.destinationDir, "7z.exe").path
                 artifacts.each { artifact ->
-                    project.exec {
-                        commandLine sevenZipPath, "x", artifact.getFile().path, "-o${unpackDir.path}", "-bd", "-y"
-                        setStandardOutput new ByteArrayOutputStream()
+                    project.exec { ExecSpec spec ->
+                        spec.commandLine sevenZipPath, "x", artifact.getFile().path, "-o${unpackDir.path}", "-bd", "-y"
+                        spec.setStandardOutput new ByteArrayOutputStream()
                     }
-                    
-                    def writer = new FileWriter(infoFile, true)
-                    writer.write("Unpacked from: " + artifact.getFile().name + "\n") 
-                    writer.close()
+
+                    infoFile.withPrintWriter { writer ->
+                        writer.println("Unpacked from: " + artifact.getFile().name)
+                    }
                 }
                 
                 if (packedDependency != null && packedDependency.shouldMakeReadonly()) {

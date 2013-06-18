@@ -4,8 +4,8 @@ import org.gradle.api.*
 
 public class SourceControlRepositories {
     public static SourceControlRepository get(File location, boolean useDummyIfNecessary=false) {
-        def svnFile = new File(location, ".svn")
-        def hgFile = new File(location, ".hg")
+        File svnFile = new File(location, ".svn")
+        File hgFile = new File(location, ".hg")
         if (svnFile.exists()) {
             new SvnRepository(location)
         } else if (hgFile.exists()) {

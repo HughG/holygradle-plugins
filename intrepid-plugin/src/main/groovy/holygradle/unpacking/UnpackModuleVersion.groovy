@@ -1,5 +1,7 @@
 package holygradle.unpacking
 
+import groovy.util.slurpersupport.GPathResult
+import groovy.util.slurpersupport.NodeChild
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -7,12 +9,13 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.Helper
 import holygradle.custom_gradle.util.CamelCase
+import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {
     public ModuleVersionIdentifier moduleVersion = null
     public boolean includeVersionNumberInPath = false
-    public def artifacts = [:] // a map from artifacts to sets of configurations that include the artifacts
-    private def dependencyRelativePaths = [:]
+    public Map<ResolvedArtifact, Collection<String>> artifacts = [:] // a map from artifacts to sets of configurations that include the artifacts
+    private Map<String, String> dependencyRelativePaths = [:]
     private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
     
@@ -30,14 +33,16 @@ class UnpackModuleVersion {
             this.includeVersionNumberInPath = packedDependency00.pathIncludesVersionNumber()
         }
         
-        // Read the relative paths for any of the dependencies. 
+        // Read the relative paths for any of the dependencies.  (No point trying to use static types here as we're
+        // using GPath, so the returned objects have magic properties.)
         def ivyXml = new XmlSlurper(false, false).parseText(ivyFile.text)
         ivyXml.dependencies.dependency.each { dependencyNode ->
             def relativePath = dependencyNode.@relativePath
+            println "relativePath is ${relativePath.getClass()}"
             if (relativePath != null) {
                 dependencyRelativePaths[
                     "${dependencyNode.@org}:${dependencyNode.@name}:${dependencyNode.@rev}"
-                ] = relativePath
+                ] = relativePath.toString()
             }
         }
     }
@@ -50,7 +55,7 @@ class UnpackModuleVersion {
         }
     }
     
-    public void addArtifacts(def arts, String conf) {
+    public void addArtifacts(Iterable<ResolvedArtifact> arts, String conf) {
         for (art in arts) {
             if (artifacts.containsKey(art)) {
                 if (!artifacts[art].contains(conf)) {
@@ -97,13 +102,13 @@ class UnpackModuleVersion {
     // This could be to the central cache or directly to the workspace.
     public Task getUnpackTask(Project project) {
         boolean shouldApplyUpToDateChecks = false
-        def packedDependency = getPackedDependency()
+        PackedDependencyHandler packedDependency = getPackedDependency()
         if (packedDependency != null) {
             shouldApplyUpToDateChecks = packedDependency.shouldApplyUpToDateChecks()
         }
         
-        def taskName = CamelCase.build("extract", moduleVersion.getName()+moduleVersion.getVersion())
-        def unpackTask = project.tasks.findByName(taskName)
+        String taskName = CamelCase.build("extract", moduleVersion.getName()+moduleVersion.getVersion())
+        Task unpackTask = project.tasks.findByName(taskName)
         if (unpackTask == null) {
             // The task hasn't already been defined, so we should define it.
             boolean speedy = !shouldApplyUpToDateChecks
@@ -111,12 +116,12 @@ class UnpackModuleVersion {
                 speedy = false
             }
             if (speedy) {
-                unpackTask = project.task(taskName, type: SpeedyUnpackTask) {
-                    initialize(project, getUnpackDir(project), getPackedDependency(), artifacts.keySet())
+                unpackTask = project.task(taskName, type: SpeedyUnpackTask) { SpeedyUnpackTask task ->
+                    task.initialize(project, getUnpackDir(project), getPackedDependency(), artifacts.keySet())
                 }
             } else {
-                unpackTask = project.task(taskName, type: UnpackTask) {
-                    initialize(project, getUnpackDir(project), artifacts.keySet())
+                unpackTask = project.task(taskName, type: UnpackTask) { UnpackTask task ->
+                    task.initialize(project, getUnpackDir(project), artifacts.keySet())
                 }
             }
             unpackTask.description = getUnpackDescription()
@@ -127,8 +132,8 @@ class UnpackModuleVersion {
     
     // Collect all parent, grand-parent, etc symlink tasks for creating symlinks in the workspace, pointing
     // to the central cache.
-    public def collectParentSymlinkTasks(Project project) {
-        def symlinkTasks = []
+    public Collection<Task> collectParentSymlinkTasks(Project project) {
+        Collection<Task> symlinkTasks = []
         if (parentUnpackModuleVersion != null) {
             parentUnpackModuleVersion.collectParentSymlinkTasks(project).each { 
                 symlinkTasks.add(it)
@@ -144,11 +149,11 @@ class UnpackModuleVersion {
     public Task getSymlinkTaskIfUnpackingToCache(Project project) {
         Task symlinkTask = null
         if (shouldUnpackToCache()) {
-            def taskName = CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
+            String taskName = CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
             
             symlinkTask = project.tasks.findByName(taskName)
             if (symlinkTask == null) {
-                def linkDir = getTargetPathInWorkspace(project)
+                File linkDir = getTargetPathInWorkspace(project)
                 symlinkTask = project.task(taskName, type: SymlinkTask) {
                     group = "Dependencies"
                     description = "Build workspace-to-cache symlink for ${moduleVersion.getName()}:${moduleVersion.getVersion()}."
@@ -203,7 +208,7 @@ class UnpackModuleVersion {
         if (packedDependency00 != null) {
             // If we have a packed dependency then we can directly construct the target path.
             // We don't need to go looking through transitive dependencies.
-            def targetPath = packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
+            String targetPath = packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             if (project == null) {
                 return new File(targetPath)
             } else {
@@ -213,14 +218,14 @@ class UnpackModuleVersion {
             // If we don't return above then this must be a transitive dependency.
             // Therefore we must have a parent. Not having a parent is an error.
             if (parentUnpackModuleVersion == null) {
-                def msg = "Error - module '${getFullCoordinate()}' has no parent module. "
+                GString msg = "Error - module '${getFullCoordinate()}' has no parent module. "
                 if (parent != null) {
                     msg += "(Project: ${project.name})"
                 }
                 throw new RuntimeException(msg)
             }
             
-            def relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
+            String relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
             if (relativePathForDependency == "" ||
                 relativePathForDependency.endsWith("/") || 
                 relativePathForDependency.endsWith("\\")
@@ -269,8 +274,8 @@ class UnpackModuleVersion {
     
     // Return a description to be used for the unpack task.
     private String getUnpackDescription() {
-        def version = moduleVersion.getVersion()
-        def targetName = moduleVersion.getName()
+        String version = moduleVersion.getVersion()
+        String targetName = moduleVersion.getName()
         if (shouldUnpackToCache()) {
             "Unpacks dependency '${targetName}' (version $version) to the cache."
         } else {

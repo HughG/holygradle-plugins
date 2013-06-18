@@ -4,9 +4,12 @@ import com.aragost.javahg.Repository
 import com.aragost.javahg.RepositoryConfiguration
 import com.aragost.javahg.commands.UpdateCommand
 import holygradle.buildscript.BuildScriptDependencies
+import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.source_dependencies.SourceDependency
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Project
+import org.gradle.process.ExecResult
+import org.gradle.process.ExecSpec
 
 class HgDependency extends SourceDependency {
     private final BuildScriptDependencies buildScriptDependencies
@@ -22,12 +25,12 @@ class HgDependency extends SourceDependency {
     }
     
     private void cacheCredentials(String username, String password, String repoUrl) {
-        def credUrl = repoUrl.split("@")[0]
-        def credentialStorePath = buildScriptDependencies.getPath("credential-store").path
+        String credUrl = repoUrl.split("@")[0]
+        String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
         // println "${credentialStorePath} ${credUrl} ${username} <password>"
-        def execResult = project.exec {
-            setIgnoreExitValue true
-            commandLine credentialStorePath, "${username}@@${credUrl}@Mercurial", username, password
+        ExecResult execResult = project.exec { ExecSpec spec ->
+            spec.setIgnoreExitValue true
+            spec.commandLine credentialStorePath, "${username}@@${credUrl}@Mercurial", username, password
         }
         if (execResult.getExitValue() == -1073741515) {
             println "-"*80
@@ -40,9 +43,9 @@ class HgDependency extends SourceDependency {
         execResult.assertNormalExitValue()
     }
     
-    private boolean TryCheckout(def repoConf, String repoUrl, def destinationDir, String repoBranch) {
-        def hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
-        def cmdLine = [hgPath, "clone"]
+    private boolean TryCheckout(String repoUrl, File destinationDir, String repoBranch) {
+        String hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
+        Collection<String> cmdLine = [hgPath, "clone"]
         if (repoBranch != null) { 
             cmdLine.add("--branch")
             cmdLine.add(repoBranch)
@@ -50,12 +53,12 @@ class HgDependency extends SourceDependency {
         cmdLine.add("--")
         cmdLine.add(repoUrl)
         cmdLine.add(destinationDir.path)
-        def errorOutput = new ByteArrayOutputStream()
-        def execResult = project.exec {
-            setStandardOutput new ByteArrayOutputStream()
-            setErrorOutput errorOutput
-            setIgnoreExitValue true
-            commandLine cmdLine
+        OutputStream errorOutput = new ByteArrayOutputStream()
+        ExecResult execResult = project.exec { ExecSpec spec ->
+            spec.setStandardOutput new ByteArrayOutputStream()
+            spec.setErrorOutput errorOutput
+            spec.setIgnoreExitValue true
+            spec.commandLine cmdLine
         }
         //println "execResult.getExitValue(): ${execResult.getExitValue()}"
         if (execResult.getExitValue() != 0) {
@@ -64,15 +67,7 @@ class HgDependency extends SourceDependency {
         }
         return true
     }
-    
-    private static void deleteEmptyDir(File dir) {
-        if (dir.exists()) {
-            if ((dir.list() as List).empty) {
-                dir.delete()
-            }
-        }
-    }
-    
+
     @Override
     protected String getCommandName() {
         "Hg Clone"
@@ -80,23 +75,23 @@ class HgDependency extends SourceDependency {
     
     @Override
     protected boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
-        def repoConf = RepositoryConfiguration.DEFAULT
-        def hgrcFile = new File(project.ext.hgConfigFile)
+        RepositoryConfiguration repoConf = RepositoryConfiguration.DEFAULT
+        File hgrcFile = new File((String)project.ext.hgConfigFile)
         if (!hgrcFile.exists()) {
             println "Warning: no Mercurial config file at '${hgrcFile.path}'."
         }
         repoConf.setHgrcPath(hgrcFile.path)
         
-        boolean result = TryCheckout(repoConf, repoUrl, destinationDir, repoBranch)
+        boolean result = TryCheckout(repoUrl, destinationDir, repoBranch)
         
         if (!result) {
             deleteEmptyDir(destinationDir)
-            def myCredentialsExtension = project.extensions.findByName("my")
+            CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
             if (myCredentialsExtension != null) {
                 println "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
-                cacheCredentials(myCredentialsExtension.username(), myCredentialsExtension.password(), repoUrl)
+                cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
                 println "  Cached Mercurial credentials. Trying again..."
-                result = TryCheckout(repoConf, repoUrl, destinationDir, repoBranch)
+                result = TryCheckout(repoUrl, destinationDir, repoBranch)
                 if (!result) {
                     deleteEmptyDir(destinationDir)
                     println "  Well, that didn't work. Your \"Domain Credentials\" are probably out of date."
@@ -106,13 +101,13 @@ class HgDependency extends SourceDependency {
                 }
             } else {
                 println "  Authentication failed. Please apply the 'my-credentials' plugin."
-            }                
+            }
         }
         
         // Update to a specific revision if necessary.
         if (repoRevision != null) {
             Repository repo = Repository.open(repoConf, destinationDir)
-            def updateCommand = new UpdateCommand(repo)
+            UpdateCommand updateCommand = new UpdateCommand(repo)
             updateCommand.rev(repoRevision).execute()
             repo.close()
         }

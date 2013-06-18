@@ -76,7 +76,8 @@ class DevEnvTask extends DefaultTask {
         }
         // Add dependencies to tasks with the same configuration and operation in
         // dependent projects.
-        def buildDependencies = project.extensions.findByName("buildDependencies")
+        Collection<BuildDependency> buildDependencies =
+            project.extensions.findByName("buildDependencies") as Collection<BuildDependency>
         if (buildDependencies == null) {
             return
         }

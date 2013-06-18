@@ -1,10 +1,11 @@
 package holygradle.credentials
 
+import holygradle.custom_gradle.plugin_apis.CredentialSource
 import org.gradle.api.Project
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
-class MyHandler {
+class MyHandler implements CredentialSource {
     private final Project project
     private final String credentialStorePath
     private final String separator = "&&&"
@@ -117,11 +118,11 @@ class MyHandler {
         }
     }
 
-    public String username() {
+    public String getUsername() {
         username(defaultCredentialType)
     }
     
-    public String password() {
+    public String getPassword() {
         password(defaultCredentialType)
     }
     

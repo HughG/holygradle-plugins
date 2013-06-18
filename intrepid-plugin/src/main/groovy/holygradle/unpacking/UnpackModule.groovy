@@ -2,16 +2,17 @@ package holygradle.unpacking
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.api.artifacts.ResolvedDependency
 import holygradle.dependencies.PackedDependencyHandler
 
 class UnpackModule {
-    public def group
-    public def name
+    public String group
+    public String name
     public Map<String, UnpackModuleVersion> versions = [:]
     
-    UnpackModule(def group, def name) {
+    UnpackModule(String group, String name) {
         this.group = group
         this.name = name
     }
@@ -32,7 +33,7 @@ class UnpackModule {
     // those who may not have access to the artifact repository)
     private static File getIvyFile(ResolvedDependency resolvedDependency) {
         // Get the first artifact from the set of module artifacts.
-        def firstArtifact = resolvedDependency.getModuleArtifacts().find { true }
+        ResolvedArtifact firstArtifact = resolvedDependency.getModuleArtifacts().find { true }
         
         File ivyFile = null
         
@@ -41,7 +42,7 @@ class UnpackModule {
         } else {
             // Try to find the ivy file in the gradle cache corresponding to this artifact. This depends upon
             // the structure of the gradle cache, as well as the Ivy format.
-            def ivyDirInCache = new File(firstArtifact.getFile().parentFile.parentFile.parentFile, "ivy")
+            File ivyDirInCache = new File(firstArtifact.getFile().parentFile.parentFile.parentFile, "ivy")
             if (ivyDirInCache.exists()) {
                 // Getting the file from the gradle cache.
                 ivyDirInCache.traverse {
@@ -56,7 +57,7 @@ class UnpackModule {
             // (The localIvyDir for the artifact may not exist if it's a dependency of a sourceDependency which has been
             // fetched in the current run.  We assume it will be present when Gradle is re-run, so just return null for
             // now.)
-            def localIvyDir = firstArtifact.getFile().parentFile
+            File localIvyDir = firstArtifact.getFile().parentFile
             if (localIvyDir.exists()) {
                 localIvyDir.traverse {
                     if (it.name.startsWith("ivy-") && it.name.endsWith(".xml")) {
@@ -76,10 +77,10 @@ class UnpackModule {
         Set<ResolvedDependency> dependencies
     ) {
         dependencies.each { resolvedDependency ->
-            def moduleVersion = resolvedDependency.getModule().getId()
-            def moduleGroup = moduleVersion.getGroup()
-            def moduleName = moduleVersion.getName()
-            def versionStr = moduleVersion.getVersion()
+            ModuleVersionIdentifier moduleVersion = resolvedDependency.getModule().getId()
+            String moduleGroup = moduleVersion.getGroup()
+            String moduleName = moduleVersion.getName()
+            String versionStr = moduleVersion.getVersion()
 
             // Is there an ivy file corresponding to this dependency? 
             File ivyFile = getIvyFile(resolvedDependency)
@@ -90,26 +91,26 @@ class UnpackModule {
                 // artifacts that have already been published.
                
                 // Find or create an UnpackModule instance.
-                def unpackModule = unpackModules.find { it.matches(moduleVersion) }
+                UnpackModule unpackModule = unpackModules.find { it.matches(moduleVersion) }
                 if (unpackModule == null) {
-                    unpackModule = new UnpackModule(moduleVersion.getGroup(), moduleName)
+                    unpackModule = new UnpackModule(moduleGroup, moduleName)
                     unpackModules << unpackModule
                 }
                 
                 // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on 
                 // 'this' UnpackModuleVersion. There will only be a parent if this is a transitive
                 // dependency. TODO: There could be more than one parent. Deal with it gracefully.
-                def parentUnpackModuleVersion = null
+                UnpackModuleVersion parentUnpackModuleVersion = null
                 resolvedDependency.getParents().each { parentDependency ->
-                    def parentDependencyVersion = parentDependency.getModule().getId()
-                    def parentUnpackModule = unpackModules.find { it.matches(parentDependencyVersion) }
+                    ModuleVersionIdentifier parentDependencyVersion = parentDependency.getModule().getId()
+                    UnpackModule parentUnpackModule = unpackModules.find { it.matches(parentDependencyVersion) }
                     if (parentUnpackModule != null) {
                         parentUnpackModuleVersion = parentUnpackModule.getVersion(parentDependencyVersion)
                     }
                 }
                 
                 // Find or create an UnpackModuleVersion instance.
-                def unpackModuleVersion = null
+                UnpackModuleVersion unpackModuleVersion
                 if (unpackModule.versions.containsKey(versionStr)) {
                     unpackModuleVersion = unpackModule.versions[versionStr]
                 } else {
@@ -134,7 +135,7 @@ class UnpackModule {
         }
     }
     
-    public static def getAllUnpackModules(Project project) {
+    public static Collection<UnpackModule> getAllUnpackModules(Project project) {
         Collection<UnpackModule> unpackModules = project.ext.unpackModules as Collection<UnpackModule>
         
         if (unpackModules == null) {

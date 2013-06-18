@@ -4,6 +4,9 @@ import com.aragost.javahg.Changeset
 import com.aragost.javahg.Repository
 import com.aragost.javahg.RepositoryConfiguration
 import com.aragost.javahg.commands.StatusCommand
+import com.aragost.javahg.commands.StatusResult
+
+import java.util.regex.Matcher
 
 class HgRepository implements SourceControlRepository {
     File workingCopyDir
@@ -21,13 +24,14 @@ class HgRepository implements SourceControlRepository {
     }
     
     public String getUrl() {
-        def hgrc = new File(workingCopyDir, "/.hg/hgrc")
-        def url = "unknown"
+        File hgrc = new File(workingCopyDir, "/.hg/hgrc")
+        String url = "unknown"
         if (hgrc.exists()) {
             hgrc.text.eachLine {
-                def match = it =~ /default = (.+)/
+                Matcher match = it =~ /default = (.+)/
                 if (match.size() != 0) {
-                    url = match[0][1]
+                    final List<String> matches = match[0] as List<String>
+                    url = matches[1]
                 }
             }
         }
@@ -35,19 +39,19 @@ class HgRepository implements SourceControlRepository {
     }
     
     public String getRevision() {
-        def repoConf = RepositoryConfiguration.DEFAULT
+        RepositoryConfiguration repoConf = RepositoryConfiguration.DEFAULT
         Repository repo = Repository.open(repoConf, workingCopyDir)
         Changeset changeset = repo.workingCopy().getParent1()
-        def revision = changeset.getNode()
+        String revision = changeset.getNode()
         repo.close()
         revision
     }
     
     public boolean hasLocalChanges() {
-        def repoConf = RepositoryConfiguration.DEFAULT
+        RepositoryConfiguration repoConf = RepositoryConfiguration.DEFAULT
         Repository repo = Repository.open(repoConf, workingCopyDir)
-        def statusCommand = new StatusCommand(repo)
-        def status = statusCommand.execute()
+        StatusCommand statusCommand = new StatusCommand(repo)
+        StatusResult status = statusCommand.execute()
         int changes = 
             status.getModified().size() + 
             status.getAdded().size() + 

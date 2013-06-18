@@ -18,12 +18,12 @@ class SvnRepository implements SourceControlRepository {
     }
     
     public String getUrl() {
-        def clientManager = SVNClientManager.newInstance();
+        SVNClientManager clientManager = SVNClientManager.newInstance();
         clientManager.getStatusClient().doStatus(workingCopyDir, false).getURL().toString()
     }
     
     public String getRevision() {
-        def clientManager = SVNClientManager.newInstance();
+        SVNClientManager clientManager = SVNClientManager.newInstance();
         clientManager.getStatusClient().doStatus(workingCopyDir, false).getRevision().getNumber()
     }
     

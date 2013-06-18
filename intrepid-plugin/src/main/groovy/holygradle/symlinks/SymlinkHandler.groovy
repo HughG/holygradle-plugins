@@ -38,24 +38,24 @@ class SymlinkHandler {
     }
     
     public void addFrom(String fromLocation, SymlinkHandler handler) {
-        def fromHandler = from(fromLocation)
+        SymlinkHandler fromHandler = from(fromLocation)
         for (toLocation in handler.getToLocations()) {
             fromHandler.to(toLocation)
         }
     }
     
     public SymlinkHandler from(String location) {
-        def childLocation = location
+        String childLocation = location
         if (fromLocation != ".") {
             childLocation = fromLocation + "/" + location
         }
-        def child = new SymlinkHandler(childLocation)
+        SymlinkHandler child = new SymlinkHandler(childLocation)
         children.add(child)
         child
     }
     
     public SymlinkHandler from(String location, Closure c) {
-        def handler = from(location)
+        SymlinkHandler handler = from(location)
         if (c != null) {
             ConfigureUtil.configure(c, handler)
         }
@@ -72,11 +72,11 @@ class SymlinkHandler {
         fromLocation
     }
     
-    public def getToLocations() {
+    public Iterable<String> getToLocations() {
         toLocations
     }
     
-    public def getChildHandlers() {
+    public Iterable<String> getChildHandlers() {
         children
     }
     

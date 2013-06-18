@@ -7,10 +7,10 @@ enum ExitCodeBehaviour {
 }
 
 class SourceDependencyInvocationHandler {
-    public final def cmdLine
-    public ExitCodeBehaviour exitCodeBehaviour = ExitCodeBehaviour.failImmediately
+    public final Collection<String> cmdLine
+    private ExitCodeBehaviour exitCodeBehaviour = ExitCodeBehaviour.failImmediately
     
-    public SourceDependencyInvocationHandler(def cmdLine) {
+    public SourceDependencyInvocationHandler(String... cmdLine) {
         this.cmdLine = cmdLine
     }
     
@@ -25,7 +25,11 @@ class SourceDependencyInvocationHandler {
     public void failAtEnd() {
         exitCodeBehaviour = ExitCodeBehaviour.failAtEnd
     }
-    
+
+    public ExitCodeBehaviour getExitCodeBehaviour() {
+        return exitCodeBehaviour
+    }
+
     public String getDescription() {
         "'" + cmdLine.join(" ") + "'"
     }

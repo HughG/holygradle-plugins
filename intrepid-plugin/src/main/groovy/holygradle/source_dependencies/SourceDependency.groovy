@@ -4,15 +4,23 @@ import org.gradle.api.*
 import holygradle.Helper
 
 class SourceDependency {
-    SourceDependencyHandler sourceDependency
-    Project project
-    File destinationDir
+    public final SourceDependencyHandler sourceDependency
+    public final Project project
+    public final File destinationDir
     
     public SourceDependency(Project project, SourceDependencyHandler sourceDependency) {
         this.sourceDependency = sourceDependency
         this.project = project
     }
-    
+
+    protected static void deleteEmptyDir(File dir) {
+        if (dir.exists()) {
+            if (dir.list().length == 0) {
+                dir.delete()
+            }
+        }
+    }
+
     public String getUrl() {
         sourceDependency.url
     }
@@ -22,7 +30,7 @@ class SourceDependency {
     }
     
     public void writeVersionInfoFile() {
-        def versionInfoFile = new File(sourceDependency.getDestinationDir(), "version_info.txt")
+        File versionInfoFile = new File(sourceDependency.getDestinationDir(), "version_info.txt")
         versionInfoFile.write(sourceDependency.url)
     }
 
@@ -33,9 +41,9 @@ class SourceDependency {
     }
     
     public void Checkout() {
-        def urlSplit = url.split("@")
-        def urlOnly = url
-        def revision = null // meaning trunk
+        String[] urlSplit = url.split("@")
+        String urlOnly = url
+        String revision = null // meaning trunk
         if (urlSplit.size() == 2) {
             urlOnly = urlSplit[0]
             revision = urlSplit[1] 
@@ -43,12 +51,12 @@ class SourceDependency {
             throw new RuntimeException("Error in url '${url}'. At most one @ should be specified to indicate a particular revision.")
         }
         
-        def destinationDir = sourceDependency.getDestinationDir()
-        def relativePath = Helper.relativizePath(destinationDir, project.rootProject.projectDir)
-        def branchName = sourceDependency.branch
-        def commandName = getCommandName()
-        def branchText = (branchName == null) ? "default" : branchName
-        def revText = (revision == null) ? "head" : "rev: $revision"
+        File destinationDir = sourceDependency.getDestinationDir()
+        String relativePath = Helper.relativizePath(destinationDir, project.rootProject.projectDir)
+        String branchName = sourceDependency.branch
+        String commandName = getCommandName()
+        String branchText = (branchName == null) ? "default" : branchName
+        String revText = (revision == null) ? "head" : "rev: $revision"
         println "${commandName} from '${urlOnly}' ($branchText, $revText) to '<workspace>/${relativePath}'..."
         
         boolean result = DoCheckout(destinationDir, urlOnly, revision, branchName)

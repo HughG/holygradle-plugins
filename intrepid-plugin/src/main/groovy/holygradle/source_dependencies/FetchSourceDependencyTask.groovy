@@ -4,9 +4,24 @@ import org.gradle.api.*
 import org.gradle.api.tasks.*
 
 class FetchSourceDependencyTask extends DefaultTask {
-    public SourceDependency sourceDependency
-    @Input url
-    @OutputDirectory destinationDir
+    private SourceDependency sourceDependency
+    private String url
+    private File destinationDir
+
+    @Input
+    String getUrl() {
+        return url
+    }
+
+    @OutputDirectory
+    File getDestinationDir() {
+        return destinationDir
+    }
+
+    SourceDependency getSourceDependency() {
+        return sourceDependency
+    }
+
     
     public void initialize(SourceDependency sourceDependency) {
         this.sourceDependency = sourceDependency

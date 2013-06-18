@@ -5,8 +5,8 @@ import org.gradle.api.*
 import holygradle.SettingsFileHelper
 
 class RecursivelyFetchSourceTask extends DefaultTask {
-    boolean generateSettingsFileForSubprojects = true
-    boolean recursive = true
+    public boolean generateSettingsFileForSubprojects = true
+    public boolean recursive = true
     
     RecursivelyFetchSourceTask() {
         /*println "-------> Configuring '${project.name}' tasks."
@@ -17,7 +17,7 @@ class RecursivelyFetchSourceTask extends DefaultTask {
             println "Started fetching '${project.name}'. Start param: " + project.gradle.startParameter.newInstance()
         }*/
         doLast {
-            def sourceDepTasks = []
+            Collection<FetchSourceDependencyTask> sourceDepTasks = []
             taskDependencies.getDependencies(this).each { t ->
                 if (t instanceof FetchSourceDependencyTask && t.getDidWork()) {
                     sourceDepTasks.add(t)
@@ -31,18 +31,18 @@ class RecursivelyFetchSourceTask extends DefaultTask {
                 }
             }
             if (recursive) {
-                def command = System.getProperty("sun.java.command").split(" ")[0]
+                String command = System.getProperty("sun.java.command").split(" ")[0]
                 //println "command: $command"
                 if (command.contains("daemon")) {
                     // The daemon is being used so we can't terminate the process directly. 
                     // Attempt to recurse down to subproject dependencies, but this won't work very well.
                     sourceDepTasks.each { t ->
-                        def sourceDirName = t.getSourceDirName()
-                        def startParam = project.gradle.startParameter.newInstance()
+                        String sourceDirName = t.getSourceDirName()
+                        StartParameter startParam = project.gradle.startParameter.newInstance()
                         startParam.setBuildFile(new File(t.destinationDir, sourceDirName + ".gradle"))
                         startParam.setCurrentDir(project.rootProject.projectDir)
                         startParam.setTaskNames(["fetchAllDependencies"])
-                        def launcher = GradleLauncher.newInstance(startParam)
+                        GradleLauncher launcher = GradleLauncher.newInstance(startParam)
                         launcher.run()
                     }
                     if (needToReRun) {
