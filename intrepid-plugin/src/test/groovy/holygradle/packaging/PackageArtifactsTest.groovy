@@ -1,6 +1,7 @@
 package holygradle.packaging
 
 import holygradle.test.TestBase
+import holygradle.test.WrapperBuildLauncher
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
@@ -11,29 +12,28 @@ import static org.junit.Assert.assertTrue
 class PackageArtifactsTest extends TestBase {
     @Test
     public void testBasicConfiguration() {
-        def projectDir = new File(getTestDir(), "projectA")
-        
+        File projectDir = new File(getTestDir(), "projectA")
+
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
         project.ext.holyGradleInitScriptVersion = "1.2.3.4" // Required by custom-gradle-core-plugin.
         project.ext.holyGradlePluginsRepository = ""
         project.apply plugin: 'intrepid'
-        
-        def packageArtifacts = project.extensions.findByName("packageArtifacts")
+
+        Collection<PackageArtifactHandler> packageArtifacts =
+            project.extensions.findByName("packageArtifacts") as Collection<PackageArtifactHandler>
         assertNotNull(packageArtifacts)
-        
-        //assertEquals(2, packageArtifacts.size())
     }
     
     @Test
     public void testBasicPackageEverything() {
-        def projectDir = new File(getTestDir(), "projectB")
-        def packagesDir = new File(projectDir, "packages")
+        File projectDir = new File(getTestDir(), "projectB")
+        File packagesDir = new File(projectDir, "packages")
         if (packagesDir.exists()) {
             packagesDir.deleteDir()
         }
         
-        invokeGradle(projectDir) {
-            forTasks("packageEverything")
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("packageEverything")
         }
         
         assertTrue(packagesDir.exists())

@@ -1,14 +1,12 @@
 package holygradle.unpacking
 
-import groovy.util.slurpersupport.GPathResult
-import groovy.util.slurpersupport.NodeChild
+import holygradle.Helper
+import holygradle.custom_gradle.util.CamelCase
+import holygradle.dependencies.PackedDependencyHandler
+import holygradle.symlinks.SymlinkTask
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
-import holygradle.dependencies.PackedDependencyHandler
-import holygradle.symlinks.SymlinkTask
-import holygradle.Helper
-import holygradle.custom_gradle.util.CamelCase
 import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {

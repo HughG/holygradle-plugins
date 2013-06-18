@@ -18,7 +18,13 @@ class TestBase {
     protected File getTestDir() {
         return new File("src/test/groovy/" + getClass().getName().replace(".", "/"))
     }
-    
+    /**
+     * Invokes Gradle for a specified project directory.  A closure can be used to configure the launcher used to run
+     * Gradle; for example, to set the command line arguments.
+     *
+     * @param projectDir The directory containing the gradle project to use.
+     * @param closure A closure to configure a {@link WrapperBuildLauncher}.
+     */
     protected void invokeGradle(File projectDir, Closure closure) {
         GradleConnector connector = GradleConnector.newConnector()
         connector.forProjectDirectory(projectDir)

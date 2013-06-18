@@ -36,8 +36,8 @@ class UnpackModuleVersionTest extends TestBase {
     // |   +---coconut (org:coconut:1.3) [date: ""]
     // |       +---date (org:date:1.4)
     // +---eggfruit (org:eggfruit:1.5)
-    private def getTestModules() {
-        def modules = [:]
+    private Map<String, UnpackModuleVersion> getTestModules() {
+        Map<String, UnpackModuleVersion> modules = [:]
         modules["root"] = getUnpackModuleVersion("root", "1.0")
         modules["apricot"] = getUnpackModuleVersion("apricot", "1.1", modules["root"])
         modules["blueberry"] = getUnpackModuleVersion("blueberry", "1.2", modules["root"])
@@ -70,9 +70,8 @@ class UnpackModuleVersionTest extends TestBase {
     @Test
     public void testStandAloneModule() {
         Project project = getProject()
-        def apricot = getUnpackModuleVersion("apricot", "1.1")
-        def date = getUnpackModuleVersion("date", "1.4")
-    
+        UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
+
         assertEquals("org:apricot:1.1", apricot.getFullCoordinate())
         assertNotNull("getPackedDependency not null", apricot.getPackedDependency())
         assertEquals("apricot", apricot.getPackedDependency().name)
@@ -82,7 +81,7 @@ class UnpackModuleVersionTest extends TestBase {
                 
         def unpackTask = apricot.getUnpackTask(project)
         assertEquals("extractApricot1.1", unpackTask.name)
-        assertEquals(new File(project.ext.unpackedDependenciesCache, "org/apricot-1.1"), unpackTask.unpackDir)
+        assertEquals(new File(project.ext.unpackedDependenciesCache as File, "org/apricot-1.1"), unpackTask.unpackDir)
         assertEquals("Unpacks dependency 'apricot' (version 1.1) to the cache.", unpackTask.description)
         
         def symlinkTasks = apricot.collectParentSymlinkTasks(project)
@@ -97,19 +96,19 @@ class UnpackModuleVersionTest extends TestBase {
     @Test
     public void testSingleModuleApplyUpToDateChecks() {
         Project project = getProject()
-        def apricot = getUnpackModuleVersion("apricot", "1.1")
+        UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
     
-        def packedDep = apricot.getPackedDependency()
+        PackedDependencyHandler packedDep = apricot.getPackedDependency()
         packedDep.applyUpToDateChecks = true
         
-        def unpackTask = apricot.getUnpackTask(project)
+        Task unpackTask = apricot.getUnpackTask(project)
         assertTrue("Uses to UnpackTask when applyUpToDateChecks=true", unpackTask instanceof UnpackTask)
     }
     
     @Test
     public void testSingleModuleIncludeVersionNumberInPath() {
-        def eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty")
-        def eggfruit = new UnpackModuleVersion(
+        PackedDependencyHandler eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty")
+        UnpackModuleVersion eggfruit = new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
             getIvyFile("eggfruit.xml"),
             null,
@@ -122,16 +121,16 @@ class UnpackModuleVersionTest extends TestBase {
     @Test
     public void testSingleModuleNotUnpackToCache() {
         Project project = getProject()
-        def coconut = getUnpackModuleVersion("coconut", "1.3")
+        UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
         
-        def coconutPackedDep = coconut.getPackedDependency()
+        PackedDependencyHandler coconutPackedDep = coconut.getPackedDependency()
         coconutPackedDep.unpackToCache = false
         
-        def targetPath = new File(project.projectDir, "coconut")
+        File targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))
         assertEquals(new File("coconut"), coconut.getTargetPathInWorkspace(null))
         
-        def unpackTask = coconut.getUnpackTask(project)
+        Task unpackTask = coconut.getUnpackTask(project)
         assertEquals(targetPath, unpackTask.unpackDir)
         assertEquals("Unpacks dependency 'coconut' to coconut.", unpackTask.description)
     }
@@ -139,20 +138,20 @@ class UnpackModuleVersionTest extends TestBase {
     @Test
     public void testOneChild() {
         Project project = getProject()
-        def coconut = getUnpackModuleVersion("coconut", "1.3")
-        def date = getUnpackModuleVersion("date", "1.4", coconut)
+        UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
+        UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
         
         assertNotNull("getParent not null", date.getParent())
         assertEquals(coconut, date.getParent())
         
-        def symlinkTasks = date.collectParentSymlinkTasks(project)
+        Collection<Task> symlinkTasks = date.collectParentSymlinkTasks(project)
         assertEquals(2, symlinkTasks.size())
         assertEquals("symlinkCoconut1.3", symlinkTasks[0].name)
         assertEquals("symlinkDate1.4", symlinkTasks[1].name)
         
         assertEquals(coconut.getPackedDependency(), date.getParentPackedDependency())
         
-        def targetPath = new File(project.projectDir, "coconut")
+        File targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))
         assertEquals(new File("coconut"), coconut.getTargetPathInWorkspace(null))
     }
@@ -160,14 +159,14 @@ class UnpackModuleVersionTest extends TestBase {
     @Test
     public void testRelativePaths() {
         Project project = getProject()
-        def modules = getTestModules()
+        Map<String, UnpackModuleVersion> modules = getTestModules()
         
         assertEquals(new File(project.projectDir, "root/aa"), modules["apricot"].getTargetPathInWorkspace(project))
         assertEquals(new File(project.projectDir, "root/sub/bb"), modules["blueberry"].getTargetPathInWorkspace(project))
         assertEquals(new File(project.projectDir, "root/sub/coconut"), modules["coconut"].getTargetPathInWorkspace(project))
         assertEquals(new File(project.projectDir, "root/sub/coconut/date"), modules["date"].getTargetPathInWorkspace(project))
         
-        def eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
+        File eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
         assertEquals(new File(project.projectDir, "root/aa/../eggfruit"), eggfruitPath)
         assertEquals(new File(project.projectDir, "root/eggfruit"), eggfruitPath.getCanonicalFile())
     }

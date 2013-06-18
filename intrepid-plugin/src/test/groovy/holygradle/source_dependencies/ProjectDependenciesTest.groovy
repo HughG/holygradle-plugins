@@ -1,10 +1,9 @@
 package holygradle.source_dependencies
 
-import holygradle.*
-import holygradle.test.*
+import holygradle.test.TestBase
+import holygradle.test.WrapperBuildLauncher
 import org.junit.Ignore
 import org.junit.Test
-import static org.junit.Assert.*
 
 class ProjectDependenciesTest extends TestBase {
 
@@ -15,11 +14,11 @@ class ProjectDependenciesTest extends TestBase {
      */
     @Test
     public void conflict() {
-        def projectDir = new File(getTestDir(), "conflict")
+        File projectDir = new File(getTestDir(), "conflict")
 
-        invokeGradle(projectDir) {
-            forTasks("tasks")
-            expectFailure(
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("tasks")
+            launcher.expectFailure(
                 "Could not resolve all dependencies for configuration " + "':src_dep:everything'.",
                 "A conflict was found between the following modules:",
                 "- holygradle.test:external-lib:1.0",
@@ -36,10 +35,10 @@ class ProjectDependenciesTest extends TestBase {
     @Ignore("Will fail until GR #2291 is fixed")
     @Test
     public void conflictInUnusedConfig() {
-        def projectDir = new File(getTestDir(), "conflictInUnusedConfig")
+        File projectDir = new File(getTestDir(), "conflictInUnusedConfig")
 
-        invokeGradle(projectDir) {
-            forTasks("tasks")
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("tasks")
         }
     }
 }

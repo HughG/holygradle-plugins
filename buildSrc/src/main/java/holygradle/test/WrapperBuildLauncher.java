@@ -1,10 +1,12 @@
 package holygradle.test;
-import org.gradle.api.*;
+
 import org.gradle.tooling.*;
-import org.gradle.tooling.model.Task;
+import org.gradle.tooling.model.*;
+
 import java.io.*;
 import java.util.*;
-class WrapperBuildLauncher implements BuildLauncher {
+
+public class WrapperBuildLauncher implements BuildLauncher {
     private BuildLauncher launcher;
     public List<String> expectedFailures = new LinkedList<String>();
     

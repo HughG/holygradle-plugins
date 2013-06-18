@@ -56,7 +56,7 @@ class Helper {
     }
     
     public static File getGlobalUnpackCacheLocation(Project project, ModuleVersionIdentifier moduleVersion) {
-        File groupCache = new File(((File)project.ext.unpackedDependenciesCache), moduleVersion.getGroup())
+        File groupCache = new File(project.ext.unpackedDependenciesCache as File, moduleVersion.getGroup())
         return new File(groupCache, moduleVersion.getName() + "-" + moduleVersion.getVersion())
     }
     

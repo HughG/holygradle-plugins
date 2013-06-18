@@ -1,25 +1,23 @@
 package holygradle.source_dependencies
 
-import holygradle.*
-import holygradle.test.*
+import holygradle.test.TestBase
+import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
-import org.gradle.testfixtures.ProjectBuilder
-import org.gradle.api.Project
-import org.gradle.api.tasks.Upload
-import static org.junit.Assert.*
+
+import static org.junit.Assert.assertTrue
 
 class CopyArtifactsTest extends TestBase {
     @Test
     public void testCopyFromPackedDependency() {
-        def projectDir = new File(getTestDir(), "copyPackedDependencies")
-        def testDir = new File(projectDir, "blah")
+        File projectDir = new File(getTestDir(), "copyPackedDependencies")
+        File testDir = new File(projectDir, "blah")
         if (testDir.exists()) {
             testDir.deleteDir()
         }
         
-        invokeGradle(projectDir) {
-            forTasks("copyArtifacts")
-            withArguments("-DcopyArtifactsTarget=${testDir.canonicalPath}")
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("copyArtifacts")
+            launcher.withArguments("-DcopyArtifactsTarget=${testDir.canonicalPath}")
         }
         
         assertTrue(testDir.exists())
