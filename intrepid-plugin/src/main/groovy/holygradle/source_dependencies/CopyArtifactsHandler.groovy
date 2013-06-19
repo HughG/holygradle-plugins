@@ -67,20 +67,6 @@ class CopyArtifactsHandler {
         fromHandlers.add(handler)
     }
 
-    // TODO 2013-06-18 HughG: Can't cleanly add static type info to this, because it's using internal APIs.  But, I
-    // don't think we need this function as is.  Will re-visit after doing the rest of the static type changes.
-    public static def gatherFiles(CopySpec spec) {
-        def files = null
-        spec.getAllSpecs().each { childSpec ->
-            if (files == null) {
-                files = childSpec.getSource().files
-            } else {
-                files = files.plus childSpec.getSource().files
-            }
-        }
-        files
-    }
-    
     public static CopyArtifactsHandler createExtension(Project project) {
         project.extensions.create("copyArtifacts", CopyArtifactsHandler)
     }
@@ -161,22 +147,15 @@ class CopyArtifactsHandler {
                             }
                         }
                         collectZipsForConfigurations(project, alreadyHandled, f.dependencyName, f.configurations, artifactZips)
-                        def sourceDepFiles = gatherFiles(copySpec)
                         logger.info("copyArtifacts selected these packed dependency files: ${artifactZips}")
-                        logger.info("copyArtifacts selected these source dependency files: ${sourceDepFiles}")
-                        
-                        File intoTarget = targetDir
-                        if (f.relativePath != null) {
-                            intoTarget = new File(targetDir, f.relativePath)
+                        logger.info("copyArtifacts includes these source dependency files: ${copySpec.includes}")
+                        logger.info("copyArtifacts excludes these source dependency files: ${copySpec.excludes}")
+
+                        task.from(copySpec) {
+                            includes = f.includes
+                            excludes = f.excludes
                         }
-                        
-                        if (sourceDepFiles.size() > 0) {
-                            task.from(sourceDepFiles) {
-                                includes = f.includes 
-                                excludes = f.excludes 
-                            }
-                        }
-                        
+
                         artifactZips.each { zip ->
                             task.from (project.zipTree(zip).files) {
                                 includes = f.includes 
