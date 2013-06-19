@@ -167,7 +167,7 @@ subprojects {
         // otherwise the project version will be changed after Gradle has decided on the filename
         // for the JAR file, and we'll end up publishing the ivy.xml but no JAR.
         if (project.gradle.taskGraph.hasTask(publishSnapshot)) {
-            def username = System.getProperty("user.name").toLowerCase()
+            String username = System.getProperty("user.name").toLowerCase()
             project.version = "${username}-SNAPSHOT"
         }
         if (project.gradle.taskGraph.hasTask(publishRelease)) {

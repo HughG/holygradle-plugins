@@ -17,7 +17,7 @@ public class SourceControlRepositories {
         }
     }
     
-    public static def createExtension(Project project) {
-        project.extensions.add("sourceControl", get(project.projectDir, true))
+    public static SourceControlRepository createExtension(Project project) {
+        project.extensions.add("sourceControl", get(project.projectDir, true)) as SourceControlRepository
     }
 }

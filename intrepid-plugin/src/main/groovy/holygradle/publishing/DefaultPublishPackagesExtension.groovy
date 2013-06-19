@@ -4,9 +4,11 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.UnpackModule
 import org.gradle.api.*
+import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.dsl.*
 import org.gradle.api.artifacts.repositories.*
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.ivy.IvyModuleDescriptor
 import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.util.ConfigureUtil
 
@@ -18,7 +20,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     private String nextVersionNumberStr = null
     private String autoIncrementFilePath = null
     private String environmentVariableName = null
-    private def mainIvyDescriptor
+    private IvyModuleDescriptor mainIvyDescriptor
     private String publishGroup = null
     private String publishName = null
     
@@ -44,8 +46,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
                 this.includeSourceDependencies(project, sourceDependencies)
-                this.removeUnwantedDependencies(project, packedDependencies)
-                this.freezeDynamicDependencyVersions(project, packedDependencies)
+                this.removeUnwantedDependencies(packedDependencies)
+                this.freezeDynamicDependencyVersions(project)
                 this.fixUpConflictConfigurations()
                 this.removePrivateConfigurations()
                 this.addDependencyRelativePaths(packedDependencies)
@@ -78,7 +80,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
     
-    public Task defineCheckTask(Iterable<UnpackModule> unpackModules) {
+    public void defineCheckTask(Iterable<UnpackModule> unpackModules) {
         RepublishHandler republishHandler = getRepublishHandler()
         if (republishHandler != null) {
             String repoUrl = republishHandler.getToRepository()
@@ -105,7 +107,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
     
     public void nextVersionNumber(Closure versionNumClosure) {
-        nextVersionNumber(versionNumClosure())
+        nextVersionNumber(versionNumClosure() as String)
     }
     
     public void nextVersionNumberAutoIncrementFile(String versionNumberFilePath) {
@@ -161,7 +163,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return new File(project.getProjectDir(), autoIncrementFilePath)
     }
     
-    private String getVersionFromFile(File file)  {
+    private static String getVersionFromFile(File file)  {
         return file.text
     }
     
@@ -169,12 +171,12 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return getVersionFromFile(getVersionFile());
     }
     
-    private String incrementVersionNumber(File versionFile) {
-        def versionStr = versionFile.text
+    private static String incrementVersionNumber(File versionFile) {
+        String versionStr = versionFile.text
         int lastDot = versionStr.lastIndexOf('.')
         int nextVersion = versionStr[lastDot+1..-1].toInteger() + 1
-        def firstChunk = versionStr[0..lastDot]
-        def newVersionStr = firstChunk + nextVersion.toString()
+        String firstChunk = versionStr[0..lastDot]
+        String newVersionStr = firstChunk + nextVersion.toString()
         versionFile.write(newVersionStr)
         newVersionStr
     }
@@ -279,15 +281,18 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
 
     // For every source dependency we have, add equivalent binary dependencies in the published module descriptor.
-    public void includeSourceDependencies(def project, def sourceDependencies) {
+    // (No point trying to use static types here as we're using GPath, so the returned objects have magic properties.)
+    public void includeSourceDependencies(Project project, Iterable<SourceDependencyHandler> sourceDependencies) {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
-            def newDependencies = []
-            sourceDependencies.each { sourceDep ->
+            Collection<Map<String, String>> newDependencies = []
+            sourceDependencies.each { SourceDependencyHandler sourceDep ->
                 newDependencies.addAll(sourceDep.getDependenciesForPublishing(project))
             }
             if (newDependencies.size() > 0) {
                 def dependenciesNodes = xml.asNode().dependencies
-                def dependenciesNode = null
+                Node dependenciesNode = null
                 if (dependenciesNodes.size() == 0) {
                     dependenciesNode = xml.asNode().appendNode("dependencies")
                 } else {
@@ -302,14 +307,16 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     // Remove dependencies which were explicitly specified as "publishDependency = false", or whose configuration
     // name starts with "private".
-    public void removeUnwantedDependencies(def project, def packedDependencies) {
-        def unwantedDependencies = []
+    public void removeUnwantedDependencies(Collection<PackedDependencyHandler> packedDependencies) {
+        Collection<String> unwantedDependencies = []
         packedDependencies.each { packedDep ->
             if (!packedDep.shouldPublishDependency()) {
                 unwantedDependencies.add(packedDep.getDependencyName())
             }
         }
-        
+
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
                 if (unwantedDependencies.contains(depNode.@name) ||
@@ -323,6 +330,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     // Remove whole configurations, whose names start with "private".
     public void removePrivateConfigurations() {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().configurations.conf.each { confNode ->
                 if (confNode.@name.startsWith("private")) {
@@ -333,11 +342,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
-    private static String getDependencyVersion(def project, String group, String module) {
+    private static String getDependencyVersion(Project project, String group, String module) {
         String version = null
         project.configurations.each { conf ->
             conf.resolvedConfiguration.getResolvedArtifacts().each { artifact ->
-                def ver = artifact.getModuleVersion().getId()
+                ModuleVersionIdentifier ver = artifact.getModuleVersion().getId()
                 if (ver.getGroup() == group && ver.getName() == module) {
                     version = ver.getVersion()
                 }
@@ -348,11 +357,13 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     // Replace the version of any dependencies which were specified with dynamic version numbers, so they have fixed
     // version numbers as resolved for the build which is to be published.
-    public void freezeDynamicDependencyVersions(def project, def packedDependencies) {
+    public void freezeDynamicDependencyVersions(Project project) {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
                 if (depNode.@rev.endsWith("+")) {
-                    depNode.@rev = getDependencyVersion(project, depNode.@org, depNode.@name)
+                    depNode.@rev = getDependencyVersion(project, depNode.@org as String, depNode.@name as String)
                 }
             }
         }
@@ -360,14 +371,16 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     // See cookbook example: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/HolyGradleCookbook#!i-need-to-use-multiple-versions-of-the-same-component
     public void fixUpConflictConfigurations() {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
-                def conf = depNode.@conf
-                def confSplit = conf.split("->")
+                String conf = depNode.@conf as String
+                String[] confSplit = conf.split("->")
                 if (confSplit.size() == 1) {
                     confSplit = conf.split("-&gt;")
                 }
-                def newConf = []
+                Collection<String> newConf = []
                 confSplit.each { c ->
                     newConf.add(c.replaceAll("(.*)_conflict.*", { it[1] }))
                 }
@@ -377,10 +390,12 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
 
     // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or symlinked) to.
-    public void addDependencyRelativePaths(def packedDependencies) {
+    public void addDependencyRelativePaths(Collection<PackedDependencyHandler> packedDependencies) {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
-                def packedDep = packedDependencies.find { 
+                PackedDependencyHandler packedDep = packedDependencies.find {
                     it.getGroupName() == depNode.@org && 
                     it.getDependencyName() == depNode.@name &&
                     it.getVersionStr() == depNode.@rev

@@ -1,6 +1,8 @@
 package holygradle.custom_gradle.util
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 
 public class VersionNumber {
@@ -10,8 +12,8 @@ public class VersionNumber {
         Project project, String group, String moduleName
     ) {
         String latestVersion = null
-        def externalDependency = new DefaultExternalModuleDependency(group, moduleName, "+", "default")
-        def dependencyConf = project.buildscript.configurations.detachedConfiguration(externalDependency)
+        Dependency externalDependency = new DefaultExternalModuleDependency(group, moduleName, "+", "default")
+        Configuration dependencyConf = project.buildscript.configurations.detachedConfiguration(externalDependency)
         dependencyConf.resolutionStrategy.cacheDynamicVersionsFor 1, 'seconds'
         
         try {

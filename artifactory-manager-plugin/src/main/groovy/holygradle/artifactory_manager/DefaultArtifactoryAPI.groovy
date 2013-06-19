@@ -22,8 +22,8 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
         // Would be preferable to do: client.auth.basic username, password
         // but due to http://josephscott.org/archives/2011/06/http-basic-auth-with-httplib2/
         // we have to manually include the authorization header.
-        def auth = "${username}:${password}".toString()
-        def authEncoded = auth.bytes.encodeBase64().toString()
+        String auth = "${username}:${password}".toString()
+        String authEncoded = auth.bytes.encodeBase64().toString()
         client.setHeaders( ['Authorization' : 'Basic ' + authEncoded ] )
 
         ParserRegistry.setDefaultCharset(null)
@@ -38,9 +38,9 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
     }
     
     public Map getFolderInfoJson(String path) {
-        def binding = [repository: repository, path: path]
-        def template = engine.createTemplate('''/artifactory/api/storage/$repository/$path''').make(binding)
-        def query = template.toString()
+        Map binding = [repository: repository, path: path]
+        Object template = engine.createTemplate('''/artifactory/api/storage/$repository/$path''').make(binding)
+        String query = template.toString()
         HttpResponseDecorator resp = (HttpResponseDecorator)(client.get(path: query))
         if (resp.status != 200) {
             println "ERROR: problem obtaining folder info: " + resp.status
@@ -51,9 +51,9 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
     }
     
     public void removeItem(String path) {
-        def binding = [repository: repository, path: path]
-        def template = engine.createTemplate('''/artifactory/$repository/$path''').make(binding)
-        def query = template.toString()
+        Map binding = [repository: repository, path: path]
+        Object template = engine.createTemplate('''/artifactory/$repository/$path''').make(binding)
+        String query = template.toString()
         if (!dryRun) {
             client.delete(path: query)
         }

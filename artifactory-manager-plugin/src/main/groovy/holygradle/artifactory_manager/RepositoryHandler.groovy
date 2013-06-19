@@ -27,7 +27,7 @@ class RepositoryHandler {
     }
     
     public void delete(String module, Closure closure) {
-        def deleteRequest = new DeleteRequest(module)
+        DeleteRequest deleteRequest = new DeleteRequest(module)
         ConfigureUtil.configure(closure, deleteRequest)
         deleteRequests.add(deleteRequest)
     }
@@ -37,7 +37,7 @@ class RepositoryHandler {
     }
     
     public void doDelete(boolean dryRun) {
-        def artifactoryApi = artifactoryManager.getArtifactoryAPI(repository, username, password, dryRun)
+        ArtifactoryAPI artifactoryApi = artifactoryManager.getArtifactoryAPI(repository, username, password, dryRun)
         println "Deleting artifacts in '${artifactoryApi.getRepository()}'."
         for (deleteRequest in deleteRequests) {
             deleteRequest.process(artifactoryApi)

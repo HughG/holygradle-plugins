@@ -54,7 +54,7 @@ class VersionInfo {
             project.getBuildscript().getConfigurations().each { conf ->
                 conf.resolvedConfiguration.getResolvedArtifacts().each { ResolvedArtifact art ->
                     ModuleVersionIdentifier depModuleVersion = art.getModuleVersion().getId()
-                    def requestedVersion = "none"
+                    String requestedVersion = "none"
                     
                     if (pluginUsages != null) {
                         pluginUsages.each { pluginName, pluginVersion ->
@@ -75,13 +75,13 @@ class VersionInfo {
         versions[plugin]
     }
     
-    public def getVersions() {
+    public Map<String, String> getVersions() {
         versions
     }
     
     private String getWindowsUpdates() {
         if (windowsUpdates == null) {
-            def wmicOutput = new ByteArrayOutputStream()
+            OutputStream wmicOutput = new ByteArrayOutputStream()
             project.exec { ExecSpec it ->
                 it.commandLine "wmic", "qfe", "list"
                 it.setStandardOutput wmicOutput
@@ -106,7 +106,7 @@ class VersionInfo {
         }
         str.append "\n"
         
-        def updates = getWindowsUpdates()
+        String updates = getWindowsUpdates()
         if (updates != null) {
             str.append "Windows Updates\n"
             str.append "===============\n"

@@ -24,5 +24,5 @@ public interface PublishPackagesExtension {
 
     RepublishHandler getRepublishHandler()
 
-    Task defineCheckTask(Iterable<UnpackModule> unpackModules)
+    void defineCheckTask(Iterable<UnpackModule> unpackModules)
 }

@@ -86,7 +86,7 @@ class ArtifactoryManagerHandler {
     }
     
     public void repository(String repository, Closure closure) {
-        def repositoryHandler = new RepositoryHandler(repository, this)
+        RepositoryHandler repositoryHandler = new RepositoryHandler(repository, this)
         ConfigureUtil.configure(closure, repositoryHandler)
         repositoryHandlers.add(repositoryHandler)
     }

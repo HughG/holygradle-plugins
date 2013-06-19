@@ -120,8 +120,8 @@ class TestHandler {
     }
     
     private static String replaceFlavour(String input, String flavour) {
-        def lower = flavour.toLowerCase()
-        def upper = flavour.toUpperCase()
+        String lower = flavour.toLowerCase()
+        String upper = flavour.toUpperCase()
         input
             .replace("<flavour>", lower)
             .replace("<Flavour>", upper[0] + lower[1..-1])

@@ -101,9 +101,9 @@ class MyHandler implements CredentialSource {
         } else {
             String credStoreExe = credentialStorePath
             String credStorageKey = getCredentialStorageKey(credentialType)
-            def credStorageValue = "${userCred.userName}${separator}${userCred.password}"
+            GString credStorageValue = "${userCred.userName}${separator}${userCred.password}"
             credentialsCache[credStorageKey] = credStorageValue
-            def result = project.exec { ExecSpec spec ->
+            ExecResult result = project.exec { ExecSpec spec ->
                 spec.setIgnoreExitValue true
                 spec.commandLine credStoreExe, credStorageKey, userCred.userName, userCred.password
                 spec.setStandardOutput new ByteArrayOutputStream()

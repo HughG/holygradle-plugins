@@ -1,6 +1,7 @@
 package holygradle.devenv
 
 import holygradle.custom_gradle.BuildDependency
+import holygradle.custom_gradle.plugin_apis.StampingProvider
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -36,7 +37,7 @@ class DevEnvTask extends DefaultTask {
     }
     
     private void addStampingDependencyForProject(Project project) {
-        def stampingExtension = project.extensions.findByName("stamping")
+        StampingProvider stampingExtension = project.extensions.findByName("stamping") as StampingProvider
         if (stampingExtension != null && stampingExtension.runPriorToBuild) {
             dependsOn project.tasks.findByName(stampingExtension.taskName)
         }

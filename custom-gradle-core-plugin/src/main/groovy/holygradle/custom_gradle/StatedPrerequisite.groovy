@@ -31,13 +31,13 @@ class StatedPrerequisite {
     
     public Task getTask() {
         if (checkTask == null) {
-            def nameComponents = []
+            Collection<String> nameComponents = []
             nameComponents.add("checkPrerequisite")
             nameComponents.add(name)
             if (params != null) {
                 nameComponents.addAll(params)
             }
-            def taskName = CamelCase.build(nameComponents)
+            String taskName = CamelCase.build(nameComponents)
             checkTask = checker.project.task(taskName, type: StatedPrerequisiteTask) { StatedPrerequisiteTask task ->
                 task.initialize(this)
             }

@@ -17,7 +17,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
         project.getBuildscript().getConfigurations().each { conf ->
             conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { resolvedDependency ->
                 resolvedDependency.getAllModuleArtifacts().each { ResolvedArtifact art ->
-                    def artName = art.getName()
+                    String artName = art.getName()
                     if (artName.startsWith("credential-store")) {
                         credentialStoreArtifact = art
                     }
@@ -28,7 +28,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
         
         // Copy the credential-store to the root of the workspace.
         if (project == project.rootProject) {
-            def credStoreFile = new File(project.projectDir, "credential-store.exe")
+            File credStoreFile = new File(project.projectDir, "credential-store.exe")
             if (!credStoreFile.exists() || credStoreFile.canWrite()) {
                 project.copy { CopySpec spec ->
                     spec.from credentialStoreArtifact.getFile()

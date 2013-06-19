@@ -79,14 +79,14 @@ class UnpackModuleVersionTest extends TestBase {
         assertEquals("apricot", apricot.getParentPackedDependency().name)
         assertNull("getParent is null", apricot.getParent())
                 
-        def unpackTask = apricot.getUnpackTask(project)
+        Task unpackTask = apricot.getUnpackTask(project)
         assertEquals("extractApricot1.1", unpackTask.name)
         assertEquals(new File(project.ext.unpackedDependenciesCache as File, "org/apricot-1.1"), unpackTask.unpackDir)
         assertEquals("Unpacks dependency 'apricot' (version 1.1) to the cache.", unpackTask.description)
         
-        def symlinkTasks = apricot.collectParentSymlinkTasks(project)
+        Collection<Task> symlinkTasks = apricot.collectParentSymlinkTasks(project)
         assertEquals(1, symlinkTasks.size())
-        def symlinkTask = symlinkTasks[0]
+        Task symlinkTask = symlinkTasks.find() // finds the first (non-null) one
         assertEquals("symlinkApricot1.1", symlinkTask.name)
         
         assertEquals("apricot", apricot.getTargetDirName())

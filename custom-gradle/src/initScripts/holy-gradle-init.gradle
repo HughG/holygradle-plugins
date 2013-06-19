@@ -45,7 +45,7 @@ class HolyGradlePlugins {
         String version
         final String error = "Invalid format for 'gplugins.use'. The parameter should be in the form '<module>:<version>'."
         if (plugin_version.contains(":")) {
-            def split = plugin_version.split(":")
+            String[] split = plugin_version.split(":")
             if (split.size() == 2) {
                 plugin = split[0]
                 version = split[1]
@@ -102,12 +102,12 @@ class HolyGradlePlugins {
 
         // Schedule 'user.gradle' files to be applied first thing after the projects are evaluated.
         project.gradle.projectsEvaluated {
-            def userScript = 'user.gradle'
-            def userScriptFile = new File(localProject.projectDir, userScript)
+            String userScript = 'user.gradle'
+            File userScriptFile = new File(localProject.projectDir, userScript)
             if (userScriptFile.exists()) {
                 localProject.apply from: userScriptFile.name
             } else if (localProject.buildFile != null) {
-                def userBuildScript = localProject.buildFile.name.replace(".gradle", ".${userScript}")
+                String userBuildScript = localProject.buildFile.name.replace(".gradle", ".${userScript}")
                 userScriptFile = new File(localProject.projectDir, userBuildScript)
                 if (userScriptFile.exists()) {
                     localProject.apply from: userScriptFile.name
@@ -146,13 +146,13 @@ allprojects { Project project ->
     project.ext.holyGradleInitScriptVersion = holyGradleInitScriptVersion
     project.ext.holyGradleInitScriptSourceVersion = holyGradleInitScriptSourceVersion
     
-    def defaultPluginsRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/plugins-release/"
-    def defaultRemoteRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/remote-repos/"
+    String defaultPluginsRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/plugins-release/"
+    String defaultRemoteRepo = "http://[[ARTIFACTORY_SERVER]]/artifactory/remote-repos/"
 
     // Check if we should override use of repositories based on presence of 'local_artifacts' folder.
     // This is to support building projects without access to an Artifactory or similar repository.
     boolean usingLocalArtifacts = false
-    def localArtifactsFile = new File(project.rootProject.projectDir, "local_artifacts")
+    File localArtifactsFile = new File(project.rootProject.projectDir, "local_artifacts")
     if (project == project.rootProject) {
         if (localArtifactsFile.exists()) {
             usingLocalArtifacts = true
@@ -173,14 +173,14 @@ allprojects { Project project ->
     }
     
     // Configure holyGradlePluginsRepository
-    def pluginsRepo = defaultPluginsRepo
+    String pluginsRepo = defaultPluginsRepo
     if (usingLocalArtifacts) {
         pluginsRepo = new File(localArtifactsFile, "ivy").path
     }
     project.ext.holyGradlePluginsRepository = pluginsRepo
    
     // Configure holyGradleRemoteRepository
-    def remoteRepo = defaultRemoteRepo
+    String remoteRepo = defaultRemoteRepo
     if (usingLocalArtifacts) {
         remoteRepo = new File(localArtifactsFile, "maven").path
     }

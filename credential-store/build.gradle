@@ -1,17 +1,17 @@
 public File getDevEnvPath() {
-    def envVarComnTools = System.getenv("VS100COMNTOOLS")
+    String envVarComnTools = System.getenv("VS100COMNTOOLS")
     if (envVarComnTools == null || envVarComnTools == "") {
         throw new RuntimeException("'version' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
     }
-    def comnToolsPath = new File(envVarComnTools)
-    def devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")
+    File comnToolsPath = new File(envVarComnTools)
+    File devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")
     if (!devEnvPath.exists()) {
         throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
     }
     devEnvPath
 }
 
-def releaseVersionInfoFileName = 'release_version_info.h'
+String releaseVersionInfoFileName = 'release_version_info.h'
 task createReleaseVersionFile {
     (new File(projectDir, releaseVersionInfoFileName)).withWriter { BufferedWriter writer ->
         String ver = (project.version == "unspecified") ? "0.0.0.0" : project.version
@@ -21,7 +21,7 @@ task createReleaseVersionFile {
     }
 }
 
-def projectVersionInfoFileName = 'project_version_info.h'
+String projectVersionInfoFileName = 'project_version_info.h'
 task createProjectVersionFile {
     (new File(projectDir, projectVersionInfoFileName)).withWriter { BufferedWriter writer ->
         writer.writeLine "#define PROJECT_VERSION \"${project.rootProject.hgVersionInfo}\""

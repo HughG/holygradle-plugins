@@ -125,7 +125,7 @@ class PackedDependencyHandler extends DependencyHandler {
 
     public boolean shouldApplyUpToDateChecks() {
         if (applyUpToDateChecks == null) {
-            def p = getParentHandler()
+            PackedDependencyHandler p = getParentHandler()
             if (p != null) {
                 return p.shouldApplyUpToDateChecks()
             } else {
@@ -138,7 +138,7 @@ class PackedDependencyHandler extends DependencyHandler {
     
     public boolean shouldPublishDependency() {
         if (publishDependency == null) {
-            def p = getParentHandler()
+            PackedDependencyHandler p = getParentHandler()
             if (p != null) {
                 return p.shouldPublishDependency()
             } else {
@@ -170,8 +170,8 @@ class PackedDependencyHandler extends DependencyHandler {
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
         configurations.addAll newConfigs
         for (conf in newConfigs) {
-            def fromConf = conf.key
-            def toConf = conf.value
+            String fromConf = conf.key
+            String toConf = conf.value
             projectForHandler.dependencies.add(
                 fromConf,
                 new DefaultExternalModuleDependency(dependencyGroup, dependencyModule, dependencyVersion, toConf)
@@ -185,7 +185,7 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
     
-    public def getConfigurations() {
+    public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
         configurations
     }
     

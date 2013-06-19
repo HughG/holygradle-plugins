@@ -21,7 +21,7 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
     }
     
     public PackageArtifactIncludeHandler include(String... patterns) {
-        def includeHandler = new PackageArtifactIncludeHandler(patterns)
+        PackageArtifactIncludeHandler includeHandler = new PackageArtifactIncludeHandler(patterns)
         includeHandlers.add(includeHandler)
         
         for (p in patterns) {
@@ -69,7 +69,7 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
     }
     
     public void from(String fromLocation, Closure closure) {
-        def from = new PackageArtifactDescriptor(this.fromLocation + "/" + fromLocation)
+        PackageArtifactDescriptor from = new PackageArtifactDescriptor(this.fromLocation + "/" + fromLocation)
         fromDescriptors.add(from)
         ConfigureUtil.configure(closure, from)
     }
@@ -126,13 +126,11 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
         if (!sourceFile.exists()) {
             throw new RuntimeException("Expected file '${sourceFile.path}' to exist for repackaging.")
         }
-        def sourceText = sourceFile.text
-        def targetText = "// Processed...\n\n" + sourceText
+        String sourceText = sourceFile.text
+        String targetText = "// Processed...\n\n" + sourceText
         
         targetFile.parentFile.mkdirs()
-        def writer = new FileWriter(targetFile)
-        writer.write(targetText)
-        writer.close()
+        targetFile.withWriter { Writer writer -> writer.write(targetText) }
     }
     
     public void processPackageFiles(Project project, File parentDir) {
@@ -153,8 +151,8 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
         }
     }
     
-    private def collectPackageFilePaths() {
-        def paths = []
+    private Collection<File> collectPackageFilePaths() {
+        Collection<File> paths = []
         if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
             paths.add(getTargetFile(null, "build.gradle").path)
         }

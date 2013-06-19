@@ -6,12 +6,17 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
     private ByteArrayOutputStream fullStream
     private String projectName
     private StyledTextOutput output
-    private List<String> errors = []
-    private List<String> warnings = []
-    private List<String> warningRegexes
-    private List<String> errorRegexes
+    private Collection<String> errors = []
+    private Collection<String> warnings = []
+    private Collection<String> warningRegexes
+    private Collection<String> errorRegexes
     
-    ErrorHighlightingOutputStream(String projectName, StyledTextOutput output, def warningRegexes, def errorRegexes) {
+    ErrorHighlightingOutputStream(
+        String projectName,
+        StyledTextOutput output,
+        Collection<String> warningRegexes,
+        Collection<String> errorRegexes
+    ) {
         fullStream = new ByteArrayOutputStream()
         this.projectName = projectName
         this.output = output
@@ -69,7 +74,7 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
         }
     }
 
-    private void summarise(List<String> messages, String type, StyledTextOutput.Style style) {
+    private void summarise(Collection<String> messages, String type, StyledTextOutput.Style style) {
         final int LINE_LENGTH = 75
         String msg = " ${projectName}: ${messages.size()} ${type} "
         int firstDashes = (int) (LINE_LENGTH - msg.length()) / 2

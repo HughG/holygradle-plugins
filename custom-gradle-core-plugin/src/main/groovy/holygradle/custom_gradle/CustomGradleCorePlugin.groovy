@@ -4,6 +4,7 @@ import holygradle.custom_gradle.util.VersionNumber
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.wrapper.Wrapper
 import org.gradle.process.ExecSpec
@@ -19,7 +20,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
     }
     
     void apply(Project project) {
-        def gradlePropsFile = new File(project.gradle.gradleUserHomeDir, "gradle.properties")
+        File gradlePropsFile = new File(project.gradle.gradleUserHomeDir, "gradle.properties")
         
         // DSL extension to specify build dependencies
         project.extensions.buildDependencies = project.container(BuildDependency)
@@ -29,7 +30,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.extensions.create("taskDependencies", TaskDependenciesExtension, project)
         
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
-        def prerequisites = PrerequisitesExtension.defineExtension(project)
+        PrerequisitesExtension prerequisites = PrerequisitesExtension.defineExtension(project)
                
         prerequisites.specify("Java", "1.7").check()
                
@@ -38,19 +39,19 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         
         // DSL extension 'versionInfo' to help determine actual version numbers used (of anything relevant for
         // re-constructing the build, e.g., system configuration, plugin versions, prerequisite versions, etc.).
-        def versionInfoExtension = VersionInfo.defineExtension(project)
+        VersionInfo versionInfoExtension = VersionInfo.defineExtension(project)
         
         // Task to create a wrapper 
         project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            def customGradleVersion = project.gradle.gradleVersion + "-" + project.ext.holyGradleInitScriptVersion
+            String customGradleVersion = project.gradle.gradleVersion + "-" + project.ext.holyGradleInitScriptVersion
             wrapper.gradleVersion = customGradleVersion
             wrapper.distributionUrl = project.ext.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.ext.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
             wrapper.jarFile = "${project.projectDir}/gradle/gradle-wrapper.jar"
             wrapper.scriptFile = "${project.projectDir}/gw"
             wrapper.doLast {
-                def gwContent = """\
+                String gwContent = """\
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
 @rem
@@ -149,14 +150,14 @@ if "%OS%"=="Windows_NT" endlocal
 
 :omega
                 """
-                def gwFile = new File(project.projectDir, "gw.bat")
+                File gwFile = new File(project.projectDir, "gw.bat")
                 gwFile.write(gwContent)
             }
         }
     
         if (project == project.rootProject) {
             // Create a task to allow user to ask for help 
-            def helpUrl = "http://ediwiki/mediawiki/index.php/Gradle"
+            String helpUrl = "http://ediwiki/mediawiki/index.php/Gradle"
             project.task("pluginHelp", type: Exec) { ExecSpec spec ->
                 group = "Custom Gradle"
                 description = "Opens the help page '${helpUrl}' in your favourite browser."
@@ -168,7 +169,7 @@ if "%OS%"=="Windows_NT" endlocal
                 group = "Custom Gradle"
                 description = "Helps you configure doskey to allow 'gw' to be used from any directory."
                 task.doLast {
-                    def doskeyFile = new File("gwdoskey.bat")
+                    File doskeyFile = new File("gwdoskey.bat")
                     doskeyFile.write(
                         "@echo off\r\n" +
                         "doskey gw=${project.gradle.gradleHomeDir.path}/bin/gradle.bat \$*\r\n" +
@@ -196,7 +197,7 @@ if "%OS%"=="Windows_NT" endlocal
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35
                     print "Custom distribution version: ".padRight(pad)
-                    def latestCustomGradle = VersionNumber.getLatestUsingBuildscriptRepositories(project, "holygradle", "custom-gradle")
+                    String latestCustomGradle = VersionNumber.getLatestUsingBuildscriptRepositories(project, "holygradle", "custom-gradle")
                     println versionInfoExtension.getVersion("custom-gradle") + " (latest: $latestCustomGradle)"
                     println "Init script version: ".padRight(pad) + project.ext.holyGradleInitScriptVersion
                     println "Usage of Holy Gradle plugins:"
@@ -206,10 +207,10 @@ if "%OS%"=="Windows_NT" endlocal
                     //   component name: <actual version> (<requested version> <latest version>)
                     // e.g.
                     //   intrepid-plugin: 1.2.3.4 (requested: 1.2.3.+, latest: 1.2.7.7)
-                    def versions = versionInfoExtension.getBuildscriptDependencies()
+                    Map<ModuleVersionIdentifier, String> versions = versionInfoExtension.getBuildscriptDependencies()
                     versions.each { version, requestedVersionStr ->
                         if (version.getGroup() == "holygradle") {
-                            def latest = VersionNumber.getLatestUsingBuildscriptRepositories(
+                            String latest = VersionNumber.getLatestUsingBuildscriptRepositories(
                                 project, version.getGroup(), version.getName()
                             )
                             println "    ${version.getName()}: ".padRight(pad) + version.getVersion() + " (requested: $requestedVersionStr, latest: $latest)"
@@ -249,7 +250,7 @@ if "%OS%"=="Windows_NT" endlocal
                 group = "Custom Gradle"
                 description = "Opens the user's system-wide gradle.properties file."
                 task.doLast {
-                    def homeDir = project.gradle.gradleHomeDir
+                    File homeDir = project.gradle.gradleHomeDir
                     while (homeDir != null && homeDir.parentFile != null && homeDir.name != ".gradle") {
                         homeDir = homeDir.parentFile
                     }

@@ -13,8 +13,8 @@ dependencies {
     groovy localGroovy()
 }
 
-def initScriptsPath = 'src/initScripts/'
-def versionedInitScriptsPath = 'build/tmp/tempInitScripts/'
+String initScriptsPath = 'src/initScripts/'
+String versionedInitScriptsPath = 'build/tmp/tempInitScripts/'
 File f = new File(project.projectDir, versionedInitScriptsPath)
 if (!f.exists()) {
     f.mkdir()
@@ -57,7 +57,7 @@ task customDistribution(type: Zip) {
     }
     doLast {
         println "gradle.gradleHomeDir: " + gradle.gradleHomeDir
-        def temp = new File(project.projectDir, versionedInitScriptsPath)
+        File temp = new File(project.projectDir, versionedInitScriptsPath)
         for (tempFile in temp.listFiles()) {
             tempFile.delete()
         }

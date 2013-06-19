@@ -11,10 +11,10 @@ class PluginUsages {
         
         Map<String,String> gpluginsUsages = project.extensions.findByName("gplugins")?.usages
         if (gpluginsUsages != null && gpluginsUsages.size() > 0) {
-            def pluginVersions = [:]
+            Map<String, String> pluginVersions = [:]
             project.getBuildscript().getConfigurations().each { conf ->
                 conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { dep ->
-                    gpluginsUsages.keySet().each { plugin ->
+                    gpluginsUsages.keySet().each { String plugin ->
                         if (dep.getModuleName().startsWith(plugin)) {
                             pluginVersions[plugin] = dep.getModuleVersion()
                         }
@@ -29,7 +29,7 @@ class PluginUsages {
         usages[plugin]
     }
     
-    public def getMapping() {
+    public Map<String, String> getMapping() {
         usages
     }
 }

@@ -23,8 +23,6 @@ public class CamelCase {
     }
     
     public static String build(String... components) {
-        def componentList = []
-        components.each { componentList.add(it) }
-        build(componentList)
+        build(components.toList())
     }
 }

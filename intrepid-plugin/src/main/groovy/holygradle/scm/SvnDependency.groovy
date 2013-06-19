@@ -85,7 +85,7 @@ class SvnDependency extends SourceDependency {
         return svnConfigDir
     }
     
-    private def String getSvnCommandName() {
+    private String getSvnCommandName() {
         if (export) "export" else "checkout"
     }
     

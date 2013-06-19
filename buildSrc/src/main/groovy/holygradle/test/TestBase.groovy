@@ -40,7 +40,7 @@ class TestBase {
             if (launcher.expectedFailures.size() == 0) {
                 launcher.run()
             } else {
-                def errorOutput = new ByteArrayOutputStream()
+                OutputStream errorOutput = new ByteArrayOutputStream()
                 launcher.setStandardError(errorOutput)
                 String error = null
                 try {
@@ -81,7 +81,7 @@ class TestBase {
      * @param launcher The launcher to be configured.
      */
     private void maybeForwardHttpProxyProperties(BuildLauncher launcher) {
-        def jvmArguments = []
+        String[] jvmArguments = []
         String proxyHost = System.getProperty("http.proxyHost")
         String proxyPort = System.getProperty("http.proxyPort")
         if (proxyHost != null) {

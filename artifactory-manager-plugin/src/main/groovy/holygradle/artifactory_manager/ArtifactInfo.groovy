@@ -1,5 +1,6 @@
 package holygradle.artifactory_manager
 
+import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 
@@ -8,7 +9,7 @@ class ArtifactInfo {
     private Date creationDate = null
     private Map json
     private ArtifactInfo parent
-    private List<ArtifactInfo> children = []
+    private Collection<ArtifactInfo> children = []
     
     public ArtifactInfo(ArtifactoryAPI artifactory, String path) {
         this.path = path
@@ -45,7 +46,7 @@ class ArtifactInfo {
     
     public Date getCreationDate() {
         if (creationDate == null) {
-            def dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX")
             try {
                 creationDate = dateFormat.parse(json.created as String)
             } catch (ParseException e) {
@@ -60,7 +61,7 @@ class ArtifactInfo {
         ArtifactInfo newestChild = null
         Date newestChildCreationDate = null
         for (child in children) {
-            def creation = child.getCreationDate()
+            Date creation = child.getCreationDate()
             if (newestChildCreationDate == null || creation.after(newestChildCreationDate)) {
                 newestChild = child
                 newestChildCreationDate = creation
@@ -73,7 +74,7 @@ class ArtifactInfo {
         if (children.size() == 0) {
             return closure(this)
         } else {
-            def newChildren = []
+            Collection<ArtifactInfo> newChildren = []
             for (child in children) {
                 if (!child.filter(closure)) {
                     newChildren.add(child)

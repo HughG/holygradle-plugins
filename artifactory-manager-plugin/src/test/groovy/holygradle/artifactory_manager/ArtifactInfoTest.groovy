@@ -30,8 +30,8 @@ class ArtifactInfoTest {
         when(artifactory.getFolderInfoJson("org/foo/summer")).thenReturn(folderInfo(summerDateString))
 
         // Construct the objects under test.
-        def winterArtifactInfo = new ArtifactInfo(artifactory, "org/foo/winter")
-        def summerArtifactInfo = new ArtifactInfo(artifactory, "org/foo/summer")
+        ArtifactInfo winterArtifactInfo = new ArtifactInfo(artifactory, "org/foo/winter")
+        ArtifactInfo summerArtifactInfo = new ArtifactInfo(artifactory, "org/foo/summer")
 
         // Construct dates matching the strings above.  Note that months are zero-based in Java calendars.
         Calendar winterCalendar = new GregorianCalendar()

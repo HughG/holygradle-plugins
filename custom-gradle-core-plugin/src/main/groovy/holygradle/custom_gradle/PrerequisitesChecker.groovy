@@ -5,8 +5,8 @@ import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
 class PrerequisitesChecker {
-    private final String name
-    private final Project project
+    public final String name
+    public final Project project
     private final Closure checkClosure
     private boolean ok = true
     private boolean checkingAllPrerequisites = false
@@ -21,6 +21,7 @@ class PrerequisitesChecker {
             checkingAllPrerequisites = project.gradle.taskGraph.hasTask(prerequisites.getCheckAllPrerequisitesTask())
         }
     }
+
     public boolean run(Object[] params) {
         // The 'ok' variable is not really stateful. Its purpose is to determine the return value for this method.
         // It will be set to false if the fail method is called.
