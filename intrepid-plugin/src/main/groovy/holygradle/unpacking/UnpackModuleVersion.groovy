@@ -36,7 +36,6 @@ class UnpackModuleVersion {
         def ivyXml = new XmlSlurper(false, false).parseText(ivyFile.text)
         ivyXml.dependencies.dependency.each { dependencyNode ->
             def relativePath = dependencyNode.@relativePath
-            println "relativePath is ${relativePath.getClass()}"
             if (relativePath != null) {
                 dependencyRelativePaths[
                     "${dependencyNode.@org}:${dependencyNode.@name}:${dependencyNode.@rev}"

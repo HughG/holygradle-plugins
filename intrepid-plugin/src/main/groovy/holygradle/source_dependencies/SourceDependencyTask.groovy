@@ -6,9 +6,9 @@ import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
 class SourceDependencyTask extends DefaultTask {
-    private boolean isRootTask = true
-    private SourceDependencyInvocationHandler invocation
-    private ExecResult failureResult = null
+    public boolean isRootTask = true
+    public SourceDependencyInvocationHandler invocation
+    public ExecResult failureResult = null
     
     public void addDependentTask(SourceDependencyTask t) {
         dependsOn(t)

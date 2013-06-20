@@ -208,12 +208,3 @@ project(":credential-store") {
         createProjectVersionFile.dependsOn setHgVersionInfo
     }
 }
-
-// Set up inter-project dependencies.
-["devenv", "intrepid", "my-credentials", "stamper", "unit-test"].each {
-    project(":${it}-plugin") {
-        dependencies {
-            compile project(":custom-gradle-core-plugin")
-        }
-    }
-}

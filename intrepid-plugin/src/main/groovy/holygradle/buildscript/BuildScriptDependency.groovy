@@ -32,8 +32,8 @@ class BuildScriptDependency {
             } else {
                 File unpackCacheLocation = Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.getModuleVersion().getId())
                 dependencyPath = unpackCacheLocation
-                unpackTask = project.task(getUnpackTaskName(), type: DefaultTask) {
-                    project.ext.destinationDir = unpackCacheLocation
+                unpackTask = project.task(getUnpackTaskName(), type: DefaultTask) { Task it ->
+                    it.ext.destinationDir = unpackCacheLocation
                     // Checking if the target dir exists is a pretty crude way to choose whether or not to do
                     // the unpacking. Normally the 'copy' operation would do this for us, but if another instance
                     // of Gradle in another command prompt is using this dependency (e.g. extracting a package 
