@@ -3,5 +3,5 @@ package holygradle.packaging
 import org.gradle.api.artifacts.Configuration
 
 public interface PackageArtifactDSL extends PackageArtifactBaseDSL {
-    void setConfiguration(Configuration configuration)
+    void setConfiguration(String configuration)
 }

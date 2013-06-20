@@ -13,7 +13,7 @@ class SettingsFileHelper {
             "'${p}'"
         }
         String newIncludes = "include " + escapedPaths.join(", ")
-        final String settingsFileBody = """rootProject.children.each { Project it ->
+        final String settingsFileBody = """rootProject.children.each { ProjectDescriptor it ->
     String projName = (it.name =~ /.*?([\\w_\\-]+)\$/)[0][1]
     it.name = projName
     // This allows subprojects to name the gradle script the same as the directory e.g. ..\\foo\\foo.gradle

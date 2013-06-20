@@ -64,7 +64,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             PackageArtifactHandler buildScriptHandler =
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
             buildScriptHandler.include project.buildFile.name
-            buildScriptHandler.configuration = project.configurations["everything"]
+            buildScriptHandler.configuration = "everything"
 
             Task packageEverythingTask = null
             if (packageArtifactHandlers.size() > 0) {
@@ -89,7 +89,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             packageArtifactHandlers.each { packArt ->
                 Task packageTask = packArt.definePackageTask(project, createPublishNotesTask)
-                project.artifacts.add(packArt.getConfigurationName(), packageTask)
+                project.artifacts.add(packArt.getConfiguration(), packageTask)
                 packageEverythingTask.dependsOn(packageTask)
             }
         }
@@ -134,11 +134,11 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         rootPackageDescriptor.to(toLocation)
     }
 
-    public void setConfiguration(Configuration configuration) {
-        this.configurationName = configuration.name
+    public void setConfiguration(String configuration) {
+        this.configurationName = configuration
     }
 
-    public String getConfigurationName() {
+    public String getConfiguration() {
         if (configurationName == null) {
             throw new RuntimeException(
                 "Under 'packageArtifacts' or 'packageSingleArtifact' please supply a configuration for the package '${name}'."
