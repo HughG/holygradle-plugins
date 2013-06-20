@@ -27,8 +27,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public DefaultPublishPackagesExtension(
         Project project,
         PublishingExtension publishingExtension,
-        Collection<PackedDependencyHandler> packedDependencies,
-        Collection<SourceDependencyHandler> sourceDependencies
+        Collection<SourceDependencyHandler> sourceDependencies,
+        Collection<PackedDependencyHandler> packedDependencies
     ) {
         this.project = project
         this.publishingExtension = publishingExtension
