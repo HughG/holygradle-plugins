@@ -40,7 +40,7 @@ project(":custom-gradle") {
  * https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home.
  */
 task setHgVersionInfo {
-    new ByteArrayOutputStream().withStream { os ->
+    new ByteArrayOutputStream().withStream { OutputStream os ->
         String hgInfoString = "unknown"
         exec {
             executable = "hg"
