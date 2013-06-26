@@ -240,7 +240,10 @@ class SourceDependencyHandler extends DependencyHandler {
            
             println "Published version for '${name}' is: ${latestPublishedModule.getVersion()}."
             
-            publishingHandler.configurations.each { String fromConfig, String toConfig ->
+            this.publishingHandler.configurations.each { AbstractMap.SimpleEntry<String,String> c ->
+                String fromConfig = c.key
+                String toConfig = c.value
+                
                 Map<String, String> depAttrMap = [:]
                 depAttrMap["org"] = latestPublishedModule.getGroup()
                 depAttrMap["name"] = latestPublishedModule.getName()

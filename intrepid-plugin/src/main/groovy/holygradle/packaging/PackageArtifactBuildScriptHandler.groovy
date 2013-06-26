@@ -62,7 +62,7 @@ class PackageArtifactBuildScriptHandler {
     }
     
     public void addPackedDependency(String packedDepName, String... configurations) {
-        packedDependencies[packedDepName] = configurations
+        packedDependencies[packedDepName] = configurations as Collection<String>
         atTop = false
     }
     
@@ -342,7 +342,7 @@ class PackageArtifactBuildScriptHandler {
             }
             // Some packed dependencies will explicitly specify the full coordinate, so just
             // publish them as-is.
-            packedDependencies.each { packedDepName, packedDepConfigs ->
+            packedDependencies.each { String packedDepName, Collection<String> packedDepConfigs ->
                 Matcher groupMatch = packedDepName =~ /.+:(.+):.+/
                 if (groupMatch.size() > 0) {
                     final List<String> match = (List<String>) groupMatch[0]

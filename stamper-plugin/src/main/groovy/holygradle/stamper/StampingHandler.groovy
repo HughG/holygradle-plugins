@@ -9,8 +9,8 @@ class StampingHandler implements StampingProvider {
     private Collection<Replacer> fileReplacers = []
     private Collection<Replacer> patternReplacers = []
     
-    public String taskName = "stampFiles"
     public String taskDescription = "Stamp things"
+    private String taskName = "stampFiles"
     private boolean runPriorToBuild = false
     
     StampingHandler(Project project) {
@@ -20,36 +20,40 @@ class StampingHandler implements StampingProvider {
     public Replacer files(String filePattern, Closure config) {
         Replacer replacer = new Replacer(filePattern)
         ConfigureUtil.configure(config, replacer)
-        patternReplacers.add(replacer)
+        this.patternReplacers.add(replacer)
         return replacer
     }
 
     public Replacer file(String filePath, Closure config) {
         Replacer replacer = new Replacer(new File(project.projectDir, filePath))
         ConfigureUtil.configure(config, replacer)
-        fileReplacers.add(replacer)
+        this.fileReplacers.add(replacer)
         return replacer
     }
 
     public Iterable<Replacer> getFileReplacers() {
-        return fileReplacers
+        return this.fileReplacers
     }
 
     public Iterable<Replacer> getPatternReplacers() {
-        return patternReplacers
+        return this.patternReplacers
     }
 
     @Override
     String getTaskName() {
-        taskName
+        return this.taskName
     }
 
+    public void setTaskName(String n) {
+        this.taskName = n
+    }
+    
     @Override
     boolean getRunPriorToBuild() {
-        runPriorToBuild
+        return this.runPriorToBuild
     }
 
-    void setRunPriorToBuild(boolean runPriorToBuild) {
+    public void setRunPriorToBuild(boolean runPriorToBuild) {
         this.runPriorToBuild = runPriorToBuild
     }
 }
