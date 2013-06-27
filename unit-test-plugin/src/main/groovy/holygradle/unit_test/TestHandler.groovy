@@ -46,14 +46,22 @@ class TestHandler {
                 } else {
                     project.exec { ExecSpec spec ->
                         List<String> cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
-                        // Look for the command one of three places:
-                        File exePath = [
-                            new File("."),
-                            project.projectDir,
-                            project.rootProject.projectDir
-                        ]
-                            .collect({ new File(it, cmd[0]) })
-                            .find({ it.exists() })
+                        // Look for the command exe one of three places,
+                        // But proceed even if we don't find it as it may
+                        // be relying on system path (e.g., "cmd.exe")   
+                        File exePath = new File(cmd[0])
+                        if (!exePath.exists()) {
+                            File tryPath = new File(project.projectDir, cmd[0])
+                            if (tryPath.exists()) {
+                                exePath = tryPath
+                            }
+                        }
+                        if (!exePath.exists()) {
+                            File tryPath = new File(project.rootProject.projectDir, cmd[0])
+                            if (tryPath.exists()) {
+                                exePath = tryPath
+                            }
+                        }                        
                         cmd[0] = exePath.path
                         spec.commandLine cmd
                         if (redirectOutputFilePath != null) {
