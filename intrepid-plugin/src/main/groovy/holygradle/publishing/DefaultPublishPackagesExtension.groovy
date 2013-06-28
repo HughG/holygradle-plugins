@@ -20,7 +20,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     private String nextVersionNumberStr = null
     private String autoIncrementFilePath = null
     private String environmentVariableName = null
-    private IvyModuleDescriptor mainIvyDescriptor
+    public IvyModuleDescriptor mainIvyDescriptor
     private String publishGroup = null
     private String publishName = null
     
@@ -45,12 +45,23 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             
             Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
+                
+                // Make sure we start with no dependencies in the ivy.xml, because we manually generate
+                // all the dependency information in the methods below (and overwrite the project
+                // dependencies set-up by Gradle to include additional "relativePath" attribute)
+                this.mainIvyDescriptor.withXml { xml ->
+                    xml.asNode().dependencies.dependency.each { depNode ->
+                        depNode.parent().remove(depNode)
+                    }
+                }
+                                              
                 this.includeSourceDependencies(project, sourceDependencies)
                 this.removeUnwantedDependencies(packedDependencies)
                 this.freezeDynamicDependencyVersions(project)
                 this.fixUpConflictConfigurations()
                 this.removePrivateConfigurations()
                 this.addDependencyRelativePaths(packedDependencies)
+                
                 ivyPublishTask.doFirst {
                     this.verifyGroupName()
                     this.verifyVersionNumber()
