@@ -27,6 +27,12 @@ class SourceDependencyPublishingHandler {
     public SourceDependencyPublishingHandler(String dependencyName, Project fromProject) {
         this.dependencyName = dependencyName
         this.fromProject = fromProject
+        this.publishGroup = fromProject.group //Default value, can be overwritten by DSL
+        if (!this.publishGroup) {
+            if (fromProject.rootProject) {
+                this.publishGroup = fromProject.rootProject.group
+            }
+        }
         configuration("everything")
     }
     
@@ -58,6 +64,7 @@ class SourceDependencyPublishingHandler {
             for (conf in newConfigs) {
                 String fromConf = conf.key
                 String toConf = conf.value
+                println "  adding PROJECT dependency on ${depProject.group}:${depProject.name} conf=${toConf}"
                 this.fromProject.dependencies.add(
                     fromConf,
                     rootProject.dependencies.project(path: ":${this.dependencyName}", configuration: toConf)
@@ -67,7 +74,7 @@ class SourceDependencyPublishingHandler {
             if (!newConfigs.empty) {
                 this.fromProject.logger.warn(
                     "Ignoring any project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
-                    "because ${this.dependencyName} has not yet been fetched."
+                    "because either ${this.dependencyName} has yet to be fetched, or it has no gradle project file"
                 )
             }
         }

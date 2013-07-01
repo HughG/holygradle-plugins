@@ -46,12 +46,27 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
                 
-                // Make sure we start with no dependencies in the ivy.xml, because we manually generate
-                // all the dependency information in the methods below (and overwrite the project
-                // dependencies set-up by Gradle to include additional "relativePath" attribute)
+                // The addition of project dependencies is fighting with "sourceDependencies" DSL,
+                // they are both trying to do the same job at publish time.  The following code filters
+                // out the gradle-produced packed dependencies that we want to keep, from the source
+                // (project) dependencies that we want to override.  This feels broken, and we should
+                // try to just use gradle's built-in stuff where possible.  But for the moment, this is
+                // what I think is necessary to allow project dependencies and source dependencies to co-exist:
                 this.mainIvyDescriptor.withXml { xml ->
-                    xml.asNode().dependencies.dependency.each { depNode ->
-                        depNode.parent().remove(depNode)
+                
+                    xml.asNode().dependencies.dependency.each { depNode ->                                        
+                        PackedDependencyHandler packedDep = packedDependencies.find {
+                            it.getGroupName() == depNode.@org && 
+                            it.getDependencyName() == depNode.@name &&
+                            it.getVersionStr() == depNode.@rev
+                        }
+                        
+                        if (packedDep == null) { 
+                            println("Did not find ${depNode.@name} (${depNode.@org}:${depNode.@name}:${depNode.@rev} ${depNode.@conf} in packedDependencies, removing")
+                            depNode.parent().remove(depNode)
+                        } else {
+                            println("Gradle has already added dependency ${depNode.@name}.  This is a valid packedDependency so keeping it")
+                        }
                     }
                 }
                                               

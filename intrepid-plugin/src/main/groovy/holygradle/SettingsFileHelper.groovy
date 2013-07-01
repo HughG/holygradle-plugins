@@ -13,7 +13,7 @@ class SettingsFileHelper {
             "'${p}'"
         }
         String newIncludes = "include " + escapedPaths.join(", ")
-        final String settingsFileBody = """rootProject.children.each { ProjectDescriptor it ->
+        final String settingsFileBody = """rootProject.children.removeAll { ProjectDescriptor it ->
     String projName = (it.name =~ /.*?([\\w_\\-]+)\$/)[0][1]
     it.name = projName
     // This allows subprojects to name the gradle script the same as the directory e.g. ..\\foo\\foo.gradle
@@ -22,8 +22,13 @@ class SettingsFileHelper {
     if (projectNamedScript && defaultNamedScript) {
         throw new RuntimeException("For \${projName} you have '\${projName}.gradle' AND 'build.gradle'. You should only have one of these.")
     } else if (projectNamedScript) {
-        it.buildFileName = projName + '.gradle'
+        it.buildFileName = projName + '.gradle'        
+        return false // this folder has a valid project script so keep it
+    } else if (defaultNamedScript) {
+        return false // this folder has a valid project script so keep it
     }
+    println("Warning: no gradle file found for subproject \${projName} in \${it.projectDir}, excluding from build.")
+    return true
 }"""
 
         settingsFile.withPrintWriter { w ->
