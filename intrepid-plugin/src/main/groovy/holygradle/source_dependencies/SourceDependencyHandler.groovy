@@ -64,7 +64,7 @@ class SourceDependencyPublishingHandler {
             for (conf in newConfigs) {
                 String fromConf = conf.key
                 String toConf = conf.value
-                project.logger.info "sourceDependency: adding PROJECT dependency on ${depProject.group}:${depProject.name} conf=${toConf}"
+                rootProject.logger.info "sourceDependency: adding PROJECT dependency on ${depProject.group}:${depProject.name} conf=${toConf}"
                 this.fromProject.dependencies.add(
                     fromConf,
                     rootProject.dependencies.project(path: ":${this.dependencyName}", configuration: toConf)
