@@ -46,36 +46,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
                 
-                // The addition of project dependencies is fighting with "sourceDependencies" DSL,
-                // they are both trying to do the same job at publish time.  The following code filters
-                // out the gradle-produced packed dependencies that we want to keep, from the source
-                // (project) dependencies that we want to override.  This feels broken, and we should
-                // try to just use gradle's built-in stuff where possible.  But for the moment, this is
-                // what I think is necessary to allow project dependencies and source dependencies to co-exist:
-                this.mainIvyDescriptor.withXml { xml ->
-                
-                    xml.asNode().dependencies.dependency.each { depNode ->                                        
-                        PackedDependencyHandler packedDep = packedDependencies.find {
-                            it.getGroupName() == depNode.@org && 
-                            it.getDependencyName() == depNode.@name &&
-                            it.getVersionStr() == depNode.@rev
-                        }
-                        
-                        if (packedDep == null) { 
-                            println("Did not find ${depNode.@name} (${depNode.@org}:${depNode.@name}:${depNode.@rev} ${depNode.@conf} in packedDependencies, removing")
-                            depNode.parent().remove(depNode)
-                        } else {
-                            println("Gradle has already added dependency ${depNode.@name}.  This is a valid packedDependency so keeping it")
-                        }
-                    }
-                }
-                                              
-                this.includeSourceDependencies(project, sourceDependencies)
                 this.removeUnwantedDependencies(packedDependencies)
                 this.freezeDynamicDependencyVersions(project)
                 this.fixUpConflictConfigurations()
                 this.removePrivateConfigurations()
-                this.addDependencyRelativePaths(packedDependencies)
+                this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
                 
                 ivyPublishTask.doFirst {
                     this.verifyGroupName()
@@ -306,31 +281,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return currentVersionNumber
     }
 
-    // For every source dependency we have, add equivalent binary dependencies in the published module descriptor.
-    // (No point trying to use static types here as we're using GPath, so the returned objects have magic properties.)
-    public void includeSourceDependencies(Project project, Iterable<SourceDependencyHandler> sourceDependencies) {
-        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
-        //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
-            Collection<Map<String, String>> newDependencies = []
-            sourceDependencies.each { SourceDependencyHandler sourceDep ->
-                newDependencies.addAll(sourceDep.getDependenciesForPublishing(project))
-            }
-            if (newDependencies.size() > 0) {
-                def dependenciesNodes = xml.asNode().dependencies
-                Node dependenciesNode = null
-                if (dependenciesNodes.size() == 0) {
-                    dependenciesNode = xml.asNode().appendNode("dependencies")
-                } else {
-                    dependenciesNode = dependenciesNodes.get(0)
-                }
-                newDependencies.each { newDep ->
-                    dependenciesNode.appendNode("dependency", newDep)
-                }
-            }
-        }
-    }
-
     // Remove dependencies which were explicitly specified as "publishDependency = false", or whose configuration
     // name starts with "private".
     public void removeUnwantedDependencies(Collection<PackedDependencyHandler> packedDependencies) {
@@ -416,11 +366,13 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
 
     // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or symlinked) to.
-    public void addDependencyRelativePaths(Collection<PackedDependencyHandler> packedDependencies) {
+    public void addDependencyRelativePaths(Project project, Collection<PackedDependencyHandler> packedDependencies, Collection<SourceDependencyHandler> sourceDependencies) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
+                // If the dependency is a packed dependency, get its relative path from the 
+                // gradle script's packedDependencyHandler
                 PackedDependencyHandler packedDep = packedDependencies.find {
                     it.getGroupName() == depNode.@org && 
                     it.getDependencyName() == depNode.@name &&
@@ -428,7 +380,24 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 }
                 
                 if (packedDep != null) {
+                    project.logger.info "Adding relative path to packedDep node: ${packedDep.getGroupName()}:${packedDep.getDependencyName()}:${packedDep.getVersionStr()} path=${packedDep.getFullTargetPath()}"
                     depNode.@relativePath = packedDep.getFullTargetPath()
+                } else {
+                    // Else if the dependency is a source dependency, get its relative path from the 
+                    // gradle script's sourceDependencyHandler
+                    SourceDependencyHandler sourceDep = sourceDependencies.find {
+                        ModuleVersionIdentifier latestPublishedModule = it.getLatestPublishedModule(project)
+                        latestPublishedModule.getGroup() == depNode.@org && 
+                        latestPublishedModule.getName() == depNode.@name &&
+                        latestPublishedModule.getVersion() == depNode.@rev
+                    }
+                    
+                    if (sourceDep != null) {
+                        project.logger.info "Adding relative path to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
+                        depNode.@relativePath = sourceDep.getFullTargetPath()
+                    } else {
+                        project.logger.warn "Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in source or packed dependencies"
+                    }
                 }
             }
         }

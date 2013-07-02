@@ -64,7 +64,7 @@ class SourceDependencyPublishingHandler {
             for (conf in newConfigs) {
                 String fromConf = conf.key
                 String toConf = conf.value
-                println "  adding PROJECT dependency on ${depProject.group}:${depProject.name} conf=${toConf}"
+                project.logger.info "sourceDependency: adding PROJECT dependency on ${depProject.group}:${depProject.name} conf=${toConf}"
                 this.fromProject.dependencies.add(
                     fromConf,
                     rootProject.dependencies.project(path: ":${this.dependencyName}", configuration: toConf)
@@ -238,38 +238,6 @@ class SourceDependencyHandler extends DependencyHandler {
             identifier = new DefaultModuleVersionIdentifier(groupName, targetName, version)
         }
         identifier
-    }
-    
-    public Collection<Map<String, String>> getDependenciesForPublishing(Project project) {
-        Collection<Map<String, String>> newDependencies = []
-        if (publishingHandler.configurations.size() > 0) {
-            ModuleVersionIdentifier latestPublishedModule = getLatestPublishedModule(project)
-           
-            println "Published version for '${name}' is: ${latestPublishedModule.getVersion()}."
-            
-            this.publishingHandler.configurations.each { AbstractMap.SimpleEntry<String,String> c ->
-                String fromConfig = c.key
-                String toConfig = c.value
-                
-                Map<String, String> depAttrMap = [:]
-                depAttrMap["org"] = latestPublishedModule.getGroup()
-                depAttrMap["name"] = latestPublishedModule.getName()
-                depAttrMap["rev"] = latestPublishedModule.getVersion()
-                if (fromConfig == toConfig) {
-                    depAttrMap["conf"] = fromConfig
-                } else {
-                    depAttrMap["conf"] = "${fromConfig}->${toConfig}"
-                }
-                
-                String relativePath = getFullTargetPath()
-                if (relativePath != "/" && relativePath != "\\") {
-                    depAttrMap["relativePath"] = relativePath
-                }
-                
-                newDependencies.add(depAttrMap)
-            }
-        }
-        newDependencies
     }
     
     public String getDynamicPublishedDependencyCoordinate(Project project) {
