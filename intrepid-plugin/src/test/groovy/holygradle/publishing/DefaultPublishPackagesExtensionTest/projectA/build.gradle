@@ -12,8 +12,6 @@ packedDependencies {
     }
 }
 sourceDependencies {
-    // Declare a source dependency that requires a conflicting version
-    // of "external-lib".  We want to test that this is detected as a conflict
     "src_dep1" {
         hg "http://a_dummy_url_that_we_wont_need"
         publishing.configuration "compile->runtime"

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <configurations>
+    <conf name="everything" visibility="public" extends="runtime"/>
+    <conf name="runtime" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="projectB-buildScript" type="zip" ext="zip" conf="everything"/>
+    <artifact name="projectB-runtime" type="zip" ext="zip" conf="runtime"/>
+  </publications>
+  <dependencies>
+    <dependency org="happydays" name="ProjectA" rev="3.3.3" conf="everything-&gt;everything" relativePath="../ProjectA"/>
+    <dependency org="happydays" name="ProjectA" rev="3.3.3" conf="runtime-&gt;runtime" relativePath="../ProjectA"/>
+  </dependencies>
+</ivy-module>
