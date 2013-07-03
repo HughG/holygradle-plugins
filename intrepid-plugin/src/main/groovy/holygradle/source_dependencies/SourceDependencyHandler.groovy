@@ -216,12 +216,17 @@ class SourceDependencyHandler extends DependencyHandler {
         if (publishingHandler.configurations.size() > 0) {
             String groupName = project.group.toString()
             String targetName = getTargetName()
+            String version = publishingHandler.publishVersion
             String firstTargetConfig = publishingHandler.configurations.find().value
-            if (!usePublishedVersion) {
+            
+            if (!usePublishedVersion) {                
                 Project dependencyProject = project.rootProject.findProject(targetName)
                 groupName = dependencyProject.group.toString()
+                if (version == null) {
+                    version = dependencyProject.version
+                }
             }
-            String version = publishingHandler.publishVersion
+            
             if (version == null) {
                 version = project.version
             }

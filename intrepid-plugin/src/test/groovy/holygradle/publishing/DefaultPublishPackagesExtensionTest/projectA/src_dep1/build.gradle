@@ -1,0 +1,39 @@
+apply from: "..\\..\\..\\..\\testUtil\\header.gradle"
+
+repositories.ivy {
+    url "..\\..\\..\\..\\testUtil\\repository\\"
+}
+
+group "happydays_subsiduary"
+
+configurations {
+    runtime
+    compile.extendsFrom runtime
+    somethingelse
+}
+
+packedDependencies {
+    "../ext_dep" {
+        dependency "holygradle.test:external-lib:1.0"
+        configuration "compile"
+        configuration "somethingelse->everything"
+    }
+}
+
+packageArtifacts {
+    compile {
+        include "Compile*"
+    }
+    runtime {
+        include "Runtime*"
+    }
+    somethingelse {
+    }
+}
+
+publishPackages {    
+    nextVersionNumber "2.2.2"   
+    repositories.ivy {
+        url "http://dummy_repo_url"
+    }
+}
