@@ -219,25 +219,27 @@ class PackageArtifactBuildScriptHandler {
         buildScript.append("\n")
         
         // Add repositories
-        buildScript.append("repositories {\n")
-        ivyRepositories.each { repo ->
-            buildScript.append("    ivy {\n")
-            buildScript.append("        credentials {\n")
-            buildScript.append("            username my.username(")
-            if (myCredentialsConfig != null) {
-                buildScript.append("\"${myCredentialsConfig}\"")
+        if (!ivyRepositories.empty) {
+            buildScript.append("repositories {\n")
+            ivyRepositories.each { repo ->
+                buildScript.append("    ivy {\n")
+                buildScript.append("        credentials {\n")
+                buildScript.append("            username my.username(")
+                if (myCredentialsConfig != null) {
+                    buildScript.append("\"${myCredentialsConfig}\"")
+                }
+                buildScript.append(")\n")
+                buildScript.append("            password my.password(")
+                if (myCredentialsConfig != null) {
+                    buildScript.append("\"${myCredentialsConfig}\"")
+                }
+                buildScript.append(")\n")
+                buildScript.append("        }\n")
+                buildScript.append("        url \"")
+                buildScript.append(repo)
+                buildScript.append("\"\n")
+                buildScript.append("    }\n")
             }
-            buildScript.append(")\n")
-            buildScript.append("            password my.password(")
-            if (myCredentialsConfig != null) {
-                buildScript.append("\"${myCredentialsConfig}\"")
-            }
-            buildScript.append(")\n")
-            buildScript.append("        }\n")
-            buildScript.append("        url \"")
-            buildScript.append(repo)
-            buildScript.append("\"\n")
-            buildScript.append("    }\n")
             buildScript.append("}\n")
             buildScript.append("\n")
         }
