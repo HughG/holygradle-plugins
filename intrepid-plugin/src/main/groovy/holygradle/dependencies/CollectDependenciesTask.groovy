@@ -129,7 +129,9 @@ class CollectDependenciesTask extends Copy {
     // Recursively call this method for grand-parents etc.
     public void processPomFileParents(File pomFile) {
         File pomArtifactRootDir = pomFile.parentFile.parentFile.parentFile
-        GPathResult pomXml = null
+        // NOTE 2013-07-12 HughG: No point declaring the type for a GPathResult, because almost all access to such
+        // objects uses magic dynamic properties.
+        def /* GPathResult */ pomXml = null
         
         try {
             pomXml = new XmlSlurper(false, false).parseText(pomFile.text)
@@ -140,12 +142,17 @@ class CollectDependenciesTask extends Copy {
         }
         
         if (pomXml != null) {
-            pomXml.parent().each { GPathResult parentNode ->
-                String parentPomGroup = (parentNode.groupId as NodeChild).text()
-                String parentPomModuleName = (parentNode.artifactId as NodeChild).text()
-                String parentPomVersion = (parentNode.version as NodeChild).text()
+            // NOTE 2013-07-12 HughG: Suppressing an IntelliJ IDEA warning here, because "pomXml.parent" isn't supposed
+            // to be accessing the protected "parent" property of the GPathResult class, but the GPath object for the
+            // "<parent />" note in the "pom.xml".  IntelliJ figures out that this is a GPathResult even if we declare
+            // it with "def", so we still need to suppress this.
+            //noinspection GroovyAccessibility
+            pomXml.parent.each { /* GPathResult */ parentNode ->
+                String parentPomGroup = parentNode.groupId.text()
+                String parentPomModuleName = parentNode.artifactId.text()
+                String parentPomVersion = parentNode.version.text()
                 
-                String parentPomRelativePath = (parentNode.relativePath as NodeChild).text()
+                String parentPomRelativePath = parentNode.relativePath.text()
                 if (parentPomRelativePath != null && !parentPomRelativePath.isEmpty()) {
                     logger.info "Ignoring relative path for '${pomArtifactRootDir}' : ${parentPomRelativePath}"
                 }
