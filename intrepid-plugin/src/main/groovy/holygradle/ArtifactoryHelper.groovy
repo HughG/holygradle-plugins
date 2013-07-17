@@ -38,12 +38,12 @@ class ArtifactoryHelper {
     
     public boolean artifactExists(String artifactPath) {
         boolean exists = false
-        http.request( GET, TEXT ) { HTTPBuilder.RequestConfigDelegate req ->
-            req.uri.path = "artifactory/${repository}/${artifactPath}"
-            req.response.success = { resp, reader ->
+        http.request( GET, TEXT ) { req ->
+            uri.path = "artifactory/${repository}/${artifactPath}"
+            response.success = { resp, reader ->
                 exists = true
             }
-            req.response.failure = { }
+            response.failure = { }
         }
         exists
     }
