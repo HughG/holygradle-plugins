@@ -1,5 +1,11 @@
 import holygradle.util.Helper
+import org.gradle.api.initialization.dsl.ScriptHandler
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
+
+buildscript { ScriptHandler script ->
+    // Make sure we don't publish something which is based on conflicting versions of dependencies.
+    script.configurations["classpath"].resolutionStrategy { ResolutionStrategy rs ->  rs.failOnVersionConflict() }
+}
 
 subprojects {
     if (project.name.endsWith("plugin")) {

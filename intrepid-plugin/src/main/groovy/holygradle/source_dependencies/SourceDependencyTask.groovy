@@ -7,9 +7,13 @@ import org.gradle.process.ExecSpec
 
 class SourceDependencyTask extends DefaultTask {
     public boolean isRootTask = true
-    public SourceDependencyInvocationHandler invocation
-    public ExecResult failureResult = null
-    
+    private SourceDependencyInvocationHandler invocation
+    private ExecResult failureResult = null
+
+    public ExecResult getFailureResult() {
+        return failureResult
+    }
+
     public void addDependentTask(SourceDependencyTask t) {
         dependsOn(t)
         t.isRootTask = false
@@ -29,40 +33,45 @@ class SourceDependencyTask extends DefaultTask {
         }
         return taskCollection.unique()
     }
-    
+
     public Map<Task, ExecResult> collectFailures() {
         Map<Task, ExecResult> allFailures = [:]
         collectDependentTasks().each { SourceDependencyTask t ->
-            if (t.failureResult != null) {
-                allFailures[t] = t.failureResult
+            if (t.getFailureResult() != null) {
+                allFailures[t] = t.getFailureResult()
             }
         }
         return allFailures
     }
-    
-    private void initializeInternal() {
-        doLast { SourceDependencyTask it ->
-            if (it.invocation != null &&
-                it.invocation.exitCodeBehaviour == ExitCodeBehaviour.failAtEnd && it.isRootTask
-            ) {
-                Map<Task, ExecResult> allFailures = collectFailures()
-                String failureMessage = null
-                if (allFailures.size() == 1) {
-                    failureMessage = "There was a failure while running ${it.invocation.description}."
-                } else if (allFailures.size() > 1) {
-                    failureMessage = "There were ${allFailures.size()} failures while running ${it.invocation.description}."
-                }
-                println failureMessage
-                allFailures.each { failedTask, failureResult ->
-                    println "    ${failedTask.project.name} failed due to exit code: ${failureResult.getExitValue()}"
-                }
-                if (allFailures.size() > 0) {
-                    throw new RuntimeException(failureMessage)
-                }
+
+    public void maybeFailAtEnd() {
+        if (invocation != null &&
+            invocation.exitCodeBehaviour == ExitCodeBehaviour.failAtEnd &&
+            isRootTask
+        ) {
+            Map<Task, ExecResult> allFailures = collectFailures()
+            String failureMessage = null
+            if (allFailures.size() == 1) {
+                failureMessage = "There was a failure while running ${invocation.description}."
+            } else if (allFailures.size() > 1) {
+                failureMessage = "There were ${allFailures.size()} failures while running ${invocation.description}."
+            }
+            println failureMessage
+            allFailures.each { failedTask, failureResult ->
+                println "    ${failedTask.project.name} failed due to exit code: ${failureResult.getExitValue()}"
+            }
+            if (allFailures.size() > 0) {
+                throw new RuntimeException(failureMessage)
             }
         }
     }
-    
+
+    private void initializeInternal() {
+        doLast { SourceDependencyTask it ->
+            it.maybeFailAtEnd()
+        }
+    }
+
     public void initialize(SourceDependencyInvocationHandler invocation) {
         this.invocation = invocation
 

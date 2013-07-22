@@ -114,7 +114,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         rootPackageDescriptor.include(patterns)
     }
     
-     public void include(String pattern, Closure closure) {
+    public void include(String pattern, Closure closure) {
         rootPackageDescriptor.include(pattern, closure)
     }
     

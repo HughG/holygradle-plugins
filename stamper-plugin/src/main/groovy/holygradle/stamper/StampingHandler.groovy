@@ -44,6 +44,7 @@ class StampingHandler implements StampingProvider {
         return this.taskName
     }
 
+    @Override
     public void setTaskName(String n) {
         this.taskName = n
     }
