@@ -35,5 +35,5 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsTest/projectB/packages/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
-^intrepid-plugin/src/test/groovy/holygradle/sourcedependencies/CopyArtifactsTest/copyPackedDependencies/blah/
+^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsTest/copyPackedDependencies/blah/
 (^|/)ipch/
