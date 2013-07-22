@@ -205,7 +205,7 @@ class PackageArtifactBuildScriptHandler {
         // Include plugins
         buildScript.append("buildscript {\n")
         PluginUsages pluginUsagesExtension = project.extensions.findByName("pluginUsages") as PluginUsages
-        ["intrepid", "my-credentials"].each { String pluginName ->
+        ["intrepid", "devenv", "my-credentials"].each { String pluginName ->
             String pluginVersion = project.gplugins.usages[pluginName] as String
             if (pluginUsagesExtension != null) {
                 pluginVersion = pluginUsagesExtension.getVersion(pluginName)
