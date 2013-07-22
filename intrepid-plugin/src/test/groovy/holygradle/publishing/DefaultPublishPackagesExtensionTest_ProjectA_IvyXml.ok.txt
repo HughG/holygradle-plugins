@@ -11,12 +11,10 @@
     <artifact name="projectA-runtime" type="zip" ext="zip" conf="runtime"/>
   </publications>
   <dependencies>
-    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="compile-&gt;compile" relativePath="ext_dep1"/>
     <dependency org="happydays_subsiduary" name="src_dep1" rev="2.2.2" conf="compile-&gt;runtime" relativePath="src_dep1"/>
     <dependency org="happydays" name="src_dep2" rev="1.1.1" conf="compile-&gt;compile" relativePath="src_dep2"/>
     <dependency org="happydays_subsiduary" name="src_dep1" rev="2.2.2" conf="everything-&gt;everything" relativePath="src_dep1"/>
     <dependency org="happydays" name="src_dep2" rev="1.1.1" conf="everything-&gt;everything" relativePath="src_dep2"/>
-    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="runtime-&gt;compile" relativePath="ext_dep1"/>
     <dependency org="happydays" name="src_dep2" rev="1.1.1" conf="runtime-&gt;runtime" relativePath="src_dep2"/>
   </dependencies>
 </ivy-module>

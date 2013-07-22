@@ -12,14 +12,6 @@ configurations {
     somethingelse
 }
 
-packedDependencies {
-    "../ext_dep" {
-        dependency "holygradle.test:external-lib:1.0"
-        configuration "compile"
-        configuration "somethingelse->everything"
-    }
-}
-
 packageArtifacts {
     compile {
         include "Compile*"
