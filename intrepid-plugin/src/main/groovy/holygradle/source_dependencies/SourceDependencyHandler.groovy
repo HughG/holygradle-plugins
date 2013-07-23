@@ -27,12 +27,6 @@ class SourceDependencyPublishingHandler {
     public SourceDependencyPublishingHandler(String dependencyName, Project fromProject) {
         this.dependencyName = dependencyName
         this.fromProject = fromProject
-        this.publishGroup = fromProject.group //Default value, can be overwritten by DSL
-        if (!this.publishGroup) {
-            if (fromProject.rootProject) {
-                this.publishGroup = fromProject.rootProject.group
-            }
-        }
         configuration("everything")
     }
     
