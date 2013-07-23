@@ -131,7 +131,8 @@ class UnpackModuleVersionTest extends TestBase {
         assertEquals(new File("coconut"), coconut.getTargetPathInWorkspace(null))
         
         Task unpackTask = coconut.getUnpackTask(project)
-        assertEquals(targetPath, unpackTask.unpackDir)
+        Unpack unpack = unpackTask as Unpack
+        assertEquals(targetPath, unpack.unpackDir)
         assertEquals("Unpacks dependency 'coconut' to coconut.", unpackTask.description)
     }
     

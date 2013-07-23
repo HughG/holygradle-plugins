@@ -97,6 +97,15 @@ class UnpackModuleVersion {
     
     // Return a fully configured task for unpacking the module artifacts to the appropriate location.
     // This could be to the central cache or directly to the workspace.
+    /**
+     * Returns a fully configured task for unpacking the module artifacts to the appropriate location, which also
+     * implements the {@link Unpack} interface.
+     * This could be to the central cache or directly to the workspace.
+     *
+     * @param project The project from which to get the unpack task.
+     * @return A fully configured task for unpacking the module artifacts to the appropriate location, which also
+     * implements the {@link Unpack} interface.
+     */
     public Task getUnpackTask(Project project) {
         boolean shouldApplyUpToDateChecks = false
         PackedDependencyHandler packedDependency = getPackedDependency()

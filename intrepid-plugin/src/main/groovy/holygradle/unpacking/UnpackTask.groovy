@@ -4,7 +4,10 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.tasks.Copy
 
-class UnpackTask extends Copy {
+class UnpackTask
+    extends Copy
+    implements Unpack
+{
     private File unpackDir
     
     public void initialize(Project project, File unpackDir, Iterable<ResolvedArtifact> artifacts) {
@@ -35,4 +38,9 @@ class UnpackTask extends Copy {
             }
         }
     }
-}    
+
+    @Override
+    File getUnpackDir() {
+        return unpackDir
+    }
+}

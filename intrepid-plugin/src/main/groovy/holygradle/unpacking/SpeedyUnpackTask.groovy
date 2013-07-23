@@ -1,6 +1,5 @@
 package holygradle.unpacking
 
-import holygradle.buildscript.BuildScriptDependencies
 import org.gradle.api.*
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.Helper
@@ -8,7 +7,10 @@ import holygradle.custom_gradle.util.Symlink
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.process.ExecSpec
 
-class SpeedyUnpackTask extends DefaultTask {
+class SpeedyUnpackTask
+    extends DefaultTask
+    implements Unpack
+{
     private File unpackDir
     private Task sevenZipTask
     
@@ -25,7 +27,7 @@ class SpeedyUnpackTask extends DefaultTask {
         this.unpackDir = unpackDir
         File infoFile = new File(unpackDir, "version_info.txt")
         
-        sevenZipTask = (project.buildScriptDependencies as BuildScriptDependencies).getUnpackTask("sevenZip")
+        sevenZipTask = project.buildScriptDependencies.getUnpackTask("sevenZip")
         dependsOn sevenZipTask
 
         File localUnpackDir = unpackDir // give closure access to private field
@@ -97,4 +99,9 @@ class SpeedyUnpackTask extends DefaultTask {
             }
         }
     }
-}    
+
+    @Override
+    File getUnpackDir() {
+        return unpackDir
+    }
+}
