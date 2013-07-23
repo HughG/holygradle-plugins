@@ -5,7 +5,7 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.tasks.Copy
 
 class UnpackTask extends Copy {
-    File unpackDir
+    private File unpackDir
     
     public void initialize(Project project, File unpackDir, Iterable<ResolvedArtifact> artifacts) {
         if (unpackDir == null) {
@@ -19,13 +19,19 @@ class UnpackTask extends Copy {
             infoFile.delete()
         }
 
+        File localUnpackDir = unpackDir // give closure access to private field
         artifacts.each { artifact ->
             from project.zipTree(artifact.getFile())
-            into unpackDir.path
+            into localUnpackDir.path
             doLast {
-                infoFile.withPrintWriter { writer ->
-                    writer.println("Unpacked from: " + artifact.getFile().name)
+                infoFile.withWriterAppend { BufferedWriter bw ->
+                    bw.withPrintWriter { PrintWriter writer ->
+                        writer.println("Unpacked from: " + artifact.getFile().name)
+                    }
                 }
+
+                String infoText = infoFile.text
+                logger.info "UnpackTask: doLast: info file ${infoFile} new contents: >>>\n${infoText}<<<"
             }
         }
     }
