@@ -124,7 +124,7 @@ class CopyArtifactsHandler {
                         Collection<File> artifactZips = []
 
                         sourceDependencies.each { sourceDep ->
-                            String sourceDepName = sourceDep.getTargetName()
+                            String sourceDepName = sourceDep.targetName
                             Project sourceDepProject = project.rootProject.findProject(sourceDepName)
                             if (f.dependencyName == null || f.dependencyName == sourceDepName) {
                                 if (!alreadyHandled.contains(sourceDepName)) {

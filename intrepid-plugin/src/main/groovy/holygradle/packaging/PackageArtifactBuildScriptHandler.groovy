@@ -279,7 +279,7 @@ class PackageArtifactBuildScriptHandler {
                     buildScript.append("}\n")
                 }
                 
-                collectSymlinks(project, sourceDep.getTargetName(), allSymlinks)
+                collectSymlinks(project, sourceDep.targetName, allSymlinks)
             }
             buildScript.append("}\n")
         }
@@ -330,7 +330,7 @@ class PackageArtifactBuildScriptHandler {
                     packedDependencies[sourceDepName]
                 )
                 
-                collectSymlinks(project, sourceDep.getTargetName(), allSymlinks)
+                collectSymlinks(project, sourceDep.targetName, allSymlinks)
             }
             Map<String, PackedDependencyHandler> packedDeps = collectPackedDependencies(project, packedDependencies.keySet())
             for (packedDepName in packedDeps.keySet()) {

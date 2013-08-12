@@ -29,7 +29,7 @@ class Helper {
     ) {
         Collection<SourceDependencyHandler> transSourceDep = sourceDependencies
         sourceDependencies.each { sourceDep ->
-            String projName = sourceDep.getTargetName()
+            String projName = sourceDep.targetName
             Project proj = sourceDep.getSourceDependencyProject(project)
             if (proj == null) {
                 File projDir = new File("${project.rootProject.projectDir.path}/${projName}")

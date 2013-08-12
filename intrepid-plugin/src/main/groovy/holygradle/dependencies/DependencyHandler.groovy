@@ -6,14 +6,16 @@ import java.util.regex.Matcher
 
 abstract class DependencyHandler {
     public final String name
+    public final String targetName
     private final Project project
     
     public DependencyHandler(String depName) {
         this.name = depName
+        this.targetName = (new File(depName)).name
     }
     
     public DependencyHandler(String depName, Project project) {
-        this.name = depName
+        this(depName)
         this.project = project
     }
     
@@ -27,10 +29,5 @@ abstract class DependencyHandler {
         
     public File getAbsolutePath() {
         new File(project.projectDir, name)
-    }
-    
-    public String getTargetName() {
-        Matcher pathMatch = name =~ /(.*?)([ \w_\-\<\>]+)$/
-        pathMatch[0][2]
     }
 }

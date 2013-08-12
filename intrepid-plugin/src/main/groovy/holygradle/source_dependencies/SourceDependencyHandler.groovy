@@ -117,6 +117,7 @@ class SourceDependencyHandler extends DependencyHandler {
     public static Collection<SourceDependencyHandler> createContainer(Project project) {
         project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { String sourceDepName ->
             // Explicitly create the SourceDependencyHandler so we can add SourceDependencyPublishingHandler.
+
             SourceDependencyHandler sourceDep = new SourceDependencyHandler(sourceDepName, project)
             SourceDependencyPublishingHandler sourceDepPublishing = new SourceDependencyPublishingHandler(
                 sourceDep.targetName,
@@ -185,7 +186,7 @@ class SourceDependencyHandler extends DependencyHandler {
         } else {
             sourceDependency = new HgDependency(project, this, buildScriptDependencies)
         }
-        String fetchTaskName = CamelCase.build("fetch", getTargetName())
+        String fetchTaskName = CamelCase.build("fetch", targetName)
         FetchSourceDependencyTask fetchTask =
             (FetchSourceDependencyTask)project.task(fetchTaskName, type: FetchSourceDependencyTask)
         if (overrideWarningMessages.size() > 0) {
@@ -211,7 +212,7 @@ class SourceDependencyHandler extends DependencyHandler {
         ModuleVersionIdentifier identifier = null
         if (publishingHandler.configurations.size() > 0) {
             String groupName = project.group.toString()
-            String targetName = getTargetName()
+            String targetName = targetName
             String version = publishingHandler.publishVersion
             String firstTargetConfig = publishingHandler.configurations.find().value
             
@@ -259,6 +260,6 @@ class SourceDependencyHandler extends DependencyHandler {
     }
     
     public Project getSourceDependencyProject(Project project) {
-        project.findProject(getTargetName())
+        project.findProject(targetName)
     }
 }

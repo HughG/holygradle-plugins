@@ -206,11 +206,11 @@ class PackedDependencyHandler extends DependencyHandler {
     }
     
     public boolean pathIncludesVersionNumber() {
-        getTargetName().contains("<version>")
+        targetName.contains("<version>")
     }
     
     public String getTargetNameWithVersionNumber(String versionStr) {
-        getTargetName().replace("<version>", versionStr)
+        targetName.replace("<version>", versionStr)
     }
     
     public String getFullTargetPathWithVersionNumber(String versionStr) {
