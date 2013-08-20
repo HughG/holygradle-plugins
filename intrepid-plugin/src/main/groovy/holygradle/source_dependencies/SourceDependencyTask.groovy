@@ -110,6 +110,23 @@ class SourceDependencyTask extends DefaultTask {
         }
     }
 
+    /**
+     * This is only public so that it can be called internally in a closure; don't call this method from outside.
+     */
+    public void executeSourceDependencyTask() {
+        println "Invoking ${invocation.getDescription()} on '${project.name}'..."
+        SourceDependencyInvocationHandler localInvocation = invocation // capture private for closure
+        execResult = project.exec { ExecSpec spec ->
+            spec.commandLine = localInvocation.cmdLine
+            spec.ignoreExitValue =
+                localInvocation.exitCodeBehaviour != SourceDependencyInvocationHandler.ExitCodeBehaviour.FAIL_IMMEDIATELY
+        }
+        if (invocation.exitCodeBehaviour == SourceDependencyInvocationHandler.ExitCodeBehaviour.FAIL_IMMEDIATELY) {
+            execResult.assertNormalExitValue()
+        }
+        println ""
+    }
+
     /*
      * Adds a doLast closure to handle the "fail at end" behaviour.
      */
@@ -128,16 +145,7 @@ class SourceDependencyTask extends DefaultTask {
         this.invocation = invocation
 
         doLast { SourceDependencyTask it ->
-            println "Invoking ${invocation.getDescription()} on '${project.name}'..."
-            execResult = project.exec { ExecSpec spec ->
-                spec.commandLine = invocation.cmdLine
-                spec.ignoreExitValue =
-                    invocation.exitCodeBehaviour != SourceDependencyInvocationHandler.ExitCodeBehaviour.FAIL_IMMEDIATELY
-            }
-            if (invocation.exitCodeBehaviour == SourceDependencyInvocationHandler.ExitCodeBehaviour.FAIL_IMMEDIATELY) {
-                execResult.assertNormalExitValue()
-            }
-            println ""
+            it.executeSourceDependencyTask()
         }
 
         initializeInternal()
