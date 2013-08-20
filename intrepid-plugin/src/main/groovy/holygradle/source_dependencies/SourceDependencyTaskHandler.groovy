@@ -36,18 +36,18 @@ class SourceDependencyTaskHandler {
                     it.initialize(invocations.find()) // finds the first task
                 }
             } else {
-                Collection<Task> invocationTasks = []
+                LinkedHashMap<SourceDependencyInvocationHandler, Task> invocationsWithTasks = [:]
                 invocations.eachWithIndex { invocation, index ->
                     Task t = project.task("${name}_${index}", type: SourceDependencyTask) { SourceDependencyTask it ->
                         it.initialize(invocation)
                     }
-                    invocationTasks.add(t)
+                    invocationsWithTasks[invocation] = t
                 }
                 commandTask = (SourceDependencyTask)project.task(
                     name,
                     type: SourceDependencyTask
                 ) { SourceDependencyTask it ->
-                    it.initialize(invocations, invocationTasks)
+                    it.initialize(invocationsWithTasks)
                 }
             }
             commandTask.group = "Source Dependencies"
