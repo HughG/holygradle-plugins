@@ -88,6 +88,14 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.description = "Retrieves only the first level 'sourceDependencies'."
             it.recursive = false
         }
+        Task beforeFetchSourceDependenciesTask = (DefaultTask)project.task(
+            "beforeFetchSourceDependencies",
+            type: DefaultTask
+        ) { DefaultTask it ->
+            it.group = "Dependencies"
+            it.description = "Runs before source dependencies are fetched, to check authorisation setup. " +
+                "Extend it with doLast if needed."
+        }
         project.task("fixMercurialIni", type: DefaultTask) { Task it ->
             it.group = "Source Dependencies"
             it.description = "Modify/create your mercurial.ini file as required."
@@ -182,10 +190,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         project.gradle.projectsEvaluated {
             // Do we have any Hg source dependencies? Need to check for Hg prerequisite.
             if (sourceDependencies.findAll{it.protocol == "hg"}.size() > 0) {
-                fetchAllDependenciesTask.doFirst {
-                    prerequisites.check("HgAuth")
-                }
-                fetchFirstLevelSourceDependenciesTask.doFirst { 
+                beforeFetchSourceDependenciesTask.doFirst {
                     prerequisites.check("HgAuth")
                 }
             }
@@ -207,6 +212,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                     packedDependencies.add(packedDep)
                 } else {
                     Task fetchTask = sourceDep.createFetchTask(project, buildScriptDependencies)
+                    fetchTask.dependsOn beforeFetchSourceDependenciesTask
                     fetchAllDependenciesTask.dependsOn fetchTask
                     fetchFirstLevelSourceDependenciesTask.dependsOn fetchTask
                                         
