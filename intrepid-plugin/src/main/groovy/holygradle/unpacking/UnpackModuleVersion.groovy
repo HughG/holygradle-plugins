@@ -117,13 +117,15 @@ class UnpackModuleVersion {
         Task unpackTask = project.tasks.findByName(taskName)
         if (unpackTask == null) {
             // The task hasn't already been defined, so we should define it.
-            boolean speedy = !shouldApplyUpToDateChecks
-            if (project.buildScriptDependencies.getPath("sevenZip") == null) {
-                speedy = false
-            }
-            if (speedy) {
+            final SevenZipHelper sevenZipHelper = new SevenZipHelper(project)
+            if (!shouldApplyUpToDateChecks && sevenZipHelper.isUsable) {
                 unpackTask = project.task(taskName, type: SpeedyUnpackTask) { SpeedyUnpackTask task ->
-                    task.initialize(project, getUnpackDir(project), getPackedDependency(), artifacts.keySet())
+                    task.initialize(
+                        sevenZipHelper,
+                        getUnpackDir(project),
+                        getPackedDependency(),
+                        artifacts.keySet()
+                    )
                 }
             } else {
                 unpackTask = project.task(taskName, type: UnpackTask) { UnpackTask task ->

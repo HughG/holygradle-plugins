@@ -12,10 +12,9 @@ class SpeedyUnpackTask
     implements Unpack
 {
     private File unpackDir
-    private Task sevenZipTask
-    
+
     public void initialize(
-        Project project,
+        SevenZipHelper sevenZipHelper,
         File unpackDir,
         PackedDependencyHandler packedDependency,
         Iterable<ResolvedArtifact> artifacts
@@ -27,11 +26,9 @@ class SpeedyUnpackTask
         this.unpackDir = unpackDir
         File infoFile = new File(unpackDir, "version_info.txt")
         
-        sevenZipTask = project.buildScriptDependencies.getUnpackTask("sevenZip")
-        dependsOn sevenZipTask
+        dependsOn sevenZipHelper.dependencies
 
         File localUnpackDir = unpackDir // give closure access to private field
-        Task localSevenZipTask = sevenZipTask // give closure access to private field
         ext.lazyConfiguration = { Task it ->
             it.onlyIf {
                 boolean doInvokeTask = false
@@ -74,19 +71,16 @@ class SpeedyUnpackTask
             }
 
             it.doLast {
-                String sevenZipPath = new File((localSevenZipTask.destinationDir as File), "7z.exe").path
                 artifacts.each { artifact ->
                     logger.info "SpeedyUnpackTask: doLast: extracting ${artifact.getFile().path} to ${localUnpackDir.path}"
-                    project.exec { ExecSpec spec ->
-                        spec.commandLine sevenZipPath, "x", artifact.getFile().path, "-o${localUnpackDir.path}", "-bd", "-y"
-                        spec.setStandardOutput new ByteArrayOutputStream()
-                    }
+                    sevenZipHelper.unzip(artifact.file, localUnpackDir)
 
                     infoFile.withWriterAppend { BufferedWriter bw ->
                         bw.withPrintWriter { PrintWriter writer ->
                             writer.println("Unpacked from: " + artifact.getFile().name)
                         }
                     }
+
                     logger.info "SpeedyUnpackTask: doLast: updated info file ${infoFile}, adding ${artifact.getFile().name}"
 
                     String infoText = infoFile.text

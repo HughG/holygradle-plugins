@@ -11,22 +11,6 @@ import static org.junit.Assert.*
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import holygradle.dependencies.PackedDependencyHandler
 
-class MockBuildScriptDependencies {
-    private final Project project
-   
-    public MockBuildScriptDependencies(Project project) {
-        this.project = project
-    }
-    
-    public Task getUnpackTask(String dependencyName) {
-        return project.task(dependencyName, type: DefaultTask)
-    }
-    
-    public File getPath(String dependencyName) {
-        new File("path/to/${dependencyName}")
-    }
-}
-
 class UnpackModuleVersionTest extends TestBase {
     // The hierarchy of modules described by the test Ivy files is:
     // root (org:root:1.0) [apricot: "aa", blueberry: "sub/bb", coconut: "sub/"]
@@ -63,7 +47,7 @@ class UnpackModuleVersionTest extends TestBase {
     private Project getProject() {
         Project project = ProjectBuilder.builder().build()
         project.ext.unpackedDependenciesCache = new File("theUnpackCache")
-        project.ext.buildScriptDependencies = new MockBuildScriptDependencies(project)
+        project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
     }
     
