@@ -1,0 +1,1298 @@
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: public-master.css
+:toc2:
+:toclevels: 3
+:numbered:
+
+////
+Graphviz for Cygwin comes from <http://cygwinports.org/>.
+////
+
+= Workflow With Gradle and Artifactory
+
+////
+NOTE: to self ... don't duplicate stuff from https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/,
+if possible.
+////
+
+This document describes typical developer workflows for developing a C++-based software module
+which is involved in dependency relationships, and how Artifactory, Gradle, and the Holy Gradle
+plugins have been used in these workflows in practice.
+
+The main intended audience consists of developers and technical leads in your team or organisation,
+and in those who supply you or build on your software.
+
+////
+The text assumes that you have read link:Software_Configuration_Management_Tool_Summary.html[].
+////
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+== Background
+
+To say that a module is involved in dependency relationships is to say that it requires parts or
+all of some other modules for building, testing, release packaging, etc.  Modules thus form a
+directed acyclic graph, as in the following example.
+
+[graphviz]
+--
+digraph {
+    rankdir=RL;
+    node [shape=box];
+
+    ImageLib -> IntelRuntime;
+    SamplePlugin -> ImageLib;
+    SamplePlugin -> PluginAPI;
+    Framework -> ImageLib;
+    Framework -> PluginAPI;
+    SampleApp -> Framework;
+    SampleApp -> SamplePlugin;
+}
+--
+
+Artifactory is a server software product for storing a number of collections (_repositories_) of
+such modules, along with information on dependencies between them (in the Ivy XML format, among
+others).
+
+Gradle is a tool which, among other things, helps developers download and publishing such
+modules and dependency information, including detection of version conflicts in the full graph of
+all transitive dependencies of a given module.  It was created for use with Java and similar
+languages, so normally handles modules published as a small number of files (_artifacts_) such as
+"+.jar+" files.
+
+The Holy Gradle plugins are a set of Gradle plugins to make it easier to work with Artifactory, and
+to extend Gradle to the C++ world, where modules often consist of large numbers of files.
+
+////
+[graphviz]
+--
+digraph {
+    rankdir=RL;
+    node [shape=box];
+
+    IntelRuntime -> ImageLib;
+    ImageLib -> SamplePlugin;
+    PluginAPI -> SamplePlugin;
+    ImageLib -> Framework;
+    PluginAPI -> Framework;
+    Framework -> SampleApp;
+    SamplePlugin -> SampleApp;
+
+    Doxygen -> ImageLib;
+    Doxygen -> Framework;
+    Doxygen -> PluginAPI;
+}
+--
+
+////
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+== Concepts and Terminology
+
+Following is an introduction to some important terms.
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Project
+
+Gradle uses the term _project_ to refer to a +build.gradle+ control file, which defines (among other
+things) the dependencies required to build the software module, and the information required to
+publish it.  (Artifactory does not use the term _project_.)
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+[[_module]]
+[[_modules]]
+=== Modules
+
+Gradle and Artifactory refer to a published piece of software as a _module_.  A module is identified
+by three string values:
+
+* the _group_ which publishes it;
+* the _name_ of the module itself; and
+* a specific _version_ of that module.
+
+In Artifactory, a module consists of
+
+* a metadata file (in Ivy XML format);
+* a number of other files (its artifacts).
+
+In Gradle, a module is either a dependency, or the output of the build process itself.  In fetching
+the dependencies defined for the module being built, Gradle will download the metadata for each
+module, then use that to identify which artifacts belong to which configurations, and download those
+files.
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Artifacts
+
+Gradle and Artifactory use the term _artifact_ to refer to files published as part of a <<_module>>.
+When using the +intrepid+ plugin, artifacts are mostly <<_packed_dependencies>>,
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Configurations
+
+The Ivy metadata stored in Artifactory for each <<_module>> lists a number of sets of
+<<_artifacts>>, known as _configurations_.  An artifact may belong to more than one configuration.
+
+==== Dependencies Between Configurations
+
+Dependencies between modules are in fact expressed as dependencies between configurations of
+modules.
+
+For example, two modules +a+ and +b+ might each have configurations, +compile+ and
++runtime+; then +a+ would typically declare that its +compile+ configuration depends on +compile+
+from +b+, and likewise its +runtime+ configuration depends on +b+'s +runtime+ configuration.  This
+means that another module which declares a dependency on the +runtime+ configuration of +a+ will,
+when fetching its dependencies, also fetch the +runtime+ files for +b+, even if it does not directly
+declare any dependency on +b+.
+
+==== Extending Configurations
+
+Additionally, a configuration can be defined as extending from another, which means two things.
+First, the set of artifacts for a configuration includes those of any configurations it extends
+from.  Second, a module which declares a dependency on a configuration will also, in terms of
+transitive dependencies, pick up the dependencies of configurations which that one extends from.
+
+For example, a module +b+ might divide its dependencies for compile-time use into +headers+ and
++lib+, with +lib+ extending from +headers+.  That means that any module +a+ which declares a
+dependency on +b+'s +lib+ will pick up
+
+* the artifacts from +lib+ in +b+;
+* the artifacts from +headers+ in +b+;
+* any transitive dependencies from +lib+ in +b+; and
+* any transitive dependencies from +headers+ in +b+.
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Dependencies
+
+The Ivy metadata stored in Artifactory for each <<_module>> lists a number of dependencies, which
+are expressed as dependencies between <<_configurations>> of that module, and those of other
+modules.
+
+When Gradle downloads <<_artifacts>> for a module defined as a dependency of a given project, it
+stores them in a per-user cache folder hierarchy.
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Packed Dependencies
+
+The +intrepid+ plugin, from the +holygradle+ set of Gradle plugins, adds a mechanism of _packed
+dependencies_.  A dependency declared in this way will have artifacts downloaded as normal, but the
+artifacts are assumed to be ZIP files.  +intrepid+ unpacks them into a sub-folder of Gradle's
+per-user cache, then creates symlinks in the project's folder hierarchy, pointing to the unpacked
+artifacts.  (This is in contrast to the Java world, where a single JAR file may fulfil several of
+these roles, and doesn't need to be unzipped.)
+
+For each dependency module +d+, Gradle will download all artifacts included in all configurations
+which are referenced as a dependency for any configuration in the current project.  All artifacts
+are unpacked into the same folder, so that folder will contain the union of all those files.
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Versions
+
+Over time a module may be published in a number of versions, each of which may add or remove
+dependencies, or change which versions of other modules that module depends on.
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+== Workflows
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Initial Set-up
+
+
+==== Fetch Source
+
+First you must check out the source for the module you want to publish.  In Gradle 1.4, the +name+
+part of the module is fixed to be the name of the Gradle project, which itself is fixed to be the
+name of the folder containing the +build.gradle+ file.  So, if you intend to really publish the
+module (as opposed to just test publishing), you must check out the source into an
+appropriately-named folder.
+
+
+==== Determine Outputs (Downstream Dependencies)
+
+Although it might seem counter-intuitive, the first thing to start with is determining the outputs
+of your module, in terms of how down-stream modules will want to consume them.  This determines the
+set of configurations your module will have, and you need to know that to decide what relationships
+to publish between your module's configurations, and the configurations it uses from its
+dependencies.
+
+
+===== Determine Configurations
+
+In the world of Java and related languages, the set of artifacts is much simpler (namely, a small
+number of JAR files), so Gradle provides a set of pre-defined configurations: +compile+, +test+, +runtime+, etc.
+
+Use of Gradle with C\++ was limited when the +holygradle+ plugins were created, so no standard set
+of configurations exists.  However, based on our experience so far, a typical C++ module might
+publish configurations such as the following.
+
+* +privateBuild+: tools used for building, testing, documenting, etc. this project, but not required
+for any other project which wants to use the published module from this project.  (+intrepid+
+automatically omits from publication any 
+* +doc+: pre-written Word documents, generated help files, etc.
+* +headers+: "+.h+" and "+.hpp+" files, including those generated by the MIDL compiler, plus
+"+.idl+" files if using COM, for example.  This is normally defined separately from the various
++compileFoo+ configurations because its contents are independent of Visual Studio Platform and
+Configuration variations.
+* +build+: Files needed as part of the build process for any module which uses this one.  For
+example, this might include batch files to copy or symlink this module's DLLs into a target folder
+created by the module using it.
+* +compileVc10X64Debug+: files needed to compile against the +Debug+ Visual Studio "Configuration"
+of this module, e.g., static libraries ("+.lib+").  This configuration will extend from +headers+.
+Visual Studio's notion of configuration is separate from the idea in Gradle and Artifactory
+although, as you can see, related.
+* +compileVc10X64Release+: As above, but in the +Release+ configuration.
+* +runtimeVc10X64Debug+: files needed at run-time when using the +Debug+ Visual Studio
+"Configuration" of this module, e.g., dynamic-link libraries ("+.dll+") and executables ("+.exe+").
+* +runtimeVc10X64Release+: As above, but in the +Release+ configuration.
+* +debuggingVc10X64Debug+: files needed when debugging the +Debug+ Visual Studio
+"Configuration" of this module, e.g., program database ("+.pdb+") files.  This will extend from the
+corresponding runtime configuration, because if you want the "+.pdb+" files then you almost
+certainly also want the matching "+.dll+" and "+.exe+" files.
+* +debuggingVc10X64Release+: As above, but in the +Release+ configuration.
+
+The above translates into Gradle as follows.
+
+[source,groovy]
+----
+configurations {
+    privateBuild
+    doc
+    headers
+    compileVc10X64Debug { extendsFrom headers }
+    compileVc10X64Release { extendsFrom headers }
+    runtimeVc10X64Debug
+    runtimeVc10X64Release
+    debuggingVc10X64Debug { extendsFrom runtimeVc10X64Debug }
+    debuggingVc10X64Release { extendsFrom runtimeVc10X64Release }
+}
+----
+
+Other combinations of Visual Studio Platform, Configuration, and/or compiler version might be
+appropriate.  Client-server or web projects might also publish one or more configurations for files
+which must be present on the server side, for client-side code to run, e.g., HTML, CSS, and
+JavaScript files.
+
+Note that configurations should be declared near the top of the +build.gradle+ file, after any
+plugin declarations, because they will be referenced in several other places.
+
+
+===== Determine Artifacts
+
+Deciding the set of configurations appropriate for your module is likely to be done at the same time
+as deciding which files should be included in the "+.zip+" file for each configuration.  In Gradle,
+the files for each configuration are specified using a number of Ant-style patterns.  These are
+case-sensitive and similar to Unix-style "glob" patterns, with the addition that "+**+" means "any
+number of directory levels".
+
+A Gradle file containing the above configurations might also have a block like this, by convention
+near the bottom.  This code uses a loop over a list, plus interpolation of expressions into strings
+(using +${...}+) to avoid repetition.  This takes advantage of the fact that configurations, like
+all Groovy properties, can be referenced as literals or as strings.
+
+[source,groovy]
+----
+packageArtifacts {
+    headers {
+        include "src/**/*.h"
+        include "src/**/*.idl"
+    }
+    doc {
+        from "doc/output" // Take files from here ...
+        to "doc" // ... and put them here in the ZIP.
+        include "*.chm"
+    }
+    build {
+        include "copy_outputs_to.bat"
+    }
+    ["Debug", "Release"].each { conf ->
+        "compileVc10X64${conf}" {
+            include "output/my_module_${conf}64.lib"
+            include "output/MIDL/**/${conf}/**/*"
+        }
+        "runtimeVc10X64${conf}" {
+            include "output/my_module_${conf}64.dll"
+        }
+        "debuggingVc10X64${conf}" {
+            include "output/my_module_${conf}64.pdb"
+        }
+    }
+}
+----
+
+
+==== Determine Inputs (Upstream Dependencies)
+
+As well as describing the module your Gradle project will produce, you need to describe which other
+modules it needs for building, testing, running, debugging, and so on.
+
+
+===== Determine Installed Prerequisites
+
+In our experience so far, most executable tools required for building can be packaged in stand-alone
+folders and uploaded to Artifactory, rather than having to be installed on each developer's machine.
+This makes it easier to build the project for the first time on both developer and autobuild
+machines.  However, some things need to be installed, and for these you may wish to create a
+"prerequisite".  This is a mechanism from the +intrepid+ plugin, which lets you specify arbitrary
+Groovy code to execute, to check that the tool is installed, and provide install instructions if
+not.  So far this has been used for Visual Studio, other Microsoft SDKs, and to check the OS
+version.
+
+Here is an example prerequisite.
+
+[source,groovy]
+----
+prerequisites {
+    // Don't check "DirectX" immediately, only if there are "buildSomething" tasks (see
+    // "tasks.matching {...}" below).
+    specify("DirectX", { checker -> 
+        def help = "You need the October 2006 DirectX SDK."
+        def dxdir = checker.readEnvironment("DXSDK_DIR")
+        if (dxdir == null) {
+            checker.fail "Please ensure the DXSDK_DIR environment variable is set correctly. " +
+                help
+        } else {
+            def dxErrFilePath = dxdir + /Utilities\Bin\x64\DXErr.exe/
+            def expectedDxVersion = "9.15.779.0000"
+            def dxVersion = checker.readFileVersion(dxErrFilePath)
+            if (dxVersion == null) {
+                checker.fail "Failed to read the file version for '${dxErrFilePath}'. " + help
+            } else if (dxVersion != expectedDxVersion) {
+                checker.fail "The file version of '${dxErrFilePath}' was '${dxVersion}' " +
+                    "but expected '${expectedDxVersion}'. " + help
+            }
+        }
+    })
+}
+
+// Any 'build' tasks for this project depend on DirectX
+afterEvaluate {
+    allprojects { proj ->
+        proj.tasks.matching { it.getName().startsWith("build") }.each { 
+            it.dependsOn prerequisites.getTask("DirectX")
+        }
+    }
+}
+----
+
+
+===== Declare Dependency Repositories
+
+Before declaring dependencies on pre-packed modules (or at least, before attempting to fetch them),
+we must specify where to find them.  You can specify one or more repositories, though you may find
+that an Artifactory-backed repository is in fact a virtual repository which combines several other
+repositories.  For example, your Artifactory instance might have a +libs-release+ virtual repo which
+includes both +libs-release-local+ (official releases of in-house modules) and +externals-release-local+ (in-house
+packagings of third-party modules).
+
+Following is an example repository declaration.
+
+[source,groovy]
+----
+repositories.ivy {
+    credentials {
+        username my.username("Artifactory")
+        password my.password("Artifactory")
+    }
+    url teamDependenciesRepo
+}
+----
+
+Here the "Artifactory" string identifies a set of credentials cached in the Windows Credential
+Manager using the +my-credentials+ plugin.  This avoids the need to store passwords in build files.
+See <<_managing_passwords>> for more information.
+
+The identifier +teamDependenciesRepo+ is resolved to a Gradle "project property", which is
+defined in a +gradle.properties+ file in the same folder.
+
+----
+teamDependenciesRepo=http://artifactory.internal.example-corp.com/artifactory/team-integration/
+----
+
+You may or may not find it useful to factor out the literal value of the repository location in
+this way.
+
+
+===== Determine Module Dependencies
+
+Your +build.gradle+ file must declare dependencies on modules (other libraries or tools) which your
+project needs to be built and tested, or which users of your module (including you) will need to
+compile against it, run it, and/or debug it.
+
+For in-house dependencies produced by your own company, you should generally ask the relevant team
+to find out whether it is published in a local, private Artifactory instance.  If not, you will have
+to publish it yourself, as if you were <<_packaging_third_party_dependencies>>.  For libraries and
+tools from external sources, you will have to create a +build.gradle+ file which will package up an
+appropriate distribution of that tool and publish it to Artifactory.
+
+NOTE: TODO: Insert an example of how to do this.
+
+For each such module, you add a "packed dependency", specifying
+
+* the relative location at which a symlink to the unpacked module should be created;
+* the +group+, +name+, and +version+ of the module; and
+* a mapping from configurations of your module, to configurations of the dependency module.
+
+The first two parts are simple, as shown in the following example.
+
+[source,groovy]
+----
+packedDependencies {
+    // Other dependencies omitted ...
+    "../ImageLib" {
+        dependency "com.example-corp.example-team:ImageLib:13.1.3"
+        // Configuration information goes here ...
+    }
+    // ...
+}
+----
+
+The dependency mapping will normally be conceptually straightforward, though it may be complicated
+if the configurations published by your dependencies have different names, or fail to match yours
+exactly.  Basically, the pattern is as follows.
+
+* If the dependency is a build tool which you only need at build-time, (e.g., Doxygen), declare a
+mapping from +privateBuild+ to the appropriate configurations of the dependency: normally there
+will be only one.
+* If the dependency is a static library, declare a mapping from +privateBuild+ to whatever
+configurations of the dependency include the "+.lib+" files.  There may be several, for different
+build configurations.
+** If the module publishes a +headers+ configuration, you will normally not need to declare a
+dependency on that directly, because the module will have its static library configurations
+extending from +headers+.
+** The up-stream module may declare one or more runtime configurations, even though it is a static
+library, for example if it depends on other "+.dll+"s at runtime.  If it does, you should declare
+a mapping from your each of your runtime configurations to the corresponding ones in that module, as
+with the "+.pdb+"s.  This may require you to add runtime configurations to your module, even though
+it does not have any direct runtime dependencies itself.
+* If the dependency is a dynamic library, you should declare a mapping from your each of your
+runtime configurations to the corresponding ones in that module.
+* For both static and dynamic libraries, you may wish to separately declare a dependency from each of your debugging configurations to the corresponding ones in the up-stream module.  This means
+that projects which use your module can easily fetch the "+.pdb+"s for it along with yours.  You
+should declare each separately so that down-stream modules which use only a subset of your
+configurations will pull in only a subset of the debugging files.  You should declare it in addition
+to the mapping of runtime configurations, even though debugging configurations generally extend from
+runtime configurations, so that down-stream modules can correctly pull in just the runtime files
+(e.g., to build an installer), or both runtime and debugging files.
+
+WARNING: Declaring the dependency mapping correctly is important: if you get it wrong, you may find
+that your project builds and runs, but down-stream modules which try to use yours fail.  For this
+reason, we recommend setting up an auto-build job for a module which attempts to use various
+configurations of your own module, including building against LIBs/headers, and running with
+DLLs/EXEs.
+
+Following is an example of some of the dependencies based on a real-world +build.gradle+ file.
+
+* Boost is only a build-time dependency, and not needed by down-stream modules: this project does
+not expose any Boost types from its public interfaces, so it does not have to publish a dependency
+from its (published) headers to Boost's headers.
+* HTML Help Workshop is only used at (documentation) build time.
+* ImageLib is an in-house, static library and, as with Boost, this project doesn't expose any
+ImageLib types.  However, ImageLib has a runtime dependency (on the Intel C\++ compiler runtime), so
+this project has to declare that its runtime configurations depend on that.  In this case, ImageLib
+doesn't separate its runtime dependencies into +Debug+ and +Release+, which may either be an
+oversight, or because there is only one version of the Intel runtime DLLs.
+
+[source,groovy]
+----
+packedDependencies {
+    "../Boost_vc10" {
+        dependency "org.boost:Boost_static:1.49.0_1"
+        configuration "privateBuild->includes,libX64"
+    }
+    // ...
+    "../HTML Help Workshop" {
+        dependency "com.microsoft:HTML_Help_Workshop:4.74.8702.0"
+        configuration "privateBuild->full"
+    }
+    // ...
+    "../ImageLib" {
+        dependency "com.example-corp.example-team:ImageLib:13.1.3"
+        configuration "privateBuild->pdbVc10X64Debug,pdbVc10X64Release"
+        configuration "runtimeVc10Debug,runtimeVc10Release->externals"
+    }
+    // ...
+}
+----
+
+
+==== Fetch Dependencies
+
+At this point, you should be able to have Gradle fetch, unpack, and symlink all your packed
+(pre-built) dependencies.  To do this, run the following at the Windows Command Prompt.
+
+WARNING: If this is the first time you have fetched dependencies from a particular Artifactory
+server, or you have deleted your password from the Windows Credential Manager, add the +--no-daemon+
+option to the command line, immediately after +gw+.  See <<_managing_passwords>> for more
+information.
+
+----
+gw fetchAllDependencies rebuildSymlinks
+----
+
+or
+
+----
+gw fAD reSym
+----
+
+If your project's direct dependencies have further dependencies of their own, they will be fetched,
+unpacked, and symlinked as well.  The location of the symlinks for these indirect dependencies is
+determined by the modules which depend on them, using a +relativePath+ attribute in their +ivy.xml+
+file, added by +intrepid+.
+
+NOTE: If you are using the +devenv+ plugin as described in <<_check_build>>, you don't have to
+run +gw rebuildSymlinks+, because the +buildFoo+ tasks will run that first.  However, there's no
+harm in running it at this point.
+
+===== Managing Passwords
+
+The +my-credentials+ plugin caches passwords securely using the "Windows Credential Manager".  (You
+can find that the Control Panel, or by searching in the Start menu, and use it to force removal of
+cached passwords.)  The plugin is used when a repository definition in a +build.gradle+ file
+contains a +credentials+ block like the following.
+
+[source, groovy]
+----
+credentials {
+    username my.username("Artifactory")
+    password my.password("Artifactory")
+}
+----
+
+This opens a GUI to prompt the user for a password the first time, and stores it in the Credential
+Manager using the string value as part of the key, e.g., "Intrepid - Artifactory".  The GUI can't be
+shown if Gradle is using its daemon process, which is the default when using the Holy Gradle
+Custom Gradle distribution.  When running for the first time, or when you change your password, run
++gw+ with the +--no-daemon+ argument, otherwise authentication may fail.  Depending on your
+organisation's IT policies, this may eventually lead to your account being locked.
+
+When the GUI is shown, it displays text defined in your build script using the following syntax.
+
+[source, groovy]
+----
+my.instructions {
+    "Artifactory" {
+        add "An encrypted password is used for Artifactory."
+        add "Log on with a web-browser using your normal username and password."
+        add "Click on your username at the top right to visit your user profile."
+        add "Enter your password again in the Current Password box, then click Unlock."
+        add "Copy the Encrypted Password out of the box."
+    }
+    "Domain Credentials" {
+        add "Enter your usual Windows Domain credentials."
+        add "Your username should not be prefixed with the domain name."
+    }
+}
+----
+
+NOTE: TODO: Add links to troubleshooting.
+
+
+==== Check Build
+
+At this point you should be able to build your Visual Studio solution, provided the Include and
+Library Paths it uses match the symlinks for the dependencies.  You may find Visual Studio's
+Property Sheets useful for this, as they allow common settings to be included in multiple projects.
+
+Note that Gradle itself creates directories called +build+ and +packages+ for its own use.  If you
+want to override the former, use the following at the top level of your +build.gradle+ file.  (It's
+not clear how to override the latter.)
+
+[source, groovy]
+----
+project.buildDir = "someOtherDirName"
+----
+
+You don't have to use Gradle to build your solution, but the +devenv+ plugin can help with this,
+though it supports only
+
+* Visual Studio 10;
+* two Visual Studio Configuration names, "Release" and "Debug" (though any number of Platform
+values); and
+* one solution per Gradle project.
+
+NOTE: The +devenv+ plugin is more useful for a <<_multi_project_build_workflow>>, but has some bugs
+which will require significant refactoring to fix.
+
+The following snippet will create tasks +buildRelease+ and +buildDebug+, which both build the
+default platform, +x64+.
+
+[source, groovy]
+----
+DevEnv.solutionFile "example-library.sln"
+----
+
+For multiple platforms, using the following syntax.
+
+[source, groovy]
+----
+DevEnv {
+    solutionFile "example-library.sln"
+    platform "x64", "Win32"
+}
+----
+
+
+==== Check Packaging
+
+Next, check the packaging of your build output.  The +intrepid+ plugin arranges for Gradle to
+package one artifact (ZIP file) per entry in the +packageArtifacts+ block (discussed above under
+<<_determine_artifacts>>), plus an extra artifact called +buildScript+ which just contains the
++build.gradle+ file.
+
+To check the packaging, run the following command.
+
+----
+gw packageEverything
+----
+
+or
+
+----
+gw packEv
+----
+
+You should find a number of ZIP files (and mostly-empty directories) in the +packages+ sub-directory
+of your project's folder.  If the contents don't look as you expect, you'll need to modify either or
+both of your solution's output settings, and the +packageArtifacts+ blocks.
+
+TIP: If your build.gradle file depends on any other files, you should probably add them to the
++buildScript+ package by adding a block for it within +packageArtifacts+.
+
+Each ZIP file also contains a +build_info+ sub-directory holding information about
+
+* the location and version of the source of the module (assuming the project is under source
+control);
+* the auto-build job which produced it; and
+* miscellaneous other environment and software version info.
+
+It's also a good idea to check that the +ivy.xml+ file looks correct.  You can generate just that
+file by running this command.
+
+----
+gw generateIvyModuleDescriptor
+----
+
+or
+
+----
+gw gIMD
+----
+
+You can find the +ivy.xml+ file in the +build/publications/ivy+ sub-directory of your project's
+folder.
+
+==== Check Publishing
+
+Finally, you are ready to publish your packaged build output.  First, you must add information to
+the +build.gradle+ file to tell Gradle where to publish to, including appropriate credentials.
+
+[source, groovy]
+----
+publishPackages {
+    group "com.example-corp.example-team"
+    nextVersionNumberEnvironmentVariable "NEXT_VERSION_NUMBER"
+    repositories.ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url teamPublishRepo
+    }
+}
+----
+
+The +group+ value is used for the +group+ part of the module in Artifactory.  Using a value which
+is specific to your team has a couple of advantages.
+
+* It makes it clear which team created and may be expected to support the module.
+* Artifactory allows deploy permissions to be set on a pattern-matching basis, so the server admin
+can make sure than only your team can publish packages in that location.
+
+The +name+, as described under <<_fetch_source>>, is the name of the folder containing
+the +build.gradle+ file.
+
+The +version+ can be set in several ways, as described in the documentation for the
++https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/IntrepidPlugin#!publishpackages[publishPackages]+
+block.  Note that it can be any string, not necessarily a number, though it's a good idea to avoid
+the hyphen ('+-+') character, as it is used as a separator in regexp-based parsing by some related
+tools.
+
+The URL for publishing may not be the same as the one for retrieving dependencies, as used in the
++repositories.ivy+ block at the top level of the file (see <<_declare_dependency_repositories>>).
+In a typical Artifactory setup, you will be publishing to a "local" repository (one hosted on that
+Artifactory server) but may be fetching dependencies from a "virtual" repository (a single URL which
+combines artifacts from any number of local or remote repositories).
+
+NOTE: A common arrangement is to initially publish auto-builds to an team-private "integration"
+repository, then move them to a more public repository for release.  See <<_promotion_republishing>>
+and <<_repository_clean_up>> for more details.
+
+Once you are happy with the contents of this block, run the following command to publish.
+
+----
+gw publish
+----
+
+TIP: You can use a +file:+ URL as the target to test publishing on your own machine.  For example,
+"+file://D:/Projects/example-team/fake-repo/+".  This won't test authentication and permission
+aspects of the process, but will let you check that the +group+, +name+, and +version+ are correct,
+and may find other unexpected problems.
+
+The +publish+ task depends on the +packageEverything+ and +generateIvyModuleDescriptor+ tasks, so
+normally you only need to run this one command after your solution is built.
+
+===== Republishing
+
+The +intrepid+ plugin also has (currently undocumented) features to support promoting multiple
+related modules between repositories, as described in <<_promotion_republishing>>.  You may want to
+add a +republish+ section to your +build.gradle+ now, so that you can use those features later.
+See that section for more information.
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Typical Workflow
+
+This section describes the most common developer workflow: you are not planning to change the
+project dependencies, but some other developer may have done so.  When you pull in their changes,
+the +build.gradle+ file may be updated, in which case you need to update your local copy of
+dependencies before you can build.
+
+==== Update Source Code
+
+First you will update your local copy of the source code in whatever way is normal for your project.
+For example, if you are using Mercurial, this is probably just by running +hg pull+ and +hg update+.
+
+However, if a dependency has been removed from the +build.gradle+ file by the new changes, then the
++intrepid+ plugin will no longer know about it, and so will leave a stale symlink when you use it to
+update dependencies.  Therefore, you should run
+
+----
+gw deleteSymlinks
+----
+
+or
+
+----
+gw delSym
+----
+
+before updating your working copy.  With Mercurial, you can automate this by adding a pre-update
+hook for the repository to your +%USERPROFILE%\mercurial.ini+, as follows.
+
+----
+[hooks]
+preupdate.deleteSymlinks = gw deleteSymlinks
+----
+
+You could make this a global hook if all your repositories use Gradle; or, if only some do, but they
+all use the Holy Gradle plugins, you could guard it with an +if+, as follows.
+
+----
+[hooks]
+preupdate.deleteSymlinks = if exist gw.bat gw deleteSymlinks
+----
+
+[[_fetch_dependencies_in_typical_workflow]]
+==== Fetch Dependencies
+
+To update dependencies, run +gw fAD reSym+, as when fetching them for the first time (see
+<<_fetch_dependencies>>).
+
+You can automate the this under Mercurial with a post-update hook, as follows.
+
+----
+[hooks]
+update.fetchDepsAndReSymLink = if exist gw.bat gw fetchAllDependencies rebuildSymlinks
+----
+
+However, this may not be suitable for a <<_multi_project_build_workflow>>, because in that case
+typically only the root project will contain +gw.bat+.  In that case, either run these commands
+manually in the root project, or automate them with a batch file or similar.
+
+[[_check_build_in_typical_workflow]]
+==== Check Build
+
+At this point, assuming there were no errors in the previous step you should be able to build.  If
+you have problems, try comparing the state of your project folder with other developers,
+particularly the person who made the change, and with any auto-build systems.
+
+[[_check_publishing_in_typical_workflow]]
+==== Check Publishing
+
+Assuming you don't change dependencies as part of your own work, there's no reason to re-test
+packaging and publishing.
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Changing Dependencies
+
+After your project has been adapted to Gradle and the Holy Gradle plugins (or created as such from
+scratch), you are likely to need to update dependency versions as development continues.  This
+section covers how to do that.
+
+==== Update Dependencies
+
+First, run the following command.
+
+----
+gw deleteSymlinks
+----
+
+This ensures that all existing symlinks are removed, before you change the description of the
+packed dependencies.  Once you have changed the +packedDependencies+ block, Gradle will not know to
+delete the symlinks for any dependencies which were removed.  Of course, if you forget to do this at
+this point, you can delete them manually.
+
+WARNING: If you forget to do it before you commit your changes, you may fail to update the Include
+and Library Paths in your Visual Studio projects.  You will not notice this because the build still
+works for you, because the symlinks still exist.  However, it may fail for other developers if they
+use the Mercurial hooks suggested in the <<_typical_workflow>> section.  This is another good reason
+to use an auto-build.
+
+You can edit the +packedDependencies+ block to do any of the following:
+
+* update the versions of existing dependencies;
+* add new dependencies;
+* remove dependencies no longer required; or
+* change the configuration mappings for dependencies.
+
+[[_fetch_dependencies_after_changing_them]]
+==== Fetch Dependencies
+
+Run +gw fAD reSym+ again.  This will download and unpack any new dependencies, and create symlinks
+for them.  This will not remove symlinks for dependencies which were removed, nor will it remove
+them from your Gradle cache.
+
+The former issue was covered above in the previous section, <<_update_dependencies>>; to address
+the latter, see the section on <<_gradle_cache_clean_up>>.
+
+
+[[_check_build_after_changing_dependencies]]
+==== Check Build
+
+After fetching the new dependencies, it's a good idea to do a clean build, to make sure old build
+products aren't still based on old versions of dependencies.
+
+
+[[_check_packaging_after_changing_dependencies]]
+==== Check Packaging
+
+Once your build works correctly, you should re-check packaging, as described in
+<<_check_packaging>>.
+
+[[_check_build_after_changing_dependencies]]
+==== Check Publishing
+
+When you are happy with the packaged outputs and the +ivy.xml+ file, you may want to re-check
+publishing, possibly using  +file:+ URL as described in <<_check_publishing>>.  However, unless
+you or the Artifactory administrators have changed the destination repository setup in some way, or
+authentication details have changed, there should be no need to do this.
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== New Check-Out Of Existing Workspace
+
+If you want to check out and build second or further copies of a repo on the same PC, Gradle and
+the Holy Gradle plugins will save you some time.  Check out the source and run +gw fAD reSym+ as
+usual.  You should find that dependencies don't need to be downloaded or unpacked, and the only time
+spent is to check versions and create symlinks.
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Packaging Third-Party Dependencies
+
+Sometimes you may want to use a third-party library or build tool as a dependency, but find that it
+is not already available as an intrepid-style packed dependency in any suitable Artifactory
+repository.  This section describes how you can package it up yourself.
+
+==== Using Source Versus Repackaging A Distribution
+
+Often, third-party software is distributed in archives of pre-built binaries.  In other cases, you
+may need to modify the source of a third-party component, or build the source because pre-built
+binaries are not available from the originating organisation.  The following sub-sections describe
+the differences in these two cases.
+
+===== Packaging Third-Party Modules From Binaries
+
+Generally you will not be in a position to modify the distribution of the third-party software to
+include a +build.gradle+ file.  Instead, you can create a "wrapper" folder, which will contain
+
+* a +build.gradle+ file which you write; and
+* a folder containing the third-party files.
+
+You may want to put this wrapper folder, without the third-party files, under source control.
+However, +intrepid+ will package the +build.gradle+ file along with the rest of the module when it
+is published, so this isn't strictly necessary.  If you need any other scripts etc. to automate the
+packaging, you can include them as well by adding them to a +buildScript+ entry in the
++packageArtifacts+ block, as described under <<_check_packaging>>.
+
+It's a good idea to put clear instructions for the use of this +build.gradle+ file in comments near
+the top of the file, for when it becomes necessary to publish a new version.  In particular, the
++packageArtifacts+ block will contain assumptions about the paths to various third-party files, so
+your instructions should state where to put them, whether they need to be unzipped first, etc.
+Bear in mind that the name of the wrapper folder will be used as the +name+ of the published module,
+so your instructions should say what to call it.
+
+===== Packaging Third-Party Modules From Source
+
+If you are building the source exactly as it is provided, or it's a library whose source you use
+directly (e.g., JavaScript), then you use a wrapper as described in
+<<_packaging_third_party_modules_from_binaries>>.  If you have modified and re-built the source of
+a third-party library to produce non-standard binaries, then you should have the modified source
+under source control, and follow the usual <<_initial_set_up>> steps.
+
+See also the <<_publish_third_party_dependency_module>> section for guidelines on naming and version
+numbering.
+
+==== Package Third-Party Dependency Files
+
+At this point, you should add +configurations+ and +packageArtifacts+ blocks to your script, as in
+the usual <<_initial_set_up>> case.  You won't need to add a +packedDependencies+ block or a
+top-level +repositories.ivy+ block, and you probably won't need to specify any +prerequisites+,
+unless they're needed just for the packaging of this third-party software.
+
+Although the third-party software will probably be available to you as one collection of files, you
+should still think about how to divide them into configurations for publishing, so that your project
+and any other users of this module don't have to pull in any more files than they need.
+
+If you are using a wrapper approach, the files you include may by default not appear at the
+desired level in the output ZIP files.  For example, if you have a directory structure like this
+
+----
+ThirdPartyLib\              <1>
+    ThirdPartyLib_bin_1.4\  <2>
+        bin\
+            tplib.dll
+        include\
+            tplib.h
+        lib\
+            tplib.lib
+
+<1> The wrapper folder.
+<2> The root folder of the unzipped original binary distribution.
+----
+
+then the following +packageArtifacts+ block
+
+[source,groovy]
+----
+packageArtifacts {
+    String distroot = "ThirdPartyLib_bin_1.4"
+    headers {
+        from distroot
+        include "**/*.h"
+    }
+    compile {
+        from distroot
+        include "**/*.lib"
+    }
+    runtime {
+        from distroot
+        include "**/*.dll"
+    }
+}
+----
+
+will produce "+.zip+" files with the following structure.
+
+----
+ThirdPartyLib-headers-1.4_1.zip\
+    ThirdPartyLib_bin_1.4\
+        include\
+            tplib.h
+
+ThirdPartyLib-compile-1.4_1.zip\
+    ThirdPartyLib_bin_1.4\
+        lib\
+            tplib.lib
+
+ThirdPartyLib-runtime-1.4_1.zip\
+    ThirdPartyLib_bin_1.4\
+        bin\
+            tplib.dll
+----
+
+To avoid the extra "+ThirdPartyLib_bin_1.4+" folder level, use the +to+ method as well.  The string
+argument to this is the target directory in the created ZIP file.  So, a +packageArtifacts+ block
+like this
+
+[source,groovy]
+----
+packageArtifacts {
+    String distroot = "ThirdPartyLib_bin_1.4"
+    headers {
+        from distroot
+        to "."
+        include "**/*.h"
+    }
+    compile {
+        from distroot
+        to "."
+        include "**/*.lib"
+    }
+    runtime {
+        from distroot
+        to "."
+        include "**/*.dll"
+    }
+}
+----
+
+will produce ZIP files with the desired structure:
+
+----
+ThirdPartyLib-headers-1.4_1.zip\
+    include\
+        tplib.h
+
+ThirdPartyLib-compile-1.4_1.zip\
+    lib\
+        tplib.lib
+
+ThirdPartyLib-runtime-1.4_1.zip\
+    bin\
+        tplib.dll
+----
+
+==== Add Third-Party License Information
+
+Most software is subject to one or more licenses, and you can optionally record this information in
+the +ivy.xml+ file.  This may help release engineers, or other developers who want to re-use your
+package, to decide whether it meets any licensing constraints they must comply with.  You can also
+add a general short description, ideally providing the URL where the original software can be found.
+
+Neither Gradle nor the Holy Gradle plugins contain any explicit support for this, but it's easy to
+add, as follows.
+
+[source,groovy]
+----
+publishing {
+    publications.ivy.descriptor.withXml {
+        Node infoNode = asNode().info[0]
+ 
+        String description = """
+This is a pre-built artifact package for json cpp with the "Multi Threaded DLL" compiler option
+enabled.
+
+The source for this customised package is placed at <https://hgserv1.example-corp.com/scm/hg/jsoncpp>.
+
+The original source of jsoncpp0.6.0-rc2 can be retrieved from
+<http://sourceforge.net/projects/jsoncpp/files/jsoncpp/0.6.0-rc2/jsoncpp-src-0.6.0-rc2.tar.gz/download>."""
+        Node descriptionNode = infoNode.appendNode("description", description)
+        descriptionNode.@homepage = "https://hgserv1.example-corp.com/scm/hg/jsoncpp"
+ 
+        Node licenseNode_public_domain = infoNode.appendNode("license")
+        licenseNode_public_domain.@name = "Public Domain"
+        licenseNode_public_domain.@url = "http://jsoncpp.sourceforge.net/LICENSE"
+ 
+        Node licenseNode_mit = infoNode.appendNode("license")
+        licenseNode_mit.@name = "MIT"
+        licenseNode_mit.@url = "http://jsoncpp.sourceforge.net/LICENSE"        
+    }
+}
+----
+
+Notice that you can add information for multiple licenses, and that Groovy uses triple-quoted
+strings for multi-line literals.
+
+==== Publish Third-Party Dependency Module
+
+Once you've tested the packaging and are happy with the results, you can add a +publishPackages+
+block to your script.  This _will_ need a +repositories.ivy+ block inside it to describe where to
+publish to, even though you don't need one at the top level of the script to describe where to get
+dependencies from, because your project won't have any.  As before you need to provide a +group+,
++name+, and +version+; following are some guidelines on choosing these.
+
+If you are packaging the software directly, either from binary or when built from source without
+changes, use a value which identifies the originating organisation; typically, the reverse domain
+name, e.g. "+org.boost+".  If you have made any changes, it may be better to use some string which
+identifies your own organisation and/or team.  If you are in fact publishing an in-house
+dependency from some other team, because the team which produces it doesn't publish to Artifactory,
+they might be happy for you to use their team name, or might prefer you use your own, if they don't
+want people to assume that it's an officially supported release.
+
+Similarly for the +name+, use the original if you are packaging things unchanged, otherwise modify
+it to reflect the reason for or effect of the change.  For example, you might publish +jsoncpp+ as
++jsoncpp_md+ if you compiled it for multi-threaded use.
+
+The +version+ should be the original version number, followed by an underscore ('+_+'), followed by
+a version number or string of your own.  This identifies both the base version for your changes,
+and the version of your packaging.  Even if you made no changes, it's a good idea to add your own
+version part because you might find that your packaging was incorrect, and have to re-publish the
+same version of the original software with a different version of your +build.gradle+ script.  You
+may not be able to overwrite the incorrect version if you have already published it to a public
+repository.  Or, you may not want to if you have already created useful builds which depend on it,
+and you want to be sure you can reproduce them later.
+
+Thus you might end up with the following, in a +build.gradle+ file in a folder named "+jsoncpp_md+".
+
+[source,groovy]
+----
+publishPackages {
+    group "com.example-corp"
+    nextVersionNumber "0.6.0-rc2_1"
+    repositories.ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url "http://artifactory.example-corp.com/artifactory/externals-release-local/"
+    }
+}
+----
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Promotion / Republishing
+
+A common arrangement is to publish auto-builds to an "integration" repository, which has limited
+read access.  Once a given build is determined to be release quality, this can be moved (_promoted_)
+to another Artifactory repository with more general read access.
+
+For individual modules, this can be done via the Artifactory web interface.  In the "Tree Browser" under the "Artifacts" tab, locate the version of the module you want to promote.  Right-click on it
+and select "Copy", or left-click on it then click "Copy" in the panel on the right.  Select the
+target repo and click "Copy" (or try "Dry Run" first if you like).  Copying is very quick and cheap
+in Artifactory, because it just creates new entries to the same files, in its internal database.
+
+If your module has new dependencies, and they were published to your team's integration repo, you
+will need to copy those as well.  You can simplify this by using "republishing" support in the
++intrepid+ plugin.
+
+==== Adding Republishing
+
+Add the following to your project's +build.gradle+ file.
+
+[source,groovy]
+----
+configurations {
+    // ... existing configurations, plus:
+    republishing
+}
+
+packageArtifacts {
+    // ... existing packages, plus:
+    republishing {
+        to "republishing"
+        include "gradle/**", "gw.bat"
+        include "build.gradle"
+        // include "gradle.properties" // ... if appropriate for your project.
+    }
+}
+
+republish {
+    to (project.hasProperty('republishTo')
+        ? project.ext.republishTo
+        : 'http://artifactory.example-corp.com/artifactory/libs-release-local/')
+}
+----
+
+==== Using Republishing
+
+You can then download published package with a name like "+some_module-republishing-1.2.3.zip+",
+unzip it, and run
+
+----
+gw checkPublishedDependencies
+----
+
+to check that all modules used by your module are present in the target repo.  This will print out
+a human-readable list of all transitive dependencies, indicating which are present and which not.
+For the ones which are not, you can copy them manually in Artifactory.
+
+If you want to override the default target repo in the +republish+ block, because you are
+publishing to a different repo, you can do the following.
+
+----
+gw -PrepublishTo=http://artifactory.example-corp.com/artifactory/some-other-repo/ cPD
+----
+
+NOTE: You can, of course, run +gw cPD+ in your project directory normally.  However, making an
+explicit "+republishing+" package means you can be sure that the build script contains exactly the
+versions of your module's dependencies that are recorded in the +ivy.xml+ for that published
+version.
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Repository Clean-up
+
+Module versions in integration (auto-build) repositories may be deleted over time, whereas public
+releases are generally kept "forever", since other projects may depend on them, and it may be
+necessary in future to reproduce old builds of those projects.  It is a good idea to set up some
+kind of automated process to delete old versions of modules in integration repos.  The
++https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/ArtifactoryManagerPlugin[artifactory-manager]+
+plugin can be used to automate this, including adding exceptions to keep specific builds.
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Gradle Cache Clean-up
+
+Gradle never deletes anything from the per-user +GRADLE_USER_HOME+ directory on your machine (which
+defaults to +%USERPROFILE%\.gradle+ if not set), and neither it nor the Holy Gradle plugins provide
+anything to do this.  It's safe to delete the whole cache as long as Gradle isn't running.  It's
+also probably safe to write some kind of script to, e.g., delete all files older than some number
+of days, but again, make sure you do this only when Gradle isn't running.
+
+You can also run +gw.bat+ with the +--refresh-dependencies+ argument to force it to re-download and
+re-unpack dependencies, if you think there might be some problem with dependencies, but you don't
+want to delete your whole cache.
+
+
+////
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Product Release
+
+==== Blah
+
+blah
+
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Multi-Project Build Workflow
+
+==== Update Dependencies
+
+blah
+
+==== Fetch Dependencies
+
+NOTE: to self: Add a repo if your project has source deps but no binary deps, since it may be
+needed to resolve the binary deps of your source deps.  Better yet, put it at the top level in an
++allprojects+ block.
+
+blah
+
+==== Check Build
+
+blah
+
+==== Check Publishing
+
+blah
+
+////

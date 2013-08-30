@@ -19,6 +19,7 @@ hgVersionInfo.txt
 *.bak
 */src/test/**/*.test.txt
 
+doc/website/output/
 syntax: regexp
 ^credential-store/_ReSharper.credential-store/
 ^credential-store/(Debug|Release)

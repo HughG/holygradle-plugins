@@ -73,6 +73,48 @@ task setHgVersionInfo {
 // Force the setHgVersionInfo to always execute.
 setHgVersionInfo.outputs.upToDateWhen { false }
 
+task buildWebsite { Task t ->
+    String websiteDir = "${projectDir}/doc/website"
+
+/*
+    fileTree(websiteDir).include("*.asciidoc").each { File asc ->
+        String ascOut = (asc.name - ".asciidoc") + ".html"
+
+        t.inputs.file asc.name
+        t.outputs.file ascOut
+
+        doLast {
+            exec {
+                workingDir "${projectDir}/doc/website"
+                executable "cmd.exe"
+                args = ["/c", "make-asciidoc.bat", "-o", "output/${ascOut}", "${asc.name}"]
+            }
+        }
+    }
+*/
+    t.inputs.dir "${websiteDir}/asciidoc"
+    t.outputs.dir "${websiteDir}/output/asciidoc"
+/*
+    doLast {
+        copy {
+            into "${websiteDir}/output/asciidoc"
+            from "${websiteDir}/asciidoc"
+        }
+    }
+*/
+    t.inputs.file "${websiteDir}/index.html"
+    t.outputs.file "${websiteDir}/output/index.html"
+    doLast {
+        copy {
+            into "${websiteDir}/output"
+            from "${websiteDir}"
+            include "asciidoc/**"
+            include "index.html"
+        }
+    }
+
+}
+
 // If we're publishing, print out an explanatory message before we launch into asking the user for
 // version numbers for each plugin.
 subprojects { 

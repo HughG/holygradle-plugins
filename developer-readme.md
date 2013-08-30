@@ -56,3 +56,32 @@ Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAP
 Unit tests (if any) will be automatically run prior to any publish operation, so you can't publish unless the tests pass. That said, the unit tests are very sparse or non-existent depending on the plugin.
 
 Writing unit tests is a trade-off: on one hand there's the cost of writing the unit tests, on the other there's the cost of unwittingly introducing defects. This can be broken down further to: the impact of the defect on consumers of the plugins, the cost of fixing defects and manually verifying the fix. I would prefer to stay very agile, and keep the cost of fixing defects to a minimum. However as the number of plugin developers and consumers grows the balance will quickly shift towards writing unit tests.
+
+# Documentation
+Some documentation is on the BitBucket wiki, but we're experimenting with building static HTML pages using AsciiDoc, to provide code syntax highlighting and diagrams using GraphViz.
+
+## Installing Cygwin utilities.
+
+To install AsciiDoc under Cygwin in Windows, follow these steps.
+
+1. Download `setup_x86_64.exe` (or setup_x86.exe for 32-bit) from `http://www.cygwin.com/`.
+2. Run the following command line.  This assumes that your company has an HTTP proxy, and that `cygwin.mirror.uk.sargasso.net` is an appropriate mirror server for you.
+```
+setup_x86_64.exe -q -p proxy-server.company.com:8080 -s http://cygwin.mirror.uk.sargasso.net/ -P asciidoc dblatex texlive
+```
+
+To install GraphViz for digrams, and Pygments for syntax highlighting, you have to install packages from `cygwinports.org`, with the following steps.
+1. Follow the instructions at `http://cygwinports.org/` to register their public key and add their site to your list of mirrors.
+2. Run `setup_x86_64.exe` again as described above, without the `-P` option, and install the packages "graphviz" and "python-pygments".  If you get the following error, add the `-X` command line option.
+```
+Mirror Error:  Setup.ini signature ftp://ftp.cygwinports.org/pub/cygwinports/x86_64/setup.bz2.sig from ftp://ftp.cygwinports.org/pub/cygwinports/ failed to verify.
+Possible corrupt mirror?  Setup.ini rejected.
+```
+
+## Building the documentation
+
+Run `gw buildWebsite` to build the website.
+
+Copy the `doc\website\output` contents to a repo which has `https://bitbucket.org/holygradle/holygradle.bitbucket.org` as master, run `hg addremove`, then commit and push to update the website.
+
+The site is viewable at `http://holygradle.bitbucket.org/`.
