@@ -68,28 +68,6 @@ languages, so normally handles modules published as a small number of files (_ar
 The Holy Gradle plugins are a set of Gradle plugins to make it easier to work with Artifactory, and
 to extend Gradle to the C++ world, where modules often consist of large numbers of files.
 
-////
-[graphviz]
---
-digraph {
-    rankdir=RL;
-    node [shape=box];
-
-    IntelRuntime -> ImageLib;
-    ImageLib -> SamplePlugin;
-    PluginAPI -> SamplePlugin;
-    ImageLib -> Framework;
-    PluginAPI -> Framework;
-    Framework -> SampleApp;
-    SamplePlugin -> SampleApp;
-
-    Doxygen -> ImageLib;
-    Doxygen -> Framework;
-    Doxygen -> PluginAPI;
-}
---
-
-////
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -154,7 +132,51 @@ For example, two modules +a+ and +b+ might each have configurations, +compile+ a
 from +b+, and likewise its +runtime+ configuration depends on +b+'s +runtime+ configuration.  This
 means that another module which declares a dependency on the +runtime+ configuration of +a+ will,
 when fetching its dependencies, also fetch the +runtime+ files for +b+, even if it does not directly
-declare any dependency on +b+.
+declare any dependency on +b+.  The following diagram highlights in blue the configurations which
+will be fetched.
+
+.Dependencies between configurations
+[caption="Figure {counter:figureindex}: "]
+[graphviz]
+--
+digraph {
+    rankdir=RL;
+    node [shape=box];
+
+    subgraph cluster_a {
+        label = "a";
+
+        a_compile [label="compile"];
+        a_runtime [label="runtime",color=blue];
+    }
+
+    subgraph cluster_b {
+        label = "b";
+
+        b_compile [label="compile"];
+        b_runtime [label="runtime",color=blue];
+    }
+
+    subgraph cluster_other {
+        label = "other";
+
+        other_compile [label="compile"];
+        other_runtime [label="runtime",color=blue];
+    }
+
+    a_compile -> b_compile;
+    a_runtime -> b_runtime [color=blue];
+
+    other_runtime -> a_runtime [color=blue];
+}
+--
+
+In this example there is no dependency on the +compile+ configuration of +a+, so the other module
+will not fetch the +compile+ configuration of either.  In practice this might be because +a+
+implements some common interface, e.g., COM +IUnknown+, so the other module doesn't need any
+compile-time information to be able to produce a module which can make use of +a+'s runtime
+outputs.  Alternatively, +a+ might be producing an executable which is launched by the +other+
+module.
 
 ==== Extending Configurations
 
@@ -163,17 +185,73 @@ First, the set of artifacts for a configuration includes those of any configurat
 from.  Second, a module which declares a dependency on a configuration will also, in terms of
 transitive dependencies, pick up the dependencies of configurations which that one extends from.
 
-For example, a module +b+ might divide its dependencies for compile-time use into +headers+ and
-+lib+, with +lib+ extending from +headers+.  That means that any module +a+ which declares a
-dependency on +b+'s +lib+ will pick up
+For example, a module +a+ might divide its dependencies for compile-time use into +headers+,
++compileWin32+, and +compileX64+, with +compileWin32+ and +compileX64+ extending from +headers+.
+That means that any other module which declares a dependency on +a+'s +compileX64+ will pick up
 
-* the artifacts from +lib+ in +b+;
-* the artifacts from +headers+ in +b+;
-* any transitive dependencies from +lib+ in +b+; and
-* any transitive dependencies from +headers+ in +b+.
+* the artifacts from +compileX64+ in +a+;
+* the artifacts from +headers+ in +a+;
+* any transitive dependencies from +compileX64+ in +a+; and
+* any transitive dependencies from +headers+ in +a+.
 
+The following diagram highlights these in blue.
 
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+.Extending configurations
+[caption="Figure {counter:figureindex}: "]
+[graphviz]
+--
+digraph {
+    rankdir=RL;
+    node [shape=box];
+
+    subgraph cluster_util {
+        label = "util";
+
+        util_headers [label="headers",color=blue];
+    }
+
+    subgraph cluster_a {
+        label = "a";
+
+        a_headers [label="headers",color=blue];
+        a_compileWin32 [label="compileWin32"];
+        a_compileX64 [label="compileX64",color=blue];
+        a_runtime [label="runtime"];
+
+        a_compileWin32 -> a_headers [arrowhead="onormal"];
+        a_compileX64 -> a_headers [arrowhead="onormal",color=blue];
+    }
+
+    subgraph cluster_b {
+        label = "b";
+
+        b_headers [label="headers",color=blue];
+        b_compileWin32 [label="compileWin32"];
+        b_compileX64 [label="compileX64",color=blue];
+        b_runtime [label="runtime"];
+
+        b_compileWin32 -> b_headers [arrowhead="onormal"];
+        b_compileX64 -> b_headers [arrowhead="onormal",color=blue];
+    }
+
+    subgraph cluster_other {
+        label = "other";
+
+        other_compile[label="compile",color=blue];
+        other_runtime[label="runtime"];
+    }
+
+    a_headers -> util_headers [color=blue];
+
+    a_compileWin32 -> b_compileWin32;
+    a_compileX64 -> b_compileX64 [color=blue];
+    a_runtime -> b_runtime;
+
+    other_compile -> a_compileX64 [color=blue];
+    other_runtime -> a_runtime;
+}
+--
+
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 === Dependencies
@@ -199,6 +277,76 @@ these roles, and doesn't need to be unzipped.)
 For each dependency module +d+, Gradle will download all artifacts included in all configurations
 which are referenced as a dependency for any configuration in the current project.  All artifacts
 are unpacked into the same folder, so that folder will contain the union of all those files.
+Private configurations are not included in transitive dependencies.
+
+NOTE: Private configurations are normally declared in the +ivy.xml+ file and marked as
++visibility="private"+.  However, Gradle 1.4 ignores this and allows access to private
+configurations, which is an acknowledged bug.  As a workaround, +intrepid+ removes all references to
+configurations whose names begin with "+private+" from the +ivy.xml+ when it is generated.
+
+The following diagram highlights in blue the configurations which will be fetched when all
+configurations of the +other+ module are fetched.
+
+.Private configurations
+[caption="Figure {counter:figureindex}: "]
+[graphviz]
+--
+digraph {
+    rankdir=RL;
+    node [shape=box];
+
+    subgraph cluster_doxygen {
+        label = "Doxygen";
+
+        Doxygen_bin [label="bin"];
+    }
+
+    subgraph cluster_a {
+        label = "a";
+
+        a_headers [label="headers",color=blue];
+        a_compileWin32 [label="compileWin32"];
+        a_compileX64 [label="compileX64",color=blue];
+        a_runtime [label="runtime",color=blue];
+        a_privateBuild [label="privateBuild"];
+
+        a_compileWin32 -> a_headers [arrowhead="onormal"];
+        a_compileX64 -> a_headers [arrowhead="onormal",color=blue];
+
+        a_privateBuild -> Doxygen_bin;
+    }
+
+    subgraph cluster_b {
+        label = "b";
+
+        b_headers [label="headers",color=blue];
+        b_compileWin32 [label="compileWin32"];
+        b_compileX64 [label="compileX64",color=blue];
+        b_runtime [label="runtime",color=blue];
+        b_privateBuild [label="privateBuild"];
+
+        b_compileWin32 -> b_headers [arrowhead="onormal"];
+        b_compileX64 -> b_headers [arrowhead="onormal",color=blue];
+
+        b_privateBuild -> Doxygen_bin;
+    }
+
+    subgraph cluster_other {
+        label = "other";
+
+        other_compile [label="compile",color=blue];
+        other_runtime [label="runtime",color=blue];
+        other_privateBuild [label="privateBuild",color=blue];
+    }
+
+    a_compileWin32 -> b_compileWin32;
+    a_compileX64 -> b_compileX64 [color=blue];
+    a_runtime -> b_runtime [color=blue];
+
+    other_compile -> a_compileX64 [color=blue];
+    other_runtime -> a_runtime [color=blue];
+}
+--
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -286,6 +434,74 @@ configurations {
 }
 ----
 
+and can be visualised, along with dependencies on a similar module (and Doxygen as an example build
+tool), as follows.  The diagram assumes that the headers for module +b+ don't expose any types from
+the headers for module +a+, so there is no dependency between those two configurations.
+
+.Private configurations
+[caption="Figure {counter:figureindex}: "]
+[graphviz]
+--
+digraph {
+    rankdir=RL;
+    node [shape=box];
+
+    subgraph cluster_doxygen {
+        label = "Doxygen";
+
+        Doxygen_bin [label="bin"];
+    }
+
+    subgraph cluster_a {
+        label = "a";
+
+        a_headers [label="headers"];
+        a_compileVc10Win32Debug [label="compileVc10-\nWin32Debug"];
+        a_compileVc10X64Release [label="compileVc10-\nX64Release"];
+        a_runtimeVc10Win32Debug [label="runtimeVc10-\nWin32Debug"];
+        a_runtimeVc10X64Release [label="runtimeVc10-\nX64Release"];
+        a_debuggingVc10Win32Debug [label="debuggingVc10-\nWin32Debug"];
+        a_debuggingVc10X64Release [label="debuggingVc10-\nX64Release"];
+        a_privateBuild [label="privateBuild"];
+
+        a_compileVc10Win32Debug -> a_headers [arrowhead="onormal"];
+        a_compileVc10X64Release -> a_headers [arrowhead="onormal"];
+        a_debuggingVc10Win32Debug -> a_runtimeVc10Win32Debug [arrowhead="onormal"];
+        a_debuggingVc10X64Release -> a_runtimeVc10X64Release [arrowhead="onormal"];
+
+        a_privateBuild -> Doxygen_bin;
+    }
+
+    subgraph cluster_b {
+        label = "b";
+
+        b_headers [label="headers"];
+        b_compileVc10Win32Debug [label="compileVc10-\nWin32Debug"];
+        b_compileVc10X64Release [label="compileVc10-\nX64Release"];
+        b_runtimeVc10Win32Debug [label="runtimeVc10-\nWin32Debug"];
+        b_runtimeVc10X64Release [label="runtimeVc10-\nX64Release"];
+        b_debuggingVc10Win32Debug [label="debuggingVc10-\nWin32Debug"];
+        b_debuggingVc10X64Release [label="debuggingVc10-\nX64Release"];
+        b_privateBuild [label="privateBuild"];
+
+        b_compileVc10Win32Debug -> b_headers [arrowhead="onormal"];
+        b_compileVc10X64Release -> b_headers [arrowhead="onormal"];
+        b_debuggingVc10Win32Debug -> b_runtimeVc10Win32Debug [arrowhead="onormal"];
+        b_debuggingVc10X64Release -> b_runtimeVc10X64Release [arrowhead="onormal"];
+
+        b_privateBuild -> Doxygen_bin;
+    }
+
+    a_compileVc10Win32Debug -> b_compileVc10Win32Debug;
+    a_compileVc10Win32Release -> b_compileVc10Win32Release;
+    a_runtimeVc10Win32Debug -> b_runtimeVc10Win32Debug;
+    a_runtimeVc10X64Release -> b_runtimeVc10X64Release;
+    a_debuggingVc10Win32Debug -> b_debuggingVc10Win32Debug;
+    a_debuggingVc10X64Release -> b_debuggingVc10X64Release;
+}
+--
+
+
 Other combinations of Visual Studio Platform, Configuration, and/or compiler version might be
 appropriate.  Client-server or web projects might also publish one or more configurations for files
 which must be present on the server side, for client-side code to run, e.g., HTML, CSS, and
@@ -345,55 +561,6 @@ As well as describing the module your Gradle project will produce, you need to d
 modules it needs for building, testing, running, debugging, and so on.
 
 
-===== Determine Installed Prerequisites
-
-In our experience so far, most executable tools required for building can be packaged in stand-alone
-folders and uploaded to Artifactory, rather than having to be installed on each developer's machine.
-This makes it easier to build the project for the first time on both developer and autobuild
-machines.  However, some things need to be installed, and for these you may wish to create a
-"prerequisite".  This is a mechanism from the +intrepid+ plugin, which lets you specify arbitrary
-Groovy code to execute, to check that the tool is installed, and provide install instructions if
-not.  So far this has been used for Visual Studio, other Microsoft SDKs, and to check the OS
-version.
-
-Here is an example prerequisite.
-
-[source,groovy]
-----
-prerequisites {
-    // Don't check "DirectX" immediately, only if there are "buildSomething" tasks (see
-    // "tasks.matching {...}" below).
-    specify("DirectX", { checker -> 
-        def help = "You need the October 2006 DirectX SDK."
-        def dxdir = checker.readEnvironment("DXSDK_DIR")
-        if (dxdir == null) {
-            checker.fail "Please ensure the DXSDK_DIR environment variable is set correctly. " +
-                help
-        } else {
-            def dxErrFilePath = dxdir + /Utilities\Bin\x64\DXErr.exe/
-            def expectedDxVersion = "9.15.779.0000"
-            def dxVersion = checker.readFileVersion(dxErrFilePath)
-            if (dxVersion == null) {
-                checker.fail "Failed to read the file version for '${dxErrFilePath}'. " + help
-            } else if (dxVersion != expectedDxVersion) {
-                checker.fail "The file version of '${dxErrFilePath}' was '${dxVersion}' " +
-                    "but expected '${expectedDxVersion}'. " + help
-            }
-        }
-    })
-}
-
-// Any 'build' tasks for this project depend on DirectX
-afterEvaluate {
-    allprojects { proj ->
-        proj.tasks.matching { it.getName().startsWith("build") }.each { 
-            it.dependsOn prerequisites.getTask("DirectX")
-        }
-    }
-}
-----
-
-
 ===== Declare Dependency Repositories
 
 Before declaring dependencies on pre-packed modules (or at least, before attempting to fetch them),
@@ -442,8 +609,6 @@ to find out whether it is published in a local, private Artifactory instance.  I
 to publish it yourself, as if you were <<_packaging_third_party_dependencies>>.  For libraries and
 tools from external sources, you will have to create a +build.gradle+ file which will package up an
 appropriate distribution of that tool and publish it to Artifactory.
-
-NOTE: TODO: Insert an example of how to do this.
 
 For each such module, you add a "packed dependency", specifying
 
@@ -605,6 +770,55 @@ my.instructions {
 ----
 
 NOTE: TODO: Add links to troubleshooting.
+
+
+===== Determine Installed Prerequisites
+
+In our experience so far, most executable tools required for building can be packaged in stand-alone
+folders and uploaded to Artifactory, rather than having to be installed on each developer's machine.
+This makes it easier to build the project for the first time on both developer and autobuild
+machines.  However, some things need to be installed, and for these you may wish to create a
+"prerequisite".  This is a mechanism from the +intrepid+ plugin, which lets you specify arbitrary
+Groovy code to execute, to check that the tool is installed, and provide install instructions if
+not.  So far this has been used for Visual Studio, other Microsoft SDKs, and to check the OS
+version.
+
+Here is an example prerequisite.
+
+[source,groovy]
+----
+prerequisites {
+    // Don't check "DirectX" immediately, only if there are "buildSomething" tasks (see
+    // "tasks.matching {...}" below).
+    specify("DirectX", { checker -> 
+        def help = "You need the October 2006 DirectX SDK."
+        def dxdir = checker.readEnvironment("DXSDK_DIR")
+        if (dxdir == null) {
+            checker.fail "Please ensure the DXSDK_DIR environment variable is set correctly. " +
+                help
+        } else {
+            def dxErrFilePath = dxdir + /Utilities\Bin\x64\DXErr.exe/
+            def expectedDxVersion = "9.15.779.0000"
+            def dxVersion = checker.readFileVersion(dxErrFilePath)
+            if (dxVersion == null) {
+                checker.fail "Failed to read the file version for '${dxErrFilePath}'. " + help
+            } else if (dxVersion != expectedDxVersion) {
+                checker.fail "The file version of '${dxErrFilePath}' was '${dxVersion}' " +
+                    "but expected '${expectedDxVersion}'. " + help
+            }
+        }
+    })
+}
+
+// Any 'build' tasks for this project depend on DirectX
+afterEvaluate {
+    allprojects { proj ->
+        proj.tasks.matching { it.getName().startsWith("build") }.each { 
+            it.dependsOn prerequisites.getTask("DirectX")
+        }
+    }
+}
+----
 
 
 ==== Check Build

@@ -84,7 +84,7 @@ void initializeBuildWebsiteTask(Task t, boolean buildQuickly = false) {
         String ascOutJustFileName = ascBase + ".html"
         String ascOut = "${WEBSITE_OUTPUT_DIR}/${ascOutJustFileName}"
 
-        t.inputs.file ascName
+        t.inputs.file asc
         t.outputs.file ascOut
 
         t.doLast {

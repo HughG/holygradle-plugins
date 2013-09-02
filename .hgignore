@@ -1,7 +1,6 @@
 syntax: glob
 # Gradle / Java
 .gradle
-*.class
 build
 # Visual Studio / ReSharper
 *.ReSharper.user
@@ -19,8 +18,12 @@ hgVersionInfo.txt
 *.bak
 */src/test/**/*.test.txt
 
-doc/website/output/
 syntax: regexp
+# Gradle / Java
+^classes/
+# Generated doc
+^doc/website/output/
+# Other
 ^credential-store/_ReSharper.credential-store/
 ^credential-store/(Debug|Release)
 ^ivy\.xml
