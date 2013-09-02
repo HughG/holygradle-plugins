@@ -2,6 +2,7 @@
 
 if x%1x==xx (
     echo Usage: %~nx0 source.asciidoc
+    echo WARNING: Command-line arguments containing '=' must be enclosed in "quotes"
     goto :eof
 )
 REM You can drop the AsciiDoc file onto this batch file in Windows Explorer, too.
@@ -15,7 +16,7 @@ set ASCIIDOC_OPTIONS=
 if x%2==x (
     goto :end_opt_loop
 ) else (
-    set ASCIIDOC_OPTIONS=%ASCIIDOC_OPTIONS% %1
+    set ASCIIDOC_OPTIONS=%ASCIIDOC_OPTIONS% %~1
 )
 shift
 goto :opt_loop

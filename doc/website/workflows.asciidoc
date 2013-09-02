@@ -1,7 +1,7 @@
 :linkcss:
 :stylesdir: asciidoc
 :scriptsdir: asciidoc
-:stylesheet: public-master.css
+:stylesheet: master.css
 :toc2:
 :toclevels: 3
 :numbered:
@@ -11,6 +11,8 @@ Graphviz for Cygwin comes from <http://cygwinports.org/>.
 ////
 
 = Workflow With Gradle and Artifactory
+
+include::sitemap.ascinc[]
 
 ////
 NOTE: to self ... don't duplicate stuff from https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/,
