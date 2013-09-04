@@ -456,17 +456,17 @@ digraph {
         label = "a";
 
         a_headers [label="headers"];
-        a_compileVc10Win32Debug [label="compileVc10-\nWin32Debug"];
+        a_compileVc10X64Debug [label="compileVc10-\nX64Debug"];
         a_compileVc10X64Release [label="compileVc10-\nX64Release"];
-        a_runtimeVc10Win32Debug [label="runtimeVc10-\nWin32Debug"];
+        a_runtimeVc10X64Debug [label="runtimeVc10-\nX64Debug"];
         a_runtimeVc10X64Release [label="runtimeVc10-\nX64Release"];
-        a_debuggingVc10Win32Debug [label="debuggingVc10-\nWin32Debug"];
+        a_debuggingVc10X64Debug [label="debuggingVc10-\nX64Debug"];
         a_debuggingVc10X64Release [label="debuggingVc10-\nX64Release"];
         a_privateBuild [label="privateBuild"];
 
-        a_compileVc10Win32Debug -> a_headers [arrowhead="onormal"];
+        a_compileVc10X64Debug -> a_headers [arrowhead="onormal"];
         a_compileVc10X64Release -> a_headers [arrowhead="onormal"];
-        a_debuggingVc10Win32Debug -> a_runtimeVc10Win32Debug [arrowhead="onormal"];
+        a_debuggingVc10X64Debug -> a_runtimeVc10X64Debug [arrowhead="onormal"];
         a_debuggingVc10X64Release -> a_runtimeVc10X64Release [arrowhead="onormal"];
 
         a_privateBuild -> Doxygen_bin;
@@ -476,27 +476,27 @@ digraph {
         label = "b";
 
         b_headers [label="headers"];
-        b_compileVc10Win32Debug [label="compileVc10-\nWin32Debug"];
+        b_compileVc10X64Debug [label="compileVc10-\nX64Debug"];
         b_compileVc10X64Release [label="compileVc10-\nX64Release"];
-        b_runtimeVc10Win32Debug [label="runtimeVc10-\nWin32Debug"];
+        b_runtimeVc10X64Debug [label="runtimeVc10-\nX64Debug"];
         b_runtimeVc10X64Release [label="runtimeVc10-\nX64Release"];
-        b_debuggingVc10Win32Debug [label="debuggingVc10-\nWin32Debug"];
+        b_debuggingVc10X64Debug [label="debuggingVc10-\nX64Debug"];
         b_debuggingVc10X64Release [label="debuggingVc10-\nX64Release"];
         b_privateBuild [label="privateBuild"];
 
-        b_compileVc10Win32Debug -> b_headers [arrowhead="onormal"];
+        b_compileVc10X64Debug -> b_headers [arrowhead="onormal"];
         b_compileVc10X64Release -> b_headers [arrowhead="onormal"];
-        b_debuggingVc10Win32Debug -> b_runtimeVc10Win32Debug [arrowhead="onormal"];
+        b_debuggingVc10X64Debug -> b_runtimeVc10X64Debug [arrowhead="onormal"];
         b_debuggingVc10X64Release -> b_runtimeVc10X64Release [arrowhead="onormal"];
 
         b_privateBuild -> Doxygen_bin;
     }
 
-    a_compileVc10Win32Debug -> b_compileVc10Win32Debug;
-    a_compileVc10Win32Release -> b_compileVc10Win32Release;
-    a_runtimeVc10Win32Debug -> b_runtimeVc10Win32Debug;
+    a_compileVc10X64Debug -> b_compileVc10X64Debug;
+    a_compileVc10X64Release -> b_compileVc10X64Release;
+    a_runtimeVc10X64Debug -> b_runtimeVc10X64Debug;
     a_runtimeVc10X64Release -> b_runtimeVc10X64Release;
-    a_debuggingVc10Win32Debug -> b_debuggingVc10Win32Debug;
+    a_debuggingVc10X64Debug -> b_debuggingVc10X64Debug;
     a_debuggingVc10X64Release -> b_debuggingVc10X64Release;
 }
 --
@@ -1306,6 +1306,18 @@ publishing {
     publications.ivy.descriptor.withXml {
         Node infoNode = asNode().info[0]
  
+        // License info comes before description.
+        // Schema at http://ant.apache.org/ivy/schemas/ivy.xsd
+        // Doc at http://ant.apache.org/ivy/history/2.2.0/ivyfile.html
+
+        Node licenseNode_public_domain = infoNode.appendNode("license")
+        licenseNode_public_domain.@name = "Public Domain"
+        licenseNode_public_domain.@url = "http://jsoncpp.sourceforge.net/LICENSE"
+ 
+        Node licenseNode_mit = infoNode.appendNode("license")
+        licenseNode_mit.@name = "MIT"
+        licenseNode_mit.@url = "http://jsoncpp.sourceforge.net/LICENSE" 
+
         String description = """
 This is a pre-built artifact package for json cpp with the "Multi Threaded DLL" compiler option
 enabled.
@@ -1315,15 +1327,7 @@ The source for this customised package is placed at <https://hgserv1.example-cor
 The original source of jsoncpp0.6.0-rc2 can be retrieved from
 <http://sourceforge.net/projects/jsoncpp/files/jsoncpp/0.6.0-rc2/jsoncpp-src-0.6.0-rc2.tar.gz/download>."""
         Node descriptionNode = infoNode.appendNode("description", description)
-        descriptionNode.@homepage = "https://hgserv1.example-corp.com/scm/hg/jsoncpp"
- 
-        Node licenseNode_public_domain = infoNode.appendNode("license")
-        licenseNode_public_domain.@name = "Public Domain"
-        licenseNode_public_domain.@url = "http://jsoncpp.sourceforge.net/LICENSE"
- 
-        Node licenseNode_mit = infoNode.appendNode("license")
-        licenseNode_mit.@name = "MIT"
-        licenseNode_mit.@url = "http://jsoncpp.sourceforge.net/LICENSE"        
+        descriptionNode.@homepage = "https://hgserv1.example-corp.com/scm/hg/jsoncpp"       
     }
 }
 ----
