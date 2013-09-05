@@ -8,7 +8,7 @@ build
 *.suo
 *.vcxproj.user
 # IntelliJ Idea
-*.iml
+workspace.iml
 .idea
 # Generated
 credential-store/project_version_info.h
