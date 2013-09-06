@@ -4,7 +4,7 @@ import holygradle.test.*
 import org.junit.Test
 import static org.junit.Assert.*
 
-class SettingsFileHelperTest extends TestBase {
+class SettingsFileHelperTest extends AbstractHolyGradleTest {
     @Test
     public void testWrite1() {
         Collection<String> includes = ['..\\foo', 'bar', '../blah/blah']

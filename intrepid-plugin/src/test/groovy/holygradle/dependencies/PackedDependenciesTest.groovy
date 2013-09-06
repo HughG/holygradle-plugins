@@ -1,10 +1,10 @@
 package holygradle.dependencies
 
-import holygradle.test.TestBase
+import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
 
-class PackedDependenciesTest extends TestBase {
+class PackedDependenciesTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testConflictingModules1() {
         invokeGradle(new File(getTestDir(), "conflicting_modules1")) { WrapperBuildLauncher launcher ->

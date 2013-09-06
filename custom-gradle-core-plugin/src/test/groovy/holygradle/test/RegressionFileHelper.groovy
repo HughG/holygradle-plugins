@@ -1,13 +1,11 @@
 package holygradle.test
 
-import org.junit.Test
-import java.io.File
 import static org.junit.Assert.*
 
 class RegressionFileHelper {
-    private TestBase testBase
+    private AbstractHolyGradleTest testBase
     
-    public RegressionFileHelper(TestBase testBase) {
+    public RegressionFileHelper(AbstractHolyGradleTest testBase) {
         this.testBase = testBase
     }
     

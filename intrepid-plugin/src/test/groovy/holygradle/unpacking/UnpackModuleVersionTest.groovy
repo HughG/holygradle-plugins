@@ -3,7 +3,6 @@ package holygradle.unpacking
 import holygradle.test.*
 import org.junit.Test
 import org.gradle.api.Project
-import org.gradle.api.DefaultTask 
 import org.gradle.api.Task
 import org.gradle.testfixtures.ProjectBuilder
 import static org.junit.Assert.*
@@ -11,7 +10,7 @@ import static org.junit.Assert.*
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import holygradle.dependencies.PackedDependencyHandler
 
-class UnpackModuleVersionTest extends TestBase {
+class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     // The hierarchy of modules described by the test Ivy files is:
     // root (org:root:1.0) [apricot: "aa", blueberry: "sub/bb", coconut: "sub/"]
     // +---aa (org:apricot:1.1) [eggfruit: "../"]

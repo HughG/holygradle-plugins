@@ -1,12 +1,12 @@
 package holygradle.devenv
 
-import holygradle.test.TestBase
+import holygradle.test.AbstractHolyGradleIntegrationTest
 import org.gradle.tooling.BuildLauncher
 import org.junit.Test
 
 import static org.junit.Assert.assertTrue
 
-class IntegrationTest extends TestBase {
+class IntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testVc10MultiPlatform() { 
         File projectDir = new File(getTestDir(), "vc10_multi_platform")

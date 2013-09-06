@@ -1,23 +1,12 @@
 package holygradle.test
 
-import org.junit.Test
-
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
 import org.gradle.util.ConfigureUtil
 import static org.junit.Assert.*
 
-class TestBase {
-    protected RegressionFileHelper regression
-    
-    TestBase() {
-        regression = new RegressionFileHelper(this)
-    }
-    
-    protected File getTestDir() {
-        return new File("src/test/groovy/" + getClass().getName().replace(".", "/"))
-    }
+class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
     /**
      * Invokes Gradle for a specified project directory.  A closure can be used to configure the launcher used to run
      * Gradle; for example, to set the command line arguments.
@@ -46,6 +35,7 @@ class TestBase {
                 try {
                     launcher.run()
                 } catch (RuntimeException e) {
+                    println(e.toString())
                     error = errorOutput.toString()
                 }
                 if (error == null) {
@@ -64,7 +54,7 @@ class TestBase {
      * Pass on Gradle's user home and installation home if the user has one or both configured.
      * @param connector The connector to be configured.
      */
-    private void maybeForwardGradleHomeInfo(GradleConnector connector) {
+    private static void maybeForwardGradleHomeInfo(GradleConnector connector) {
         final String gradleUserHome = System.getProperty("holygradle.gradleUserHomeDir")
         if (gradleUserHome != null) {
             connector.useGradleUserHomeDir(new File(gradleUserHome))
@@ -80,7 +70,7 @@ class TestBase {
      * adds them to the JVM properties of the {@link BuildLauncher}.
      * @param launcher The launcher to be configured.
      */
-    private void maybeForwardHttpProxyProperties(BuildLauncher launcher) {
+    private static void maybeForwardHttpProxyProperties(BuildLauncher launcher) {
         String[] jvmArguments = []
         String proxyHost = System.getProperty("http.proxyHost")
         String proxyPort = System.getProperty("http.proxyPort")

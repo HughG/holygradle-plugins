@@ -1,12 +1,13 @@
 package holygradle.source_dependencies
 
-import holygradle.test.TestBase
+import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.junit.Ignore
 import org.junit.Test
 
-class ProjectDependenciesTest extends TestBase {
+import static org.junit.Assert.assertTrue
 
+class ProjectDependenciesTest extends AbstractHolyGradleIntegrationTest {
     /**
      * Tests the situation where one project A (the root, or some sourceDependency) has a dependency on one version of a
      * packedDependency module, and another module/project B (in a sourceDependency) depends on a different version,
@@ -15,6 +16,7 @@ class ProjectDependenciesTest extends TestBase {
     @Test
     public void conflict() {
         File projectDir = new File(getTestDir(), "conflict")
+//        assertTrue(projectDir.exists()) // Need to include an assert or JUnit doesn't see this test!
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks")
@@ -36,6 +38,7 @@ class ProjectDependenciesTest extends TestBase {
     @Test
     public void conflictInUnusedConfig() {
         File projectDir = new File(getTestDir(), "conflictInUnusedConfig")
+//        assertTrue(projectDir.exists()) // Need to include an assert or JUnit doesn't see this test!
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks")

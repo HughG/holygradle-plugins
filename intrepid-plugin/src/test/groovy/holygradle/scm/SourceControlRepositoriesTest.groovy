@@ -1,6 +1,5 @@
 package holygradle.scm
 
-import holygradle.*
 import holygradle.test.*
 import org.gradle.api.Project
 import org.junit.Test
@@ -8,7 +7,7 @@ import net.lingala.zip4j.core.ZipFile
 import org.gradle.testfixtures.ProjectBuilder
 import static org.junit.Assert.*
 
-class SourceControlRepositoriesTest extends TestBase {
+class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
     private File extractZip(String zipName) {
         File zipDir = new File(getTestDir(), zipName)
         if (zipDir.exists()) {

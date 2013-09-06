@@ -2,7 +2,7 @@ package holygradle.unpacking
 
 import groovy.mock.interceptor.StubFor
 import holygradle.dependencies.PackedDependencyHandler
-import holygradle.test.TestBase
+import holygradle.test.AbstractHolyGradleTest
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.testfixtures.ProjectBuilder
@@ -12,7 +12,7 @@ import org.junit.Test
 /**
  * Unit test for {@link SpeedyUnpackTask}.
  */
-class SpeedyUnpackTaskTest extends TestBase {
+class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
     /*
      * These tests use several Groovy testing mechanisms, and avoid using certain other ones.
      *

@@ -1,12 +1,12 @@
 package holygradle.source_dependencies
 
-import holygradle.test.TestBase
+import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
 
 import static org.junit.Assert.assertTrue
 
-class CopyArtifactsTest extends TestBase {
+class CopyArtifactsTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testCopyFromPackedDependency() {
         File projectDir = new File(getTestDir(), "copyPackedDependencies")

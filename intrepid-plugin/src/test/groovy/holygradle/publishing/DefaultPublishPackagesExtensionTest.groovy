@@ -1,20 +1,14 @@
 package holygradle.publishing
 
-import holygradle.publishing.DefaultPublishPackagesExtension
-import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.ivy.IvyModuleDescriptor
-import org.gradle.api.publish.ivy.IvyPublication
-import holygradle.test.TestBase
+import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
-import org.gradle.tooling.BuildLauncher
 import org.junit.Test
 
-import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertTrue
 
-class DefaultPublishPackagesExtensionTest extends TestBase {
+class DefaultPublishPackagesExtensionTest extends AbstractHolyGradleIntegrationTest {
     
     @Test
     public void testDependenciesInIvyXml() {

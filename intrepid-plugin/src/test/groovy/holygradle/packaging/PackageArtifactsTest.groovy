@@ -1,6 +1,6 @@
 package holygradle.packaging
 
-import holygradle.test.TestBase
+import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
@@ -9,7 +9,7 @@ import org.junit.Test
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertTrue
 
-class PackageArtifactsTest extends TestBase {
+class PackageArtifactsTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testBasicConfiguration() {
         File projectDir = new File(getTestDir(), "projectA")

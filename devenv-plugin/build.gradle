@@ -1,3 +1,4 @@
 dependencies {
     compile project(':custom-gradle-core-plugin')
+    testCompile project(':custom-gradle-core-plugin').sourceSets.test.output
 }
