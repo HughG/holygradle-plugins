@@ -28,16 +28,26 @@ task createProjectVersionFile {
     }
 }
 
-task("build", type: Exec) {
-    dependsOn createReleaseVersionFile, createProjectVersionFile
+final File CREDENTIAL_STORE_EXE = project.file("Release/credential-store.exe")
 
-    workingDir project.projectDir.path
-    commandLine getDevEnvPath().path, "credential-store.sln", "/build", "Release^|Win32"
+task("build", type: Exec) { Exec t ->
+    t.dependsOn createReleaseVersionFile, createProjectVersionFile
+
+    t.inputs.files(project.fileTree(projectDir) {
+        include "credential-store.*"
+        include "*.h"
+        include "*.cpp"
+    })
+    t.outputs.file(CREDENTIAL_STORE_EXE)
+
+    t.workingDir project.projectDir.path
+    t.commandLine getDevEnvPath().path, "credential-store.sln", "/build", "Release^|Win32"
 }
 
-publishSnapshot.dependsOn build
-publishRelease.dependsOn build
+project.publishTasks.each { Upload it ->
+    it.dependsOn build
+}
 
 artifacts {
-    it."default" file("Release/credential-store.exe")
+    it."default" CREDENTIAL_STORE_EXE
 }

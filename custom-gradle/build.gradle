@@ -68,6 +68,6 @@ artifacts {
     compile customDistribution
 }
 
-[publishRelease, publishSnapshot].each { pubTask ->
-    pubTask.configuration = configurations.compile
+project.publishTasks.each { Upload it ->
+    it.configuration = configurations.compile
 }

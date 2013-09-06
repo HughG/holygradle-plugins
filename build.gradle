@@ -1,6 +1,4 @@
-import holygradle.util.Helper
 import org.gradle.api.initialization.dsl.ScriptHandler
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 
 buildscript { ScriptHandler script ->
     // Make sure we don't publish something which is based on conflicting versions of dependencies.
@@ -73,6 +71,9 @@ task setHgVersionInfo {
 // Force the setHgVersionInfo to always execute.
 setHgVersionInfo.outputs.upToDateWhen { false }
 
+/**
+ * The following values and tasks are used to publish the static website.
+ */
 project.ext.WEBSITE_DIR = "${projectDir}/doc/website"
 project.ext.WEBSITE_OUTPUT_SUBDIR = "output"
 project.ext.WEBSITE_OUTPUT_DIR = "${WEBSITE_DIR}/${WEBSITE_OUTPUT_SUBDIR}"
@@ -145,15 +146,81 @@ task publishWebsite { Task t ->
     t.description = "Publish the (nicely-built) website to the 'output' dir; needs to be manually committed/pushed."
     t.dependsOn buildWebsite
 }
+/**
+ * (End of website code.)
+ */
 
-// If we're publishing, print out an explanatory message before we launch into asking the user for
-// version numbers for each plugin.
-subprojects { 
-    project.gradle.taskGraph.whenReady {
-        if (project.gradle.taskGraph.hasTask(publishRelease)) {
-            println "You will now be asked for a publishing version for each sub-project,"
+
+final String PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
+final String PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI()
+
+def propertyOrNull(Object o, String propertyName) {
+    o.hasProperty(propertyName) ? o.property(propertyName) : null
+}
+
+void setPublishTaskDescription(Task t, String publishingGroup, String targetUri) {
+    t.group = "Publishing"
+    t.description = "Publish release/snapshot version (based on 'pubAs' property) of ${publishingGroup} to ${targetUri}"
+}
+
+String getNextVersionWithUserInput(Project project) {
+    Console console = System.console()
+    if (console == null) {
+        // Work-around for this bug: http://issues.gradle.org/browse/GRADLE-2310
+        println "Null System.console(). Are you using the Gradle Daemon? If so, don't. "
+        println "It prevents acquiring user input. Please use: --no-daemon"
+        throw new RuntimeException("You can't publish when running with the Gradle daemon, " +
+                                       "because we need to prompt at the console for version numbers. " +
+                                       "Run with --no-daemon."
+        )
+    }
+
+    console.println()
+    console.println("Choose the version for publishing ${project.group}:${project.name}.")
+    String userVersionNumber = console.readLine("\nPlease type in the version number to use: ")
+    if (!userVersionNumber) {
+        throw new RuntimeException("Publishing version '${userVersionNumber}' is not acceptable")
+    }
+    return userVersionNumber
+}
+
+// Set up publish tasks for root project.
+project.ext.publishTasks = []
+project.ext.publishReallyTasks = []
+["Plugins", "CustomGradle"].each { String publishingGroup ->
+    Task publishReally = project.task("publish${publishingGroup}Really") { Task t ->
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
+    }
+    project.publishTasks << publishReally
+    project.publishReallyTasks << publishReally
+
+    project.publishTasks << project.task("publish${publishingGroup}Locally") { Task t ->
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
+    }
+}
+
+// Pick a version number for each subproject, if we're publishing.
+project.gradle.taskGraph.whenReady {
+    String publishVersion = "unspecified"
+    if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
+        if (propertyOrNull(project, "pubAs") == "release") {
+            println "You will now be asked for a publishing version to use for each sub-project,"
             println "before any of them are built and published."
+
+            publishVersion = getNextVersionWithUserInput(project)
+        } else {
+            String username = System.getProperty("user.name").toLowerCase()
+            publishVersion = "${username}-SNAPSHOT"
         }
+
+        println()
+        println "Publishing as version '${publishVersion}'..."
+        println()
+    }
+
+    allprojects { Project p ->
+        p.version = publishVersion
+        p.logger.info "Set ${p.name} version to ${p.version}"
     }
 }
 
@@ -171,12 +238,21 @@ subprojects {
     // Set common repo info for dependencies.
     repositories {
         ivy {
+            url PUBLISH_LOCAL_TARGET_URI
+        }
+        ivy {
             url artifactoryServer + artifactoryPluginRepo
+            // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users, depending
+            // on local Artifactory configuration.
+            credentials {
+                username artifactoryUsername
+                password artifactoryPassword
+            }
         }
         maven {
             url artifactoryServer + 'remote-repos/'
             // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
-            // Artifactory.  If you update dependencies to require a new version of soemthing (such as svnkit) which
+            // Artifactory.  If you update dependencies to require a new version of something (such as svnkit) which
             // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
             // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
             // server, that may require credentials.
@@ -204,57 +280,56 @@ subprojects {
         }
     }
 
+    String publishingGroup =
+        (project.name.endsWith("-plugin") || project.name == "credential-store") ?
+            "Plugins" :
+            "CustomGradle";
+
     // Set up publish tasks for each subproject.
-    ["publishRelease", "publishSnapshot"].each { taskName ->
-        project.task(taskName, type: Upload) {
-            configuration = configurations.default
-            group = "Publishing"
-            uploadDescriptor = true
-            descriptorDestination = new File("ivy.xml")
-            
-            repositories.ivy {
-                credentials {
-                    username artifactoryUsername
-                    password artifactoryPassword
-                }
-                url artifactoryServer + artifactoryPluginPublishRepo + "/"
+    project.ext.publishTasks = []
+    project.publishTasks << project.task("publish${publishingGroup}Really", type: Upload) { Upload t ->
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
+        t.configuration = configurations.default
+        t.uploadDescriptor = true
+        t.descriptorDestination = new File(project.buildDir, "ivy.xml")
+        t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
+        // Add a dependency on the root project, so that it will be triggered to set up the version number, by the
+        // existence of that task in the task graph.
+        t.dependsOn rootProject.tasks[t.name]
+
+        t.repositories.ivy {
+            credentials {
+                username artifactoryUsername
+                password artifactoryPassword
             }
-            
-            doLast {
-                println "Published ${project.version} at: " + new Date()
-            }
+            url PUBLISH_TARGET_URI
+        }
+
+        t.doLast {
+            println "Published ${project.name} ${project.version} " +
+                "to ${PUBLISH_TARGET_URI} at: " + new Date()
         }
     }
-    
-    // Pick a version number for each subproject, if we're publishing.
-    project.gradle.taskGraph.whenReady {
-        // Only publish to one repository at a time.
-        int publishCount = 0
-        if (project.gradle.taskGraph.hasTask(publishSnapshot)) {
-            publishCount++
-        }
-        if (project.gradle.taskGraph.hasTask(publishRelease)) {
-            publishCount++
-        }
-        if (publishCount > 1) {
-            throw new RuntimeException("Only publish release or snapshot, but not both at the same time because the version number is different.")
-        }
-        
-        // Configure the version number according to which repository we're publishing to.
-        //
-        // NOTE 2013-06-06 HughG: This has to be done now, rather than in a "doFirst" block,
-        // otherwise the project version will be changed after Gradle has decided on the filename
-        // for the JAR file, and we'll end up publishing the ivy.xml but no JAR.
-        if (project.gradle.taskGraph.hasTask(publishSnapshot)) {
-            String username = System.getProperty("user.name").toLowerCase()
-            project.version = "${username}-SNAPSHOT"
-        }
-        if (project.gradle.taskGraph.hasTask(publishRelease)) {
-            Helper.chooseNextVersionNumberWithUserInput(project)
+    project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
+        t.configuration = configurations.default
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
+        t.uploadDescriptor = true
+        t.descriptorDestination = new File(project.buildDir, "ivy.xml")
+        t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
+        // Add a dependency on the root project, so that it will be triggered to set up the version number, by the
+        // existence of that task in the task graph.
+        t.dependsOn rootProject.tasks[t.name]
 
-            println()
-            println "Publishing '${project.group}:${project.name}:${project.version}'..."
-            println()
+        t.repositories.ivy {
+            url PUBLISH_LOCAL_TARGET_URI
+        }
+
+        t.inputs.dir new File(project.projectDir as File, "/build/libs")
+        t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "/${project.group}/${project.name}/${project.version}"
+
+        t.doLast {
+            println "Published ${project.name} ${project.version} " +
+                "to ${PUBLISH_LOCAL_TARGET_URI} at: " + new Date()
         }
     }
 
@@ -270,11 +345,13 @@ subprojects {
                 }
             }
         }
-    
-        // publishSnapshot.dependsOn test
-        publishRelease.dependsOn test
+
+        if (propertyOrNull(project, "pubAs") == "release") {
+            project.publishReallyTasks.each { it.dependsOn test }
+        }
     }
 }
+
 
 // Add source version info for the two non-JAR subprojects.
 project(":custom-gradle") {

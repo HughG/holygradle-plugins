@@ -1,6 +1,4 @@
-// Can only choose the plugin versions once the task graph has been established because
-// we need to know whether we're publishing a release or a snapshot.
-project.gradle.taskGraph.whenReady {
-    holygradle.util.Helper.choosePluginVersion(project, "runtime", "holygradle", "credential-store")
-    holygradle.util.Helper.choosePluginVersion(project, "compile", "holygradle", "custom-gradle-core-plugin")
+dependencies {
+    compile project(':credential-store')
+    compile project(':custom-gradle-core-plugin')
 }

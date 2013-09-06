@@ -29,16 +29,12 @@ artifactoryPassword=<encrypted artifactory password>
 ```
 
 # Getting started - if the plugins have never been published before within your organisation:
- - Publish 'custom-gradle':
-     - Edit 'holy-gradle-init.gradle'. There's a hard-coded version number for 'custom-gradle-core'. If you have never published 'custom-gradle-core-plugin' before then either change this hard-coded version number, or make sure that when you do publish 'custom-gradle-core-plugin' that you choose the appropriate version number.
-     - Run `gw publishRelease --no-daemon`
- - Publish the 'credential-store' and 'hg-credential-store' modules:
-     - Build them in Release.
-     - Run `gw publishRelease --no-daemon`
- - Publish each of the plugins:
-     - Note: For the intrepid and my-credentials plugins their build.gradle files specify dependencies on particular versions of the 'credential-store' modules. Make sure that these version numbers make sense for your repository.
-     - Run `gw publishRelease --no-daemon`
-   
+ - Run `gw --no-daemon -PpubAs=release publishCustomGradleReally`
+ - Run `gw --no-daemon -PpubAs=release publishPluginsReally`
+
+You can replace "Really" with "Locally" to publish to a folder called "local_repo", to check the contents before really
+publishing, if you want.
+
 # Testing changes using snapshots
 To avoid annoying people with broken plugins you should test your changes by publishing 'snapshots':
 
@@ -53,7 +49,7 @@ Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAP
  - You can also run `gw versionInfo` to get a complete list of version numbers.
  
 # Unit tests
-Unit tests (if any) will be automatically run prior to any publish operation, so you can't publish unless the tests pass. That said, the unit tests are very sparse or non-existent depending on the plugin.
+Unit tests (if any) will be automatically run prior to any "-PpubAs=release" publish operation, so you can't publish unless the tests pass. That said, the unit tests are very sparse or non-existent depending on the plugin.
 
 Writing unit tests is a trade-off: on one hand there's the cost of writing the unit tests, on the other there's the cost of unwittingly introducing defects. This can be broken down further to: the impact of the defect on consumers of the plugins, the cost of fixing defects and manually verifying the fix. I would prefer to stay very agile, and keep the cost of fixing defects to a minimum. However as the number of plugin developers and consumers grows the balance will quickly shift towards writing unit tests.
 
