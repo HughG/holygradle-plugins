@@ -1,0 +1,75 @@
+/**
+ * The following values and tasks are used to publish the static website.
+ */
+project.ext.WEBSITE_DIR = "${projectDir}/doc/website"
+project.ext.WEBSITE_OUTPUT_SUBDIR = "output"
+project.ext.WEBSITE_OUTPUT_DIR = "${WEBSITE_DIR}/${WEBSITE_OUTPUT_SUBDIR}"
+
+void initializeBuildWebsiteTask(Task t, boolean buildQuickly = false) {
+    fileTree(WEBSITE_DIR).include("*.asciidoc").each { File asc ->
+        String ascName = asc.name
+        String ascBase = asc.name - ".asciidoc"
+        String ascOutJustFileName = ascBase + ".html"
+        String ascOut = "${WEBSITE_OUTPUT_DIR}/${ascOutJustFileName}"
+
+        t.inputs.file asc
+        t.outputs.file ascOut
+
+        t.doLast {
+            def baseArgs = ["/c", "make-asciidoc.bat"]
+            def buildQuicklyArgs = buildQuickly ? ['"-a source-highlighter=none"'] : []
+            def filenameArgs = [
+                "-o", "${WEBSITE_OUTPUT_SUBDIR}/${ascOutJustFileName}", "${asc.name}"
+            ]
+            exec {
+                workingDir "${projectDir}/doc/website"
+                executable "cmd.exe"
+                args = baseArgs + buildQuicklyArgs + filenameArgs
+            }
+        }
+
+        // Also copy the extra files for the website.
+        t.inputs.dir "${WEBSITE_DIR}/asciidoc"
+        t.inputs.files.files.each { File f ->
+            t.outputs.file "${WEBSITE_OUTPUT_DIR}/asciidoc/${f.name}"
+        }
+        t.doLast {
+            copy {
+                from "${WEBSITE_DIR}"
+                into "${WEBSITE_DIR}/output"
+                include "asciidoc/**"
+            }
+        }
+    }
+}
+
+task cleanWebsite { Task t ->
+    t.group = "Documentation"
+    t.description = "Clean the website 'output' dir"
+    t.doLast {
+        delete(fileTree(WEBSITE_DIR + "/output") { ConfigurableFileTree tree ->
+            tree.include "**"
+            tree.exclude ".hg"
+        })
+    }
+}
+
+task buildWebsite { Task t ->
+    t.group = "Documentation"
+    t.description = "Build the website (more slowly, using nice code highlighting)"
+    // Clean the website before we build it, so we can be sure files weren't build with buildWebsiteQuickly
+    t.dependsOn cleanWebsite
+    initializeBuildWebsiteTask(t)
+}
+
+task buildWebsiteQuickly { Task t ->
+    t.group = "Documentation"
+    t.description = "Build the website (quickly, using no code highlighting)"
+    initializeBuildWebsiteTask(t, true)
+}
+
+task publishWebsite { Task t ->
+    t.group = "Documentation"
+    t.description = "Publish the (nicely-built) website to the 'output' dir; needs to be manually committed/pushed."
+    t.dependsOn buildWebsite
+}

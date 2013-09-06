@@ -1,0 +1,64 @@
+/**
+ * This task puts the Hg master repo URL and working directory version/branch/tags into a property and text file, which
+ * feed into the packaging tasks for all sub-projects, so all build outputs are stamped with info on where they came
+ * from.
+ *
+ *   - JAR files put it in META-INF/MANIFEST/MF.
+ *   - custom-gradle puts it in the init.d/holy-gradle-init.gradle.
+ *   - credential-store puts it in the Windows file properties of the generated EXE.
+ *
+ * If you change the form or location of this info, please update not only this comment but also the wiki page at
+ * https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home.
+ */
+task setHgVersionInfo {
+    new ByteArrayOutputStream().withStream { OutputStream os ->
+        String hgInfoString = "unknown"
+        exec {
+            executable = "hg"
+            args = ["paths", "default"]
+            standardOutput = os
+        }
+        (new PrintStream(os)).withStream { it.print(" ") }
+        exec {
+            executable = "hg"
+            args = ["id", "-ibt"]
+            standardOutput = os
+        }
+
+        // Store both command outputs in one string with no line breaks.
+        project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
+
+        // Write the version to a file, so that the file can be seen as changed (or not) by other tasks, to force them
+        // to re-run.
+        project.ext.hgVersionInfoFile = new File('hgVersionInfo.txt')
+        project.hgVersionInfoFile.text = project.hgVersionInfo
+    }
+}
+
+// Force the setHgVersionInfo to always execute.
+setHgVersionInfo.outputs.upToDateWhen { false }
+
+subprojects {
+    // Add source version information for each plugin JAR.
+    if (project.plugins.hasPlugin("groovy")) {
+        // We don't need an "afterEvaluate" here because "jar" is a standard task for "groovy" projects.
+        project.jar {
+            dependsOn setHgVersionInfo
+            manifest {
+                attributes(["Implementation-Version": rootProject.hgVersionInfo])
+            }
+        }
+    }
+}
+
+// Add source version info for the two non-JAR subprojects.
+project(":custom-gradle") {
+    afterEvaluate {
+        createVersionedInitScript.dependsOn setHgVersionInfo
+    }
+}
+project(":credential-store") {
+    afterEvaluate {
+        createProjectVersionFile.dependsOn setHgVersionInfo
+    }
+}

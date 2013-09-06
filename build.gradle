@@ -31,199 +31,6 @@ project(":custom-gradle") {
     apply plugin: "groovy"
 }
 
-/**
- * This task puts the Hg master repo URL and working directory version/branch/tags into a property and text file, which
- * feed into the packaging tasks for all sub-projects, so all build outputs are stamped with info on where they came
- * from.
- *
- *   - JAR files put it in META-INF/MANIFEST/MF.
- *   - custom-gradle puts it in the init.d/holy-gradle-init.gradle.
- *   - credential-store puts it in the Windows file properties of the generated EXE.
- *
- * If you change the form or location of this info, please update not only this comment but also the wiki page at
- * https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home.
- */
-task setHgVersionInfo {
-    new ByteArrayOutputStream().withStream { OutputStream os ->
-        String hgInfoString = "unknown"
-        exec {
-            executable = "hg"
-            args = ["paths", "default"]
-            standardOutput = os
-        }
-        (new PrintStream(os)).withStream { it.print(" ") }
-        exec {
-            executable = "hg"
-            args = ["id", "-ibt"]
-            standardOutput = os
-        }
-
-        // Store both command outputs in one string with no line breaks.
-        project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
-
-        // Write the version to a file, so that the file can be seen as changed (or not) by other tasks, to force them
-        // to re-run.
-        project.ext.hgVersionInfoFile = new File('hgVersionInfo.txt')
-        project.hgVersionInfoFile.text = project.hgVersionInfo
-    }
-}
-
-// Force the setHgVersionInfo to always execute.
-setHgVersionInfo.outputs.upToDateWhen { false }
-
-/**
- * The following values and tasks are used to publish the static website.
- */
-project.ext.WEBSITE_DIR = "${projectDir}/doc/website"
-project.ext.WEBSITE_OUTPUT_SUBDIR = "output"
-project.ext.WEBSITE_OUTPUT_DIR = "${WEBSITE_DIR}/${WEBSITE_OUTPUT_SUBDIR}"
-
-void initializeBuildWebsiteTask(Task t, boolean buildQuickly = false) {
-    fileTree(WEBSITE_DIR).include("*.asciidoc").each { File asc ->
-        String ascName = asc.name
-        String ascBase = asc.name - ".asciidoc"
-        String ascOutJustFileName = ascBase + ".html"
-        String ascOut = "${WEBSITE_OUTPUT_DIR}/${ascOutJustFileName}"
-
-        t.inputs.file asc
-        t.outputs.file ascOut
-
-        t.doLast {
-            def baseArgs = ["/c", "make-asciidoc.bat"]
-            def buildQuicklyArgs = buildQuickly ? ['"-a source-highlighter=none"'] : []
-            def filenameArgs = [
-                "-o", "${WEBSITE_OUTPUT_SUBDIR}/${ascOutJustFileName}", "${asc.name}"
-            ]
-            exec {
-                workingDir "${projectDir}/doc/website"
-                executable "cmd.exe"
-                args = baseArgs + buildQuicklyArgs + filenameArgs
-            }
-        }
-
-        // Also copy the extra files for the website.
-        t.inputs.dir "${WEBSITE_DIR}/asciidoc"
-        t.inputs.files.files.each { File f ->
-            t.outputs.file "${WEBSITE_OUTPUT_DIR}/asciidoc/${f.name}"
-        }
-        t.doLast {
-            copy {
-                from "${WEBSITE_DIR}"
-                into "${WEBSITE_DIR}/output"
-                include "asciidoc/**"
-            }
-        }
-    }
-}
-
-task cleanWebsite { Task t ->
-    t.group = "Documentation"
-    t.description = "Clean the website 'output' dir"
-    t.doLast {
-        delete(fileTree(WEBSITE_DIR + "/output") { ConfigurableFileTree tree ->
-            tree.include "**"
-            tree.exclude ".hg"
-        })
-    }
-}
-
-task buildWebsite { Task t ->
-    t.group = "Documentation"
-    t.description = "Build the website (more slowly, using nice code highlighting)"
-    // Clean the website before we build it, so we can be sure files weren't build with buildWebsiteQuickly
-    t.dependsOn cleanWebsite
-    initializeBuildWebsiteTask(t)
-}
-
-task buildWebsiteQuickly { Task t ->
-    t.group = "Documentation"
-    t.description = "Build the website (quickly, using no code highlighting)"
-    initializeBuildWebsiteTask(t, true)
-}
-
-task publishWebsite { Task t ->
-    t.group = "Documentation"
-    t.description = "Publish the (nicely-built) website to the 'output' dir; needs to be manually committed/pushed."
-    t.dependsOn buildWebsite
-}
-/**
- * (End of website code.)
- */
-
-
-final String PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
-final String PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI()
-
-def propertyOrNull(Object o, String propertyName) {
-    o.hasProperty(propertyName) ? o.property(propertyName) : null
-}
-
-void setPublishTaskDescription(Task t, String publishingGroup, String targetUri) {
-    t.group = "Publishing"
-    t.description = "Publish release/snapshot version (based on 'pubAs' property) of ${publishingGroup} to ${targetUri}"
-}
-
-String getNextVersionWithUserInput(Project project) {
-    Console console = System.console()
-    if (console == null) {
-        // Work-around for this bug: http://issues.gradle.org/browse/GRADLE-2310
-        println "Null System.console(). Are you using the Gradle Daemon? If so, don't. "
-        println "It prevents acquiring user input. Please use: --no-daemon"
-        throw new RuntimeException("You can't publish when running with the Gradle daemon, " +
-                                       "because we need to prompt at the console for version numbers. " +
-                                       "Run with --no-daemon."
-        )
-    }
-
-    console.println()
-    console.println("Choose the version for publishing ${project.group}:${project.name}.")
-    String userVersionNumber = console.readLine("\nPlease type in the version number to use: ")
-    if (!userVersionNumber) {
-        throw new RuntimeException("Publishing version '${userVersionNumber}' is not acceptable")
-    }
-    return userVersionNumber
-}
-
-// Set up publish tasks for root project.
-project.ext.publishTasks = []
-project.ext.publishReallyTasks = []
-["Plugins", "CustomGradle"].each { String publishingGroup ->
-    Task publishReally = project.task("publish${publishingGroup}Really") { Task t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
-    }
-    project.publishTasks << publishReally
-    project.publishReallyTasks << publishReally
-
-    project.publishTasks << project.task("publish${publishingGroup}Locally") { Task t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
-    }
-}
-
-// Pick a version number for each subproject, if we're publishing.
-project.gradle.taskGraph.whenReady {
-    String publishVersion = "unspecified"
-    if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
-        if (propertyOrNull(project, "pubAs") == "release") {
-            println "You will now be asked for a publishing version to use for each sub-project,"
-            println "before any of them are built and published."
-
-            publishVersion = getNextVersionWithUserInput(project)
-        } else {
-            String username = System.getProperty("user.name").toLowerCase()
-            publishVersion = "${username}-SNAPSHOT"
-        }
-
-        println()
-        println "Publishing as version '${publishVersion}'..."
-        println()
-    }
-
-    allprojects { Project p ->
-        p.version = publishVersion
-        p.logger.info "Set ${p.name} version to ${p.version}"
-    }
-}
-
 subprojects {
     // Add a default configuration for any subprojects which don't have one.
     if (configurations.findByName("default") == null) {
@@ -237,9 +44,6 @@ subprojects {
     
     // Set common repo info for dependencies.
     repositories {
-        ivy {
-            url PUBLISH_LOCAL_TARGET_URI
-        }
         ivy {
             url artifactoryServer + artifactoryPluginRepo
             // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users, depending
@@ -269,70 +73,6 @@ subprojects {
         resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
     }
 
-    // Add source version information for each plugin JAR.
-    if (project.plugins.hasPlugin("groovy")) {
-        // We don't need an "afterEvaluate" here because "jar" is a standard task for "groovy" projects.
-        project.jar {
-            dependsOn setHgVersionInfo
-            manifest {
-                attributes(["Implementation-Version": rootProject.hgVersionInfo])
-            }
-        }
-    }
-
-    String publishingGroup =
-        (project.name.endsWith("-plugin") || project.name == "credential-store") ?
-            "Plugins" :
-            "CustomGradle";
-
-    // Set up publish tasks for each subproject.
-    project.ext.publishTasks = []
-    project.publishTasks << project.task("publish${publishingGroup}Really", type: Upload) { Upload t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
-        t.configuration = configurations.default
-        t.uploadDescriptor = true
-        t.descriptorDestination = new File(project.buildDir, "ivy.xml")
-        t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
-        // Add a dependency on the root project, so that it will be triggered to set up the version number, by the
-        // existence of that task in the task graph.
-        t.dependsOn rootProject.tasks[t.name]
-
-        t.repositories.ivy {
-            credentials {
-                username artifactoryUsername
-                password artifactoryPassword
-            }
-            url PUBLISH_TARGET_URI
-        }
-
-        t.doLast {
-            println "Published ${project.name} ${project.version} " +
-                "to ${PUBLISH_TARGET_URI} at: " + new Date()
-        }
-    }
-    project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
-        t.configuration = configurations.default
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
-        t.uploadDescriptor = true
-        t.descriptorDestination = new File(project.buildDir, "ivy.xml")
-        t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
-        // Add a dependency on the root project, so that it will be triggered to set up the version number, by the
-        // existence of that task in the task graph.
-        t.dependsOn rootProject.tasks[t.name]
-
-        t.repositories.ivy {
-            url PUBLISH_LOCAL_TARGET_URI
-        }
-
-        t.inputs.dir new File(project.projectDir as File, "/build/libs")
-        t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "/${project.group}/${project.name}/${project.version}"
-
-        t.doLast {
-            println "Published ${project.name} ${project.version} " +
-                "to ${PUBLISH_LOCAL_TARGET_URI} at: " + new Date()
-        }
-    }
-
     // For any projects with a "test" task, add a task to launch the test report then run tests.
     if (project.tasks.findByPath("test") != null) {
         task testAndShowReport(type: DefaultTask) {
@@ -345,22 +85,9 @@ subprojects {
                 }
             }
         }
-
-        if (propertyOrNull(project, "pubAs") == "release") {
-            project.publishReallyTasks.each { it.dependsOn test }
-        }
     }
 }
 
-
-// Add source version info for the two non-JAR subprojects.
-project(":custom-gradle") {
-    afterEvaluate {
-        createVersionedInitScript.dependsOn setHgVersionInfo
-    }
-}
-project(":credential-store") {
-    afterEvaluate {
-        createProjectVersionFile.dependsOn setHgVersionInfo
-    }
-}
+apply from: "versionInfo.gradle"
+apply from: "website.gradle"
+apply from: "publish.gradle"

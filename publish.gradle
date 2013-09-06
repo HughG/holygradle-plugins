@@ -1,0 +1,145 @@
+final String PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
+final String PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI()
+
+def propertyOrNull(Object o, String propertyName) {
+    o.hasProperty(propertyName) ? o.property(propertyName) : null
+}
+
+void setPublishTaskDescription(Task t, String publishingGroup, String targetUri) {
+    t.group = "Publishing"
+    t.description = "Publish release/snapshot version (based on 'pubAs' property) of ${publishingGroup} to ${targetUri}"
+}
+
+String getNextVersionWithUserInput(Project project) {
+    Console console = System.console()
+    if (console == null) {
+        // Work-around for this bug: http://issues.gradle.org/browse/GRADLE-2310
+        println "Null System.console(). Are you using the Gradle Daemon? If so, don't. "
+        println "It prevents acquiring user input. Please use: --no-daemon"
+        throw new RuntimeException("You can't publish when running with the Gradle daemon, " +
+                                       "because we need to prompt at the console for version numbers. " +
+                                       "Run with --no-daemon."
+        )
+    }
+
+    console.println()
+    console.println("Choose the version for publishing ${project.group}:${project.name}.")
+    String userVersionNumber = console.readLine("\nPlease type in the version number to use: ")
+    if (!userVersionNumber) {
+        throw new RuntimeException("Publishing version '${userVersionNumber}' is not acceptable")
+    }
+    return userVersionNumber
+}
+
+// Set up publish tasks for root project.
+project.ext.publishTasks = []
+project.ext.publishReallyTasks = []
+["Plugins", "CustomGradle"].each { String publishingGroup ->
+    Task publishReally = project.task("publish${publishingGroup}Really") { Task t ->
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
+    }
+    project.publishTasks << publishReally
+    project.publishReallyTasks << publishReally
+
+    project.publishTasks << project.task("publish${publishingGroup}Locally") { Task t ->
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
+    }
+}
+
+// Pick a version number for each subproject, if we're publishing.
+project.gradle.taskGraph.whenReady {
+    String publishVersion = "unspecified"
+    if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
+        if (propertyOrNull(project, "pubAs") == "release") {
+            println "You will now be asked for a publishing version to use for each sub-project,"
+            println "before any of them are built and published."
+
+            publishVersion = getNextVersionWithUserInput(project)
+        } else {
+            String username = System.getProperty("user.name").toLowerCase()
+            publishVersion = "${username}-SNAPSHOT"
+        }
+
+        println()
+        println "Publishing as version '${publishVersion}'..."
+        println()
+    }
+
+    allprojects { Project p ->
+        p.version = publishVersion
+        p.logger.info "Set ${p.name} version to ${p.version}"
+    }
+}
+
+subprojects {
+    // Add local repo to repos used for dependencies.
+    repositories {
+        ivy {
+            url PUBLISH_LOCAL_TARGET_URI
+        }
+    }
+    
+    String publishingGroup =
+        (project.name.endsWith("-plugin") || project.name == "credential-store") ?
+            "Plugins" :
+            "CustomGradle";
+
+    // Set up publish tasks for each subproject.
+    project.ext.publishTasks = []
+    project.publishTasks << project.task("publish${publishingGroup}Really", type: Upload) { Upload t ->
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
+        t.configuration = configurations.default
+        t.uploadDescriptor = true
+        t.descriptorDestination = new File(project.buildDir, "ivy.xml")
+        t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
+        // Add a dependency on the root project, so that it will be triggered to set up the version number, by the
+        // existence of that task in the task graph.
+        t.dependsOn rootProject.tasks[t.name]
+
+        t.repositories.ivy {
+            credentials {
+                username artifactoryUsername
+                password artifactoryPassword
+            }
+            url PUBLISH_TARGET_URI
+        }
+
+        t.doLast {
+            println "Published ${project.name} ${project.version} " +
+                "to ${PUBLISH_TARGET_URI} at: " + new Date()
+        }
+    }
+    project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
+        t.configuration = configurations.default
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
+        t.uploadDescriptor = true
+        t.descriptorDestination = new File(project.buildDir as File, "ivy.xml")
+        t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
+        // Add a dependency on the root project, so that it will be triggered to set up the version number, by the
+        // existence of that task in the task graph.
+        t.dependsOn rootProject.tasks[t.name]
+
+        t.repositories.ivy {
+            url PUBLISH_LOCAL_TARGET_URI
+        }
+
+        t.inputs.dir new File(project.projectDir as File, "/build/libs")
+        t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "/${project.group}/${project.name}/${project.version}"
+
+        t.doLast {
+            println "Published ${project.name} ${project.version} " +
+                "to ${PUBLISH_LOCAL_TARGET_URI} at: " + new Date()
+        }
+    }
+
+    // For any projects with a "test" task, add a task to launch the test report then run tests.
+    if (project.tasks.findByPath("test") != null) {
+        if (propertyOrNull(project, "pubAs") == "release") {
+            project.publishReallyTasks.each { it.dependsOn test }
+        }
+    }
+}
+
+task clean(type: Delete) { Delete t ->
+    t.delete(PUBLISH_LOCAL_TARGET_URI)
+}
