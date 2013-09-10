@@ -7,7 +7,7 @@ import org.junit.Test
 
 import static org.junit.Assert.assertTrue
 
-class ProjectDependenciesTest extends AbstractHolyGradleIntegrationTest {
+class ProjectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTest {
     /**
      * Tests the situation where one project A (the root, or some sourceDependency) has a dependency on one version of a
      * packedDependency module, and another module/project B (in a sourceDependency) depends on a different version,

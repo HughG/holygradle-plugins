@@ -140,6 +140,6 @@ subprojects {
     }
 }
 
-task clean(type: Delete) { Delete t ->
+project.tasks["clean"].doLast { Delete t ->
     t.delete(PUBLISH_LOCAL_TARGET_URI)
 }

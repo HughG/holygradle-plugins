@@ -8,7 +8,7 @@ import org.junit.Test
 
 import static org.junit.Assert.assertTrue
 
-class DefaultPublishPackagesExtensionTest extends AbstractHolyGradleIntegrationTest {
+class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleIntegrationTest {
     
     @Test
     public void testDependenciesInIvyXml() {
@@ -21,10 +21,9 @@ class DefaultPublishPackagesExtensionTest extends AbstractHolyGradleIntegrationT
             if (publicationsDir.exists()) {
                 publicationsDir.deleteDir()
             }
-            Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
             invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
                 launcher.forTasks("generateIvyModuleDescriptor")
-                launcher.withArguments("--info")
+                launcher.addArguments("--info")
             }
             
             File ivyXml = new File(publicationsDir, "ivy/ivy.xml")

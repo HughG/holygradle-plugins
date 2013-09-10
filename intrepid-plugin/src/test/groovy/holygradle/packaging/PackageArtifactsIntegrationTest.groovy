@@ -9,7 +9,7 @@ import org.junit.Test
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertTrue
 
-class PackageArtifactsTest extends AbstractHolyGradleIntegrationTest {
+class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testBasicConfiguration() {
         File projectDir = new File(getTestDir(), "projectA")

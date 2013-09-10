@@ -1,5 +1,6 @@
 package holygradle.test
 
+import org.gradle.api.tasks.TaskExecutionException
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
@@ -21,9 +22,9 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
         maybeForwardGradleHomeInfo(connector)
 
         ProjectConnection connection = connector.connect()
-        try { 
-            BuildLauncher launcher = new WrapperBuildLauncher(connection.newBuild())
-            maybeForwardHttpProxyProperties(launcher)
+        try {
+            WrapperBuildLauncher launcher = new WrapperBuildLauncher(connection.newBuild())
+            maybeAddHttpProxyArguments(launcher)
             ConfigureUtil.configure(closure, launcher)
 
             if (launcher.expectedFailures.size() == 0) {
@@ -34,6 +35,11 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
                 String error = null
                 try {
                     launcher.run()
+                } catch (TaskExecutionException e) {
+                    if (e.cause?.message?.startsWith("Could not install Gradle distribution from")) {
+                        println "Failed to install base Gradle distribution."
+                        println "Try re-running tests with proxy arguments: -Dhttp.proxyHost=xxx -Dhttp.proxyPort=NNNN"
+                    }
                 } catch (RuntimeException e) {
                     println(e.toString())
                     error = errorOutput.toString()
@@ -70,18 +76,14 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
      * adds them to the JVM properties of the {@link BuildLauncher}.
      * @param launcher The launcher to be configured.
      */
-    private static void maybeForwardHttpProxyProperties(BuildLauncher launcher) {
-        String[] jvmArguments = []
+    private static void maybeAddHttpProxyArguments(WrapperBuildLauncher launcher) {
         String proxyHost = System.getProperty("http.proxyHost")
         String proxyPort = System.getProperty("http.proxyPort")
         if (proxyHost != null) {
-            jvmArguments << proxyHost
+            launcher.addArguments("-Dhttp.proxyHost=${proxyHost}")
         }
         if (proxyPort != null) {
-            jvmArguments << proxyPort
-        }
-        if (!jvmArguments.empty) {
-            launcher.setJvmArguments(jvmArguments)
+            launcher.addArguments("-Dhttp.proxyPort=${proxyPort}")
         }
     }
 

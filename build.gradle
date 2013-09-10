@@ -1,4 +1,8 @@
 import org.gradle.api.initialization.dsl.ScriptHandler
+import org.gradle.api.tasks.testing.Test
+import org.gradle.process.JavaForkOptions
+
+apply plugin: 'groovy'
 
 buildscript { ScriptHandler script ->
     // Make sure we don't publish something which is based on conflicting versions of dependencies.
@@ -29,6 +33,18 @@ subprojects {
 // The custom-gradle project also needs the groovy plugin, even though it's not a "-plugin" itself.
 project(":custom-gradle") {
     apply plugin: "groovy"
+}
+
+void maybeForwardHttpProxyProperties(JavaForkOptions forkOptions) {
+    String proxyHost = System.getProperty("http.proxyHost")
+    String proxyPort = System.getProperty("http.proxyPort")
+
+    if (proxyHost != null) {
+        forkOptions.systemProperty("http.proxyHost", proxyHost)
+    }
+    if (proxyPort != null) {
+        forkOptions.systemProperty("http.proxyPort", proxyPort)
+    }
 }
 
 subprojects {
@@ -73,15 +89,44 @@ subprojects {
         resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
     }
 
-    // For any projects with a "test" task, add a task to launch the test report then run tests.
+    // For any projects with a "test" task, add integration tests and a way to launch the test report then run tests.
     if (project.tasks.findByPath("test") != null) {
+        // Separate out unit tests and integration tests
+        project.tasks.test { Test t ->
+            t.description = "Run the unit tests (test classes not ending in 'IntegrationTest')."
+            t.include "**/*Test.*"
+            t.exclude "**/Abstract*.*"
+            t.exclude "**/*IntegrationTest.*"
+
+            maybeForwardHttpProxyProperties(t)
+        }
+        project.task([type: Test], "integTest") { Test t ->
+            t.group = "Verification"
+            t.description = "Run the integration tests (test classes not ending in 'IntegrationTest')."
+            t.include "**/*IntegrationTest.*"
+            t.exclude "**/Abstract*.*"
+            t.testReportDir = file("${project.reporting.baseDir}/$name")
+
+            maybeForwardHttpProxyProperties(t)
+        }
+
         task testAndShowReport(type: DefaultTask) {
             dependsOn test
             group = "Verification"
             description "Opens the test report and runs the tests."
             doFirst {
                 project.exec {
-                    commandLine "cmd", "/c", "start", "${testReportDir}/index.html"
+                    commandLine "cmd", "/c", "start", "${test.testReportDir}/index.html"
+                }
+            }
+        }
+        task integTestAndShowReport(type: DefaultTask) {
+            dependsOn integTest
+            group = "Verification"
+            description "Opens the integration test report and runs the integration tests."
+            doFirst {
+                project.exec {
+                    commandLine "cmd", "/c", "start", "${integTest.testReportDir}/index.html"
                 }
             }
         }

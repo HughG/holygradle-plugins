@@ -6,7 +6,7 @@ import org.junit.Test
 
 import static org.junit.Assert.assertTrue
 
-class CopyArtifactsTest extends AbstractHolyGradleIntegrationTest {
+class CopyArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testCopyFromPackedDependency() {
         File projectDir = new File(getTestDir(), "copyPackedDependencies")
@@ -17,7 +17,7 @@ class CopyArtifactsTest extends AbstractHolyGradleIntegrationTest {
         
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("copyArtifacts")
-            launcher.withArguments("-DcopyArtifactsTarget=${testDir.canonicalPath}")
+            launcher.addArguments("-DcopyArtifactsTarget=${testDir.canonicalPath}")
         }
         
         assertTrue(testDir.exists())
