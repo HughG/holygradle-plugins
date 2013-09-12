@@ -1,0 +1,114 @@
+import org.gradle.process.JavaForkOptions
+
+void maybeForward(JavaForkOptions forkOptions, String propertyName) {
+    String extraArgs = System.getProperty(propertyName)
+    if (extraArgs != null) {
+        forkOptions.systemProperty(propertyName, extraArgs)
+    }
+}
+
+void maybeForwardHttpProxyProperties(JavaForkOptions forkOptions) {
+    maybeForward(forkOptions, "http.proxyHost")
+    maybeForward(forkOptions, "http.proxyPort")
+}
+
+void maybeForwardExtraArguments(JavaForkOptions forkOptions) {
+    maybeForward(forkOptions, "holygradle.extraArgsForIntegrationTest")
+}
+
+
+task cleanIntegrationTestState (type: Delete) { Delete t ->
+    // Delete the Gradle user home directory used for integration testing, which will contain versions of the plugins
+    // we're testing, "downloaded" from the local_repo.  We do this explicitly, rather that relying on Gradle spotting
+    // changed timestamps (a) because it may not re-download non-snapshot releases (not sure); and (b) just to be on
+    // the safe side.
+    t.delete project.LOCAL_GRADLE_USER_HOME
+
+    // Also, delete any previously-downloaded custom-gradle distribution, so that we're sure we're testing the latest
+    // build.  We _have to_ do this explicitly because (a) Gradle doesn't automatically update snapshot versions of
+    // wrapper distributions; and (b) even if we're building a non-snapshot version, it might be the same as some
+    // version we previously downloaded from the local_repo, if we were trying to publish a release build but it failed.
+    //
+    // Note that, because of Gradle defect http://issues.gradle.org/browse/GRADLE-2756, distributions used by the
+    // tooling API (as used by the integration tests) are always unpacked in the default Gradle user home directory,
+    // even if the user has configured it to be elsewhere.
+    t.doFirst {
+        // We have to set this up in a doFirst block, because the project version isn't set at task creation time,
+        // but is by task execution, as long as one of the "publish locally" tasks is in the task graph.
+        if (!project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
+            throw new RuntimeException("${t.name} can only be used with a publish task, which will set the version")
+        }
+
+        final File wrapperDir = new File(StartParameter.DEFAULT_GRADLE_USER_HOME, "wrapper")
+        final File distsDir = new File(wrapperDir, "dists")
+        final String customDistBaseName = project.CUSTOM_GRADLE_BASE_NAME
+        final String customDistName = "${customDistBaseName}-${project.version}"
+        final File customDistDir = new File(distsDir, customDistName)
+        t.delete customDistDir
+    }
+}
+
+// Make the local custom-gradle publish task depend on the integration test clean-up.  The clean-up can't run by itself
+// because it requires the publish task to be in the task graph, to set the version.
+(project.rootProject.tasks["publishCustomGradleLocally"] as Task).dependsOn(cleanIntegrationTestState)
+
+subprojects { Project project ->
+    // For any projects with a "test" task, other than the custom distribution project, add integration tests and a way
+    // to launch the test report then run tests.
+    if (project.tasks.findByPath("test") != null & project.path != ":custom-gradle") {
+        // Separate out unit tests and integration tests
+        project.tasks.test { Test t ->
+            t.description = "Run the unit tests (test classes not ending in 'IntegrationTest')."
+            t.include "**/*Test.*"
+            t.exclude "**/Abstract*.*"
+            t.exclude "**/*IntegrationTest.*"
+        }
+        project.task([type: Test], "integTest") { Test t ->
+            t.group = "Verification"
+            t.description = "Run the integration tests (test classes not ending in 'IntegrationTest')."
+            t.include "**/*IntegrationTest.*"
+            t.exclude "**/Abstract*.*"
+            t.testReportDir = file("${project.reporting.baseDir}/$name")
+            t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
+            t.dependsOn(project.tasks["publishPluginsLocally"])
+
+            t.doFirst {
+                // Set up a number of system properties needed by the integration tests.  We have to set these up in a
+                // doFirst block, because the project version isn't set at task creation time, but is by task execution.
+                maybeForwardHttpProxyProperties(t)
+                maybeForwardExtraArguments(t)
+                final String customDistBaseName = project.findProject(":custom-gradle").CUSTOM_GRADLE_BASE_NAME
+                final String customDistName = "${customDistBaseName}-${project.version}"
+                final String distributionPath = "holygradle/custom-gradle/${project.version}/${customDistName}.zip"
+                final String distributionURIString = URI.create(project.PUBLISH_LOCAL_TARGET_URI + distributionPath).toString()
+                t.systemProperty("holygradle.pluginsRepoOverride", project.PUBLISH_LOCAL_TARGET_URI.toString())
+                t.systemProperty("holygradle.distributionForIntegrationTest", distributionURIString)
+                t.systemProperty("holygradle.gradleUserHomeForIntegrationTest", project.LOCAL_GRADLE_USER_HOME.toString())
+                t.systemProperty("holygradle.versionForIntegrationTest", project.version)
+            }
+        }
+        // Make the real publish tasks depend on the integration test.
+        project.publishReallyTasks.each { Task publishReallyTask ->
+            publishReallyTask.dependsOn project.tasks["integTest"]
+        }
+
+        task showTestReport(type: DefaultTask) {
+            group = "Verification"
+            description "Opens the unit test report."
+            doLast {
+                project.exec {
+                    commandLine "cmd", "/c", "start", "${test.testReportDir}/index.html"
+                }
+            }
+        }
+        task showIntegrationTestReport(type: DefaultTask) {
+            group = "Verification"
+            description "Opens the integration test report."
+            doLast {
+                project.exec {
+                    commandLine "cmd", "/c", "start", "${integTest.testReportDir}/index.html"
+                }
+            }
+        }
+    }
+}

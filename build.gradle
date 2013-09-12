@@ -1,6 +1,4 @@
 import org.gradle.api.initialization.dsl.ScriptHandler
-import org.gradle.api.tasks.testing.Test
-import org.gradle.process.JavaForkOptions
 
 apply plugin: 'groovy'
 
@@ -12,14 +10,6 @@ buildscript { ScriptHandler script ->
 subprojects {
     if (project.name.endsWith("plugin")) {
         apply plugin: "groovy"
-
-        // Set helper properties for unit tests.
-        test {
-            systemProperties([
-                'holygradle.gradleHomeDir': project.gradle.gradleHomeDir.path,
-                'holygradle.gradleUserHomeDir': project.gradle.gradleUserHomeDir.path
-            ])
-        }
 
         // Specify common dependencies for all projects.
         dependencies {
@@ -33,18 +23,6 @@ subprojects {
 // The custom-gradle project also needs the groovy plugin, even though it's not a "-plugin" itself.
 project(":custom-gradle") {
     apply plugin: "groovy"
-}
-
-void maybeForwardHttpProxyProperties(JavaForkOptions forkOptions) {
-    String proxyHost = System.getProperty("http.proxyHost")
-    String proxyPort = System.getProperty("http.proxyPort")
-
-    if (proxyHost != null) {
-        forkOptions.systemProperty("http.proxyHost", proxyHost)
-    }
-    if (proxyPort != null) {
-        forkOptions.systemProperty("http.proxyPort", proxyPort)
-    }
 }
 
 subprojects {
@@ -88,51 +66,27 @@ subprojects {
     configurations.all {
         resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
     }
-
-    // For any projects with a "test" task, add integration tests and a way to launch the test report then run tests.
-    if (project.tasks.findByPath("test") != null) {
-        // Separate out unit tests and integration tests
-        project.tasks.test { Test t ->
-            t.description = "Run the unit tests (test classes not ending in 'IntegrationTest')."
-            t.include "**/*Test.*"
-            t.exclude "**/Abstract*.*"
-            t.exclude "**/*IntegrationTest.*"
-
-            maybeForwardHttpProxyProperties(t)
-        }
-        project.task([type: Test], "integTest") { Test t ->
-            t.group = "Verification"
-            t.description = "Run the integration tests (test classes not ending in 'IntegrationTest')."
-            t.include "**/*IntegrationTest.*"
-            t.exclude "**/Abstract*.*"
-            t.testReportDir = file("${project.reporting.baseDir}/$name")
-
-            maybeForwardHttpProxyProperties(t)
-        }
-
-        task testAndShowReport(type: DefaultTask) {
-            dependsOn test
-            group = "Verification"
-            description "Opens the test report and runs the tests."
-            doFirst {
-                project.exec {
-                    commandLine "cmd", "/c", "start", "${test.testReportDir}/index.html"
-                }
-            }
-        }
-        task integTestAndShowReport(type: DefaultTask) {
-            dependsOn integTest
-            group = "Verification"
-            description "Opens the integration test report and runs the integration tests."
-            doFirst {
-                project.exec {
-                    commandLine "cmd", "/c", "start", "${integTest.testReportDir}/index.html"
-                }
-            }
-        }
-    }
 }
 
+/*
+ * PUBLISH_LOCAL_TARGET_URI is needed by both test.gradle and publish.gradle, so it's defined here,
+ * keeping other related URIs with it for ease of understanding.
+ */
+project.ext.PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
+project.ext.PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI().toString() + "/"
+/**
+ * LOCAL_GRADLE_USER_HOME is passed to integration tests for the Gradle daemon (launched by the WrapperBuildLauncher in
+ * AbstractHolyGradleIntegrationTest) to use as its Gradle user home.  Note that the plugins to test aren't "downloaded"
+ * to here from the PUBLISH_LOCAL_TARGET_URI folder: Gradle seems to be smart enough to just use them in place.
+ */
+project.ext.LOCAL_GRADLE_USER_HOME = new File(project.projectDir as File, "local_gradle_user_home").toString()
+
+/**
+ * CUSTOM_GRADLE_BASE_NAME is needed by the custom-gradle project, but also by the integration test setup.
+ */
+project.ext.CUSTOM_GRADLE_BASE_NAME = "custom-gradle-${gradle.gradleVersion}"
+
 apply from: "versionInfo.gradle"
-apply from: "website.gradle"
 apply from: "publish.gradle"
+apply from: "test.gradle"
+apply from: "website.gradle"

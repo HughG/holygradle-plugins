@@ -1,4 +1,7 @@
-apply from: "..\\..\\..\\testUtil\\header.gradle"
+buildscript {
+    gplugins.use "devenv:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
 
 DevEnv {
     solutionFile("build/foo_vc10.sln") {

@@ -1,4 +1,4 @@
-// NOT applying "header.gradle", because we want to test programmatic application of the intrepid plugin.
+// NOT using gplugins.apply(), because we want to test programmatic application of the intrepid plugin.
 
 configurations {
     foo

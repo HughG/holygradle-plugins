@@ -17,10 +17,12 @@ class IntegrationTest extends AbstractHolyGradleIntegrationTest {
         invokeGradle(projectDir) { BuildLauncher launcher ->
             launcher.forTasks("buildRelease", "buildDebug")
         }
-        assertTrue(new File(libDir, "Debug/foo_d32.lib").exists())
-        assertTrue(new File(libDir, "Debug/foo_d64.lib").exists())
-        assertTrue(new File(libDir, "Release/foo_r64.lib").exists())
-        assertTrue(new File(libDir, "Release/foo_r64.lib").exists())
+        ["Release", "Debug"].each { String conf ->
+            ["64", "32"].each { String platform ->
+                final File file = new File(libDir, "${conf}/foo_${conf[0].toLowerCase()}${platform}.lib")
+                assertTrue("${file} exists", file.exists())
+            }
+        }
     }
     
     @Test

@@ -1,34 +1,10 @@
-final String PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
-final String PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI()
-
 def propertyOrNull(Object o, String propertyName) {
     o.hasProperty(propertyName) ? o.property(propertyName) : null
 }
 
 void setPublishTaskDescription(Task t, String publishingGroup, String targetUri) {
     t.group = "Publishing"
-    t.description = "Publish release/snapshot version (based on 'pubAs' property) of ${publishingGroup} to ${targetUri}"
-}
-
-String getNextVersionWithUserInput(Project project) {
-    Console console = System.console()
-    if (console == null) {
-        // Work-around for this bug: http://issues.gradle.org/browse/GRADLE-2310
-        println "Null System.console(). Are you using the Gradle Daemon? If so, don't. "
-        println "It prevents acquiring user input. Please use: --no-daemon"
-        throw new RuntimeException("You can't publish when running with the Gradle daemon, " +
-                                       "because we need to prompt at the console for version numbers. " +
-                                       "Run with --no-daemon."
-        )
-    }
-
-    console.println()
-    console.println("Choose the version for publishing ${project.group}:${project.name}.")
-    String userVersionNumber = console.readLine("\nPlease type in the version number to use: ")
-    if (!userVersionNumber) {
-        throw new RuntimeException("Publishing version '${userVersionNumber}' is not acceptable")
-    }
-    return userVersionNumber
+    t.description = "Publish snapshot or (using 'publishVersion' property) release of ${publishingGroup} to ${targetUri}"
 }
 
 // Set up publish tasks for root project.
@@ -50,11 +26,9 @@ project.ext.publishReallyTasks = []
 project.gradle.taskGraph.whenReady {
     String publishVersion = "unspecified"
     if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
-        if (propertyOrNull(project, "pubAs") == "release") {
-            println "You will now be asked for a publishing version to use for each sub-project,"
-            println "before any of them are built and published."
-
-            publishVersion = getNextVersionWithUserInput(project)
+        String publishVersionFromProperty = propertyOrNull(project, "publishVersion")
+        if (publishVersionFromProperty != null) {
+            publishVersion = publishVersionFromProperty
         } else {
             String username = System.getProperty("user.name").toLowerCase()
             publishVersion = "${username}-SNAPSHOT"
@@ -65,13 +39,13 @@ project.gradle.taskGraph.whenReady {
         println()
     }
 
-    allprojects { Project p ->
+    project.allprojects { Project p ->
         p.version = publishVersion
         p.logger.info "Set ${p.name} version to ${p.version}"
     }
 }
 
-subprojects {
+project.subprojects {
     // Add local repo to repos used for dependencies.
     repositories {
         ivy {
@@ -93,7 +67,7 @@ subprojects {
         t.descriptorDestination = new File(project.buildDir, "ivy.xml")
         t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
         // Add a dependency on the root project, so that it will be triggered to set up the version number, by the
-        // existence of that task in the task graph.
+        // existence of that task in the task graph, and because it brings in a dependency on integration testing.
         t.dependsOn rootProject.tasks[t.name]
 
         t.repositories.ivy {
@@ -124,22 +98,16 @@ subprojects {
         }
 
         t.inputs.dir new File(project.projectDir as File, "/build/libs")
-        t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "/${project.group}/${project.name}/${project.version}"
+        t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "${project.group}/${project.name}/${project.version}"
 
         t.doLast {
             println "Published ${project.name} ${project.version} " +
                 "to ${PUBLISH_LOCAL_TARGET_URI} at: " + new Date()
         }
     }
-
-    // For any projects with a "test" task, add a task to launch the test report then run tests.
-    if (project.tasks.findByPath("test") != null) {
-        if (propertyOrNull(project, "pubAs") == "release") {
-            project.publishReallyTasks.each { it.dependsOn test }
-        }
-    }
 }
 
-project.tasks["clean"].doLast { Delete t ->
-    t.delete(PUBLISH_LOCAL_TARGET_URI)
+project.tasks["clean"].doLast {
+    project.delete(PUBLISH_LOCAL_TARGET_URI)
+    project.delete(LOCAL_GRADLE_USER_HOME)
 }

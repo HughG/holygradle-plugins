@@ -41,5 +41,6 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
 (^|/)ipch/
-# Local publishing
+# Local publishing / downloading
 ^local_repo/
+^local_gradle_user_home/

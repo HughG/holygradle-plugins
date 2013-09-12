@@ -108,6 +108,8 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     private void forwardAddedArguments() {
-        launcher.withArguments(this.arguments.toArray(new String[this.arguments.size()]));
+        String[] arguments = this.arguments.toArray(new String[this.arguments.size()]);
+        System.out.println("Running with arguments " + this.arguments.toString());
+        launcher.withArguments(arguments);
     }
 }

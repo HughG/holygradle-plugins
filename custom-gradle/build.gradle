@@ -29,7 +29,7 @@ task createVersionedInitScript(type: Copy) {
     into versionedInitScriptsPath
     filter { String line -> (line =~ /\[\[INIT_SCRIPT_SOURCE_VERSION\]\]/).replaceFirst(rootProject.hgVersionInfo) }
     filter { String line -> (line =~ /\[\[INIT_SCRIPT_VERSION\]\]/).replaceFirst(project.version) }
-    filter { String line -> (line =~ /\[\[ARTIFACTORY_SERVER\]\]/).replaceFirst(artifactoryServerName) }
+    filter { String line -> (line =~ /\[\[ARTIFACTORY_SERVER\]\]/).replaceFirst(artifactoryServer) }
 }
 
 task latestInitScript(type: Copy) {
@@ -43,8 +43,8 @@ task customDistribution(type: Zip) {
     group = "Main"
     description = 'Creates a custom Gradle distribution containing the custom plugins'
     // Give this distribution a name that indicates that it is not the standard distribution
-    baseName = "custom-gradle-${gradle.gradleVersion}"
-    into("custom-gradle-${gradle.gradleVersion}") {
+    baseName = rootProject.CUSTOM_GRADLE_BASE_NAME
+    into(rootProject.CUSTOM_GRADLE_BASE_NAME) {
         into('init.d') { 
             from versionedInitScriptsPath
             exclude "*- Copy.gradle"
