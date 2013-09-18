@@ -1,5 +1,7 @@
 package holygradle.scm
 
+import groovy.mock.interceptor.StubFor
+import holygradle.buildscript.BuildScriptDependencies
 import holygradle.test.*
 import org.gradle.api.Project
 import org.junit.Test
@@ -39,22 +41,59 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         helloFile.write("bonjour")
         assertFalse(sourceControl.hasLocalChanges())
     }
-    
+
+    @Test
+    public void canGetMercurialRevision() {
+        def expectedRevision = "12345abcdefg"
+        def hgCommand = [ execute : { args -> "12345abcdefg"} ] as HgCommand
+        def repo = new HgRepository(hgCommand, new File(getTestDir(), "test_hg"))
+        def actualRevision = repo.getRevision()
+
+        assertEquals(expectedRevision, actualRevision)
+    }
+
+    @Test
+    public void canDetermineThatThereAreLocalChanges() {
+        def changedFileList = ["M some_modified_file.txt","A some_added_file.foo"]
+        def hgCommand = [ execute : {args -> changedFileList.join("\n")} ] as HgCommand
+        def repo = new HgRepository(hgCommand, new File(getTestDir(), "test_hg"))
+
+        assertTrue(repo.hasLocalChanges())
+    }
+
+    @Test
+    public void canDetermineThatThereAreNoLocalChanges() {
+        def changedFileList = "\n"
+        def hgCommand = [ execute: {args -> changedFileList} ] as HgCommand
+        def repo = new HgRepository(hgCommand, new File(getTestDir(), "test_hg"))
+
+        assertFalse(repo.hasLocalChanges())
+    }
+
     @Test
     public void testHg() {
         File hgDir = extractZip("test_hg")
-        
+
         Project project = ProjectBuilder.builder().withProjectDir(hgDir).build()
+        project.ext.hgConfigFile = ""
+
+        def stubForBSD = new StubFor(BuildScriptDependencies)
+        stubForBSD.ignore("getPath") { "c:\\Program Files\\TortoiseHg" }
+        stubForBSD.ignore("asType")
+        def dummyBSD = (BuildScriptDependencies)stubForBSD.proxyInstance([project] as Object[])
+        project.extensions.add("buildScriptDependencies", dummyBSD )
+
         SourceControlRepositories.createExtension(project)
-        SourceControlRepository sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
-        
+        def sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
+
         assertTrue(sourceControl instanceof HgRepository)
+
         assertEquals("9cc27b0a5c28746662dc66e50b2d2d0d25897b90", sourceControl.getRevision())
         assertFalse(sourceControl.hasLocalChanges())
         assertEquals("unknown", sourceControl.getUrl())
         assertEquals("hg", sourceControl.getProtocol())
         assertEquals(hgDir.getCanonicalFile(), sourceControl.getLocalDir())
-        
+
         File ahoyFile = new File(hgDir, "ahoy.txt")
         ahoyFile.write("bof")
         assertTrue(sourceControl.hasLocalChanges())
@@ -80,8 +119,8 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
     @Test
     public void testGetWithoutDummy() {
         File dummyDir = new File(getTestDir(), "dummy")
-        
-        SourceControlRepository repo = SourceControlRepositories.get(dummyDir)
+        Project dummyProject = [ getProjectDir : { dummyDir }] as Project
+        SourceControlRepository repo = SourceControlRepositories.get(dummyProject)
         assertNull(repo)
     }
 }

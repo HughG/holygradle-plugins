@@ -1,7 +1,6 @@
 dependencies {
     groovy group: 'org.codehaus.groovy', name: 'groovy', version: '1.8.2'
     groovy group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.6'
-    compile group: 'com.aragost.javahg', name: 'javahg', version: '0.5-SNAPSHOT'
     compile group: 'org.tmatesoft.svnkit', name: 'svnkit', version: '1.7.5'
     testCompile group: 'net.lingala.zip4j', name: 'zip4j', version: '1.3.1'
     

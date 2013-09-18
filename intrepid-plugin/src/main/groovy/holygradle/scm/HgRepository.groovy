@@ -1,22 +1,18 @@
 package holygradle.scm
 
-import com.aragost.javahg.Changeset
-import com.aragost.javahg.Repository
-import com.aragost.javahg.RepositoryConfiguration
-import com.aragost.javahg.commands.StatusCommand
-import com.aragost.javahg.commands.StatusResult
-
 import java.util.regex.Matcher
 
 class HgRepository implements SourceControlRepository {
     File workingCopyDir
+    HgCommand hgCommand
     
-    public HgRepository(File localPath) {
-        workingCopyDir = localPath
+    public HgRepository(HgCommand hgCommand, File workingCopyDir) {
+        this.hgCommand = hgCommand
+        this.workingCopyDir = workingCopyDir
     }
 
     public File getLocalDir() {
-        workingCopyDir
+        workingCopyDir.absoluteFile
     }
     
     public String getProtocol() {
@@ -37,28 +33,19 @@ class HgRepository implements SourceControlRepository {
         }
         url
     }
-    
+
     public String getRevision() {
-        RepositoryConfiguration repoConf = RepositoryConfiguration.DEFAULT
-        Repository repo = Repository.open(repoConf, workingCopyDir)
-        Changeset changeset = repo.workingCopy().getParent1()
-        String revision = changeset.getNode()
-        repo.close()
-        revision
+
+        def args = [
+            "log", "-l", "1",           // Execute log command, limiting the results to 1
+            "--template", "\"{node}\""  // Filter the results to get the changeset hash
+        ]
+        return hgCommand.execute(args)
     }
     
     public boolean hasLocalChanges() {
-        RepositoryConfiguration repoConf = RepositoryConfiguration.DEFAULT
-        Repository repo = Repository.open(repoConf, workingCopyDir)
-        StatusCommand statusCommand = new StatusCommand(repo)
-        StatusResult status = statusCommand.execute()
-        int changes = 
-            status.getModified().size() + 
-            status.getAdded().size() + 
-            status.getMissing().size() + 
-            status.getClean().size() +
-            status.getCopied().size()
-        repo.close()
-        changes > 0
+        // Execute hg status with added, removed or modified files
+        def changes = hgCommand.execute(["status", "-amrdC"])
+        changes.trim().length() > 0
     }
 }

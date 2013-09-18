@@ -4,6 +4,7 @@ import holygradle.Helper
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.BuildDependency
 import holygradle.dependencies.DependencyHandler
+import holygradle.scm.HgCommandLine
 import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
 import org.gradle.api.NamedDomainObjectContainer
@@ -184,7 +185,18 @@ class SourceDependencyHandler extends DependencyHandler {
         if (protocol == "svn") {
             sourceDependency = new SvnDependency(project, this)
         } else {
-            sourceDependency = new HgDependency(project, this, buildScriptDependencies)
+            def hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
+            def hgCommand = new HgCommandLine(
+                hgPath,
+                new File((String)project.ext.hgConfigFile),
+                { Closure it -> project.exec(it) }
+            )
+            sourceDependency = new HgDependency(
+                project,
+                this,
+                buildScriptDependencies,
+                hgCommand
+            )
         }
         String fetchTaskName = CamelCase.build("fetch", targetName)
         FetchSourceDependencyTask fetchTask =

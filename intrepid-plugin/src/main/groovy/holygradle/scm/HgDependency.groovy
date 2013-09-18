@@ -1,8 +1,5 @@
 package holygradle.scm
 
-import com.aragost.javahg.Repository
-import com.aragost.javahg.RepositoryConfiguration
-import com.aragost.javahg.commands.UpdateCommand
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.source_dependencies.SourceDependency
@@ -13,10 +10,17 @@ import org.gradle.process.ExecSpec
 
 class HgDependency extends SourceDependency {
     private final BuildScriptDependencies buildScriptDependencies
+    private final HgCommand hgCommand
     
-    public HgDependency(Project project, SourceDependencyHandler sourceDependency, BuildScriptDependencies buildScriptDependencies) {
+    public HgDependency(
+        Project project,
+        SourceDependencyHandler sourceDependency,
+        BuildScriptDependencies buildScriptDependencies,
+        HgCommand hgCommand
+    ) {
         super(project, sourceDependency)
         this.buildScriptDependencies = buildScriptDependencies
+        this.hgCommand = hgCommand
     }
     
     @Override
@@ -42,10 +46,9 @@ class HgDependency extends SourceDependency {
         }
         execResult.assertNormalExitValue()
     }
-    
+
     private boolean TryCheckout(String repoUrl, File destinationDir, String repoBranch) {
-        String hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
-        Collection<String> cmdLine = [hgPath, "clone"]
+        Collection<String> cmdLine = ["clone"]
         if (repoBranch != null) { 
             cmdLine.add("--branch")
             cmdLine.add(repoBranch)
@@ -53,16 +56,11 @@ class HgDependency extends SourceDependency {
         cmdLine.add("--")
         cmdLine.add(repoUrl)
         cmdLine.add(destinationDir.path)
-        OutputStream errorOutput = new ByteArrayOutputStream()
-        ExecResult execResult = project.exec { ExecSpec spec ->
-            spec.setStandardOutput new ByteArrayOutputStream()
-            spec.setErrorOutput errorOutput
-            spec.setIgnoreExitValue true
-            spec.commandLine cmdLine
-        }
-        //println "execResult.getExitValue(): ${execResult.getExitValue()}"
-        if (execResult.getExitValue() != 0) {
-            println "    ${errorOutput.toString().trim()}"
+
+        try {
+            hgCommand.execute(cmdLine)
+        } catch ( RuntimeException ex ) {
+            println(ex.message)
             return false
         }
         return true
@@ -75,13 +73,7 @@ class HgDependency extends SourceDependency {
     
     @Override
     protected boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
-        RepositoryConfiguration repoConf = RepositoryConfiguration.DEFAULT
-        File hgrcFile = new File((String)project.ext.hgConfigFile)
-        if (!hgrcFile.exists()) {
-            println "Warning: no Mercurial config file at '${hgrcFile.path}'."
-        }
-        repoConf.setHgrcPath(hgrcFile.path)
-        
+
         boolean result = TryCheckout(repoUrl, destinationDir, repoBranch)
         
         if (!result) {
@@ -106,10 +98,7 @@ class HgDependency extends SourceDependency {
         
         // Update to a specific revision if necessary.
         if (repoRevision != null) {
-            Repository repo = Repository.open(repoConf, destinationDir)
-            UpdateCommand updateCommand = new UpdateCommand(repo)
-            updateCommand.rev(repoRevision).execute()
-            repo.close()
+            hgCommand.execute(["update", "-r", repoRevision])
         }
         
         result
