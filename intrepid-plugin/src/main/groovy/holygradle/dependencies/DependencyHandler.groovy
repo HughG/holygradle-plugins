@@ -7,7 +7,7 @@ import java.util.regex.Matcher
 abstract class DependencyHandler {
     public final String name
     public final String targetName
-    private final Project project
+    public final Project project
     
     public DependencyHandler(String depName) {
         this.name = depName

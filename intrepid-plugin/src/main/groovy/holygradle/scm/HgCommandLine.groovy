@@ -1,5 +1,6 @@
 package holygradle.scm
 
+import holygradle.process.ExecHelper
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
@@ -21,24 +22,14 @@ class HgCommandLine implements HgCommand {
 
     @Override
     String execute(Collection<String> args) {
-        OutputStream stdout = new ByteArrayOutputStream()
-        OutputStream stderr = new ByteArrayOutputStream()
         String localHgrcPath = hgrcPath
         String localHgPath = hgPath
-        ExecResult execResult = exec { ExecSpec spec ->
-            if (hgrcPath.length() > 0) {
+        ExecHelper.executeAndReturnResultAsString(exec) { ExecSpec spec ->
+            if (localHgPath.length() > 0) {
                 spec.environment.put("HGRCPATH", localHgrcPath)
             }
-            spec.setStandardOutput stdout
-            spec.setErrorOutput stderr
-            spec.setIgnoreExitValue true
             spec.executable localHgPath
             spec.args args
         }
-
-        if (execResult.getExitValue() != 0) {
-            throw new RuntimeException(stderr.toString().trim())
-        }
-        stdout.toString().trim();
     }
 }

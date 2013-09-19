@@ -1,0 +1,35 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+
+    // Pull in JUnit so we can use org.junit.Assert/
+    dependencies {
+        classpath "junit:junit:4.8.+"
+    }
+}
+gplugins.apply()
+
+import holygradle.scm.HgRepository
+import holygradle.scm.SourceControlRepository
+
+import static org.junit.Assert.*
+
+final String EXAMPLE_FILE = "ahoy.txt"
+
+////////////////////////////////////////////////////////////////////////////////
+// Now do the tests.
+
+def sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
+
+assertTrue("An HgRepository instance has been created for the project", sourceControl instanceof HgRepository)
+
+assertEquals("First commit hash is as expected", "9cc27b0a5c28746662dc66e50b2d2d0d25897b90", sourceControl.getRevision())
+assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
+assertEquals("The master repo is 'unknown'", "unknown", sourceControl.getUrl())
+assertEquals("The SourceControlRepository reports its protocol correctly", "hg", sourceControl.getProtocol())
+assertEquals("The SourceControlRepository reports its directory correctly", project.projectDir.getCanonicalFile(), sourceControl.getLocalDir())
+
+new File(project.projectDir, EXAMPLE_FILE as String).withPrintWriter {
+    PrintWriter w -> w.println("two")
+}
+
+assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges())

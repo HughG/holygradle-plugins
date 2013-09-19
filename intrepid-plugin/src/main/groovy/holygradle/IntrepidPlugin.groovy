@@ -121,6 +121,27 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * DSL extensions
          **************************************/
+        // Prepare dependencies that this plugin will require.
+        BuildScriptDependencies buildScriptDependencies = BuildScriptDependencies.initialize(project)
+        // Only define the build script dependencies for the root project because they're shared
+        // accross all projects.
+        if (project == project.rootProject) {
+            // 7zip
+            buildScriptDependencies.add("sevenZip", true)
+            fetchAllDependenciesTask.dependsOn buildScriptDependencies.getUnpackTask("sevenZip")
+
+            // Mercurial
+            buildScriptDependencies.add("Mercurial", true)
+            buildScriptDependencies.add("credential-store")
+            if (buildScriptDependencies.getPath("Mercurial") != null) {
+                Task hgUnpackTask = buildScriptDependencies.getUnpackTask("Mercurial")
+                hgUnpackTask.doLast {
+                    Helper.addMercurialKeyringToIniFile(buildScriptDependencies.getPath("Mercurial"))
+                }
+                fetchAllDependenciesTask.dependsOn hgUnpackTask
+            }
+        }
+
         // Define the 'packedDependency' DSL for the build script.
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
         
@@ -147,28 +168,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         
         // Define 'sourceDependencyTasks' DSL
         Collection<SourceDependencyTaskHandler> sourceDependencyTasks = SourceDependencyTaskHandler.createContainer(project)
-    
-        // Prepare dependencies that this plugin will require.
-        BuildScriptDependencies buildScriptDependencies = BuildScriptDependencies.initialize(project)
-        
-        // Only define the build script dependencies for the root project because they're shared
-        // accross all projects.
-        if (project == project.rootProject) {
-            // 7zip
-            buildScriptDependencies.add("sevenZip", true)
-            fetchAllDependenciesTask.dependsOn buildScriptDependencies.getUnpackTask("sevenZip")
-            
-            // Mercurial
-            buildScriptDependencies.add("Mercurial", true)
-            buildScriptDependencies.add("credential-store")
-            if (buildScriptDependencies.getPath("Mercurial") != null) {
-                Task hgUnpackTask = buildScriptDependencies.getUnpackTask("Mercurial")
-                hgUnpackTask.doLast {
-                    Helper.addMercurialKeyringToIniFile(buildScriptDependencies.getPath("Mercurial"))
-                }
-                fetchAllDependenciesTask.dependsOn hgUnpackTask
-            }
-        }
+
         
         /**************************************
          * Packaging and publishing stuff

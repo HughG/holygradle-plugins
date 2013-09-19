@@ -189,7 +189,7 @@ class SourceDependencyHandler extends DependencyHandler {
             def hgCommand = new HgCommandLine(
                 hgPath,
                 new File((String)project.ext.hgConfigFile),
-                { Closure it -> project.exec(it) }
+                project.&exec
             )
             sourceDependency = new HgDependency(
                 project,

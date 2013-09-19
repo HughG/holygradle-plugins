@@ -39,11 +39,20 @@ If the plugins have never been published before within your organisation, run th
 You can replace "Really" with "Locally" to publish to a folder called "local_repo", to check the contents before really
 publishing, if you want.  See the section on publishing below for more details.
 
-# Unit tests
+# Testing
+
+Run tests with `gw test` for unit tests, and `gw integTest` for integration tests.  These use JUnit, so you can do the
+usual Gradle JUnit tricks, such as running a single test class (which is especially useful for integration tests, as
+these can't be run within a normal JUnit test runner).  You can't run just one test method, though.
+
+  - `gw -Dtest.single=SomeIntegrationTest test`
+  - `gw -DintegTest.single=SomeIntegrationTest integTest`
+
+## Unit tests
 Unit tests (if any) will be automatically run prior to any publish operation, so you can't publish unless the tests
 pass. That said, the unit tests are very sparse or non-existent depending on the plugin.
 
-# Integration tests
+## Integration tests
 Integration tests are those whose class names end in `IntegrationTest`, extending `AbstractHolyGradleIntegrationTest`.
 They can be run directly using `gw integTest`, and are run before every `publishPluginsReally` task.  They work by
 launching a Gradle build which fetches the custom-gradle distribution and the plugins from a `local_repo` directory

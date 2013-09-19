@@ -20,10 +20,12 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     
     public static Collection<PackageArtifactHandler> createContainer(Project project) {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler)
+        // In this case, we create a new SourceControlRepository instead of trying to get the "sourceControl" extension
+        // from the project, because we don't want a DummySourceControl if there's no SCM info here.
+        SourceControlRepository sourceRepo = SourceControlRepositories.get(project)
 
         // Create an internal 'createPublishNotes' task to create some text files to be included in all
         // released packages.
-        SourceControlRepository sourceRepo = SourceControlRepositories.get(project.projectDir)
         Task createPublishNotesTask = null
         if (sourceRepo != null) {
             createPublishNotesTask = project.task("createPublishNotes", type: DefaultTask) { Task it ->
