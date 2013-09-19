@@ -113,9 +113,11 @@ public class CredentialsForm {
 
         if (timeoutTask.didFire()) {
             throw new RuntimeException(
-                "Timeout occurred while displaying a credentials dialog to the user." +
-                "Now throwing an exception to kill the Gradle process because if this happens " +
-                "to be an autobuild then we don't want it to hang forever."
+                "Timeout occurred while displaying a credentials dialog to the user. " +
+                "If you are running Gradle directly, try re-running with the '--no-daemon' argument " +
+                "until credentials are cached correctly. " +
+                "(Now throwing an exception to kill the Gradle process because if this happens " +
+                "to be an automated build then we don't want it to hang forever.)"
             );
         }
         
