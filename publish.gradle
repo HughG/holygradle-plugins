@@ -109,5 +109,4 @@ project.subprojects {
 
 project.tasks["clean"].doLast {
     project.delete(PUBLISH_LOCAL_TARGET_URI)
-    project.delete(LOCAL_GRADLE_USER_HOME)
 }

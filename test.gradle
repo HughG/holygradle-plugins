@@ -18,13 +18,12 @@ void maybeForwardExtraArguments(JavaForkOptions forkOptions) {
 
 
 task cleanIntegrationTestState (type: Delete) { Delete t ->
-    // Delete the Gradle user home directory used for integration testing, which will contain versions of the plugins
-    // we're testing, "downloaded" from the local_repo.  We do this explicitly, rather that relying on Gradle spotting
-    // changed timestamps (a) because it may not re-download non-snapshot releases (not sure); and (b) just to be on
-    // the safe side.
-    t.delete project.LOCAL_GRADLE_USER_HOME
-
-    // Also, delete any previously-downloaded custom-gradle distribution, so that we're sure we're testing the latest
+    // We don't need to delete the Gradle user home directory used for integration testing.  It will contain
+    // dependencies of the plugins we're testing, but not the plugins themselves.  This is because the local_repo
+    // containing the plugins to test is referred to with a "file:" URL, and Gradle therefore doesn't bother
+    // "downloading", and just uses them in place.
+    //
+    // However, we delete any previously-downloaded custom-gradle distribution, to ensure we're testing the latest
     // build.  We _have to_ do this explicitly because (a) Gradle doesn't automatically update snapshot versions of
     // wrapper distributions; and (b) even if we're building a non-snapshot version, it might be the same as some
     // version we previously downloaded from the local_repo, if we were trying to publish a release build but it failed.
