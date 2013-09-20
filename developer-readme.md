@@ -96,9 +96,9 @@ plugins.  The output below is not exactly true, because the `artifactory-manager
 To avoid annoying people with broken plugins you should test your changes by publishing 'snapshots', as follows.
 
  - In your global `gradle.properties` which lives in your `GRADLE_USER_HOME` directory, add a line such as:
-`holygradle.pluginsSnapshotsUser=nm2501`. This will automatically change the requested versions to `<user>-SNAPSHOT`.
-(This switch-over is part of the `holy-gradle-init.gradle` script in the custom-gradle distribution, rather than being
- part of Gradle itself.)
+`systemProp.holygradle.pluginsSnapshotsUser=nm2501`. This will automatically change the requested versions to
+`<user>-SNAPSHOT`.  (This switch-over is part of the `holy-gradle-init.gradle` script in the custom-gradle distribution,
+rather than being part of Gradle itself.)
  - When you're testing your changes you can tell if it has picked up your new plugin because Gradle will print messages
 whenever artifacts are downloaded e.g.
 ```
