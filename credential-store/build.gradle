@@ -44,9 +44,12 @@ task("build", type: Exec) { Exec t ->
     t.commandLine getDevEnvPath().path, "credential-store.sln", "/build", "Release^|Win32"
 }
 
+// Make sure we build before we publish.
 project.publishTasks.each { Upload it ->
     it.dependsOn build
 }
+// The publish-locally task for this project has slightly different input dependencies from the Groovy plugins.
+project.tasks["publishPluginsLocally"].inputs.files(project.tasks["build"].outputs.files)
 
 artifacts {
     it."default" CREDENTIAL_STORE_EXE

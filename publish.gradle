@@ -97,7 +97,10 @@ project.subprojects {
             url PUBLISH_LOCAL_TARGET_URI
         }
 
-        t.inputs.dir new File(project.projectDir as File, "/build/libs")
+        // The credential-store project build file has to set up its own, slightly different input dependencies.
+        if (project.name != "credential-store") {
+            t.inputs.dir new File(project.projectDir as File, "/build/libs")
+        }
         t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "${project.group}/${project.name}/${project.version}"
 
         t.doLast {
