@@ -110,6 +110,16 @@ files.
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+=== Meta-Packages
+
+The term "meta-package" is a term invented for the Holy Gradle plugins.  It describes a module (or
+"package") which is intended to perform operations on other packages/modules.  Typically the
+meta-package contains a +build.gradle+ file which uses the Holy Gradle plugins, plus other Gradle
+features, for tasks such as downloading all the transitive dependencies of a module and creating a
+"+.zip+" file containing the module and all its dependencies.
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 === Artifacts
 
 Gradle and Artifactory use the term _artifact_ to refer to files published as part of a <<_module>>.
@@ -1433,12 +1443,18 @@ You can then download published package with a name like "+some_module-republish
 unzip it, and run
 
 ----
-gw checkPublishedDependencies
+gw checkPackedDependencies
 ----
 
-to check that all modules used by your module are present in the target repo.  This will print out
-a human-readable list of all transitive dependencies, indicating which are present and which not.
-For the ones which are not, you can copy them manually in Artifactory.
+to check that all modules publicly used by your module are present in the target repo.  This will
+print out a human-readable list of all transitive dependencies, indicating which are present and
+which not.  For the ones which are not, you can copy them manually in Artifactory.
+
+WARNING: This will only catch public dependencies, not ones in configurations which are private
+(that is, whose names start with "+private+").  That means that you are checking that other people
+have all the dependencies needed to _use_ your module, but not necessarily all the depedencies
+needed to rebuild it from source.  To check that, run +gw checkPackedDependencies+ on the _source_
+of your module, rather than on the unzipped +republishing+ meta-package.
 
 If you want to override the default target repo in the +republish+ block, because you are
 publishing to a different repo, you can do the following.

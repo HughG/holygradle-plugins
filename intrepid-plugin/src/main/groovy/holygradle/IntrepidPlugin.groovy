@@ -324,11 +324,9 @@ public class IntrepidPlugin implements Plugin<Project> {
                 fetchAllDependenciesTask.dependsOn t
             }
             
-            if (project == project.rootProject) {
-                final PublishPackagesExtension publishPackages = project.publishPackages as PublishPackagesExtension
-                publishPackages.defineCheckTask(unpackModules)
-            }
-            
+            final PublishPackagesExtension publishPackages = project.publishPackages as PublishPackagesExtension
+            publishPackages.defineCheckTask(unpackModules)
+
             /**************************************
              * Collecting dependencies
              **************************************/

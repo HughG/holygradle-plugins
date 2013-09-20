@@ -91,11 +91,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             if (repos.size() > 0 && repoUrl != null) {
                 AuthenticationSupported repo = (AuthenticationSupported)repos[0]
                 project.task(
-                    "checkPublishedDependencies",
+                    "checkPackedDependencies",
                     type: CheckPublishedDependenciesTask
                 ) { CheckPublishedDependenciesTask it ->
                     it.group = "Publishing"
-                    it.description = "Check if all dependencies are accessible in the target repo."
+                    it.description = "Check if all packed dependencies are accessible in the target repo."
                     it.initialize(unpackModules, repoUrl, repo.getCredentials())
                 }
             }
