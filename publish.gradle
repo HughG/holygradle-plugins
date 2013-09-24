@@ -22,26 +22,47 @@ project.ext.publishReallyTasks = []
     }
 }
 
-// Pick a version number for each subproject, if we're publishing.
-project.gradle.taskGraph.whenReady {
-    String publishVersion = "unspecified"
-    if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
-        String publishVersionFromProperty = propertyOrNull(project, "publishVersion")
-        if (publishVersionFromProperty != null) {
-            publishVersion = publishVersionFromProperty
-        } else {
-            String username = System.getProperty("user.name").toLowerCase()
-            publishVersion = "${username}-SNAPSHOT"
-        }
+// Pick a version number.
+String publishVersion = "unspecified"
+String publishVersionFromProperty = propertyOrNull(project, "publishVersion")
+if (publishVersionFromProperty != null) {
+    publishVersion = publishVersionFromProperty
+} else {
+    String username = System.getProperty("user.name").toLowerCase()
+    publishVersion = "${username}-SNAPSHOT"
+}
+project.allprojects { Project p ->
+    p.version = publishVersion
+    p.logger.info "Set ${p.name} version to ${p.version}"
+}
 
+// Make sure that the credential-store EXE gets rebuilt if the version number changes.  (We don't
+// need to do anything explicit for Groovy plugin projects because their output is a JAR, which has
+// the version number in its filename.)
+task setPublishVersion {
+    // Write the version to a file, so that the file can be seen as changed (or not) by other
+    // tasks, to force them to re-run.
+    project.ext.publishVersionFile = new File(project.buildDir, 'publishVersion.txt')
+    project.publishVersionFile.text = publishVersion
+
+    // Force setPublishVersion to always execute.  For tasks which depend on this, Gradle will
+    // check the contents of the publishVersionFile to see if they have really changed, and only
+    // run those tasks if so.
+    outputs.file(project.publishVersionFile)
+    outputs.upToDateWhen { false }
+}
+project(':credential-store') {
+    afterEvaluate {
+        project.createReleaseVersionFile.dependsOn setPublishVersion
+    }
+}
+
+// Print a message, if we're actually publishing.
+project.gradle.taskGraph.whenReady {
+    if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
         println()
         println "Publishing as version '${publishVersion}'..."
         println()
-    }
-
-    project.allprojects { Project p ->
-        p.version = publishVersion
-        p.logger.info "Set ${p.name} version to ${p.version}"
     }
 }
 
@@ -99,7 +120,10 @@ project.subprojects {
 
         // The credential-store project build file has to set up its own, slightly different input dependencies.
         if (project.name != "credential-store") {
-            t.inputs.dir new File(project.projectDir as File, "/build/libs")
+            t.inputs.file new File(
+                project.projectDir as File,
+                "/build/libs/${project.name}-${project.version}.jar"
+            )
         }
         t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "${project.group}/${project.name}/${project.version}"
 

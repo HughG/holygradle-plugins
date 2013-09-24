@@ -13,7 +13,6 @@ workspace.iml
 # Generated
 credential-store/project_version_info.h
 credential-store/release_version_info.h
-hgVersionInfo.txt
 # Other
 *.bak
 */src/test/**/*.test.txt

@@ -14,8 +14,10 @@ public File getDevEnvPath() {
 String releaseVersionInfoFileName = 'release_version_info.h'
 task createReleaseVersionFile {
     (new File(projectDir, releaseVersionInfoFileName)).withWriter { BufferedWriter writer ->
-        String ver = (project.version == "unspecified") ? "0.0.0.0" : project.version
-        String commaVer = (project.version == "unspecified") ? "0,0,0,0" : project.version.replaceAll('\\.', ',')
+        String username = System.getProperty("user.name").toLowerCase()
+        boolean isSnapshot = (project.version == "${username}-SNAPSHOT")
+        String ver = isSnapshot ? "0.0.0.0" : project.version
+        String commaVer = isSnapshot ? "0,0,0,0" : project.version.replaceAll('\\.', ',')
         writer.writeLine "#define RELEASE_VERSION \"${ver}\""
         writer.writeLine "#define RELEASE_VERSION_WITH_COMMAS ${commaVer}"
     }
@@ -48,7 +50,8 @@ task("build", type: Exec) { Exec t ->
 project.publishTasks.each { Upload it ->
     it.dependsOn build
 }
-// The publish-locally task for this project has slightly different input dependencies from the Groovy plugins.
+// The publish-locally task for this project has slightly different input dependencies from the
+// Groovy plugins.
 project.tasks["publishPluginsLocally"].inputs.files(project.tasks["build"].outputs.files)
 
 artifacts {

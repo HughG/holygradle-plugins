@@ -30,13 +30,17 @@ task setHgVersionInfo {
 
         // Write the version to a file, so that the file can be seen as changed (or not) by other tasks, to force them
         // to re-run.
-        project.ext.hgVersionInfoFile = new File('hgVersionInfo.txt')
+        project.ext.hgVersionInfoFile = new File(project.buildDir, 'hgVersionInfo.txt')
+        project.buildDir.mkdirs()
         project.hgVersionInfoFile.text = project.hgVersionInfo
     }
-}
 
-// Force the setHgVersionInfo to always execute.
-setHgVersionInfo.outputs.upToDateWhen { false }
+    // Force setHgVersionInfo to always execute.  For tasks which depend on this, Gradle will
+    // check the contents of the hgVersionInfoFile to see if they have really changed, and only
+    // run those tasks if so.
+    outputs.file(project.hgVersionInfoFile)
+    outputs.upToDateWhen { false }
+}
 
 subprojects {
     // Add source version information for each plugin JAR.
