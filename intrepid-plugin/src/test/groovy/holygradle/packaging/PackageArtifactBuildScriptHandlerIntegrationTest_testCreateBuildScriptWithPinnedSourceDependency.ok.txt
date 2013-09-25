@@ -1,0 +1,19 @@
+// Meta-package for projectB pre-built artifacts unspecified
+// ---------------------------------------------------
+buildscript {
+    gplugins.use "intrepid:SNAPSHOT"
+    gplugins.use "devenv:null"
+    gplugins.use "my-credentials:null"
+}
+gplugins.apply()
+
+sourceDependencies {
+    "..\projectA" {
+        hg "unknown@fb4666bb4f2c39f716034c9ea761033941b3a782"
+    }
+}
+packedDependenciesDefault {
+    unpackToCache = false
+}
+
+

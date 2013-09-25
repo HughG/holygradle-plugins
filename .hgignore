@@ -16,6 +16,7 @@ credential-store/release_version_info.h
 # Other
 *.bak
 */src/test/**/*.test.txt
+**/packages/
 
 syntax: regexp
 # Gradle / Java

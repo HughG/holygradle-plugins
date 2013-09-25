@@ -1,0 +1,40 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+import holygradle.buildscript.BuildScriptDependencies
+import org.gradle.process.ExecSpec
+
+println "Repo setup script projectDir is ${project.projectDir}"
+
+void hgExec(Project project, Object ... args) {
+    project.exec { ExecSpec spec ->
+        BuildScriptDependencies deps =
+            project.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
+        String hgPath = new File(deps.getPath("Mercurial"), "hg.exe").path
+        File hgrcPath = new File((String)project.hgConfigFile)
+        if (hgrcPath.length() > 0) {
+            spec.environment.put("HGRCPATH", hgrcPath)
+        }
+        spec.workingDir = project.projectDir
+        spec.executable = hgPath
+        spec.args = args.toList()
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Set up this project as a Mercurial repo
+
+// Make the project dir into a repo.
+hgExec(project, "init")
+
+// Add a file.
+hgExec(project, "add", "setupRepo.gradle")
+// Set the commit message, user, and date, so that the hash will be the same every time.
+hgExec(project,
+       "commit",
+       "-m", "Initial test state.",
+       "-u", "TestUser",
+       "-d", "2000-01-01"
+)

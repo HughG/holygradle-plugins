@@ -1,0 +1,31 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    preBuiltArtifacts
+}
+
+sourceDependencies {
+    // Add projectA sourceDependency.  We have both the target folder and the source repo being the same place, so that
+    // we don't actually have to fetch any source.
+    "../projectA" {
+        hg new File(project.projectDir, "../projectA").toURI().toString()
+    }
+}
+
+packageArtifacts {
+    preBuiltArtifacts {
+        to "preBuiltArtifacts"
+        // We need to include at least one pre-existing file, or the build script generation doesn't run. GR #3080
+        include "dummy.txt"
+        includeBuildScript {
+            add "// Meta-package for ${project.name} pre-built artifacts ${project.version}"
+            add "// ---------------------------------------------------"
+            //addIvyRepository "TODO", "Artifactory"
+
+            addPinnedSourceDependency "projectA"
+        }
+    }
+}
