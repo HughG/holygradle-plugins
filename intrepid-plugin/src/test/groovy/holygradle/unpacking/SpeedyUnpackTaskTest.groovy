@@ -107,7 +107,7 @@ class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
         // Set up the first task to test.
         SpeedyUnpackTask task1 = (SpeedyUnpackTask)project.task([type: SpeedyUnpackTask], "speedyUnpack1")
         task1.initialize(dummySZH, testUnpackDir, dummyPDH, artifacts)
-        task1.ext.lazyConfiguration(task1)
+        task1.lazyConfiguration(task1)
 
         // Run the task's action once and check that the unzipping happens (i.e., that the task tries to run 7zip)
         ranSevenZip = false
@@ -118,7 +118,7 @@ class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
         // do nothing if we try to execute it again.)
         SpeedyUnpackTask task2 = (SpeedyUnpackTask)project.task([type: SpeedyUnpackTask], "speedyUnpack2")
         task2.initialize(dummySZH, testUnpackDir, dummyPDH, artifacts)
-        task2.ext.lazyConfiguration(task2)
+        task2.lazyConfiguration(task2)
 
         // Now run it again and check that it does nothing.
         ranSevenZip = false

@@ -1432,7 +1432,7 @@ packageArtifacts {
 
 republish {
     to (project.hasProperty('republishTo')
-        ? project.ext.republishTo
+        ? project.republishTo
         : 'http://artifactory.example-corp.com/artifactory/libs-release-local/')
 }
 ----

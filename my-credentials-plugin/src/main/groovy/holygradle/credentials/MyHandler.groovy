@@ -56,7 +56,7 @@ class MyHandler implements CredentialSource {
     }
     
     private Credentials getCredentials(String credentialType, boolean forceAskUser = false) {
-        if (project.ext.usingLocalArtifacts) {
+        if (project.usingLocalArtifacts) {
             return new Credentials("empty", "empty")
         }
         

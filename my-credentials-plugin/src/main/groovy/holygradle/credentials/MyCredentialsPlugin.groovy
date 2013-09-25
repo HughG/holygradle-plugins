@@ -48,7 +48,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
         /**************************************
          * Tasks
          **************************************/
-        if (project == project.rootProject && !project.ext.usingLocalArtifacts) {
+        if (project == project.rootProject && !project.usingLocalArtifacts) {
             String taskName = "cacheCredentials"
             Task credTask = project.tasks.findByName(taskName)
             if (credTask == null) {

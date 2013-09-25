@@ -25,18 +25,18 @@ class HolyGradlePlugins {
         this.buildscript = buildscript
         this.project = project
         // Point the buildscript to the Holy Gradle plugins.
-        if (project.ext["holyGradlePluginsRepository"] != null) {
+        if (project.property("holyGradlePluginsRepository") != null) {
             buildscript.repositories { RepositoryHandler repoHandler ->
                 repoHandler.ivy { IvyArtifactRepository repo ->
-                    repo.url = project.ext["holyGradlePluginsRepository"]
+                    repo.url = project.property("holyGradlePluginsRepository")
                 }
             }
         }
         // Point the buildscript to a source of dependencies for the Holy Gradle plugins.
-        if (project.ext["holyGradleRemoteRepository"] != null) {
+        if (project.property("holyGradleRemoteRepository") != null) {
             buildscript.repositories { RepositoryHandler repoHandler ->
                 repoHandler.maven { MavenArtifactRepository repo ->
-                    repo.url = project.ext["holyGradleRemoteRepository"]
+                    repo.url = project.property("holyGradleRemoteRepository")
                 }
             }
         }
@@ -198,7 +198,7 @@ gradle.allprojects { Project project ->
             println "="*75
         }
     } else {
-        usingLocalArtifacts = project.rootProject.ext["usingLocalArtifacts"]
+        usingLocalArtifacts = project.rootProject.property("usingLocalArtifacts")
     }
     project.ext["usingLocalArtifacts"] = usingLocalArtifacts
     

@@ -45,9 +45,9 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            String customGradleVersion = project.gradle.gradleVersion + "-" + project.ext.holyGradleInitScriptVersion
+            String customGradleVersion = project.gradle.gradleVersion + "-" + project.holyGradleInitScriptVersion
             wrapper.gradleVersion = customGradleVersion
-            wrapper.distributionUrl = project.ext.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.ext.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
+            wrapper.distributionUrl = project.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
             wrapper.jarFile = "${project.projectDir}/gradle/gradle-wrapper.jar"
             wrapper.scriptFile = "${project.projectDir}/gw"
             wrapper.doLast {
@@ -192,14 +192,14 @@ if "%OS%"=="Windows_NT" endlocal
                     println "Init script location: "
                     println " ${getInitScriptLocation(project)}\n"
                     println "Plugin repository: "
-                    println "  ${project.ext.holyGradlePluginsRepository}\n"
+                    println "  ${project.holyGradlePluginsRepository}\n"
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35
                     print "Custom distribution version: ".padRight(pad)
                     String latestCustomGradle = VersionNumber.getLatestUsingBuildscriptRepositories(project, "holygradle", "custom-gradle")
                     println versionInfoExtension.getVersion("custom-gradle") + " (latest: $latestCustomGradle)"
-                    println "Init script version: ".padRight(pad) + project.ext.holyGradleInitScriptVersion
+                    println "Init script version: ".padRight(pad) + project.holyGradleInitScriptVersion
                     println "Usage of Holy Gradle plugins:"
                     
                     // Print out version numbers for all holygradle buildscript dependencies.
