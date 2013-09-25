@@ -136,7 +136,7 @@ class UnpackModule {
     }
     
     public static Collection<UnpackModule> getAllUnpackModules(Project project) {
-        Collection<UnpackModule> unpackModules = project.ext.unpackModules as Collection<UnpackModule>
+        Collection<UnpackModule> unpackModules = project.unpackModules as Collection<UnpackModule>
         
         if (unpackModules == null) {
             final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>

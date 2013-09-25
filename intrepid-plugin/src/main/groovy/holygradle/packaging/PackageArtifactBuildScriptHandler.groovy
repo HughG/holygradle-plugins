@@ -261,11 +261,12 @@ class PackageArtifactBuildScriptHandler {
             }
             
             buildScript.append("sourceDependencies {\n")
-            for (sourceDep in pinnedSourceDeps) {
+            for (SourceDependencyHandler sourceDep in pinnedSourceDeps) {
                 // In this case, we create a new SourceControlRepository instead of trying to get the "sourceControl"
                 // extension from the sourceDep.project, because that project itself may not have the intrepid plugin
-                // applied, in which case it won't have that extension.
-                SourceControlRepository repo = SourceControlRepositories.get(sourceDep.project)
+                // applied, in which case it won't have that extension.  We need to get the SourceControlRepository
+                // object, instead of just using the SourceDependencyHandler, to get the actual revision.
+                SourceControlRepository repo = SourceControlRepositories.get(project.rootProject, sourceDep.absolutePath)
                 if (repo != null) {
                     buildScript.append(" "*4)
                     buildScript.append("\"")

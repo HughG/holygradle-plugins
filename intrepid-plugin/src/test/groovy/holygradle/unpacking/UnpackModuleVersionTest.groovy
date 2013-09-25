@@ -64,7 +64,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
                 
         Task unpackTask = apricot.getUnpackTask(project)
         assertEquals("extractApricot1.1", unpackTask.name)
-        assertEquals(new File(project.ext.unpackedDependenciesCache as File, "org/apricot-1.1"), unpackTask.unpackDir)
+        assertEquals(new File(project.unpackedDependenciesCache as File, "org/apricot-1.1"), unpackTask.unpackDir)
         assertEquals("Unpacks dependency 'apricot' (version 1.1) to the cache.", unpackTask.description)
         
         Collection<Task> symlinkTasks = apricot.collectParentSymlinkTasks(project)

@@ -56,9 +56,10 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * Properties
          **************************************/
-        project.ext.svnConfigPath = System.getenv("APPDATA") + "/Subversion"
-        project.ext.hgConfigFile = System.getenv("USERPROFILE") + "/mercurial.ini"
-        project.ext.unpackedDependenciesCache = new File(project.gradle.gradleUserHomeDir, "unpackCache")
+        // The first few properties are common to all projects, but the unpackModules collection is per-project.
+        project.rootProject.ext.svnConfigPath = System.getenv("APPDATA") + "/Subversion"
+        project.rootProject.ext.hgConfigFile = System.getenv("USERPROFILE") + "/mercurial.ini"
+        project.rootProject.ext.unpackedDependenciesCache = new File(project.gradle.gradleUserHomeDir, "unpackCache")
         project.ext.unpackModules = null
         
         /**************************************

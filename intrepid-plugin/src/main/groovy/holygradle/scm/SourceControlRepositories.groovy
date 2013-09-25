@@ -5,19 +5,20 @@ import org.gradle.api.Project
 
 public class SourceControlRepositories {
     public static SourceControlRepository get(
-        Project project,
+        Project rootProject,
+        File location,
         boolean useDummyIfNecessary = false
     ) {
-        File svnFile = new File(project.projectDir, ".svn")
-        File hgFile = new File(project.projectDir, ".hg")
+        File svnFile = new File(location, ".svn")
+        File hgFile = new File(location, ".hg")
         if (svnFile.exists()) {
-            new SvnRepository(project.projectDir)
+            new SvnRepository(location)
         } else if (hgFile.exists()) {
             BuildScriptDependencies deps =
-                project.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
+                rootProject.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
             String hgPath = new File(deps.getPath("Mercurial"), "hg.exe").path
-            File hgrcPath = new File((String)project.ext.hgConfigFile)
-            new HgRepository(new HgCommandLine(hgPath, hgrcPath, project.&exec), project.projectDir)
+            File hgrcPath = new File((String)rootProject.hgConfigFile)
+            new HgRepository(new HgCommandLine(hgPath, hgrcPath, rootProject.&exec), location)
         } else if (useDummyIfNecessary) {
             new DummySourceControl()
         } else {
@@ -26,6 +27,6 @@ public class SourceControlRepositories {
     }
     
     public static SourceControlRepository createExtension(Project project) {
-        project.extensions.add("sourceControl", get(project, true)) as SourceControlRepository
+        project.extensions.add("sourceControl", get(project, project.projectDir, true)) as SourceControlRepository
     }
 }

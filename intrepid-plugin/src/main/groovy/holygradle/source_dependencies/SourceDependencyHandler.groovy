@@ -188,7 +188,7 @@ class SourceDependencyHandler extends DependencyHandler {
             def hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
             def hgCommand = new HgCommandLine(
                 hgPath,
-                new File((String)project.ext.hgConfigFile),
+                new File((String)project.hgConfigFile),
                 project.&exec
             )
             sourceDependency = new HgDependency(

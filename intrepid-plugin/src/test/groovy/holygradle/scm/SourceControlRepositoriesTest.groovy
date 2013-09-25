@@ -78,8 +78,8 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
     @Test
     public void testGetWithoutDummy() {
         File dummyDir = new File(getTestDir(), "dummy")
-        Project dummyProject = [ getProjectDir : { dummyDir }] as Project
-        SourceControlRepository repo = SourceControlRepositories.get(dummyProject)
+        Project project = ProjectBuilder.builder().withProjectDir(dummyDir).build()
+        SourceControlRepository repo = SourceControlRepositories.get(project, dummyDir)
         assertNull(repo)
     }
 }

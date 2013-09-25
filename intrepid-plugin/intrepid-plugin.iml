@@ -104,7 +104,6 @@
     <orderEntry type="library" exported="" name="jarjar-plexus-container-default-1.5.5" level="project" />
     <orderEntry type="library" exported="" name="jarjar-plexus-classworlds-2.4" level="project" />
     <orderEntry type="library" exported="" name="jarjar-plexus-sec-dispatcher-1.3" level="project" />
-    <orderEntry type="library" exported="" name="javahg-0.5-SNAPSHOT" level="project" />
     <orderEntry type="library" exported="" name="gradle-code-quality-1.4" level="project" />
     <orderEntry type="library" exported="" name="sequence-library-1.0.2" level="project" />
     <orderEntry type="library" exported="" name="gradle-signing-1.4" level="project" />

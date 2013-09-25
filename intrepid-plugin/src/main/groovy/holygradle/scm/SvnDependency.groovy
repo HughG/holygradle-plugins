@@ -78,7 +78,7 @@ class SvnDependency extends SourceDependency {
 
     private File getSvnConfigDir() {
         // Get SVN-config path.
-        File svnConfigDir = new File((String)project.ext.svnConfigPath)
+        File svnConfigDir = new File((String)project.svnConfigPath)
         if (!svnConfigDir.exists()) {
             svnConfigDir.mkdir()
         }
