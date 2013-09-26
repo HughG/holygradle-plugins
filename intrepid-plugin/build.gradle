@@ -8,7 +8,7 @@ dependencies {
     // currently published to a public local even though all necessary resources are
     // already in the public domain.
     runtime group: 'org', name: 'sevenZip', version:'9.20.1', configuration: 'basic'
-    runtime "selenic:Mercurial:2.5.1"
+    runtime rootProject.MERCURIAL_DEPENDENCY_COORD
 
     // Project dependencies
     compile project(':credential-store')

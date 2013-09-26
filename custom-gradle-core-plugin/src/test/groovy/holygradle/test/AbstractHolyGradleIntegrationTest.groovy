@@ -12,9 +12,9 @@ import java.util.concurrent.TimeUnit
 import static org.junit.Assert.*
 
 class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
-    private final URI distributionURI;
-    private final File gradleUserHome;
-    private final File pluginsRepoOverride;
+    protected final URI distributionURI;
+    protected final File gradleUserHome;
+    protected final File pluginsRepoOverride;
 
     /**
      * This Java system property key must match the one in test.gradle, in the root project.  It must be supplied, and

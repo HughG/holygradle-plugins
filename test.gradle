@@ -23,7 +23,15 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
     // containing the plugins to test is referred to with a "file:" URL, and Gradle therefore doesn't bother
     // "downloading", and just uses them in place.
     //
-    // However, we delete any previously-downloaded custom-gradle distribution, to ensure we're testing the latest
+    // However, we explicitly delete Mercurial, for the UnpackMercurialIntegrationTest.
+
+    final String[] hgCoordParts = (project.MERCURIAL_DEPENDENCY_COORD as String).split(':')
+    final String hgUnpackSubPath = "${hgCoordParts[0]}/${hgCoordParts[1]}-${hgCoordParts[2]}"
+    final String hgUnpackPath = project.LOCAL_GRADLE_USER_HOME + "/unpackCache/${hgUnpackSubPath}"
+    println "Delete '${hgUnpackPath}'"
+    t.delete(new File(hgUnpackPath))
+
+    // We also delete any previously-downloaded custom-gradle distribution, to ensure we're testing the latest
     // build.  We _have to_ do this explicitly because (a) Gradle doesn't automatically update snapshot versions of
     // wrapper distributions; and (b) even if we're building a non-snapshot version, it might be the same as some
     // version we previously downloaded from the local_repo, if we were trying to publish a release build but it failed.
