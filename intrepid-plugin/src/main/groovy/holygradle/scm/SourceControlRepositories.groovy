@@ -17,8 +17,7 @@ public class SourceControlRepositories {
             BuildScriptDependencies deps =
                 rootProject.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
             String hgPath = new File(deps.getPath("Mercurial"), "hg.exe").path
-            File hgrcPath = new File((String)rootProject.hgConfigFile)
-            new HgRepository(new HgCommandLine(hgPath, hgrcPath, rootProject.&exec), location)
+            new HgRepository(new HgCommandLine(hgPath, rootProject.&exec), location)
         } else if (useDummyIfNecessary) {
             new DummySourceControl()
         } else {

@@ -32,7 +32,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // We set up the repo by launching Gradle, because that means we can use the version of Mercurial which is
         // required by the plugins, which means we don't need to worry about the path to hg.exe.
         invokeGradle(projectADir) { WrapperBuildLauncher launcher ->
-            launcher.addArguments("--build-file", "setupRepo.gradle")
+            launcher.forTasks("setupRepo")
         }
 
         // ProjectB, references projectA as a sourceDependency, and has a meta-package which adds that as a pinned
@@ -40,7 +40,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // meta-package.
         File projectBDir = new File(getTestDir(), "projectB")
         invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
-            launcher.forTasks("packageEverything")
+            launcher.forTasks("fetchAllDependencies", "packageEverything")
         }
 
         // We do the regression test by pulling the build file out of the ZIP and writing it to a file for comparison.

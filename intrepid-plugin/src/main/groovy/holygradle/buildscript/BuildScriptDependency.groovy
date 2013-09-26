@@ -7,6 +7,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.file.CopySpec
+import org.gradle.api.tasks.Copy
 
 class BuildScriptDependency {
     private String dependencyName
@@ -27,27 +28,26 @@ class BuildScriptDependency {
         }
         
         if (needsUnpacked) {
-            if (dependencyArtifact == null) { 
+            if (dependencyArtifact == null) {
                 unpackTask = project.task(getUnpackTaskName(), type: DefaultTask)
             } else {
                 File unpackCacheLocation = Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.getModuleVersion().getId())
                 dependencyPath = unpackCacheLocation
-                unpackTask = project.task(getUnpackTaskName(), type: DefaultTask) { Task it ->
+                unpackTask = project.task(getUnpackTaskName(), type: Copy) { Copy it ->
                     it.ext.destinationDir = unpackCacheLocation
+                    it.from project.zipTree(dependencyArtifact.getFile())
+                    it.into unpackCacheLocation
+                }
+                unpackTask.onlyIf {
                     // Checking if the target dir exists is a pretty crude way to choose whether or not to do
                     // the unpacking. Normally the 'copy' operation would do this for us, but if another instance
-                    // of Gradle in another command prompt is using this dependency (e.g. extracting a package 
+                    // of Gradle in another command prompt is using this dependency (e.g. extracting a package
                     // using 7zip) then the copy operation would fail. So this is really a step towards supporting
                     // intrepid concurrency but it's not really correct. a) it's still possible for two instances
                     // to execute 'copy' at the same time, and b) just because the directory exists doesn't necessarily
                     // mean it's got the right stuff in it (but running 'copy' would fix it up).
                     // Anyway, just this simple check is good enough for now.
-                    if (!dependencyPath.exists()) {
-                        project.copy { CopySpec spec ->
-                            spec.from project.zipTree(dependencyArtifact.getFile())
-                            spec.into unpackCacheLocation
-                        }
-                    }
+                    !dependencyPath.exists()
                 }
             }
         } else if (dependencyArtifact != null) {

@@ -13,10 +13,6 @@ void hgExec(Project project, Object ... args) {
         BuildScriptDependencies deps =
             project.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
         String hgPath = new File(deps.getPath("Mercurial"), "hg.exe").path
-        File hgrcPath = new File((String)project.hgConfigFile)
-        if (hgrcPath.length() > 0) {
-            spec.environment.put("HGRCPATH", hgrcPath)
-        }
         spec.workingDir = project.projectDir
         spec.executable = hgPath
         spec.args = args.toList()
@@ -26,15 +22,20 @@ void hgExec(Project project, Object ... args) {
 ////////////////////////////////////////////////////////////////////////////////
 // Set up this project as a Mercurial repo
 
-// Make the project dir into a repo.
-hgExec(project, "init")
+task setupRepo << {
+    // Make the project dir into a repo.
+    hgExec(project, "init")
 
-// Add a file.
-hgExec(project, "add", "setupRepo.gradle")
-// Set the commit message, user, and date, so that the hash will be the same every time.
-hgExec(project,
-       "commit",
-       "-m", "Initial test state.",
-       "-u", "TestUser",
-       "-d", "2000-01-01"
-)
+    // Add a file.
+    hgExec(project, "add", "build.gradle")
+    // Set the commit message, user, and date, so that the hash will be the same every time.
+    hgExec(project,
+           "commit",
+           "-m", "Initial test state.",
+           "-u", "TestUser",
+           "-d", "2000-01-01"
+    )
+}
+
+setupRepo.dependsOn rootProject.tasks["extractMercurial"]
+
