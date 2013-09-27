@@ -3,7 +3,7 @@ package holygradle.source_dependencies
 import org.gradle.api.*
 import holygradle.Helper
 
-class SourceDependency {
+abstract class SourceDependency {
     public final SourceDependencyHandler sourceDependency
     public final Project project
     public final File destinationDir
@@ -34,11 +34,9 @@ class SourceDependency {
         versionInfoFile.write(sourceDependency.url)
     }
 
-    protected String getCommandName() {
-    }
+    protected abstract String getCommandName()
     
-    protected boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
-    }
+    protected abstract boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch)
     
     public void Checkout() {
         String[] urlSplit = url.split("@")

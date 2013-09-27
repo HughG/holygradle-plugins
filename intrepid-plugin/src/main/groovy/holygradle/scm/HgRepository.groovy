@@ -1,5 +1,7 @@
 package holygradle.scm
 
+import org.gradle.process.ExecSpec
+
 import java.util.regex.Matcher
 
 class HgRepository implements SourceControlRepository {
@@ -35,17 +37,19 @@ class HgRepository implements SourceControlRepository {
     }
 
     public String getRevision() {
-
-        def args = [
-            "log", "-l", "1",           // Execute log command, limiting the results to 1
-            "--template", "\"{node}\""  // Filter the results to get the changeset hash
-        ]
-        return hgCommand.execute(args)
+        return hgCommand.execute { ExecSpec spec ->
+            spec.args(
+                "log", "-l", "1",           // Execute log command, limiting the results to 1
+                "--template", "\"{node}\""  // Filter the results to get the changeset hash
+            )
+        }
     }
     
     public boolean hasLocalChanges() {
         // Execute hg status with added, removed or modified files
-        def changes = hgCommand.execute(["status", "-amrdC"])
+        String changes = hgCommand.execute { ExecSpec spec ->
+            spec.args "status", "-amrdC"
+        }
         changes.trim().length() > 0
     }
 }

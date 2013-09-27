@@ -8,6 +8,8 @@ import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
+import static org.junit.Assert.*
+
 /**
  * Integration tests for {@link holygradle.packaging.PackageArtifactBuildScriptHandler}
  */
@@ -22,9 +24,9 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // Create a repo with projectA in it.  This doesn't have to be a Gradle project.
         File projectADir = new File(getTestDir(), "projectA")
         if (projectADir.exists()) {
-            projectADir.deleteDir()
+            assertTrue("Deleted pre-existing ${projectADir}", projectADir.deleteDir())
         }
-        projectADir.mkdirs()
+        assertTrue("Created empty ${projectADir}", projectADir.mkdirs())
         File projectAInputDir = new File(getTestDir(), "projectAInput")
         projectAInputDir.listFiles().each { File file ->
             Files.copy(file.toPath(), new File(projectADir, file.name).toPath())
@@ -37,8 +39,13 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
 
         // ProjectB, references projectA as a sourceDependency, and has a meta-package which adds that as a pinned
         // sourceDependency.  We Run "packageEverything" for projectB, and regression-test the build.gradle of the
-        // meta-package.
+        // meta-package.  We delete projectB's "packages" folder first, otherwise the test will always see it as up to
+        // date after the first run.
         File projectBDir = new File(getTestDir(), "projectB")
+        File projectBPackagesDir = new File(projectBDir, "packages")
+        if (projectBPackagesDir.exists()) {
+            assertTrue("Deleted pre-existing ${projectBPackagesDir}", projectBPackagesDir.deleteDir())
+        }
         invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies", "packageEverything")
         }

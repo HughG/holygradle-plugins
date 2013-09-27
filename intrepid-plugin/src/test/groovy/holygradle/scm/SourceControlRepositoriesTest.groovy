@@ -1,8 +1,10 @@
 package holygradle.scm
 
 import holygradle.test.*
+import holygradle.testUtil.ExecUtil
 import holygradle.testUtil.ZipUtil
 import org.gradle.api.Project
+import org.gradle.process.ExecSpec
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder
 import static org.junit.Assert.*
@@ -28,34 +30,6 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         File helloFile = new File(svnDir, "hello.txt")
         helloFile.write("bonjour")
         // assertTrue(sourceControl.hasLocalChanges())
-    }
-
-    @Test
-    public void canGetMercurialRevision() {
-        def expectedRevision = "12345abcdefg"
-        def hgCommand = [ execute : { args -> "12345abcdefg"} ] as HgCommand
-        def repo = new HgRepository(hgCommand, new File(getTestDir(), "test_hg"))
-        def actualRevision = repo.getRevision()
-
-        assertEquals(expectedRevision, actualRevision)
-    }
-
-    @Test
-    public void canDetermineThatThereAreLocalChanges() {
-        def changedFileList = ["M some_modified_file.txt","A some_added_file.foo"]
-        def hgCommand = [ execute : {args -> changedFileList.join("\n")} ] as HgCommand
-        def repo = new HgRepository(hgCommand, new File(getTestDir(), "test_hg"))
-
-        assertTrue(repo.hasLocalChanges())
-    }
-
-    @Test
-    public void canDetermineThatThereAreNoLocalChanges() {
-        def changedFileList = "\n"
-        def hgCommand = [ execute: {args -> changedFileList} ] as HgCommand
-        def repo = new HgRepository(hgCommand, new File(getTestDir(), "test_hg"))
-
-        assertFalse(repo.hasLocalChanges())
     }
 
     @Test

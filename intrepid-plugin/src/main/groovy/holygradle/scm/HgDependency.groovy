@@ -48,17 +48,19 @@ class HgDependency extends SourceDependency {
     }
 
     private boolean TryCheckout(String repoUrl, File destinationDir, String repoBranch) {
-        Collection<String> cmdLine = ["clone"]
+        Collection<String> args = ["clone"]
         if (repoBranch != null) { 
-            cmdLine.add("--branch")
-            cmdLine.add(repoBranch)
+            args.add("--branch")
+            args.add(repoBranch)
         }
-        cmdLine.add("--")
-        cmdLine.add(repoUrl)
-        cmdLine.add(destinationDir.path)
+        args.add("--")
+        args.add(repoUrl)
+        args.add(destinationDir.path)
 
         try {
-            hgCommand.execute(cmdLine)
+            hgCommand.execute { ExecSpec spec ->
+                spec.args args
+            }
         } catch ( RuntimeException ex ) {
             println(ex.message)
             return false
@@ -98,7 +100,9 @@ class HgDependency extends SourceDependency {
         
         // Update to a specific revision if necessary.
         if (repoRevision != null) {
-            hgCommand.execute(["update", "-r", repoRevision])
+            hgCommand.execute { ExecSpec spec ->
+                spec.args "update", "-r", repoRevision
+            }
         }
         
         result
