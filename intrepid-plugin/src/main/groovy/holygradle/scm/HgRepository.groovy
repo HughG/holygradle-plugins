@@ -38,6 +38,7 @@ class HgRepository implements SourceControlRepository {
 
     public String getRevision() {
         return hgCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
             spec.args(
                 "log", "-l", "1",           // Execute log command, limiting the results to 1
                 "--template", "\"{node}\""  // Filter the results to get the changeset hash
@@ -48,6 +49,7 @@ class HgRepository implements SourceControlRepository {
     public boolean hasLocalChanges() {
         // Execute hg status with added, removed or modified files
         String changes = hgCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
             spec.args "status", "-amrdC"
         }
         changes.trim().length() > 0

@@ -57,7 +57,10 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         String username = System.getProperty("user.name").toLowerCase()
         ZipFile packageZip = new ZipFile(new File(projectBPackageDir, "projectB-preBuiltArtifacts.zip"))
         ZipEntry packageBuildFile = packageZip.getEntry("preBuiltArtifacts/build.gradle")
-        testFile.text = packageZip.getInputStream(packageBuildFile).text.replaceAll("${username}-SNAPSHOT", "SNAPSHOT")
+        testFile.text = packageZip.getInputStream(packageBuildFile).text.replaceAll(
+            "gplugins.use \"(.*):.*\"",
+            "gplugins.use \"\$1:dummy\""
+        )
         regression.checkForRegression("testCreateBuildScriptWithPinnedSourceDependency")
     }
 }

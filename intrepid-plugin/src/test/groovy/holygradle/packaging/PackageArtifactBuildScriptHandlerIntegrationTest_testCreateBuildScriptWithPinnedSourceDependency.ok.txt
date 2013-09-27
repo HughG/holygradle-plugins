@@ -1,15 +1,15 @@
 // Meta-package for projectB pre-built artifacts unspecified
 // ---------------------------------------------------
 buildscript {
-    gplugins.use "intrepid:SNAPSHOT"
-    gplugins.use "devenv:null"
-    gplugins.use "my-credentials:null"
+    gplugins.use "intrepid:dummy"
+    gplugins.use "devenv:dummy"
+    gplugins.use "my-credentials:dummy"
 }
 gplugins.apply()
 
 sourceDependencies {
     "..\projectA" {
-        hg "unknown@fb4666bb4f2c39f716034c9ea761033941b3a782"
+        hg "unknown@d7496a8c5c14e5ea8afb554dd42ca03f7d13b630"
     }
 }
 packedDependenciesDefault {

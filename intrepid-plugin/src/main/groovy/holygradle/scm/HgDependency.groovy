@@ -59,6 +59,7 @@ class HgDependency extends SourceDependency {
 
         try {
             hgCommand.execute { ExecSpec spec ->
+                spec.workingDir = project.projectDir
                 spec.args args
             }
         } catch ( RuntimeException ex ) {
@@ -101,6 +102,7 @@ class HgDependency extends SourceDependency {
         // Update to a specific revision if necessary.
         if (repoRevision != null) {
             hgCommand.execute { ExecSpec spec ->
+                spec.workingDir = destinationDir
                 spec.args "update", "-r", repoRevision
             }
         }
