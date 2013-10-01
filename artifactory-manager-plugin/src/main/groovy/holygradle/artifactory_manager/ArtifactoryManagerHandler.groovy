@@ -4,33 +4,42 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.AuthenticationSupported
 import org.gradle.api.artifacts.repositories.ArtifactRepository
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
+import org.gradle.api.logging.Logger
 import org.gradle.util.ConfigureUtil
 
 import java.util.regex.Matcher
 
 class ArtifactoryManagerHandler {
     private final Project project
-    private String server
     private Closure artifactoryApiFactory
-    private RepositoryHandler defaultRepositoryHandler
+    private String server
+    private String username
+    private String password
     private List<RepositoryHandler> repositoryHandlers = []
+    private final Logger logger
 
     public ArtifactoryManagerHandler(Project project) {
         this.project = project
-        defaultRepositoryHandler = new RepositoryHandler(null, this)
-        repositoryHandlers.add(defaultRepositoryHandler)
+        this.logger = project.logger
     }
     
-    public ArtifactoryManagerHandler(ArtifactoryAPI artifactory) {
+    public ArtifactoryManagerHandler(Logger logger, ArtifactoryAPI artifactory) {
+        this.logger = logger
         artifactoryApiFactory = { repository, username, password, dryRun -> artifactory }
-        defaultRepositoryHandler = new RepositoryHandler(null, this)
-        repositoryHandlers.add(defaultRepositoryHandler)
     }
     
     public void server(String server) {
         this.server = server
     }
-    
+
+    public void username(String username) {
+        this.username = username
+    }
+
+    public void password(String password) {
+        this.password = password
+    }
+
     public ArtifactoryAPI getArtifactoryAPI(String repository, String username, String password, boolean dryRun) {
         if (artifactoryApiFactory != null) {
             artifactoryApiFactory(repository, username, password, dryRun)
@@ -76,17 +85,11 @@ class ArtifactoryManagerHandler {
         }
         new DefaultArtifactoryAPI(server, repository, username, password, dryRun)
     }
-    
-    public void delete(Closure closure) {
-        defaultRepositoryHandler.delete(closure)
-    }
-    
-    public void delete(String module, Closure closure) {
-        defaultRepositoryHandler.delete(module, closure)
-    }
-    
+
     public void repository(String repository, Closure closure) {
-        RepositoryHandler repositoryHandler = new RepositoryHandler(repository, this)
+        RepositoryHandler repositoryHandler = new RepositoryHandler(logger, repository, this)
+        repositoryHandler.username(username)
+        repositoryHandler.password(password)
         ConfigureUtil.configure(closure, repositoryHandler)
         repositoryHandlers.add(repositoryHandler)
     }

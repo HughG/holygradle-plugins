@@ -1,5 +1,6 @@
 package holygradle.artifactory_manager
 
+import org.gradle.api.logging.Logger
 import org.gradle.util.ConfigureUtil
 
 class RepositoryHandler {
@@ -8,8 +9,10 @@ class RepositoryHandler {
     private String username
     private String password
     private List<DeleteRequest> deleteRequests = []
+    private final Logger logger
 
-    public RepositoryHandler(String repository, ArtifactoryManagerHandler artifactoryManager) {
+    public RepositoryHandler(Logger logger, String repository, ArtifactoryManagerHandler artifactoryManager) {
+        this.logger = logger
         this.repository = repository
         this.artifactoryManager = artifactoryManager
     }
@@ -21,13 +24,9 @@ class RepositoryHandler {
     public void password(String password) {
         this.password = password
     }
-    
-    public void delete(Closure closure) {
-        delete("", closure)
-    }
-    
+
     public void delete(String module, Closure closure) {
-        DeleteRequest deleteRequest = new DeleteRequest(module)
+        DeleteRequest deleteRequest = new DeleteRequest(logger, module)
         ConfigureUtil.configure(closure, deleteRequest)
         deleteRequests.add(deleteRequest)
     }

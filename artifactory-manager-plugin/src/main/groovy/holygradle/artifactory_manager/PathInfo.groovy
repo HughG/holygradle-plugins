@@ -3,45 +3,53 @@ package holygradle.artifactory_manager
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
+import java.util.regex.Matcher
 
-class ArtifactInfo {
+/**
+ * Class representing one of the levels in an Ivy-style artifact path: group, module, and version.
+ *
+ * Instances for groups and modules may have children, and will have a null version value.  Instances for versions will
+ * have a non-null version, and won't have children.
+ */
+class PathInfo {
     public final String path
+    private final String version
     private Date creationDate = null
     private Map json
-    private ArtifactInfo parent
-    private Collection<ArtifactInfo> children = []
+    private PathInfo parent
+    private Collection<PathInfo> children = []
     
-    public ArtifactInfo(ArtifactoryAPI artifactory, String path) {
-        this.path = path
-        initialize(artifactory)
+    public PathInfo(ArtifactoryAPI artifactory, String path) {
+        this(null, artifactory, path)
     }
         
-    public ArtifactInfo(ArtifactInfo parent, ArtifactoryAPI artifactory, String path) {
+    public PathInfo(PathInfo parent, ArtifactoryAPI artifactory, String path) {
         this.parent = parent
         this.path = path
+        Matcher splitPath = (path =~ "[^/]+/[^/]+/([^/]+)")
+        if (splitPath.matches()) {
+            this.version = splitPath.group(1)
+        } else {
+            this.version = null
+        }
         initialize(artifactory)
     }
     
     private void initialize(ArtifactoryAPI artifactory) {
-        //println "ArtifactInfo: '$path'"
         json = artifactory.getFolderInfoJson(path)
         for (child in json.children) {
             if (child.folder) {
-                children.add(new ArtifactInfo(this, artifactory, path + child.uri))
+                children.add(new PathInfo(this, artifactory, path + child.uri))
             }
         }
     }
 
-    public ArtifactInfo getParent() {
+    public PathInfo getParent() {
         return this.parent
     }
 
     public String getVersion() {
-        if (path ==~ /.*\/([\d\w\.]+\d+)/) {
-            path.split("/").last()
-        } else {
-            null
-        }
+        return this.version
     }
     
     public Date getCreationDate() {
@@ -57,8 +65,8 @@ class ArtifactInfo {
         return creationDate
     }
     
-    public ArtifactInfo getNewestChild() {
-        ArtifactInfo newestChild = null
+    public PathInfo getNewestChild() {
+        PathInfo newestChild = null
         Date newestChildCreationDate = null
         for (child in children) {
             Date creation = child.getCreationDate()
@@ -74,7 +82,7 @@ class ArtifactInfo {
         if (children.size() == 0) {
             return closure(this)
         } else {
-            Collection<ArtifactInfo> newChildren = []
+            Collection<PathInfo> newChildren = []
             for (child in children) {
                 if (!child.filter(closure)) {
                     newChildren.add(child)
@@ -95,5 +103,11 @@ class ArtifactInfo {
                 child.all(closure)
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        int size = children.size()
+        "${path} (${size} ${size == 1 ? 'child' : 'children'})"
     }
 }

@@ -1,5 +1,9 @@
 package holygradle.artifactory_manager
 
+import org.gradle.api.logging.Logger
+
+import java.util.regex.Pattern
+
 import static java.util.Calendar.*
 
 class DeleteRequest {
@@ -12,8 +16,11 @@ class DeleteRequest {
     private int keepCount = 0
     private String keepInterval = null
     private List<String> versionsToKeep = []
-    
-    public DeleteRequest(String modules) {
+    private Pattern versionRegex = null
+    private final Logger logger
+
+    public DeleteRequest(Logger logger, String modules) {
+        this.logger = logger
         this.modules = modules
     }
     
@@ -89,15 +96,28 @@ class DeleteRequest {
         keepCount = countUnits
         keepInterval = units
     }
-    
+
     public void dontDelete(String versionToKeep) {
         versionsToKeep.add(versionToKeep)
+    }
+
+    public void versionsMatching(String versionRegex) {
+        if (this.versionRegex != null) {
+            throw new IllegalStateException(
+                "Cannot call versionsMatching with '${versionRegex}': it was already called with '${this.versionRegex}'"
+            )
+        }
+        this.versionRegex = ~versionRegex
     }
     
     public void process(ArtifactoryAPI artifactoryApi) {
         String[] moduleGroup = modules.split(",")
-        println "  Deleting artifacts for '${moduleGroup.join(", ")}'"
-        println "  when they are ${deleteExplanation}${keepExplanation}."
+        if (moduleGroup.length == 1 && moduleGroup[0].empty) {
+            throw new IllegalStateException("You must specify at least one module in a call to 'delete() {...}'")
+        }
+
+        logger.info "  Deleting artifacts for '${moduleGroup.join(", ")}'"
+        logger.info "  when they are ${deleteExplanation}${keepExplanation}."
         
         Date cutoffDate = null
         if (deleteBeforeDate != null) {
@@ -105,24 +125,25 @@ class DeleteRequest {
         } else if (deleteUnits != null) {
             cutoffDate = subtractDate(artifactoryApi.getNow(), deleteUnitCount, deleteUnits)
         } else {
-            println "Not deleting any artifacts for module '${modules}' because no cut-off date was specified."
+            logger.info "Not deleting any artifacts for module '${modules}' because no cut-off date was specified."
             return
         }
         
         // Gather deletion candidates for each module.
-        Map<String, ArtifactInfo> moduleDeleteCandidates = [:]
+        Map<String, PathInfo> moduleDeleteCandidates = [:]
         Date earliestDateFound = artifactoryApi.getNow()
+        logger.debug "  versionRegex is ${versionRegex}"
         moduleGroup.each { module ->
             String path = module.replace(":", "/")
-            ArtifactInfo deleteCandidate = new ArtifactInfo(artifactoryApi, path)
+            PathInfo deleteCandidate = new PathInfo(artifactoryApi, path)
             
-            //println "newest"
-            deleteCandidate.filter { ArtifactInfo it ->
+            logger.debug "newest"
+            deleteCandidate.filter { PathInfo it ->
                 // Filter out any folders which represent the newest 
                 (it.parent != null) && (it == it.parent.newestChild)
             }
-            //println "after cutoff"
-            deleteCandidate.filter { ArtifactInfo it ->
+            logger.debug "after cutoff"
+            deleteCandidate.filter { PathInfo it ->
                 // Filter out any folders that were created after our cut-off date.
                 if (it.version == null) {
                     false
@@ -134,8 +155,18 @@ class DeleteRequest {
                     creationDate.after(cutoffDate)
                 }
             }
+            if (versionRegex != null) {
+                logger.debug "regex"
+                deleteCandidate.filter { PathInfo it ->
+                    // Filter out any folders which don't match our version regex
+                    boolean doesNotMatchVersionRegex = !it.version.matches(versionRegex)
+                    logger.debug "versionRegex match? ${doesNotMatchVersionRegex ? 'N' : 'y'} ${it.path}"
+                    doesNotMatchVersionRegex
+                }
+            }
             
             moduleDeleteCandidates[module] = deleteCandidate
+            logger.debug "Added candidate for ${module}: ${deleteCandidate}"
         }
         
         // If we need to keep regular releases then filter out some deletion candidates.
@@ -145,17 +176,17 @@ class DeleteRequest {
             
             // Keep going until we have gone back to the earliest date previously found.
             while (laterDate.after(earliestDateFound)) {
-                //println "    Checking period ${earlierDate} to ${laterDate}..."
+                logger.debug "    Checking period ${earlierDate} to ${laterDate}..."
                 boolean anythingInRange = false
-                Map<String, List<ArtifactInfo>> modulePathsInRange = [:]
+                Map<String, List<PathInfo>> modulePathsInRange = [:]
                 moduleDeleteCandidates.each { module, deleteCandidate ->
-                    List<ArtifactInfo> inRange = []
-                    //println "looking at module $module"
-                    deleteCandidate.all { ArtifactInfo it ->
+                    List<PathInfo> inRange = []
+                    logger.debug "        Looking at module $module"
+                    deleteCandidate.all { PathInfo it ->
                         if (it.version != null) {
                             Date date = it.creationDate
                             if (date.after(earlierDate) && laterDate.after(date)) {
-                                //println "  ${it.path} - ${date}"
+                                logger.debug "            ${it.path} - ${date}"
                                 inRange.add(it)
                                 anythingInRange = true
                             }
@@ -179,18 +210,18 @@ class DeleteRequest {
                     
                     if (commonVersions != null && commonVersions.size() > 0) {
                         String versionToSave = commonVersions[0]
-                        //println "      Saving version: ${versionToSave}"
+                        logger.debug "        Saving version: ${versionToSave}"
                         moduleDeleteCandidates.each { module, deleteCandidate ->
-                            deleteCandidate.filter { ArtifactInfo it ->
+                            deleteCandidate.filter { PathInfo it ->
                                 // Filter out any versioned artifacts that we should save
                                 it.version == versionToSave
                             }
                         }
                     } else {
-                        //println "      No common version found for all modules."
+                        logger.debug "      No common version found for all modules."
                     }
                 } else {
-                    //println "      Nothing in range."
+                    logger.debug "      Nothing in range."
                 }
                 
                 laterDate = earlierDate
@@ -200,21 +231,25 @@ class DeleteRequest {
         
         // We may have a hard-coded list of versions to keep.
         versionsToKeep.each { versionToKeep ->
-            moduleDeleteCandidates.each { String module, ArtifactInfo deleteCandidate ->
-                deleteCandidate.filter { ArtifactInfo it ->
+            moduleDeleteCandidates.each { String module, PathInfo deleteCandidate ->
+                deleteCandidate.filter { PathInfo it ->
                     // Filter out any versioned artifacts that we should save
-                    it.version == versionToKeep
+                    boolean keepVersion = (it.version == versionToKeep)
+                    if (keepVersion) {
+                        logger.info "    Keeping version ${it.version}"
+                    }
+                    keepVersion
                 }
             }
         }
         
         // Delete all candidates that remain.
-        moduleDeleteCandidates.each { String module, ArtifactInfo deleteCandidate ->
-            deleteCandidate.all { ArtifactInfo it ->
+        moduleDeleteCandidates.each { String module, PathInfo deleteCandidate ->
+            deleteCandidate.all { PathInfo it ->
                 // Only delete folders that look like a versioned artifact i.e. 
                 // using a version number for the folder name.
                 if (it.getVersion() != null) {
-                    println "    DELETE ${it.path} (created: ${it.getCreationDate()})"
+                    logger.info "    DELETE ${it.path} (created: ${it.getCreationDate()})"
                     artifactoryApi.removeItem(it.path)
                 }
             }
