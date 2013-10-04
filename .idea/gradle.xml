@@ -2,7 +2,7 @@
 <project version="4">
   <component name="GradleSettings">
     <option name="gradleHome" value="$GRADLE_USER_HOME$/wrapper/dists/gradle-1.4-bin/47n6g3pbi5plc7n8fn58nkinje/gradle-1.4" />
-    <option name="linkedProjectPath" value="$PROJECT_DIR$/buildSrc/build.gradle" />
+    <option name="linkedProjectPath" value="$PROJECT_DIR$/build.gradle" />
     <option name="preferLocalInstallationToWrapper" value="true" />
   </component>
 </project>

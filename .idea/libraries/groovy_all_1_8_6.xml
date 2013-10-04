@@ -1,14 +1,9 @@
 <component name="libraryTable">
   <library name="groovy-all-1.8.6">
-    <CLASSES />
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-1.4-bin/47n6g3pbi5plc7n8fn58nkinje/gradle-1.4/lib/groovy-all-1.8.6.jar!/" />
+    </CLASSES>
     <JAVADOC />
-    <SOURCES>
-      <root url="file://$PROJECT_DIR$/../groovy-1.8.6/src/tck/src" />
-      <root url="file://$PROJECT_DIR$/../groovy-1.8.6/src/main" />
-      <root url="file://$PROJECT_DIR$/../groovy-1.8.6/src/test" />
-      <root url="file://$PROJECT_DIR$/../groovy-1.8.6/src/examples" />
-      <root url="file://$PROJECT_DIR$/../groovy-1.8.6/src/test-resources/stubgenerator/propertyUsageFromJava" />
-      <root url="file://$PROJECT_DIR$/../groovy-1.8.6/src/test-resources/stubgenerator/circularLanguageReference" />
-    </SOURCES>
+    <SOURCES />
   </library>
 </component>
