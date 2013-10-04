@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/artifactory-manager-plugin/artifactory-manager-plugin.iml" filepath="$PROJECT_DIR$/artifactory-manager-plugin/artifactory-manager-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildSrc/buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/buildSrc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/credential-store/credential-store.iml" filepath="$PROJECT_DIR$/credential-store/credential-store.iml" />
+      <module fileurl="file://$PROJECT_DIR$/custom-gradle/custom-gradle.iml" filepath="$PROJECT_DIR$/custom-gradle/custom-gradle.iml" />
+      <module fileurl="file://$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" filepath="$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/devenv-plugin/devenv-plugin.iml" filepath="$PROJECT_DIR$/devenv-plugin/devenv-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/holy-gradle-plugins.iml" filepath="$PROJECT_DIR$/holy-gradle-plugins.iml" />
+      <module fileurl="file://$PROJECT_DIR$/intrepid-plugin/intrepid-plugin.iml" filepath="$PROJECT_DIR$/intrepid-plugin/intrepid-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/my-credentials-plugin/my-credentials-plugin.iml" filepath="$PROJECT_DIR$/my-credentials-plugin/my-credentials-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/stamper-plugin/stamper-plugin.iml" filepath="$PROJECT_DIR$/stamper-plugin/stamper-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/unit-test-plugin/unit-test-plugin.iml" filepath="$PROJECT_DIR$/unit-test-plugin/unit-test-plugin.iml" />
+    </modules>
+  </component>
+</project>
+

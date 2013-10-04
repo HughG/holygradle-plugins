@@ -7,9 +7,6 @@ build
 *.sdf
 *.suo
 *.vcxproj.user
-# IntelliJ Idea
-workspace.iml
-.idea
 # Generated
 credential-store/project_version_info.h
 credential-store/release_version_info.h
@@ -17,11 +14,13 @@ credential-store/release_version_info.h
 *.bak
 */src/test/**/*.test.txt
 **/packages/
-
 intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/projectB/settings.gradle
 syntax: regexp
 # Gradle / Java
 ^classes/
+# IntelliJ IDEA
+^.idea/workspace.xml
+^.idea/tasks.xml
 # Generated doc
 ^doc/website/output/
 # Other
