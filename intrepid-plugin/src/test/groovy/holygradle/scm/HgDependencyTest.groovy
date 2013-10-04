@@ -51,11 +51,11 @@ class HgDependencyTest extends AbstractHolyGradleTest {
         ExecSpec cloneSpec = stubSpecs[0]
         List<String> expectedCloneArgs = ["clone", "--branch", "some_branch", "--", "dummy_url", depDir.absolutePath]
         assertThat("clone args", cloneSpec.args, is(equalTo(expectedCloneArgs as List<String>)))
-        assertEquals("clone working dir", projectDir, cloneSpec.workingDir)
+        assertEquals("clone working dir", projectDir.absolutePath, cloneSpec.workingDir.absolutePath)
 
         ExecSpec updateSpec = stubSpecs[1]
         assertThat("update args", updateSpec.args, is(equalTo(["update", "-r", "dummy_node"] as List<String>)))
-        assertEquals("update dir", depDir, updateSpec.workingDir)
+        assertEquals("update dir", depDir.absolutePath, updateSpec.workingDir.absolutePath)
     }
 
 }
