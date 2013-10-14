@@ -1,15 +1,13 @@
 package holygradle.artifactory_manager
 
 import groovy.json.JsonSlurper
-import org.gradle.api.logging.Logger
-import org.gradle.api.logging.Logging
+import org.gradle.api.Project
+import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
 import static org.mockito.Mockito.*
 
 class DeletionTest {
-    private static Logger LOGGER = Logging.getLogger(DeletionTest.class)
-    
     private static Map folderInfo(String date, Collection<String> children) {
         String dateStr = Date.parse("yyyy-MM-dd", date).format("yyyy-MM-dd'T'HH:mm:ss.SSSX")
         println dateStr
@@ -29,7 +27,8 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/foo")).thenReturn(folderInfo("2012-11-01", ["/1.1", "/1.2"]))
         when(artifactory.getFolderInfoJson("org/foo/1.1")).thenReturn(folderInfo("2012-12-19", []))
 
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+        Project project = ProjectBuilder.builder().withName("test").build()
+        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
 
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("") { DeleteRequest it ->
@@ -46,8 +45,9 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/foo")).thenReturn(folderInfo("2012-11-01", ["/1.1", "/1.2"]))
         when(artifactory.getFolderInfoJson("org/foo/1.1")).thenReturn(folderInfo("2012-12-19", []))
         when(artifactory.getFolderInfoJson("org/foo/1.2")).thenReturn(folderInfo("2012-12-17", []))
-        
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+
+        Project project = ProjectBuilder.builder().withName("test").build()
+        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
         
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("org:foo") { DeleteRequest it ->
@@ -70,8 +70,9 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/foo/1.2")).thenReturn(folderInfo("2012-11-26", []))
         when(artifactory.getFolderInfoJson("org/foo/1.3")).thenReturn(folderInfo("2012-11-01", []))
         when(artifactory.getFolderInfoJson("org/foo/1.4")).thenReturn(folderInfo("2012-12-01", []))
-        
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+
+        Project project = ProjectBuilder.builder().withName("test").build()
+        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
         
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("org:foo") { DeleteRequest it ->
@@ -96,8 +97,9 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/foo/1.2")).thenReturn(folderInfo("2012-11-26", []))
         when(artifactory.getFolderInfoJson("org/foo/1.3")).thenReturn(folderInfo("2012-11-01", []))
         when(artifactory.getFolderInfoJson("org/foo/1.4")).thenReturn(folderInfo("2012-12-01", []))
-        
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+
+         Project project = ProjectBuilder.builder().withName("test").build()
+         ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
         
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("org:foo") { DeleteRequest it ->
@@ -120,8 +122,9 @@ class DeletionTest {
         ArtifactoryAPI artifactory = getMockArtifactory("2012-12-25")
         when(artifactory.getFolderInfoJson("org/foo")).thenReturn(folderInfo("2012-11-01", ["/1.1"]))
         when(artifactory.getFolderInfoJson("org/foo/1.1")).thenReturn(folderInfo("2012-11-01", []))
-        
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+
+        Project project = ProjectBuilder.builder().withName("test").build()
+        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
         
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("org:foo") { DeleteRequest it ->
@@ -147,7 +150,8 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/foo/1.3")).thenReturn(folderInfo("2012-10-09", []))
         when(artifactory.getFolderInfoJson("org/foo/1.4")).thenReturn(folderInfo("2012-10-22", []))
 
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+        Project project = ProjectBuilder.builder().withName("test").build()
+        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
         
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("org:foo") { DeleteRequest it ->
@@ -186,7 +190,8 @@ class DeletionTest {
         when(artifactory.getFolderInfoJson("org/bar/1.6")).thenReturn(folderInfo("2012-10-24", []))
         when(artifactory.getFolderInfoJson("org/bar/1.7")).thenReturn(folderInfo("2012-12-02", []))
 
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+        Project project = ProjectBuilder.builder().withName("test").build()
+        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
         
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("org:foo,org:bar") { DeleteRequest it ->
@@ -232,7 +237,8 @@ class DeletionTest {
         // Not old enough to be removed, and doesn't match regex.
         when(artifactory.getFolderInfoJson("org/foo/rel_2")).thenReturn(folderInfo("2012-12-01", []))
 
-        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(LOGGER, artifactory)
+        Project project = ProjectBuilder.builder().withName("test").build()
+        ArtifactoryManagerHandler artifactoryManager = new ArtifactoryManagerHandler(project, artifactory)
 
         artifactoryManager.repository("none") { RepositoryHandler repo ->
             repo.delete("org:foo") { DeleteRequest it ->

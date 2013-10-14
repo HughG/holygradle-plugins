@@ -4,17 +4,27 @@ import org.gradle.api.logging.Logger
 import org.gradle.util.ConfigureUtil
 
 class RepositoryHandler {
+    private final Logger logger
+    private final String repository
     private final ArtifactoryManagerHandler artifactoryManager
-    private String repository
+    private final File outputDir
+    private final long minRequestIntervalInMillis
     private String username
     private String password
-    private List<DeleteRequest> deleteRequests = []
-    private final Logger logger
+    private final List<DeleteRequest> deleteRequests = []
 
-    public RepositoryHandler(Logger logger, String repository, ArtifactoryManagerHandler artifactoryManager) {
+    public RepositoryHandler(
+        Logger logger,
+        String repository,
+        ArtifactoryManagerHandler artifactoryManager,
+        File outputDir,
+        long minRequestIntervalInMillis
+    ) {
         this.logger = logger
         this.repository = repository
         this.artifactoryManager = artifactoryManager
+        this.outputDir = outputDir
+        this.minRequestIntervalInMillis = minRequestIntervalInMillis
     }
     
     public void username(String username) {
@@ -26,7 +36,7 @@ class RepositoryHandler {
     }
 
     public void delete(String module, Closure closure) {
-        DeleteRequest deleteRequest = new DeleteRequest(logger, module)
+        DeleteRequest deleteRequest = new DeleteRequest(logger, module, minRequestIntervalInMillis)
         ConfigureUtil.configure(closure, deleteRequest)
         deleteRequests.add(deleteRequest)
     }
@@ -40,6 +50,20 @@ class RepositoryHandler {
         println "Deleting artifacts in '${artifactoryApi.getRepository()}'."
         for (deleteRequest in deleteRequests) {
             deleteRequest.process(artifactoryApi)
+        }
+    }
+
+    public void listStorage() {
+        ArtifactoryAPI artifactoryApi = artifactoryManager.getArtifactoryAPI(repository, username, password, false)
+        if (!outputDir.exists()) {
+            if (!outputDir.mkdirs()) {
+                throw new IOException("Failed to create ${outputDir} to hold output file")
+            }
+        }
+        final File sizesFile = new File(outputDir, "${repository}-sizes.txt")
+        logger.lifecycle "Writing size information for ${repository} to ${sizesFile}"
+        sizesFile.withPrintWriter { PrintWriter pw ->
+            new StorageSpaceLister(logger, artifactoryApi, pw, minRequestIntervalInMillis).listStorage()
         }
     }
 }

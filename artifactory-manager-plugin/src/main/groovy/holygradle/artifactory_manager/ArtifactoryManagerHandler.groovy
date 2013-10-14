@@ -15,6 +15,7 @@ class ArtifactoryManagerHandler {
     private String server
     private String username
     private String password
+    private long minRequestIntervalInMillis = 10
     private List<RepositoryHandler> repositoryHandlers = []
     private final Logger logger
 
@@ -23,8 +24,8 @@ class ArtifactoryManagerHandler {
         this.logger = project.logger
     }
     
-    public ArtifactoryManagerHandler(Logger logger, ArtifactoryAPI artifactory) {
-        this.logger = logger
+    public ArtifactoryManagerHandler(Project project, ArtifactoryAPI artifactory) {
+        this(project)
         artifactoryApiFactory = { repository, username, password, dryRun -> artifactory }
     }
     
@@ -38,6 +39,10 @@ class ArtifactoryManagerHandler {
 
     public void password(String password) {
         this.password = password
+    }
+
+    public void minRequestIntervalInMillis(long interval) {
+        this.minRequestIntervalInMillis = interval
     }
 
     public ArtifactoryAPI getArtifactoryAPI(String repository, String username, String password, boolean dryRun) {
@@ -87,7 +92,8 @@ class ArtifactoryManagerHandler {
     }
 
     public void repository(String repository, Closure closure) {
-        RepositoryHandler repositoryHandler = new RepositoryHandler(logger, repository, this)
+        RepositoryHandler repositoryHandler =
+            new RepositoryHandler(project.logger, repository, this, project.buildDir, minRequestIntervalInMillis)
         repositoryHandler.username(username)
         repositoryHandler.password(password)
         ConfigureUtil.configure(closure, repositoryHandler)
@@ -103,6 +109,12 @@ class ArtifactoryManagerHandler {
             if (it.canDelete()) {
                 it.doDelete(dryRun)
             }
+        }
+    }
+
+    public void listStorage() {
+        repositoryHandlers.each {
+            it.listStorage()
         }
     }
 }

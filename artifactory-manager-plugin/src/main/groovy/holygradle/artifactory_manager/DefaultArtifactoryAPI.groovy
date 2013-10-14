@@ -17,6 +17,7 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
         
         client = new RESTClient(server)
         client.parser['application/vnd.org.jfrog.artifactory.storage.FolderInfo+json'] = client.parser['application/json']
+        client.parser['application/vnd.org.jfrog.artifactory.storage.FileInfo+json'] = client.parser['application/json']
         client.parser['application/vnd.org.jfrog.artifactory.repositories.RepositoryDetailsList+json'] = client.parser['application/json']
         
         // Would be preferable to do: client.auth.basic username, password
@@ -36,18 +37,13 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
     public Date getNow() {
         new Date()
     }
-    
+
     public Map getFolderInfoJson(String path) {
-        Map binding = [repository: repository, path: path]
-        Object template = engine.createTemplate('''/artifactory/api/storage/$repository/$path''').make(binding)
-        String query = template.toString()
-        HttpResponseDecorator resp = (HttpResponseDecorator)(client.get(path: query))
-        if (resp.status != 200) {
-            println "ERROR: problem obtaining folder info: " + resp.status
-            println query
-            System.exit(-1)
-        }
-        return resp.data as Map
+        return getJsonAsMap(path, '''/artifactory/api/storage/$repository/$path''')
+    }
+
+    public Map getFileInfoJson(String path) {
+        return getJsonAsMap(path, '''/artifactory/api/storage/$repository/$path''')
     }
     
     public void removeItem(String path) {
@@ -57,5 +53,16 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
         if (!dryRun) {
             client.delete(path: query)
         }
+    }
+
+    private Map getJsonAsMap(String path, String requestTemplate) {
+        Map binding = [repository: repository, path: path]
+        Object template = engine.createTemplate(requestTemplate).make(binding)
+        String query = template.toString()
+        HttpResponseDecorator resp = (HttpResponseDecorator) (client.get(path: query))
+        if (resp.status != 200) {
+            throw new RuntimeException("ERROR: problem obtaining folder info: {$resp.status} from ${query}")
+        }
+        return resp.data as Map
     }
 }

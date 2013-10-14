@@ -7,7 +7,10 @@ import java.util.regex.Pattern
 import static java.util.Calendar.*
 
 class DeleteRequest {
-    private String modules
+    private final Logger logger
+    private final String modules
+    private final long minRequestIntervalInMillis
+
     private Date deleteBeforeDate = null
     private int deleteUnitCount = 0
     private String deleteUnits = null
@@ -17,11 +20,11 @@ class DeleteRequest {
     private String keepInterval = null
     private List<String> versionsToKeep = []
     private Pattern versionRegex = null
-    private final Logger logger
 
-    public DeleteRequest(Logger logger, String modules) {
+    public DeleteRequest(Logger logger, String modules, long minRequestIntervalInMillis) {
         this.logger = logger
         this.modules = modules
+        this.minRequestIntervalInMillis = minRequestIntervalInMillis
     }
     
     public void olderThan(Date deleteOlder) {
@@ -251,6 +254,9 @@ class DeleteRequest {
                 if (it.getVersion() != null) {
                     logger.info "    DELETE ${it.path} (created: ${it.getCreationDate()})"
                     artifactoryApi.removeItem(it.path)
+                    if (minRequestIntervalInMillis > 0) {
+                        Thread.sleep(minRequestIntervalInMillis)
+                    }
                 }
             }
         }

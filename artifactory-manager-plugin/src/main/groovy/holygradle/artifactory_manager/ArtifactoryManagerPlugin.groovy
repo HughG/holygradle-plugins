@@ -31,6 +31,14 @@ class ArtifactoryManagerPlugin implements Plugin<Project> {
                     }
                 }
             }
+
+            project.task("listArtifactoryStorageSize", type: DefaultTask) { Task task ->
+                task.description = "Lists storage usage by group, module, and version for each repository, " +
+                    "to '${new File(project.buildDir, "[repo-name]-sizes.txt").absolutePath.toString()}'"
+                task.doLast {
+                    artifactoryManagerExtension.listStorage()
+                }
+            }
         }
     }
 }
