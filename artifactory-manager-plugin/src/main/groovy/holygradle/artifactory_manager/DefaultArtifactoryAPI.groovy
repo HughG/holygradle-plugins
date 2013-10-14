@@ -1,6 +1,7 @@
 package holygradle.artifactory_manager
 
 import groovy.text.SimpleTemplateEngine
+import groovy.text.Template
 import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.ParserRegistry
 import groovyx.net.http.RESTClient
@@ -8,7 +9,9 @@ import groovyx.net.http.RESTClient
 class DefaultArtifactoryAPI implements ArtifactoryAPI {
     private RESTClient client 
     private String repository
-    private SimpleTemplateEngine engine = new SimpleTemplateEngine()
+    private final SimpleTemplateEngine engine = new SimpleTemplateEngine()
+    private final Template repoPathTemplate
+    private final Template repoPathInfoTemplate
     private boolean dryRun = true
     
     public DefaultArtifactoryAPI(String server, String repository, String username, String password, boolean dryRun) {
@@ -28,6 +31,12 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
         client.setHeaders( ['Authorization' : 'Basic ' + authEncoded ] )
 
         ParserRegistry.setDefaultCharset(null)
+
+        // Create these only once, and bind them multiple times.  It creates and loads a new class for each template
+        // creation, so doing it once per call gets you "java.lang.OutOfMemoryError: PermGen space" after a while.
+        // (See http://prystash.blogspot.co.uk/2011/06/experimenting-with-groovy-template.html)
+        repoPathTemplate = engine.createTemplate('''/artifactory/$repository/$path''')
+        repoPathInfoTemplate = engine.createTemplate('''/artifactory/api/storage/$repository/$path''')
     }
     
     public String getRepository() {
@@ -39,25 +48,25 @@ class DefaultArtifactoryAPI implements ArtifactoryAPI {
     }
 
     public Map getFolderInfoJson(String path) {
-        return getJsonAsMap(path, '''/artifactory/api/storage/$repository/$path''')
+        return getJsonAsMap(path, repoPathInfoTemplate)
     }
 
     public Map getFileInfoJson(String path) {
-        return getJsonAsMap(path, '''/artifactory/api/storage/$repository/$path''')
+        return getJsonAsMap(path, repoPathInfoTemplate)
     }
     
     public void removeItem(String path) {
         Map binding = [repository: repository, path: path]
-        Object template = engine.createTemplate('''/artifactory/$repository/$path''').make(binding)
+        Object template = repoPathTemplate.make(binding)
         String query = template.toString()
         if (!dryRun) {
             client.delete(path: query)
         }
     }
 
-    private Map getJsonAsMap(String path, String requestTemplate) {
+    private Map getJsonAsMap(String path, Template requestTemplate) {
         Map binding = [repository: repository, path: path]
-        Object template = engine.createTemplate(requestTemplate).make(binding)
+        Object template = requestTemplate.make(binding)
         String query = template.toString()
         HttpResponseDecorator resp = (HttpResponseDecorator) (client.get(path: query))
         if (resp.status != 200) {
