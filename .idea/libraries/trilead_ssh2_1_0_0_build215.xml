@@ -1,6 +1,8 @@
 <component name="libraryTable">
   <library name="trilead-ssh2-1.0.0-build215">
-    <CLASSES />
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/com.trilead/trilead-ssh2/1.0.0-build215/jar/efcd626068f633b4676b16a62b84e5dabac82d71/trilead-ssh2-1.0.0-build215.jar!/" />
+    </CLASSES>
     <JAVADOC />
     <SOURCES>
       <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/com.trilead/trilead-ssh2/1.0.0-build215/source/d7c807075a838382a6e1e640e8f5219e9b108def/trilead-ssh2-1.0.0-build215-sources.jar!/" />

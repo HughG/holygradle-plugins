@@ -1,6 +1,8 @@
 <component name="libraryTable">
   <library name="jarjar-maven-plugin-api-3.0.4">
-    <CLASSES />
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-1.4-bin/47n6g3pbi5plc7n8fn58nkinje/gradle-1.4/lib/plugins/jarjar-maven-plugin-api-3.0.4.jar!/" />
+    </CLASSES>
     <JAVADOC />
     <SOURCES />
   </library>

@@ -76,7 +76,6 @@
     <orderEntry type="library" exported="" name="native-platform-linux-i386-0.2" level="project" />
     <orderEntry type="library" exported="" name="gradle-native-1.4" level="project" />
     <orderEntry type="library" exported="" name="jarjar-maven-settings-builder-3.0.4" level="project" />
-    <orderEntry type="library" scope="TEST" name="main" level="project" />
     <orderEntry type="library" exported="" name="gradle-ide-1.4" level="project" />
     <orderEntry type="library" exported="" name="plexus-component-annotations-1.5.2" level="project" />
     <orderEntry type="library" exported="" name="jetty-plus-6.1.25" level="project" />
@@ -136,7 +135,9 @@
     <orderEntry type="library" exported="" name="ivy-2.2.0" level="project" />
     <orderEntry type="library" exported="" name="jsch-0.1.46" level="project" />
     <orderEntry type="library" exported="" name="gradle-javascript-1.4" level="project" />
-    <orderEntry type="module" module-name="custom-gradle-core-plugin" />
+    <orderEntry type="module" module-name="custom-gradle-core-plugin" exported="" />
+    <orderEntry type="library" scope="TEST" name="build-test" level="project" />
+    <orderEntry type="library" scope="TEST" name="classes-test" level="project" />
   </component>
 </module>
 

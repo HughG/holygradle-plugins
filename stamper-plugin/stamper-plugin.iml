@@ -45,7 +45,6 @@
     <orderEntry type="library" exported="" name="gradle-reporting-1.4" level="project" />
     <orderEntry type="library" exported="" name="jarjar-plexus-classworlds-2.4" level="project" />
     <orderEntry type="library" exported="" name="pmaven-common-0.8-20100325" level="project" />
-    <orderEntry type="library" scope="TEST" name="main" level="project" />
     <orderEntry type="library" exported="" name="gradle-ear-1.4" level="project" />
     <orderEntry type="library" exported="" name="jetty-util-6.1.25" level="project" />
     <orderEntry type="library" exported="" name="xbean-reflect-3.4" level="project" />
@@ -136,7 +135,9 @@
     <orderEntry type="library" exported="" name="jcl-over-slf4j-1.7.2" level="project" />
     <orderEntry type="library" exported="" name="jetty-6.1.25" level="project" />
     <orderEntry type="library" exported="" name="native-platform-windows-i386-0.2" level="project" />
-    <orderEntry type="module" module-name="custom-gradle-core-plugin" />
+    <orderEntry type="module" module-name="custom-gradle-core-plugin" exported="" />
+    <orderEntry type="library" scope="TEST" name="classes-test" level="project" />
+    <orderEntry type="library" scope="TEST" name="build-test" level="project" />
   </component>
 </module>
 

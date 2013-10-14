@@ -135,7 +135,6 @@
     <orderEntry type="library" exported="" name="jarjar-aether-impl-1.13.1" level="project" />
     <orderEntry type="library" exported="" name="jarjar-aether-api-1.13.1" level="project" />
     <orderEntry type="library" exported="" name="gradle-code-quality-1.4" level="project" />
-    <orderEntry type="module" module-name="holy-gradle-plugins" />
   </component>
 </module>
 

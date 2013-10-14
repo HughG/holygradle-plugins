@@ -46,7 +46,6 @@
     <orderEntry type="library" exported="" name="simple-4.1.21" level="project" />
     <orderEntry type="library" exported="" name="commons-codec-1.6.jar-commons-codec-1.6" level="project" />
     <orderEntry type="library" exported="" name="jarjar-plexus-cipher-1.7" level="project" />
-    <orderEntry type="library" scope="TEST" name="main" level="project" />
     <orderEntry type="library" exported="" name="native-platform-windows-i386-0.2" level="project" />
     <orderEntry type="library" exported="" name="83cd2cd674a217ade95a4bb83a8a14f351f48bd0-antlr-2.7.7.jar-antlr-2.7.7" level="project" />
     <orderEntry type="library" exported="" name="jarjar-maven-aether-provider-3.0.4" level="project" />
@@ -157,6 +156,7 @@
     <orderEntry type="library" exported="" name="jsch-0.1.46" level="project" />
     <orderEntry type="library" exported="" name="snakeyaml-1.6" level="project" />
     <orderEntry type="library" exported="" name="jetty-6.1.25" level="project" />
+    <orderEntry type="library" exported="" name="groovy-1.8.8" level="project" />
   </component>
 </module>
 

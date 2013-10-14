@@ -126,7 +126,6 @@
     <orderEntry type="library" exported="" name="jcommander-1.12" level="project" />
     <orderEntry type="library" exported="" name="jarjar-aether-util-1.13.1" level="project" />
     <orderEntry type="library" exported="" name="native-platform-linux-amd64-0.2" level="project" />
-    <orderEntry type="library" scope="TEST" name="main" level="project" />
     <orderEntry type="library" exported="" name="gson-2.2.1" level="project" />
     <orderEntry type="library" exported="" name="gradle-javascript-1.4" level="project" />
     <orderEntry type="library" exported="" name="kryo-2.20" level="project" />
