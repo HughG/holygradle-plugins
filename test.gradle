@@ -72,7 +72,7 @@ subprojects { Project project ->
         }
         project.task([type: Test], "integTest") { Test t ->
             t.group = "Verification"
-            t.description = "Run the integration tests (test classes not ending in 'IntegrationTest')."
+            t.description = "Run the integration tests (test classes ending in 'IntegrationTest')."
             t.include "**/*IntegrationTest.*"
             t.exclude "**/Abstract*.*"
             t.testReportDir = file("${project.reporting.baseDir}/$name")
