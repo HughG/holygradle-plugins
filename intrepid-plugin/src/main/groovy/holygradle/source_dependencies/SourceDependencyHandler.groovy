@@ -269,8 +269,12 @@ class SourceDependencyHandler extends DependencyHandler {
             "${latest.getGroup()}:${latest.getName()}:${latest.getVersion()}"
         }
     }
-    
+
+    // NOTE 2013-11-07 HughG: I don't see why we need to pass in a project here.  The constructor for this class which
+    // doesn't take project doesn't seem to be called anywhere, so we should just be able to use [this.project].  But
+    // I think it's too risky to change without more investigation; e.g., it might break pinned source meta-packages,
+    // so I'll leave it for now.
     public Project getSourceDependencyProject(Project project) {
-        project.findProject(targetName)
+        project.rootProject.findProject(targetName)
     }
 }

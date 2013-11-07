@@ -27,7 +27,8 @@ class Helper {
         Project project,
         Collection<SourceDependencyHandler> sourceDependencies
     ) {
-        Collection<SourceDependencyHandler> transSourceDep = sourceDependencies
+        // Note: Make transSourceDep be a fresh collection; previous code got ConcurrentModificationException sometimes.
+        Collection<SourceDependencyHandler> transSourceDep = new ArrayList<SourceDependencyHandler>(sourceDependencies)
         sourceDependencies.each { sourceDep ->
             String projName = sourceDep.targetName
             Project proj = sourceDep.getSourceDependencyProject(project)
@@ -42,7 +43,7 @@ class Helper {
                     proj.extensions.findByName("sourceDependencies") as Collection<SourceDependencyHandler>
                 if (subprojSourceDep != null) {
                     Collection<SourceDependencyHandler> transSubprojSourceDep = getTransitiveSourceDependencies(project, subprojSourceDep)
-                    transSourceDep = transSourceDep + transSubprojSourceDep
+                    transSourceDep.addAll(transSubprojSourceDep)
                 }
             }
         }

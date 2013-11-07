@@ -234,6 +234,9 @@ public class IntrepidPlugin implements Plugin<Project> {
          * Source dependency commands
          **************************************/
         project.gradle.projectsEvaluated {
+            // NOTE 2013-11-07 HughG: Possible performance improvement: I think we only need to do this for the root
+            // project, since we're visiting things transitively.
+
             // Define the tasks for source-dependency projects
             Iterable<SourceDependencyHandler> sourceDeps = Helper.getTransitiveSourceDependencies(project)
             sourceDeps.each { sourceDep ->
