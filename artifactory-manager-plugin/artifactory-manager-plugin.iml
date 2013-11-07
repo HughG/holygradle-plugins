@@ -157,6 +157,7 @@
     <orderEntry type="library" exported="" name="snakeyaml-1.6" level="project" />
     <orderEntry type="library" exported="" name="jetty-6.1.25" level="project" />
     <orderEntry type="library" exported="" name="groovy-1.8.8" level="project" />
+    <orderEntry type="library" scope="TEST" name="main" level="project" />
   </component>
 </module>
 

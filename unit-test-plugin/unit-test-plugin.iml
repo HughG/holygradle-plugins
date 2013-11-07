@@ -138,6 +138,7 @@
     <orderEntry type="module" module-name="custom-gradle-core-plugin" exported="" />
     <orderEntry type="library" scope="TEST" name="build-test" level="project" />
     <orderEntry type="library" scope="TEST" name="classes-test" level="project" />
+    <orderEntry type="library" scope="TEST" name="main" level="project" />
   </component>
 </module>
 

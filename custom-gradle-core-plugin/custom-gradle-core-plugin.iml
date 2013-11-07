@@ -135,6 +135,7 @@
     <orderEntry type="library" exported="" name="commons-collections-3.2.1.jar-commons-collections-3.2.1" level="project" />
     <orderEntry type="library" exported="" name="nekohtml-1.9.14" level="project" />
     <orderEntry type="library" exported="" name="asm-all-4.0" level="project" />
+    <orderEntry type="library" scope="TEST" name="main" level="project" />
   </component>
 </module>
 

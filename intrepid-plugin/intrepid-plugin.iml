@@ -169,6 +169,7 @@
     <orderEntry type="library" exported="" name="groovy-1.8.8" level="project" />
     <orderEntry type="library" scope="TEST" name="build-test" level="project" />
     <orderEntry type="module" module-name="credential-store" exported="" />
+    <orderEntry type="library" scope="TEST" name="main" level="project" />
   </component>
 </module>
 
