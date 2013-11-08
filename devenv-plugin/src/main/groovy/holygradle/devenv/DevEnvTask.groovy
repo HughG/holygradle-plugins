@@ -54,13 +54,7 @@ class DevEnvTask extends DefaultTask {
             if (project != project.rootProject) {
                 addStampingDependencyForProject(project.rootProject)
             }
-            
-            // We should rebuild symlinks before running any build task.
-            Task rebuildSymlinksTask = project.tasks.findByName("rebuildSymlinks")
-            if (rebuildSymlinksTask != null) {
-                dependsOn rebuildSymlinksTask
-            }
-            
+
             configureBuildTask(
                 project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(),
                 devEnvHandler.useIncredibuild(), platform, configuration, 
