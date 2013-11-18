@@ -1,0 +1,117 @@
+buildscript {
+    String ver = System.getProperty("holygradle.versionForIntegrationTest")
+    gplugins.use "intrepid:${ver}"
+    gplugins.use "devenv:${ver}"
+    gplugins.use "my-credentials:${ver}"
+    gplugins.use "unit-test:${ver}"
+    gplugins.use "stamper:${ver}"
+}
+gplugins.apply()
+
+configurations {
+    it."default"
+    privateBuild
+}
+
+/*
+    Test custom-gradle-core.
+*/
+prerequisites {
+    specify("println", { checker -> 
+        try {
+            println "Hello?"
+        } catch (Exception e) {
+            checker.fail "println failed: ${e}"
+        }
+    })
+}
+
+/*
+    Test my-credentials.
+*/
+repositories.ivy {
+    credentials {
+        username my.username("Artifactory")
+        password my.password("Artifactory")
+    }
+    url (new File(project.projectDir, "local-repo").toURI())
+}
+
+/*
+    Test intrepid.
+*/
+sourceDependencies {
+    "other" {
+        hg "https://hgserver.example-corp.com/other"
+        branch = "SOME_BRANCH"
+        publishing.configuration "default"
+    }
+}
+
+packedDependencies {
+    "mylib" {
+        dependency "com.example-corp:mylib:0.0.999"
+        configuration "privateBuild->default"
+    }
+}
+
+symlinks {
+    to "mylib/externals"
+}
+
+packageArtifacts {
+    it."default" {
+        include "main/build/main/Output/*.*"
+    }
+}
+
+publishPackages {
+    group "com.example-corp.teamX"
+    nextVersionNumberEnvironmentVariable "NEXT_VERSION"  
+    repositories.ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url "http://artifactory.example-corp.com/artifactory/teamX-integration-local"
+    }
+}
+
+/*
+    Test devenv.
+*/
+DevEnv {
+    solutionFile "no_such.sln"
+    platform "x64", "Win32"
+}
+
+/*
+    Test unit-test.
+*/
+tests {
+    main_test {
+        commandLine "main/build/main_test/Output/main_test_<f>64.exe"
+        commandLine "--output_format=XML --report_format=XML --log_level=all --report_level=no"
+        redirectOutputToFile "main/build/main_test/Output/main_test_<f>64.xml"
+    }
+}
+
+/*
+    Test "stamping".  We need to have a "stamping" block for the "stamping" task to appear.
+*/
+stamping {
+    file("no_such_file.txt") {
+        replaceRegex(~/^$/, "This line intentionally left blank.")
+    }
+    // NOTE 2013-11-18 HughG: There's a bug in the interaction between the stamping plugin, which
+    // only creates a task if there are some replacements to do, and the devenv plugin, which tries
+    // to add a dependency on that task if runPriorToBuild is true.  They both do their work in a
+    // projectsEvaluated block, and devenv runs before stamping (at least in this test), so it
+    // fails (unless it doesn't have a solutionFile, in which case it doesn't create any tasks or
+    // add dependencies.  We're not bothering to maintain the stamping plugin, but a fix might be:
+    // (1) create the stamping task lazily on demand, both in a projectsEvaluated block in that
+    // plugin, and/or when the devenv plugin wants it; and (2) have the devenv plugin not add a
+    // dependency if that call returns null (because there are no replacements).
+    //
+    //runPriorToBuild = true
+}

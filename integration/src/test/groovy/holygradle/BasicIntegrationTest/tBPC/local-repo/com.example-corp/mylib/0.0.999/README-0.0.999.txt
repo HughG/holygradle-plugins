@@ -1,0 +1,1 @@
+This is a dummy artifact in a dummy module.

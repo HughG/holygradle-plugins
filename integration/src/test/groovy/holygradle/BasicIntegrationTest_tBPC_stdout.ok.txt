@@ -4,6 +4,8 @@ Detected a changing module (e.g., under development) due to -SNAPSHOT in version
 Detected a changing module (e.g., under development) due to -SNAPSHOT in version: my-credentials SNAPSHOT
 Detected a changing module (e.g., under development) due to -SNAPSHOT in version: unit-test SNAPSHOT
 Detected a changing module (e.g., under development) due to -SNAPSHOT in version: stamper SNAPSHOT
+Ignoring any project dependencies from tBPC on other, because either other has yet to be fetched, or it has no gradle project file
+Ignoring any project dependencies from tBPC on other, because either other has yet to be fetched, or it has no gradle project file
 :tasks
 
 ------------------------------------------------------------
@@ -33,6 +35,7 @@ deleteSymlinks - Remove all symlinks.
 fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildSymlinks - Rebuild all symlinks.
+symlinkMylib0.0.999 - Build workspace-to-cache symlink for mylib:0.0.999.
 
 DevEnv tasks
 ------------
@@ -42,25 +45,42 @@ buildDebug - Builds all dependent projects in Debug mode.
 buildDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:bDI
 buildRelease - Builds all dependent projects in Release mode.
 buildReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:bRI
+buildWin32Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode.
+buildWin32DebugIndependently - Builds the solution 'no_such.sln' with DevEnv in Debug mode.
+buildWin32Release - Builds the solution 'no_such.sln' with DevEnv in Release mode.
+buildWin32ReleaseIndependently - Builds the solution 'no_such.sln' with DevEnv in Release mode.
+buildX64Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode.
+buildX64DebugIndependently - Builds the solution 'no_such.sln' with DevEnv in Debug mode.
+buildX64Release - Builds the solution 'no_such.sln' with DevEnv in Release mode.
+buildX64ReleaseIndependently - Builds the solution 'no_such.sln' with DevEnv in Release mode.
 cleanDebug - Cleans all dependent projects in Debug mode.
 cleanDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:cDI
 cleanRelease - Cleans all dependent projects in Release mode.
 cleanReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:cRI
+cleanWin32Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode.
+cleanWin32DebugIndependently - Cleans the solution 'no_such.sln' with DevEnv in Debug mode.
+cleanWin32Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode.
+cleanWin32ReleaseIndependently - Cleans the solution 'no_such.sln' with DevEnv in Release mode.
+cleanX64Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode.
+cleanX64DebugIndependently - Cleans the solution 'no_such.sln' with DevEnv in Debug mode.
+cleanX64Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode.
+cleanX64ReleaseIndependently - Cleans the solution 'no_such.sln' with DevEnv in Release mode.
 
 Help tasks
 ----------
-dependencies - Displays all dependencies declared in root project 'BasicIntegrationTest'.
-dependencyInsight - Displays the insight into a specific dependency in root project 'BasicIntegrationTest'.
+dependencies - Displays all dependencies declared in root project 'tBPC'.
+dependencyInsight - Displays the insight into a specific dependency in root project 'tBPC'.
 help - Displays a help message
-projects - Displays the sub-projects of root project 'BasicIntegrationTest'.
-properties - Displays the properties of root project 'BasicIntegrationTest'.
-tasks - Displays the tasks runnable from root project 'BasicIntegrationTest' (some of the displayed tasks may belong to subprojects).
+projects - Displays the sub-projects of root project 'tBPC'.
+properties - Displays the properties of root project 'tBPC'.
+tasks - Displays the tasks runnable from root project 'tBPC' (some of the displayed tasks may belong to subprojects).
 
 Publishing tasks
 ----------------
 generateIvyModuleDescriptor - Generates the Ivy Module Descriptor XML file for publication 'ivy'
-packageEverything - Creates all zip packages for project 'BasicIntegrationTest'.
+packageEverything - Creates all zip packages for project 'tBPC'.
 publish - Publishes all publications for this module.
+publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'
 
 Source Dependencies tasks
 -------------------------
@@ -72,12 +92,14 @@ stampFiles - Stamp things
 
 Unit Test tasks
 ---------------
-unitTestDebug - Run the Debug unit tests for 'BasicIntegrationTest'.
-unitTestRelease - Run the Release unit tests for 'BasicIntegrationTest'.
+unitTestDebug - Run the Debug unit tests for 'tBPC' and all dependent projects.
+unitTestDebugIndependently - Run the Debug unit tests for 'tBPC'.
+unitTestRelease - Run the Release unit tests for 'tBPC' and all dependent projects.
+unitTestReleaseIndependently - Run the Release unit tests for 'tBPC'.
 
 Other tasks
 -----------
-buildAndTestAll - Build 'BasicIntegrationTest' and all dependent projects in Debug and Release, and run unit tests.
+buildAndTestAll - Build 'tBPC' and all dependent projects in Debug and Release, and run unit tests.
 
 To see all tasks and more detail, run with --all.
 
