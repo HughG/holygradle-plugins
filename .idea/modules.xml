@@ -8,6 +8,7 @@
       <module fileurl="file://$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" filepath="$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/devenv-plugin/devenv-plugin.iml" filepath="$PROJECT_DIR$/devenv-plugin/devenv-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/holy-gradle-plugins.iml" filepath="$PROJECT_DIR$/holy-gradle-plugins.iml" />
+      <module fileurl="file://$PROJECT_DIR$/integration/integration.iml" filepath="$PROJECT_DIR$/integration/integration.iml" />
       <module fileurl="file://$PROJECT_DIR$/intrepid-plugin/intrepid-plugin.iml" filepath="$PROJECT_DIR$/intrepid-plugin/intrepid-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/my-credentials-plugin/my-credentials-plugin.iml" filepath="$PROJECT_DIR$/my-credentials-plugin/my-credentials-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/stamper-plugin/stamper-plugin.iml" filepath="$PROJECT_DIR$/stamper-plugin/stamper-plugin.iml" />

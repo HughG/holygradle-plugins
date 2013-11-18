@@ -76,8 +76,12 @@ subprojects { Project project ->
             t.include "**/*IntegrationTest.*"
             t.exclude "**/Abstract*.*"
             t.testReportDir = file("${project.reporting.baseDir}/$name")
-            t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
-            t.dependsOn(project.tasks["publishPluginsLocally"])
+            // The overall "integration" project has integration tests but doesn't publish its own plugin: it tests all
+            // the plugins from other projects.
+            if (project.name != "integration") {
+                t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
+                t.dependsOn(project.tasks["publishPluginsLocally"])
+            }
 
             t.doFirst {
                 // Set up a number of system properties needed by the integration tests.  We have to set these up in a

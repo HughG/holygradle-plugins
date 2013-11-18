@@ -1,0 +1,20 @@
+buildscript {
+    String ver = System.getProperty("holygradle.versionForIntegrationTest")
+    gplugins.use "intrepid:${ver}"
+    gplugins.use "devenv:${ver}"
+    gplugins.use "my-credentials:${ver}"
+    gplugins.use "unit-test:${ver}"
+    gplugins.use "stamper:${ver}"
+}
+gplugins.apply()
+
+/*
+    This project has no real content.  Its only function is to use all the plugins.  We need to have a "stamping" block
+    for the "stamping" task to appear.
+*/
+stamping {
+    file("no_such_file.txt") {
+        replaceRegex(~/^$/, "This line intentionally left blank.")
+    }
+    runPriorToBuild = true
+}

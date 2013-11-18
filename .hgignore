@@ -28,6 +28,7 @@ syntax: regexp
 ^credential-store/(Debug|Release)
 ^ivy\.xml
 ^custom-gradle/src/latestInitScript
+^integration/src/.*/credential-store.exe
 # Ignore any gradle[-foo].properties, as they may contain company-specific information.
 ^gradle.*\.properties
 ^wrapper-starter-kit/gradle/gradle-wrapper\.jar

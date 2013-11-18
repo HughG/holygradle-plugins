@@ -1,0 +1,86 @@
+Using pluginsRepoOverride=[active]
+Detected a changing module (e.g., under development) due to -SNAPSHOT in version: intrepid SNAPSHOT
+Detected a changing module (e.g., under development) due to -SNAPSHOT in version: devenv SNAPSHOT
+Detected a changing module (e.g., under development) due to -SNAPSHOT in version: my-credentials SNAPSHOT
+Detected a changing module (e.g., under development) due to -SNAPSHOT in version: unit-test SNAPSHOT
+Detected a changing module (e.g., under development) due to -SNAPSHOT in version: stamper SNAPSHOT
+:tasks
+
+------------------------------------------------------------
+All tasks runnable from root project
+------------------------------------------------------------
+
+Credentials tasks
+-----------------
+cacheCredentials - Refreshes and caches all credentials.
+
+Custom Gradle tasks
+-------------------
+checkPrerequisites - Runs all prerequisite checks.
+createWrapper - Creates a Gradle wrapper in the current directory using this instance of Gradle.
+doskey - Helps you configure doskey to allow 'gw' to be used from any directory.
+openAllBuildscripts - Opens all build-scripts in this workspace using the default program for '.gradle' files.
+openGradleProperties - Opens the user's system-wide gradle.properties file.
+openInitScript - Opens the init script using the default program for '.gradle' files.
+pluginHelp - Opens the help page 'http://ediwiki/mediawiki/index.php/Gradle' in your favourite browser.
+versionInfo - Outputs version information about this instance of Gradle.
+
+Dependencies tasks
+------------------
+beforeFetchSourceDependencies - Runs before source dependencies are fetched, to check authorisation setup. Extend it with doLast if needed.
+collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder.
+deleteSymlinks - Remove all symlinks.
+fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks.
+fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
+rebuildSymlinks - Rebuild all symlinks.
+
+DevEnv tasks
+------------
+beforeBuild - This task is a dependency of all build tasks, so will run before any of them
+beforeClean - This task is a dependency of all clean tasks, so will run before any of them
+buildDebug - Builds all dependent projects in Debug mode.
+buildDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:bDI
+buildRelease - Builds all dependent projects in Release mode.
+buildReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:bRI
+cleanDebug - Cleans all dependent projects in Debug mode.
+cleanDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:cDI
+cleanRelease - Cleans all dependent projects in Release mode.
+cleanReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:cRI
+
+Help tasks
+----------
+dependencies - Displays all dependencies declared in root project 'BasicIntegrationTest'.
+dependencyInsight - Displays the insight into a specific dependency in root project 'BasicIntegrationTest'.
+help - Displays a help message
+projects - Displays the sub-projects of root project 'BasicIntegrationTest'.
+properties - Displays the properties of root project 'BasicIntegrationTest'.
+tasks - Displays the tasks runnable from root project 'BasicIntegrationTest' (some of the displayed tasks may belong to subprojects).
+
+Publishing tasks
+----------------
+generateIvyModuleDescriptor - Generates the Ivy Module Descriptor XML file for publication 'ivy'
+packageEverything - Creates all zip packages for project 'BasicIntegrationTest'.
+publish - Publishes all publications for this module.
+
+Source Dependencies tasks
+-------------------------
+fixMercurialIni - Modify/create your mercurial.ini file as required.
+
+Stamping tasks
+--------------
+stampFiles - Stamp things
+
+Unit Test tasks
+---------------
+unitTestDebug - Run the Debug unit tests for 'BasicIntegrationTest'.
+unitTestRelease - Run the Release unit tests for 'BasicIntegrationTest'.
+
+Other tasks
+-----------
+buildAndTestAll - Build 'BasicIntegrationTest' and all dependent projects in Debug and Release, and run unit tests.
+
+To see all tasks and more detail, run with --all.
+
+BUILD SUCCESSFUL
+
+Total time: [snipped]

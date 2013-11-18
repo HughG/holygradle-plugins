@@ -8,7 +8,7 @@ buildscript { ScriptHandler script ->
 }
 
 subprojects {
-    if (project.name.endsWith("plugin")) {
+    if (project.name.endsWith("plugin") || project.name == "integration") {
         apply plugin: "groovy"
 
         // Specify common dependencies for all projects.
