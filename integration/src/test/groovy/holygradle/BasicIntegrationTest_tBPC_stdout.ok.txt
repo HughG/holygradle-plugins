@@ -1,9 +1,4 @@
 Using pluginsRepoOverride=[active]
-Detected a changing module (e.g., under development) due to -SNAPSHOT in version: intrepid SNAPSHOT
-Detected a changing module (e.g., under development) due to -SNAPSHOT in version: devenv SNAPSHOT
-Detected a changing module (e.g., under development) due to -SNAPSHOT in version: my-credentials SNAPSHOT
-Detected a changing module (e.g., under development) due to -SNAPSHOT in version: unit-test SNAPSHOT
-Detected a changing module (e.g., under development) due to -SNAPSHOT in version: stamper SNAPSHOT
 Ignoring any project dependencies from tBPC on other, because either other has yet to be fetched, or it has no gradle project file
 Ignoring any project dependencies from tBPC on other, because either other has yet to be fetched, or it has no gradle project file
 :tasks

@@ -29,8 +29,8 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
         String[] testNames = ["${testName}_stdout", "${testName}_stderr"]
         testNames.each { String testFileName ->
             regression.replacePatterns(testFileName, [
+                (~/^Detected a changing module.*$/) : null,
                 (~/pluginsRepoOverride=.*/) : "pluginsRepoOverride=[active]",
-                (~/\w+-SNAPSHOT/) : "SNAPSHOT",
                 (~/Total time:.*/) : "Total time: [snipped]"
             ])
             regression.checkForRegression(testFileName)

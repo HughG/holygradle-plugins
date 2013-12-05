@@ -13,8 +13,9 @@ class RegressionFileHelper {
 
     /**
      * Given a file and a map of "regex -> string", iterates over each line in the file replacing any matches of each
-     * regex with the corresponding string, and then writes the result back to the file.  This is to remove variable
-     * parts of regression output before calling {@link #checkForRegression(java.lang.String)}.
+     * regex with the corresponding string, and then writes the result back to the file.  If the string is null, then
+     * a match indicates that the line should be deleted altogether.  This is to remove variable parts of regression
+     * output before calling {@link #checkForRegression(java.lang.String)}.
      *
      * @param testFile The file in which to replace patterns.
      * @param patterns The map of "regex -> string".
@@ -24,10 +25,26 @@ class RegressionFileHelper {
         holygradle.test.AbstractHolyGradleTest.useCloseable(new StringWriter()) { StringWriter s ->
             holygradle.test.AbstractHolyGradleTest.useCloseable(new PrintWriter(s)) { PrintWriter p ->
                 testFile.eachLine { String line ->
-                    patterns.each { Pattern pattern, String replacement ->
-                        line = line.replaceAll(pattern, replacement)
+                    boolean deleteLine = false
+
+                    //for (Map.Entry<Pattern, String> entry in patterns) {
+                    for (Map.Entry<Pattern, String> entry in patterns) {
+                        println entry.class
+                        Pattern pattern = entry.key
+                        String replacement = entry.value
+                        if (replacement == null) {
+                            if (line.matches(pattern)) {
+                                deleteLine = true
+                                break
+                            }
+                        } else {
+                            line = line.replaceAll(pattern, replacement)
+                        }
                     }
-                    p.println(line)
+
+                    if (!deleteLine) {
+                        p.println(line)
+                    }
                 }
             }
 
