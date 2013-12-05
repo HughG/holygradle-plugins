@@ -1,3 +1,6 @@
+def pluginProjectNames =
+    rootProject.allprojects.findAll { it.name.endsWith("-plugin") }.collect { ":" + it.name } 
+
 dependencies {
     groovy group: 'org.codehaus.groovy', name: 'groovy', version: '1.8.2'
     groovy group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.6'
@@ -11,10 +14,12 @@ dependencies {
     runtime rootProject.MERCURIAL_DEPENDENCY_COORD
 
     // Project dependencies
-    testCompile project(':custom-gradle-core-plugin').sourceSets.test.output
-    testCompile project(':intrepid-plugin').sourceSets.test.output
-    testCompile project(':devenv-plugin').sourceSets.test.output
-    testCompile project(':my-credentials-plugin').sourceSets.test.output
-    testCompile project(':unit-test-plugin').sourceSets.test.output
-    testCompile project(':stamper-plugin').sourceSets.test.output
+    pluginProjectNames.each { pluginProjectName ->
+        testCompile project(pluginProjectName).sourceSets.test.output
+    }
+}
+
+pluginProjectNames.each { pluginProjectName ->
+    def pluginProject = rootProject.findProject(pluginProjectName)
+    project.tasks["integTest"].dependsOn pluginProject.tasks["publishPluginsLocally"]
 }

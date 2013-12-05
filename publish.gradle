@@ -67,6 +67,11 @@ project.gradle.taskGraph.whenReady {
 }
 
 project.subprojects {
+    // The integration project just has tests, and doesn't publish anything.
+    if (project.name == "integration") {
+        return
+    }
+
     // Add local repo to repos used for dependencies.
     repositories {
         ivy {
