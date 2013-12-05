@@ -162,9 +162,14 @@ class DeleteRequest {
                 logger.debug "regex"
                 deleteCandidate.filter { PathInfo it ->
                     // Filter out any folders which don't match our version regex
-                    boolean doesNotMatchVersionRegex = !it.version.matches(versionRegex)
-                    logger.debug "versionRegex match? ${doesNotMatchVersionRegex ? 'N' : 'y'} ${it.path}"
-                    doesNotMatchVersionRegex
+                    if (it.version == null) {
+                        logger.debug "$it has no version"
+                        false
+                    } else {
+                        boolean doesNotMatchVersionRegex = !it.version.matches(versionRegex)
+                        logger.debug "versionRegex match? ${doesNotMatchVersionRegex ? 'N' : 'y'} ${it.path}"
+                        doesNotMatchVersionRegex
+                    }
                 }
             }
             
