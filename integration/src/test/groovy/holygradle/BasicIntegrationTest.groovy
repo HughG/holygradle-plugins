@@ -59,4 +59,48 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
                 .withArguments("--all")
         }
     }
+    
+    @Test
+    public void testConflictDoesNotBreakAllTasks() {
+        final String testName = "tUAS"
+        
+        // Make sure the 'symlinks' we expect this test to produce are not present before running test
+        File testProjectDir = new File(getTestDir(), testName)
+        String[] expectedSymlinks = ["mylib", "direct_dep_on_mylowerlevellib", "mylib/direct_dep_on_mylowerlevellib"]
+        File symlink
+        expectedSymlinks.each { linkName ->
+            symlink = new File(testProjectDir, linkName)
+            if (symlink.exists()) {
+                println "Attempting to delete ${symlink}..."
+                symlink.delete()
+            }
+        }
+                
+        compareBuildOutput("tUAS") { WrapperBuildLauncher launcher ->
+            launcher.forTasks("dependencies")   
+        }    
+    }
+    
+    @Test
+    public void testUnpackAndSymlinks() {
+    
+        final String testName = "tUAS"
+        
+        // Make sure the 'symlinks' we expect this test to produce are not present before running test
+        File testProjectDir = new File(getTestDir(), testName)
+        String[] expectedSymlinks = ["mylib", "direct_dep_on_mylowerlevellib", "mylib/direct_dep_on_mylowerlevellib"]
+        File symlink
+        expectedSymlinks.each { linkName ->
+            symlink = new File(testProjectDir, linkName)
+            if (symlink.exists()) {
+                println "Attempting to delete ${symlink}..."
+                symlink.delete()
+            }
+        }
+                
+        compareBuildOutput("tUAS") { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")                
+        }
+    }
+    
 }

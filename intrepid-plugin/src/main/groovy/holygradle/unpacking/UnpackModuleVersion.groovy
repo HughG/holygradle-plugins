@@ -9,13 +9,23 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 
+// UnpackModuleVersion
+//
+// Used to represent the version information for a module that needs to be fetched/unpacked
+// from Artifactory
+//
+// Aggregated by UnpackModule (there's a collection of these for the project)
+//
+// Based on information from ivy.xml
+// 
 class UnpackModuleVersion {
     public ModuleVersionIdentifier moduleVersion = null
     public boolean includeVersionNumberInPath = false
     public Map<ResolvedArtifact, Collection<String>> artifacts = [:] // a map from artifacts to sets of configurations that include the artifacts
     private Map<String, String> dependencyRelativePaths = [:]
-    private UnpackModuleVersion parentUnpackModuleVersion
+    UnpackModuleVersion parentUnpackModuleVersion = null
     private PackedDependencyHandler packedDependency00 = null
+    
     
     UnpackModuleVersion(
         ModuleVersionIdentifier moduleVersion,
@@ -157,16 +167,32 @@ class UnpackModuleVersion {
     public Task getSymlinkTaskIfUnpackingToCache(Project project) {
         Task symlinkTask = null
         if (shouldUnpackToCache()) {
-            String taskName = CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
+        
+            // Create a name for the task creating the symlink.  Include parent module if appropriate to ensure uniqueness of 
+            // symlink task, as fix for GR #3723
+            String taskName = (parentUnpackModuleVersion == null) ?                 
+                    CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
+                    :
+                    CamelCase.build("symlink", parentUnpackModuleVersion.moduleVersion.getName()+parentUnpackModuleVersion.moduleVersion.getVersion(), "to", moduleVersion.getName()+moduleVersion.getVersion())
             
             symlinkTask = project.tasks.findByName(taskName)
+            print "I am ${moduleVersion.getName()+moduleVersion.getVersion()}"
+            if (this.parentUnpackModuleVersion != null) 
+                print " parent=${this.parentUnpackModuleVersion.getFullCoordinate()}"
+            println ": looking to see if task '${taskName}' exists?"
             if (symlinkTask == null) {
+                println "No, so creating new symlinkTask:"
                 File linkDir = getTargetPathInWorkspace(project)
                 symlinkTask = project.task(taskName, type: SymlinkTask) {
                     group = "Dependencies"
                     description = "Build workspace-to-cache symlink for ${moduleVersion.getName()}:${moduleVersion.getVersion()}."
                 }
                 symlinkTask.configure(project, linkDir, getUnpackDir(project))
+                println "linkDir: ${linkDir}"
+                println "UnpackDir: ${getUnpackDir(project)}"
+                println "projectDir: ${project.projectDir}"
+            } else {
+                println "Yes, it exists"
             }
             
             // Define dependencies from this symlink task to the symlink tasks for parent modules.

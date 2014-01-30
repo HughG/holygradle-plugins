@@ -12,9 +12,48 @@ class UnpackModule {
     public String name
     public Map<String, UnpackModuleVersion> versions = [:]
     
-    UnpackModule(String group, String name) {
+    //used to keep track of what 'brought in' this dependency, to help poor user/debugger see why this instance exists
+    public ResolvedDependency dependencyReferencingThis
+    
+    UnpackModule(String group, String name, ResolvedDependency dependencyReferencingThis) {
         this.group = group
         this.name = name
+        this.dependencyReferencingThis = dependencyReferencingThis
+    }
+        
+    public String ToString()
+    {
+        String result = "UnpackModule: ${this.group}:${this.name}:("
+        this.versions.each { versionK, versionV ->
+            result += "${versionK};"
+        }
+        
+        result += ")  Parents: {"
+        
+        ArrayList<String> parents = getParentDependencies(this.dependencyReferencingThis, "")
+        parents.each { String p ->
+            result += "[${p}]"
+        }
+        result += "}"
+        return result
+    }
+    
+    // Recurse parents and create all the dependency 'paths' as strings
+    public ArrayList<String> getParentDependencies(ResolvedDependency d, String depId)
+    {
+        ArrayList<String> result = new ArrayList<String>()
+                    
+        ModuleVersionIdentifier v = d.getModule().getId()
+        depId = "//${v.getName()}" + depId
+        if (d.getParents().isEmpty()) {
+            result.add(depId)
+        } else {
+            d.getParents().each { 
+                ResolvedDependency parentDependency ->
+                result.addAll(getParentDependencies(parentDependency, depId))
+            }
+        }
+        return result
     }
     
     public boolean matches(ModuleVersionIdentifier moduleVersion) {
@@ -81,6 +120,8 @@ class UnpackModule {
             String moduleGroup = moduleVersion.getGroup()
             String moduleName = moduleVersion.getName()
             String versionStr = moduleVersion.getVersion()
+            
+            println "traversing dependency ${moduleName}:${versionStr}"
 
             // Is there an ivy file corresponding to this dependency? 
             File ivyFile = getIvyFile(resolvedDependency)
@@ -93,7 +134,8 @@ class UnpackModule {
                 // Find or create an UnpackModule instance.
                 UnpackModule unpackModule = unpackModules.find { it.matches(moduleVersion) }
                 if (unpackModule == null) {
-                    unpackModule = new UnpackModule(moduleGroup, moduleName)
+                    unpackModule = new UnpackModule(moduleGroup, moduleName, resolvedDependency)
+                    println "   NEW ${unpackModule.ToString()}"
                     unpackModules << unpackModule
                 }
                 
@@ -123,9 +165,11 @@ class UnpackModule {
                 
                     unpackModuleVersion = new UnpackModuleVersion(moduleVersion, ivyFile, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[versionStr] = unpackModuleVersion
+                    println "   CHG ${unpackModule.ToString()}"
                 }
                 
                 unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), conf)
+                
                 
                 // Recurse down to transitive dependencies.
                 traverseResolvedDependencies(
@@ -145,6 +189,7 @@ class UnpackModule {
             unpackModules = []
             project.configurations.each { conf ->
                 ResolvedConfiguration resConf = conf.resolvedConfiguration
+                
                 traverseResolvedDependencies(
                     conf.name,
                     packedDependencies,
@@ -167,16 +212,48 @@ class UnpackModule {
             
             // Check if we need to force the version number to be included in the path in order to prevent
             // two different versions of a module to be unpacked to the same location.
-            Map<File, Collection<String>> targetLocations = [:]
+            Map<File, Collection<UnpackModuleVersion>> targetLocations = [:]
+            
             unpackModules.each { UnpackModule module ->
                 module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
                     File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+                    
+                    // If something's already targeting this path, make sure its the same module & version!
+                    
                     if (targetLocations.containsKey(targetPath)) {
-                        targetLocations[targetPath].add(versionInfo.getFullCoordinate())
+                        
+						//SCBR: This is flawed - fix this, it doesn't handle case of different versions
+                        if (!targetLocations[targetPath].equals(versionInfo))
+                        {
+                            // There's a conflict!  Report it to user
+                            UnpackModule conflictingUnpackModule = unpackModules.find { it.matches(versionInfo.moduleVersion) }
+                            if (conflictingUnpackModule == null) {                                                        
+                                throw new RuntimeException(
+                                    "Conflicting modules/versions are targetting the same physical location '${targetPath}':\n" +    
+                                    "  ${module.ToString()}, and\n" +
+                                    "  ${conflictingUnpackModule.ToString()}"                                
+                                )
+                            } else {
+                                // This can only happen if the conflict is caused by something other than an unpackModule
+                                throw new RuntimeException(
+                                    "Conflicting modules/versions are targetting the same physical location '${targetPath}':\n" +    
+                                    "  ${module.ToString()}, clashes with an existing dependency:\n" +
+                                    "  ${targetLocations[targetPath].getFullCoordinate()}"
+                                )                            
+                            }
+                        } else {
+                            println "INFO: At least two modules are requesting for the same dependency at same location, version is equal so this is ok"
+                        }
                     } else {
-                        targetLocations[targetPath] = [versionInfo.getFullCoordinate()]
+                        targetLocations[targetPath] = versionInfo
                     }
                 }
+                
+                // More than one version of a module is allowed by gradle, provided that they are different 'configurations'
+                // of each version.  e.g., a 'debug' configuration version 0.2 along with a 'release' configuration version '0.3' is ok,
+                // but gradle would throw if 'debug' versions 0.2 AND 0.3 were brought in via the dependency tree
+                
+                // So given this is a permitted scenario, we need to be careful how/where the dependency gets unpacked.
                 
                 if (module.versions.size() > 1) {
                     int noIncludesCount = 0
