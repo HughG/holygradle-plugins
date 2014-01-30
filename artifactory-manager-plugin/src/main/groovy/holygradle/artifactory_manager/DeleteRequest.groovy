@@ -43,6 +43,10 @@ class DeleteRequest {
         calendar.lenient = true;
         
         switch (units) {
+            case "day":
+            case "days":
+                calendar.add(DAY_OF_MONTH, 1)
+                break
             case "week":
             case "weeks":
                 calendar.set(DAY_OF_WEEK, 1)
@@ -193,7 +197,9 @@ class DeleteRequest {
                     deleteCandidate.all { PathInfo it ->
                         if (it.version != null) {
                             Date date = it.creationDate
-                            if (date.after(earlierDate) && laterDate.after(date)) {
+                            // Note: we test "earlierDate <= date" and "laterDate > date" here because we want to
+                            // know if "date" is in the half-open interval "[earlierDate, laterDate)".
+                            if ((earlierDate.compareTo(date) <= 0) && laterDate.after(date)) {
                                 logger.debug "            ${it.path} - ${date}"
                                 inRange.add(it)
                                 anythingInRange = true
@@ -217,7 +223,7 @@ class DeleteRequest {
                     }
                     
                     if (commonVersions != null && commonVersions.size() > 0) {
-                        String versionToSave = commonVersions[0]
+                        String versionToSave = commonVersions.last()
                         logger.debug "        Saving version: ${versionToSave}"
                         moduleDeleteCandidates.each { module, deleteCandidate ->
                             deleteCandidate.filter { PathInfo it ->

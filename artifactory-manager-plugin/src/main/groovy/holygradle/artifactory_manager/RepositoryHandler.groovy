@@ -61,9 +61,22 @@ class RepositoryHandler {
             }
         }
         final File sizesFile = new File(outputDir, "${repository}-sizes.txt")
+        final File moduleSizesFile = new File(outputDir, "${repository}-module-sizes.txt")
+        final File versionSizesFile = new File(outputDir, "${repository}-version-sizes.txt")
         logger.lifecycle "Writing size information for ${repository} to ${sizesFile}"
-        sizesFile.withPrintWriter { PrintWriter pw ->
-            new StorageSpaceLister(logger, artifactoryApi, pw, minRequestIntervalInMillis).listStorage()
+        sizesFile.withPrintWriter { PrintWriter sizesWriter ->
+            moduleSizesFile.withPrintWriter { PrintWriter moduleSizesWriter ->
+                versionSizesFile.withPrintWriter { PrintWriter versionSizesWriter ->
+                    new StorageSpaceLister(
+                        logger,
+                        artifactoryApi,
+                        sizesWriter,
+                        moduleSizesWriter,
+                        versionSizesWriter,
+                        minRequestIntervalInMillis
+                    ).listStorage()
+                }
+            }
         }
     }
 }
