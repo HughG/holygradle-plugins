@@ -141,13 +141,13 @@ class UnpackModule {
         String moduleName = moduleVersion.getName()
         String versionStr = moduleVersion.getVersion()
         
-        print "traversing dependency ${moduleName}:${versionStr}"
-        if (parentResolvedDependency00 == null) {
-            println " which is 1st level"
-        } else {
-            ModuleVersionIdentifier parentVersion = parentResolvedDependency00.getModule().getId()
-            println " with parent ${parentVersion.getName()}:${parentVersion.getVersion()}"
-        }            
+        //print "traversing dependency ${moduleName}:${versionStr}"
+        //if (parentResolvedDependency00 == null) {
+        //    println " which is 1st level"
+        //} else {
+        //    ModuleVersionIdentifier parentVersion = parentResolvedDependency00.getModule().getId()
+        //    println " with parent ${parentVersion.getName()}:${parentVersion.getVersion()}"
+        //}
 
         // Is there an ivy file corresponding to this dependency? 
         File ivyFile = getIvyFile(resolvedDependency)
