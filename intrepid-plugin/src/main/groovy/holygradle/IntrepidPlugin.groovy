@@ -298,21 +298,33 @@ public class IntrepidPlugin implements Plugin<Project> {
             // Construct tasks to unpack the artifacts.
             unpackModules.each { module ->                
                 module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                    // Get the unpack task which will unpack the module to the cache or directly to the workspace.
-                    Task unpackTask = versionInfo.getUnpackTask(project)
-                    fetchAllDependenciesTask.dependsOn unpackTask
+                    // Get the unpack tasks which will unpack the module to the cache or directly to the workspace.
+                    Set<Task> unpackTasks = versionInfo.getUnpackTasks(project)
+                    unpackTasks.each { Task unpackTask -> 
+                        fetchAllDependenciesTask.dependsOn unpackTask 
+                    }
                                         
                     // Symlink from workspace to the unpack cache, if the dependency was unpacked to the 
                     // unpack cache (as opposed to unpacked directly to the workspace).
-                    Task symlinkToCacheTask = versionInfo.getSymlinkTaskIfUnpackingToCache(project)
-                    if (symlinkToCacheTask != null) {
-                        rebuildSymlinksTask.dependsOn symlinkToCacheTask
+                    Set<Task> symlinkToCacheTasks = versionInfo.getSymlinkTasksIfUnpackingToCache(project)
+
+                    if (!symlinkToCacheTasks.isEmpty()) {
+                        symlinkToCacheTasks.each { Task symlinkToCacheTask ->
+                            rebuildSymlinksTask.dependsOn symlinkToCacheTask
+                        }
+                        
                         deleteSymlinksTask.doLast {
-                            Symlink.delete(versionInfo.getTargetPathInWorkspace(project))
+                            Set<File> symlinkPaths = versionInfo.getTargetPathsInWorkspace(project)
+                            symlinkPaths.each {
+                                Symlink.delete($it)
+                            }
                         }
                     }
                     
-                    pathsForPackedDependencies.add(Helper.relativizePath(versionInfo.getTargetPathInWorkspace(project), project.rootProject.projectDir))
+                    Set<File> targetPaths = versionInfo.getTargetPathsInWorkspace(project)
+                    targetPaths.each { File targetPath ->
+                        pathsForPackedDependencies.add(Helper.relativizePath(targetPath, project.rootProject.projectDir))
+                    }                    
                 }
             }
             

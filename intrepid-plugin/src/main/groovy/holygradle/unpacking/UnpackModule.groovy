@@ -5,54 +5,61 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.api.artifacts.ResolvedDependency
+import org.gradle.api.artifacts.ResolveException
+import org.gradle.api.Task
 import holygradle.dependencies.PackedDependencyHandler
 
+/**
+ * UnpackModule and UnpackModuleVersion classes are used after script parsing
+ * to convert the declared 'packedDependencies', and any transitive dependencies
+ * brought in via ivy files, into a set of gradle tasks which carry out the
+ * unpacking of artifacts and generation of symlinks where required.
+ *
+ * The main entry point for this functionality is the static method 'getAllUnpackModules()',
+ * called by the main IntrepidPlugin class (within a project.gradle.projectsEvaluated closure).
+ *
+ * getAllUnpackModules() method populates a collection of UnpackModule/UnpackModuleVersion instances,
+ *
+ * e.g. consider the tree of dependencies:
+ *
+ *  + root gradle project
+ *      + packedDependency "mylib:0.0.999"
+ *          + transitiveDependency "anotherlib:0.0.222" (via ivy.xml)
+ *      + packedDependency "anotherlib:0.0.333"
+ *
+ * this would become the following UnpackModule/UnpackModuleVersions instances:
+ *
+ *  UnpackModule com.example-corp:mylib with:
+ *     UnpackModuleVersion com.example-corp:mylib:0.0.999
+ *
+ * UnpackModule com.example-corp:anotherlib with:
+ *     UnpackModuleVersion com.example-corp:anotherlib:0.0.333
+ *     UnpackModuleVersion com.example-corp:anotherlib:0.0.222 required by { com.example-corp:mylib:0.0.999  }
+
+ * As illustrated above an UnpackModule may contain multiple UnpackModuleVersions,
+ * represnting 'anotherlib:0.0.333' and 'anotherlib:0.0.222'.  It is possible for a project
+ * to have dependencies on different versions of a module provided that the different versions do not
+ * occur within the same project configuration.
+ *
+ */
 class UnpackModule {
     public String group
     public String name
+
     public Map<String, UnpackModuleVersion> versions = [:]
     
-    //used to keep track of what 'brought in' this dependency, to help poor user/debugger see why this instance exists
-    public ResolvedDependency dependencyReferencingThis
-    
-    UnpackModule(String group, String name, ResolvedDependency dependencyReferencingThis) {
+    UnpackModule(String group, String name) {
         this.group = group
-        this.name = name
-        this.dependencyReferencingThis = dependencyReferencingThis
+        this.name = name        
     }
         
     public String ToString()
     {
-        String result = "UnpackModule: ${this.group}:${this.name}:("
+        String result = "${this.group}:${this.name}\n"
         this.versions.each { versionK, versionV ->
-            result += "${versionK};"
+            result += "  UnpackModuleVersion ${versionV.ToString()}\n"
         }
         
-        result += ")  Parents: {"
-        
-        ArrayList<String> parents = getParentDependencies(this.dependencyReferencingThis, "")
-        parents.each { String p ->
-            result += "[${p}]"
-        }
-        result += "}"
-        return result
-    }
-    
-    // Recurse parents and create all the dependency 'paths' as strings
-    public ArrayList<String> getParentDependencies(ResolvedDependency d, String depId)
-    {
-        ArrayList<String> result = new ArrayList<String>()
-                    
-        ModuleVersionIdentifier v = d.getModule().getId()
-        depId = "//${v.getName()}" + depId
-        if (d.getParents().isEmpty()) {
-            result.add(depId)
-        } else {
-            d.getParents().each { 
-                ResolvedDependency parentDependency ->
-                result.addAll(getParentDependencies(parentDependency, depId))
-            }
-        }
         return result
     }
     
@@ -109,73 +116,101 @@ class UnpackModule {
         return ivyFile
     }
     
+    /**
+     * traverseResolvedDependencies
+     *
+     * static method which generates the instances of UnpackModule/UnpackModuleVersions which in turn create
+     * the necessary tasks for unpacking dependencies and creating symlinks.
+     * 
+     * @param configurationName  The configuration we are collecting 'unpackModules' for
+     * @param dependency // The native gradle 'ResolvedDependency' node that we are currently traversing
+     * @param packedDependencies, // Collection of the packedDependencies as defined the users' gradle script
+     * @param unpackModules (Output) the set of 'unpackModule' object's we're building up during dependency traversal
+     *
+     **/
     private static void traverseResolvedDependencies(
-        String conf,
+        String configurationName,
+        ResolvedDependency resolvedDependency,
+        ResolvedDependency parentResolvedDependency00,
         Collection<PackedDependencyHandler> packedDependencies,
-        Collection<UnpackModule> unpackModules,
-        Set<ResolvedDependency> dependencies
+        Collection<UnpackModule> unpackModules        
     ) {
-        dependencies.each { resolvedDependency ->
-            ModuleVersionIdentifier moduleVersion = resolvedDependency.getModule().getId()
-            String moduleGroup = moduleVersion.getGroup()
-            String moduleName = moduleVersion.getName()
-            String versionStr = moduleVersion.getVersion()
-            
-            println "traversing dependency ${moduleName}:${versionStr}"
+                
+        ModuleVersionIdentifier moduleVersion = resolvedDependency.getModule().getId()
+        String moduleGroup = moduleVersion.getGroup()
+        String moduleName = moduleVersion.getName()
+        String versionStr = moduleVersion.getVersion()
+        
+        print "traversing dependency ${moduleName}:${versionStr}"
+        if (parentResolvedDependency00 == null) {
+            println " which is 1st level"
+        } else {
+            ModuleVersionIdentifier parentVersion = parentResolvedDependency00.getModule().getId()
+            println " with parent ${parentVersion.getName()}:${parentVersion.getVersion()}"
+        }            
 
-            // Is there an ivy file corresponding to this dependency? 
-            File ivyFile = getIvyFile(resolvedDependency)
-            if (ivyFile != null && ivyFile.exists()) {
-                // If we found an ivy file then just assume that we should be unpacking it. 
-                // Ideally we should look for a custom XML tag that indicates that it was published
-                // by the intrepid plugin. However, that would break compatibility with lots of 
-                // artifacts that have already been published.
-               
-                // Find or create an UnpackModule instance.
-                UnpackModule unpackModule = unpackModules.find { it.matches(moduleVersion) }
-                if (unpackModule == null) {
-                    unpackModule = new UnpackModule(moduleGroup, moduleName, resolvedDependency)
-                    println "   NEW ${unpackModule.ToString()}"
-                    unpackModules << unpackModule
-                }
-                
-                // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on 
-                // 'this' UnpackModuleVersion. There will only be a parent if this is a transitive
-                // dependency. TODO: There could be more than one parent. Deal with it gracefully.
-                UnpackModuleVersion parentUnpackModuleVersion = null
-                resolvedDependency.getParents().each { parentDependency ->
-                    ModuleVersionIdentifier parentDependencyVersion = parentDependency.getModule().getId()
-                    UnpackModule parentUnpackModule = unpackModules.find { it.matches(parentDependencyVersion) }
-                    if (parentUnpackModule != null) {
-                        parentUnpackModuleVersion = parentUnpackModule.getVersion(parentDependencyVersion)
-                    }
-                }
-                
-                // Find or create an UnpackModuleVersion instance.
-                UnpackModuleVersion unpackModuleVersion
-                if (unpackModule.versions.containsKey(versionStr)) {
-                    unpackModuleVersion = unpackModule.versions[versionStr]
-                } else {
-                
-                    // If this resolved dependency is a transitive dependency, "thisPackedDep"
-                    // below will be null
-                    PackedDependencyHandler thisPackedDep = packedDependencies.find {
-                        it.getDependencyName() == moduleName
-                    }
-                
-                    unpackModuleVersion = new UnpackModuleVersion(moduleVersion, ivyFile, parentUnpackModuleVersion, thisPackedDep)
-                    unpackModule.versions[versionStr] = unpackModuleVersion
-                    println "   CHG ${unpackModule.ToString()}"
-                }
-                
-                unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), conf)
-                
-                
-                // Recurse down to transitive dependencies.
-                traverseResolvedDependencies(
-                    conf, packedDependencies, unpackModules, resolvedDependency.getChildren()
-                )
+        // Is there an ivy file corresponding to this dependency? 
+        File ivyFile = getIvyFile(resolvedDependency)
+        if (ivyFile != null && ivyFile.exists()) {
+            // If we found an ivy file then just assume that we should be unpacking it. 
+            // Ideally we should look for a custom XML tag that indicates that it was published
+            // by the intrepid plugin. However, that would break compatibility with lots of 
+            // artifacts that have already been published.
+           
+            // Find or create an UnpackModule instance.
+            UnpackModule unpackModule = unpackModules.find { it.matches(moduleVersion) }
+            if (unpackModule == null) {
+                unpackModule = new UnpackModule(moduleGroup, moduleName)
+                unpackModules << unpackModule
+                // println "Created new UnpackModule: ${unpackModule.ToString()}"
             }
+                               
+            // Find or create an UnpackModuleVersion instance.
+            UnpackModuleVersion unpackModuleVersion
+            if (unpackModule.versions.containsKey(versionStr)) {
+                unpackModuleVersion = unpackModule.versions[versionStr]
+            } else {
+            
+                // If this resolved dependency is a transitive dependency, "thisPackedDep"
+                // below will be null, unless of course it is both a packedDependency AND a transitive dependency
+                // of another module!
+                PackedDependencyHandler thisPackedDep = packedDependencies.find {
+                    (it.getDependencyName() == moduleName) && (it.getVersionStr() == versionStr)
+                }
+            
+                unpackModuleVersion = new UnpackModuleVersion(moduleVersion, ivyFile, thisPackedDep)
+                unpackModule.versions[versionStr] = unpackModuleVersion
+                // println "Added version to UnpackModule: ${unpackModule.ToString()}"
+            }
+                
+            // Search for a parent UnpackModuleVersion instance i.e. one which has a dependency on 
+            // 'this' UnpackModuleVersion. There will only be a parent if this is a transitive
+            // dependency, and there may be more than one 
+            // (e.g., then if A->B, B->C, A->C, where -> means "depends on", C has two parents {A,B} )
+            if (parentResolvedDependency00 != null)
+            {
+                ModuleVersionIdentifier parentDependencyVersion = parentResolvedDependency00.getModule().getId()
+                UnpackModule parentUnpackModule = unpackModules.find { it.matches(parentDependencyVersion) }
+                UnpackModuleVersion parentUnpackModuleVersion = null
+                if (parentUnpackModule != null) {
+                    // Make sure this instance is aware of ALL its parents - we use such information
+                    // to build up the 'paths' where symlinks should be (or where the module should be unpacked
+                    // if not going to the cache)
+                    parentUnpackModuleVersion = parentUnpackModule.getVersion(parentDependencyVersion)
+                    unpackModuleVersion.addParent(parentUnpackModuleVersion)
+                    // println "Added parent to UnpackModule: ${unpackModule.ToString()}"
+                }                
+            }
+                
+            unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), configurationName)
+        }
+        
+        // Recurse down the tree of transitive dependencies        
+        resolvedDependency.getChildren().each { ResolvedDependency childDependency ->
+        
+            traverseResolvedDependencies(
+                configurationName, childDependency, resolvedDependency, packedDependencies, unpackModules
+            )
         }
     }
     
@@ -187,15 +222,37 @@ class UnpackModule {
 
             // Build a list (without duplicates) of all artifacts the project depends on.
             unpackModules = []
-            project.configurations.each { conf ->
-                ResolvedConfiguration resConf = conf.resolvedConfiguration
+            project.configurations.each { projectConfiguration ->
+                ResolvedConfiguration resolvedConfiguration = projectConfiguration.resolvedConfiguration
                 
-                traverseResolvedDependencies(
-                    conf.name,
-                    packedDependencies,
-                    unpackModules,
-                    resConf.getFirstLevelModuleDependencies()
-                )
+                try {
+                
+                    // Kick off gradle to generate a tree of dependencies
+                    Set<ResolvedDependency> firstLevelProjectDependencies = 
+                        resolvedConfiguration.getFirstLevelModuleDependencies()
+
+                    // Recursive call to traverse the tree of dependencies and identify ones that we need 
+                    // to genereate unpack/symlink tasks for
+                    firstLevelProjectDependencies.each { ResolvedDependency firstLevelProjectDependency ->
+                        traverseResolvedDependencies(
+                            projectConfiguration.name, // Name of the native gradle 'configuration' that we are currently working on
+                            firstLevelProjectDependency, // The native gradle 'ResolvedDependency' node that we are currently traversing
+                            null, // on this call, ParentDependency is null since this is a firstLevelProjectDependency
+                            packedDependencies, // Collection of the packedDependencies as defined the users' gradle script
+                            unpackModules // Output: i.e., the set of object's we're building up during dependency traversal
+                        )
+                    }
+
+                } catch (ResolveException e) {
+                        // Don't throw eagerly - unfortunately we are attempting to resolve
+                        // dependencies here whilst parsing the script, which is bad because poor
+                        // user can't get the necessary information (dependency tree) to diagnose
+                        
+                        // just disable 'fAD'
+                        Task fetchAllDependenciesTask = project.tasks.findByName("fetchAllDependencies")
+                        fetchAllDependenciesTask.doFirst { throw e }                        
+                }                    
+                
             }
             
             // Check if we have artifacts for each entry in packedDependency.
@@ -216,37 +273,17 @@ class UnpackModule {
             
             unpackModules.each { UnpackModule module ->
                 module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                    File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+                    Set<File> targetPaths = versionInfo.getTargetPathsInWorkspace(project)
                     
-                    // If something's already targeting this path, make sure its the same module & version!
-                    
-                    if (targetLocations.containsKey(targetPath)) {
-                        
-						//SCBR: This is flawed - fix this, it doesn't handle case of different versions
-                        if (!targetLocations[targetPath].equals(versionInfo))
-                        {
-                            // There's a conflict!  Report it to user
-                            UnpackModule conflictingUnpackModule = unpackModules.find { it.matches(versionInfo.moduleVersion) }
-                            if (conflictingUnpackModule == null) {                                                        
-                                throw new RuntimeException(
-                                    "Conflicting modules/versions are targetting the same physical location '${targetPath}':\n" +    
-                                    "  ${module.ToString()}, and\n" +
-                                    "  ${conflictingUnpackModule.ToString()}"                                
-                                )
-                            } else {
-                                // This can only happen if the conflict is caused by something other than an unpackModule
-                                throw new RuntimeException(
-                                    "Conflicting modules/versions are targetting the same physical location '${targetPath}':\n" +    
-                                    "  ${module.ToString()}, clashes with an existing dependency:\n" +
-                                    "  ${targetLocations[targetPath].getFullCoordinate()}"
-                                )                            
-                            }
+                    // If something's already targeting one of the paths where this module needs to exist, 
+                    // then make sure its the same module & version!
+                    targetPaths.each { File targetPath ->
+                        if (targetLocations.containsKey(targetPath)) {
+                            targetLocations[targetPath.getCanonicalFile()].add(versionInfo.getFullCoordinate())
                         } else {
-                            println "INFO: At least two modules are requesting for the same dependency at same location, version is equal so this is ok"
+                            targetLocations[targetPath.getCanonicalFile()] = [versionInfo.getFullCoordinate()]
                         }
-                    } else {
-                        targetLocations[targetPath] = versionInfo
-                    }
+                    }                    
                 }
                 
                 // More than one version of a module is allowed by gradle, provided that they are different 'configurations'
