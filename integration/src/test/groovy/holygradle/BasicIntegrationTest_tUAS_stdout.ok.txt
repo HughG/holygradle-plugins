@@ -1,0 +1,17 @@
+Using pluginsRepoOverride=[active]
+:extractSevenZip SKIPPED
+:extractAnotherlib
+:extractCProjectsHolyGradlePluginsLocalGradleUserHomeUnpackCacheCom.exampleCorpAnotherlib0.0.222
+:extractCProjectsHolyGradlePluginsLocalGradleUserHomeUnpackCacheCom.exampleCorpMylib0.0.999
+:extractCProjectsHolyGradlePluginsLocalGradleUserHomeUnpackCacheCom.exampleCorpMylowerlevellib0.0.666
+:extractMercurial
+:symlinkDirectDepOnMylowerlevellib
+:symlinkMylib
+:symlinkMylibAnotherlib
+:symlinkMylibMylowerlevellib
+:rebuildSymlinks
+:fetchAllDependencies
+
+BUILD SUCCESSFUL
+
+Total time: [snipped]

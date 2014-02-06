@@ -1,5 +1,6 @@
 package holygradle.unpacking
 
+import holygradle.Helper
 import holygradle.test.*
 import org.junit.Test
 import org.gradle.api.Project
@@ -76,7 +77,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals(1, unpackTasks.size())
         Task unpackTask = unpackTasks.find() as Task // gets first item
         assertTrue(unpackTask.name.contains("extract"))
-        assertTrue(unpackTask.name.contains("apricot"))
+        assertTrue(unpackTask.name.contains("Apricot"))
         assertEquals(new File(project.unpackedDependenciesCache as File, "org/apricot-1.1"), unpackTask.unpackDir)
         assertEquals("Unpacks dependency 'apricot' (version 1.1) to the cache.", unpackTask.description)
         
@@ -88,7 +89,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         Task symlinkTask = symlinkTasks.find() as Task
         print "symlinkTask = ${symlinkTask}"
         assertTrue(symlinkTask.name.contains("symlink"))
-        assertTrue(symlinkTask.name.contains("apricot"))
+        assertTrue(symlinkTask.name.contains("Apricot"))
 
         assertEquals("apricot", apricot.getTargetDirName())
         assertEquals(1, apricot.getTargetPathsInWorkspace(project).size() )
@@ -148,18 +149,12 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertTrue("getParents not empty", !date.getParents().isEmpty())
         assertTrue("coconut is parent of date", date.getParents().contains(coconut))
 
-        println "testOneChild:"
         Collection<Task> symlinkTasks = date.collectParentSymlinkTasks(project)
         assertEquals(1, symlinkTasks.size())
 
-        println "parent symlink tasks of date:"
-        symlinkTasks.each { Task t -> println "  ${t.name}" }
-
         Task theTask = symlinkTasks.find() as Task
 
-        assertTrue(theTask.name.contains("coconut") && theTask.name.contains("symlink"))
-
-        assertTrue(theTask.name.contains("coconut"))
+        assertTrue(theTask.name.contains("Coconut") && theTask.name.contains("symlink"))
         assertTrue(!(theTask.name.contains("date")))
                 
         File targetPath = new File(project.projectDir, "coconut")

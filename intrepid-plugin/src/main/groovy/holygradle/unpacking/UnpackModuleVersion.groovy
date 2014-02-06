@@ -182,7 +182,10 @@ class UnpackModuleVersion {
 
         unpackDirs.each { File unpackDir ->
        
-            String taskName = CamelCase.build("extract", unpackDir.getAbsolutePath().replaceAll("[\\\\:]", ""))
+            // Create a name for this task based on target location (should be unique otherwise there's an error elsewhere!)
+            String taskName = (project == null) ? linkDir.getPath() : project.projectDir.toURI().relativize(unpackDir.toURI()).getPath()
+            taskName = CamelCase.build("extract", taskName.replaceAll("[\\\\:]", ""))
+            
             Task unpackTask = project.tasks.findByName(taskName)
             if (unpackTask == null) {
                 
@@ -250,8 +253,9 @@ class UnpackModuleVersion {
             Set<File> linkDirs = getTargetPathsInWorkspace(project)
             
             linkDirs.each { File linkDir ->
-            
-                String taskName = CamelCase.build("symlink", linkDir.getAbsolutePath().replaceAll("[\\\\:]", ""))
+                
+                String taskName = (project == null) ? linkDir.getPath() : project.projectDir.toURI().relativize(linkDir.toURI()).getPath()
+                taskName = CamelCase.build("symlink", taskName.replaceAll("[\\\\:]", ""))
                 
                 Task symlinkTask = project.tasks.findByName(taskName)
                 if (symlinkTask == null) {

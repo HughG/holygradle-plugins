@@ -36,24 +36,24 @@ repositories.ivy {
 }
 
 packedDependencies {
-       
+         
+    // This module has transitive dependencies on com.example-corp:mylowerlevellib:0.0.666, and
+    // anotherlib:0.0.222 (but a different configuration to the dependency on anotherlib:0.0.333 specified below)
+    "mylib" {        
+        dependency "com.example-corp:mylib:0.0.999"
+        configuration "privateBuild->default"
+    }
+
+    "anotherlib" {
+        unpackToCache = false
+        dependency "com.example-corp:anotherlib:0.0.333"
+        configuration "default->someconfig"
+    }    
+    
     "direct_dep_on_mylowerlevellib" {
         dependency "com.example-corp:mylowerlevellib:0.0.666"
         configuration "privateBuild->default"
     }
-    
-    "direct_dep_on_anotherlib" {
-        dependency "com.example-corp:anotherlib:0.0.333"
-        configuration "default->someconfig"    
-    }
-    
-    // This module has transitive dependencies on com.example-corp:mylowerlevellib:0.0.666, and
-    // anotherlib:0.0.222 (but a different configuration to the dependency on anotherlib:0.0.333 specified above)
-    "mylib" {
-        dependency "com.example-corp:mylib:0.0.999"
-        configuration "privateBuild->default"
-    }
-    
     
 }
 
