@@ -8,24 +8,30 @@ class StorageSpaceLister {
     private final ArtifactoryAPI artifactory
     private final String repository
     private final long minRequestIntervalInMillis
-    private final PrintWriter printWriter
+    private final PrintWriter sizesPrintWriter
+    private final PrintWriter moduleSizesPrintWriter
+    private final PrintWriter versionSizesPrintWriter
     private final Logger logger
 
     public StorageSpaceLister(
         Logger logger,
         ArtifactoryAPI artifactory,
-        PrintWriter printWriter,
+        PrintWriter sizesPrintWriter,
+        PrintWriter moduleSizesPrintWriter,
+        PrintWriter versionSizesPrintWriter,
         long minRequestIntervalInMillis
     ) {
         this.logger = logger
-        this.printWriter = printWriter
+        this.sizesPrintWriter = sizesPrintWriter
+        this.moduleSizesPrintWriter = moduleSizesPrintWriter
+        this.versionSizesPrintWriter = versionSizesPrintWriter
         this.artifactory = artifactory
         this.repository = artifactory.repository
         this.minRequestIntervalInMillis = minRequestIntervalInMillis
     }
 
     public listStorage() {
-        printWriter.println "Type Path Bytes MB"
+        sizesPrintWriter.println "Type\tPath\tBytes\tMB"
 
         long minTimeSinceLastLog = 0
 
@@ -42,8 +48,13 @@ class StorageSpaceLister {
                     for (Map artifactInfo in getChildren(versionPath)) {
                         final String artifactPath = versionPath + artifactInfo["uri"]
                         Map artifactFileInfo = artifactory.getFileInfoJson(artifactPath)
-                        final long fileSize = Long.parseLong(artifactFileInfo["size"] as String)
-                        printWriter.println "File ${artifactPath} ${fileSize} ${fileSize / BYTES_PER_MB}" as String
+                        long fileSize = 0
+                        try {
+                            fileSize = Long.parseLong(artifactFileInfo["size"] as String)
+                            sizesPrintWriter.println "File\t${artifactPath}\t${fileSize}\t${(fileSize / BYTES_PER_MB).trunc(2)}" as String
+                        } catch (NumberFormatException ignored) {
+                            sizesPrintWriter.println "File\t${artifactPath}\t0\t0\tNumberFormatException: ${artifactFileInfo["size"]}" as String
+                        }
                         versionSize += fileSize
                         if (minRequestIntervalInMillis > 0) {
                             Thread.sleep(minRequestIntervalInMillis)
@@ -57,17 +68,23 @@ class StorageSpaceLister {
                             minTimeSinceLastLog = 0;
                         }
                     }
-                    printWriter.println "Version ${versionPath} ${versionSize} ${versionSize / BYTES_PER_MB}" as String
-                    printWriter.flush()
+                    final String versionSizeInfo = "Version\t${versionPath}\t${versionSize}\t${(versionSize / BYTES_PER_MB).trunc(2)}"
+                    sizesPrintWriter.println versionSizeInfo
+                    versionSizesPrintWriter.println versionSizeInfo
+                    sizesPrintWriter.flush()
                     moduleSize += versionSize
                 }
-                printWriter.println "Module ${modulePath} ${moduleSize} ${moduleSize / BYTES_PER_MB}" as String
+                final String moduleSizeInfo = "Module\t${modulePath}\t${moduleSize}\t${(moduleSize / BYTES_PER_MB).trunc(2)}"
+                sizesPrintWriter.println moduleSizeInfo
+                moduleSizesPrintWriter.println moduleSizeInfo
+                versionSizesPrintWriter.flush()
                 groupSize += moduleSize
             }
-            printWriter.println "Group ${groupPath} ${groupSize} ${groupSize / BYTES_PER_MB}" as String
+            sizesPrintWriter.println "Group\t${groupPath}\t${groupSize}\t${(groupSize / BYTES_PER_MB).trunc(2)}" as String
+            moduleSizesPrintWriter.flush()
             totalSize += groupSize
         }
-        printWriter.println "Repo / ${totalSize} ${totalSize / BYTES_PER_MB}" as String
+        sizesPrintWriter.println "Repo\t/\t${totalSize}\t${(totalSize / BYTES_PER_MB).trunc(2)}" as String
     }
 
     private List<Map> getChildren(String folderPath) {
