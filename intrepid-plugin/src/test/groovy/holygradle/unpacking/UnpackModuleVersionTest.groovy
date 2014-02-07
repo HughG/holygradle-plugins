@@ -131,13 +131,14 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         File targetPath = new File(project.projectDir, "coconut")
         assertEquals(1, coconut.getTargetPathsInWorkspace(project).size())
         assertEquals(targetPath, coconut.getTargetPathsInWorkspace(project).iterator().next())
-        assertEquals(new File("coconut"), coconut.getTargetPathsInWorkspace(null).iterator().next())
+        assertEquals(new File("coconut").getCanonicalFile(), coconut.getTargetPathsInWorkspace(null).iterator().next())
         
         Set<Task> unpackTasks = coconut.getUnpackTasks(project)
         Unpack unpack = unpackTasks.find() as Unpack
 
         assertEquals(targetPath, unpack.unpackDir)
-        assertEquals("Unpacks dependency 'coconut' to [coconut].", unpack.description)
+        String expectedMessage = "Unpacks dependency 'coconut' to [${targetPath.getCanonicalFile()}]."
+        assertEquals(expectedMessage, unpack.description)
     }
     
     @Test

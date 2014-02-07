@@ -53,11 +53,16 @@ class UnpackModule {
         this.name = name        
     }
         
+    /*
+     * ToString
+     * Provides user-friendly information about the module being unpacked (and its specific versions).
+     * This is used to report more meaningful error information as well as useful for general debugging
+     */
     public String ToString()
     {
         String result = "${this.group}:${this.name}\n"
         this.versions.each { versionK, versionV ->
-            result += "  UnpackModuleVersion ${versionV.ToString()}\n"
+            result += "  ${versionK} -> UnpackModuleVersion ${versionV.ToString()}\n"
         }
         
         return result
@@ -224,35 +229,22 @@ class UnpackModule {
             unpackModules = []
             project.configurations.each { projectConfiguration ->
                 ResolvedConfiguration resolvedConfiguration = projectConfiguration.resolvedConfiguration
-                
-                try {
-                
-                    // Kick off gradle to generate a tree of dependencies
-                    Set<ResolvedDependency> firstLevelProjectDependencies = 
-                        resolvedConfiguration.getFirstLevelModuleDependencies()
+            
+                // Kick off gradle to generate a tree of dependencies
+                Set<ResolvedDependency> firstLevelProjectDependencies = 
+                    resolvedConfiguration.getFirstLevelModuleDependencies()
 
-                    // Recursive call to traverse the tree of dependencies and identify ones that we need 
-                    // to genereate unpack/symlink tasks for
-                    firstLevelProjectDependencies.each { ResolvedDependency firstLevelProjectDependency ->
-                        traverseResolvedDependencies(
-                            projectConfiguration.name, // Name of the native gradle 'configuration' that we are currently working on
-                            firstLevelProjectDependency, // The native gradle 'ResolvedDependency' node that we are currently traversing
-                            null, // on this call, ParentDependency is null since this is a firstLevelProjectDependency
-                            packedDependencies, // Collection of the packedDependencies as defined the users' gradle script
-                            unpackModules // Output: i.e., the set of object's we're building up during dependency traversal
-                        )
-                    }
-
-                } catch (ResolveException e) {
-                        // Don't throw eagerly - unfortunately we are attempting to resolve
-                        // dependencies here whilst parsing the script, which is bad because poor
-                        // user can't get the necessary information (dependency tree) to diagnose
-                        
-                        // just disable 'fAD'
-                        Task fetchAllDependenciesTask = project.tasks.findByName("fetchAllDependencies")
-                        fetchAllDependenciesTask.doFirst { throw e }                        
-                }                    
-                
+                // Recursive call to traverse the tree of dependencies and identify ones that we need 
+                // to genereate unpack/symlink tasks for
+                firstLevelProjectDependencies.each { ResolvedDependency firstLevelProjectDependency ->
+                    traverseResolvedDependencies(
+                        projectConfiguration.name, // Name of the native gradle 'configuration' that we are currently working on
+                        firstLevelProjectDependency, // The native gradle 'ResolvedDependency' node that we are currently traversing
+                        null, // on this call, ParentDependency is null since this is a firstLevelProjectDependency
+                        packedDependencies, // Collection of the packedDependencies as defined the users' gradle script
+                        unpackModules // Output: i.e., the set of object's we're building up during dependency traversal
+                    )
+                }
             }
             
             // Check if we have artifacts for each entry in packedDependency.
@@ -279,9 +271,11 @@ class UnpackModule {
                     // then make sure its the same module & version!
                     targetPaths.each { File targetPath ->
                         if (targetLocations.containsKey(targetPath)) {
-                            targetLocations[targetPath.getCanonicalFile()].add(versionInfo.getFullCoordinate())
+                            if (!targetLocations[targetPath].contains(versionInfo)) {
+                                targetLocations[targetPath].add(versionInfo)
+                            }
                         } else {
-                            targetLocations[targetPath.getCanonicalFile()] = [versionInfo.getFullCoordinate()]
+                            targetLocations[targetPath] = [versionInfo]
                         }
                     }                    
                 }
@@ -313,12 +307,14 @@ class UnpackModule {
             }
 
             // Check if any target locations are used by more than one module/version.
-            targetLocations.each { File target, Collection<String> coordinates ->
-                if (coordinates.size() > 1) {
-                    throw new RuntimeException(
-                        "Multiple different modules/versions are targetting the same location. " +
-                        "'${target}' is being targetted by: ${coordinates}. That's not going to work."
-                    )
+            targetLocations.each { File target, Collection<UnpackModuleVersion> unpackModuleVersions ->
+                
+                if (unpackModuleVersions.size() > 1) {
+                    GString msg = "The following dependencies are being targetted to the same location ${project.projectDir.toURI().relativize(target.toURI()).getPath()}:\n"
+                    unpackModuleVersions.each { UnpackModuleVersion version ->
+                        msg +=  "- ${version.ToString()}\n"
+                    }
+                    throw new RuntimeException(msg)
                 }
             }
             

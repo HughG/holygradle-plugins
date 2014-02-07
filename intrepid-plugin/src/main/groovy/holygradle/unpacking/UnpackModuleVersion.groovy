@@ -183,7 +183,7 @@ class UnpackModuleVersion {
         unpackDirs.each { File unpackDir ->
        
             // Create a name for this task based on target location (should be unique otherwise there's an error elsewhere!)
-            String taskName = (project == null) ? linkDir.getPath() : project.projectDir.toURI().relativize(unpackDir.toURI()).getPath()
+            String taskName = (project == null) ? unpackDir.getPath() : project.projectDir.toURI().relativize(unpackDir.toURI()).getPath()
             taskName = CamelCase.build("extract", taskName.replaceAll("[\\\\:]", ""))
             
             Task unpackTask = project.tasks.findByName(taskName)
@@ -206,7 +206,7 @@ class UnpackModuleVersion {
                         task.initialize(project, unpackDir, artifacts.keySet())
                     }
                 }
-                unpackTask.description = getUnpackDescription()
+                unpackTask.description = getUnpackDescription(project)
                 result.add(unpackTask)
             }
         }
@@ -339,9 +339,9 @@ class UnpackModuleVersion {
                 // If there is no 'relativePath' or it begins with a slash then revert to the behaviour
                 // of making the path relative to the root project.
                 if (project == null) {
-                    result.add(new File(relativePathForDependency))
+                    result.add(new File(relativePathForDependency).getCanonicalFile())
                 } else {
-                    result.add(new File(project.rootProject.projectDir, relativePathForDependency))
+                    result.add(new File(project.rootProject.projectDir, relativePathForDependency).getCanonicalFile())
                 }
             } else {
                 // Recursively navigate up the parent hierarchy, appending relative paths.
@@ -355,9 +355,9 @@ class UnpackModuleVersion {
             // of another module.  The logic here allows for this as part of fix for defect GR #3723
             String targetPath = packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             if (project == null) {
-                result.add(new File(targetPath))
+                result.add(new File(targetPath).getCanonicalFile())
             } else {
-                result.add(new File(project.projectDir, targetPath))
+                result.add(new File(project.projectDir, targetPath).getCanonicalFile())
             }
         }
 
@@ -381,13 +381,13 @@ class UnpackModuleVersion {
     }
     
     // Return a description to be used for the unpack task.
-    private String getUnpackDescription() {
+    private String getUnpackDescription(Project project00) {
         String version = moduleVersion.getVersion()
         String targetName = moduleVersion.getName()
         if (this.shouldUnpackToCache()) {
             "Unpacks dependency '${targetName}' (version $version) to the cache."
         } else {
-            "Unpacks dependency '${targetName}' to ${getTargetPathsInWorkspace(null)}."
+            "Unpacks dependency '${targetName}' to ${getTargetPathsInWorkspace(project00)}."
         }
     }
 }
