@@ -46,7 +46,6 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
      * produce the expected list of tasks.
      */
     @Test
-    @Ignore
     public void testAllPluginsInitialiseTogether() {
         compareBuildOutput("tAPIT") { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks")
@@ -58,7 +57,6 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
      * This tests that all the plugins correctly evaluate some basic DSL usage.  It doesn't run plugin-specific tasks.
      */
     @Test
-    @Ignore
     public void testBasicPluginConfig() {
         compareBuildOutput("tBPC") { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks")

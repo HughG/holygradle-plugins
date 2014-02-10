@@ -6,6 +6,7 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.artifacts.ResolveException
+import org.gradle.api.logging.Logger
 import org.gradle.api.Task
 import holygradle.dependencies.PackedDependencyHandler
 
@@ -69,7 +70,7 @@ class UnpackModule {
     }
     
     public boolean matches(ModuleVersionIdentifier moduleVersion) {
-        moduleVersion.getGroup() == group && moduleVersion.getName() == name 
+        return (moduleVersion.getGroup() == this.group) && (moduleVersion.getName() == this.name)
     }
     
     public UnpackModuleVersion getVersion(ModuleVersionIdentifier moduleVersion) {
@@ -130,6 +131,7 @@ class UnpackModule {
      * @param configurationName  The configuration we are collecting 'unpackModules' for
      * @param dependency // The native gradle 'ResolvedDependency' node that we are currently traversing
      * @param packedDependencies, // Collection of the packedDependencies as defined the users' gradle script
+     * @param Logger for debug info
      * @param unpackModules (Output) the set of 'unpackModule' object's we're building up during dependency traversal
      *
      **/
@@ -138,7 +140,8 @@ class UnpackModule {
         ResolvedDependency resolvedDependency,
         ResolvedDependency parentResolvedDependency00,
         Collection<PackedDependencyHandler> packedDependencies,
-        Collection<UnpackModule> unpackModules        
+        Logger logger,
+        Collection<UnpackModule> unpackModules
     ) {
                 
         ModuleVersionIdentifier moduleVersion = resolvedDependency.getModule().getId()
@@ -146,13 +149,26 @@ class UnpackModule {
         String moduleName = moduleVersion.getName()
         String versionStr = moduleVersion.getVersion()
         
-        //print "traversing dependency ${moduleName}:${versionStr}"
-        //if (parentResolvedDependency00 == null) {
-        //    println " which is 1st level"
-        //} else {
-        //    ModuleVersionIdentifier parentVersion = parentResolvedDependency00.getModule().getId()
-        //    println " with parent ${parentVersion.getName()}:${parentVersion.getVersion()}"
-        //}
+        
+        // logging information only...
+        logger.info "*** traversing dependency ${moduleName}:${versionStr}"
+        if (parentResolvedDependency00 == null) {
+            logger.info " which is 1st level ***"
+        } else {
+            ModuleVersionIdentifier parentVersion = parentResolvedDependency00.getModule().getId()
+            logger.info " with parent ${parentVersion.getName()}:${parentVersion.getVersion()} ***"
+        }
+        
+        logger.info "set of packedDependencies (getDependencyName:getVersionStr) = "
+        packedDependencies.each {
+            logger.info "${it.getDependencyName()}:${it.getVersionStr()}"
+        }
+        logger.info "set of unpackModules ="
+        unpackModules.each {
+            logger.info "${it.ToString()}"
+        }
+        logger.info "*****************************"
+              
 
         // Is there an ivy file corresponding to this dependency? 
         File ivyFile = getIvyFile(resolvedDependency)
@@ -167,7 +183,7 @@ class UnpackModule {
             if (unpackModule == null) {
                 unpackModule = new UnpackModule(moduleGroup, moduleName)
                 unpackModules << unpackModule
-                // println "Created new UnpackModule: ${unpackModule.ToString()}"
+                 logger.info "Created new UnpackModule: ${unpackModule.ToString()}"
             }
                                
             // Find or create an UnpackModuleVersion instance.
@@ -185,7 +201,8 @@ class UnpackModule {
             
                 unpackModuleVersion = new UnpackModuleVersion(moduleVersion, ivyFile, thisPackedDep)
                 unpackModule.versions[versionStr] = unpackModuleVersion
-                // println "Added version to UnpackModule: ${unpackModule.ToString()}"
+                logger.info "Added version to UnpackModule: ${unpackModule.ToString()}"
+                logger.info "  - with packedDependency00 = ${thisPackedDep}"
             }
                 
             // Search for a parent UnpackModuleVersion instance i.e. one which has a dependency on 
@@ -203,27 +220,32 @@ class UnpackModule {
                     // if not going to the cache)
                     parentUnpackModuleVersion = parentUnpackModule.getVersion(parentDependencyVersion)
                     unpackModuleVersion.addParent(parentUnpackModuleVersion)
-                    // println "Added parent to UnpackModule: ${unpackModule.ToString()}"
-                }                
+                    logger.info "Added parent to UnpackModule: ${unpackModule.ToString()}"
+                }               
             }
                 
             unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), configurationName)
+            
+            // Recurse down the tree of transitive dependencies        
+            resolvedDependency.getChildren().each { ResolvedDependency childDependency ->
+                           
+                traverseResolvedDependencies(
+                    configurationName, childDependency, resolvedDependency, packedDependencies, logger, unpackModules
+                )
+            }            
         }
-        
-        // Recurse down the tree of transitive dependencies        
-        resolvedDependency.getChildren().each { ResolvedDependency childDependency ->
-        
-            traverseResolvedDependencies(
-                configurationName, childDependency, resolvedDependency, packedDependencies, unpackModules
-            )
-        }
+                        
     }
     
     public static Collection<UnpackModule> getAllUnpackModules(Project project) {
         Collection<UnpackModule> unpackModules = project.unpackModules as Collection<UnpackModule>
+        final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
+        Logger logger = project.logger
         
-        if (unpackModules == null) {
-            final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
+        // Get 'UnpackModules' only if we haven't done so already, and the set of packedDependency
+        // handlers for the project are available!  
+        if ((unpackModules == null) && (!packedDependencies.isEmpty())) {
+            
 
             // Build a list (without duplicates) of all artifacts the project depends on.
             unpackModules = []
@@ -234,16 +256,22 @@ class UnpackModule {
                 Set<ResolvedDependency> firstLevelProjectDependencies = 
                     resolvedConfiguration.getFirstLevelModuleDependencies()
 
-                // Recursive call to traverse the tree of dependencies and identify ones that we need 
-                // to genereate unpack/symlink tasks for
-                firstLevelProjectDependencies.each { ResolvedDependency firstLevelProjectDependency ->
-                    traverseResolvedDependencies(
-                        projectConfiguration.name, // Name of the native gradle 'configuration' that we are currently working on
-                        firstLevelProjectDependency, // The native gradle 'ResolvedDependency' node that we are currently traversing
-                        null, // on this call, ParentDependency is null since this is a firstLevelProjectDependency
-                        packedDependencies, // Collection of the packedDependencies as defined the users' gradle script
-                        unpackModules // Output: i.e., the set of object's we're building up during dependency traversal
-                    )
+                logger.info "####### getAllUnpackModules for project: ${project.name} #######"
+                // Recursive call to traverse the tree of dependencies and identify ones that we need                 
+                // to genereate unpack/symlink tasks for.  The guard is necessary to save us from
+                // traversing dependencies before the packedDependencies have been created, which was
+                // happening and creating orphans!
+                if (!packedDependencies.isEmpty()) {
+                    firstLevelProjectDependencies.each { ResolvedDependency firstLevelProjectDependency ->
+                        traverseResolvedDependencies(
+                            projectConfiguration.name, // Name of the native gradle 'configuration' that we are currently working on
+                            firstLevelProjectDependency, // The native gradle 'ResolvedDependency' node that we are currently traversing
+                            null, // on this call, ParentDependency is null since this is a firstLevelProjectDependency
+                            packedDependencies, // Collection of the packedDependencies as defined the users' gradle script
+                            logger,
+                            unpackModules // Output: i.e., the set of object's we're building up during dependency traversal
+                        )
+                    }
                 }
             }
             
