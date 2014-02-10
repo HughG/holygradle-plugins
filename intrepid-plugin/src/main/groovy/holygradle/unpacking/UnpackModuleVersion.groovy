@@ -363,6 +363,20 @@ class UnpackModuleVersion {
 
         return result
     }
+    
+    /**
+     * Deprecated: This method remains only to support the old 'one target per unpackModule' behaviour, which is
+     * actually incorrect.  This method will return a valid target location for the module, but there may be others.
+     * see getTargetPathsInWorkspace().
+     */
+    public File getTargetPathInWorkspace(Project project00)
+    {
+        Set<File> targetPaths = getTargetPathsInWorkspace(project00)
+        if ((targetPaths.size() > 1) && (project00)) {
+            project00.logger.warn("Module '${getFullCoordinate()}' has multiple target paths.  Consider using Set<File> getTargetPathsInWorkspace(project) instead")
+        }
+        return targetPaths.iterator().next()
+    }
         
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
     // cache or it could be to somewhere in the workspace.
