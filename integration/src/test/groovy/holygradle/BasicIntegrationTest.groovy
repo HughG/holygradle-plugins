@@ -33,6 +33,8 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
         String[] testNames = ["${testName}_stdout", "${testName}_stderr"]
         testNames.each { String testFileName ->
             regression.replacePatterns(testFileName, [
+                (~/\b([a-z]+)[A-Z].*HolyGradlePluginsLocalGradleUserHome/) : "\$1...HolyGradlePluginsLocalGradleUserHome",
+                (~/(^:extract[\w\.]+) SKIPPED/) : "\$1",
                 (~/^Detected a changing module.*$/) : null,
                 (~/pluginsRepoOverride=.*/) : "pluginsRepoOverride=[active]",
                 (~/Total time:.*/) : "Total time: [snipped]"
