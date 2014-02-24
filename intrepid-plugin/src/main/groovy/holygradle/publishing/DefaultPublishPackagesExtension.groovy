@@ -4,6 +4,8 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.UnpackModule
 import org.gradle.api.*
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.dsl.*
 import org.gradle.api.artifacts.repositories.*
@@ -16,6 +18,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     private final Project project
     private final PublishingExtension publishingExtension
     private final RepositoryHandler repositories
+    private final LinkedHashSet<String> originalConfigurationOrder = new LinkedHashSet()
     private RepublishHandler republishHandler
     private String nextVersionNumberStr = null
     private String autoIncrementFilePath = null
@@ -31,6 +34,18 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         Collection<PackedDependencyHandler> packedDependencies
     ) {
         this.project = project
+
+        // Keep track of the order in which configurations are added, so that we can put them in the ivy.xml file in
+        // the same order, for human-readability.
+        final ConfigurationContainer configurations = project.configurations
+        final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
+        configurations.whenObjectAdded { Configuration c ->
+            localOriginalConfigurationOrder.add(c.name)
+        }
+        configurations.whenObjectRemoved { Configuration c ->
+            localOriginalConfigurationOrder.remove(c.name)
+        }
+
         this.publishingExtension = publishingExtension
         this.repositories = publishingExtension.getRepositories()
         final IvyPublication mainIvyPublication = (IvyPublication)publishingExtension.getPublications().getByName("ivy")
@@ -45,19 +60,35 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             
             Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
-                
+
                 this.removeUnwantedDependencies(packedDependencies)
                 this.freezeDynamicDependencyVersions(project)
                 this.fixUpConflictConfigurations()
                 this.removePrivateConfigurations()
+                this.putConfigurationsInOriginalOrder()
+                this.collapseMultipleConfigurationDependencies()
                 this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
-                
+
                 ivyPublishTask.doFirst {
                     this.verifyGroupName()
                     this.verifyVersionNumber()
                 }
                 ivyPublishTask.doLast {
                     this.incrementVersionNumber()
+                }
+            }
+
+            Task generateDescriptorTask = project.tasks.findByName("generateIvyModuleDescriptor")
+            if (generateDescriptorTask != null) {
+                // Rewrite "&gt;" to ">" in generated ivy.xml files, for human-readability.
+                generateDescriptorTask.doLast { Task t ->
+                    if (t.didWork) {
+                        t.outputs.files.files.each { File ivyFile ->
+                            String contents = ivyFile.text
+                            contents = contents.replaceAll("&gt;", ">")
+                            ivyFile.text = contents
+                        }
+                    }
                 }
             }
             
@@ -318,6 +349,27 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
+    // Re-writes the "configurations" element so that its children appear in the same order that the configurations were
+    // defined in the project.
+    public void putConfigurationsInOriginalOrder() {
+        final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
+        mainIvyDescriptor.withXml { xml ->
+            xml.asNode().configurations.each { Node confsNode ->
+                LinkedHashMap<String, Node> confNodes = new LinkedHashMap()
+                localOriginalConfigurationOrder.each { String confName ->
+                    Node confNode = (Node)confsNode.find { it.attribute("name") == confName }
+                    confsNode.remove(confNode)
+                    confNodes[confName] = confNode
+                }
+                confNodes.values().each { Node confNode ->
+                    confsNode.append(confNode)
+                }
+            }
+        }
+    }
+
     private static String getDependencyVersion(Project project, String group, String module) {
         String version = null
         project.configurations.each { conf ->
@@ -361,6 +413,48 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     newConf.add(c.replaceAll("(.*)_conflict.*", { it[1] }))
                 }
                 depNode.@conf = newConf.join("->")
+            }
+        }
+    }
+
+    // This method goes through the "dependencies" node and converts each set of "dependency" children with the same
+    // "org"/"name"/"rev" (but different "conf") attribute values into a single "dependency" node with a list-style
+    // configuration mapping in the "conf" attribute ("a1->b1;a2->b2").  This is for human-readability.
+    //
+    // This method must be called before addDependencyRelativePaths, because it will drop attributes other than the ones
+    // mentioned above.
+    public void collapseMultipleConfigurationDependencies() {
+        // WARNING: This method loses any sub-nodes of each dependency node.  These can be "conf" (not needed, as we use
+        // the "@conf" attribute) and "artifact", "exclude", "include" (only needed to override the target's ivy file,
+        // which I don't think we care about for now).
+
+        // Pre-calculate the indices for the original conficguration order, so we can easily sort the configuration
+        // mapping entries by source config, so that the order matches the order in which the configs were defined.
+        final LinkedHashMap<String, Integer> configIndices = [:]
+        originalConfigurationOrder.eachWithIndex { String entry, int i -> configIndices[entry] = i }
+
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
+        mainIvyDescriptor.withXml { xml ->
+            Map<String, List<String>> configsByCoord = new LinkedHashMap().withDefault { new ArrayList() }
+            xml.asNode().dependencies.each { depsNode ->
+                depsNode.dependency.each { depNode ->
+                    String coord = "${depNode.@org}:${depNode.@name}:${depNode.@rev}"
+                    configsByCoord[coord] << depNode.@conf
+                }
+                depsNode.children().clear()
+                configsByCoord.each { String coord, List<String> configs ->
+                    List<String> c = coord.split(":")
+                    List<String> sortedConfigs = configs.sort { a, b ->
+                        configIndices[a.split("->")[0]] <=> configIndices[b.split("->")[0]]
+                    }
+                    depsNode.appendNode("dependency", [
+                        "org": c[0],
+                        "name": c[1],
+                        "rev": c[2],
+                        "conf": sortedConfigs.join(";")
+                    ])
+                }
             }
         }
     }
