@@ -1,12 +1,10 @@
 package holygradle.scm
 
-import holygradle.test.*
+import holygradle.test.AbstractHolyGradleTest
 import holygradle.testUtil.ExecUtil
-import holygradle.testUtil.ZipUtil
-import org.gradle.api.Project
 import org.gradle.process.ExecSpec
 import org.junit.Test
-import org.gradle.testfixtures.ProjectBuilder
+
 import static org.junit.Assert.*
 
 /**

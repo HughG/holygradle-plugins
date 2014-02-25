@@ -37,11 +37,28 @@ class HgRepository implements SourceControlRepository {
     }
 
     public String getRevision() {
+        // Use "hg id" to get the node (in its "shortest possible string") form, then use "hg log"
+        // to convert to the full node string.  The node may have a trailing "+" if the working
+        // copy is modified, which we will remove.
+
+        String minimalNode = hgCommand.execute { ExecSpec spec ->
+                spec.workingDir = workingCopyDir
+                spec.args(
+                    "id", // Execute the "id" command,
+                    "-i" // asking for only the node, not branch/tag info.
+                )
+            }
+        if (minimalNode.endsWith("+")) {
+            minimalNode = minimalNode[0..-2] // Drop the last character.
+        }
+
         return hgCommand.execute { ExecSpec spec ->
             spec.workingDir = workingCopyDir
             spec.args(
-                "log", "-l", "1",           // Execute log command, limiting the results to 1
-                "--template", "\"{node}\""  // Filter the results to get the changeset hash
+                "log",                      // Execute log command,
+                "-r", minimalNode,          // pointing at the revision of the working copy,
+                "-l", "1",                  // limiting the results to 1,
+                "--template", "\"{node}\""  // formatting the results to get the changeset hash.
             )
         }
     }

@@ -1,0 +1,12 @@
+project.ext.hgExec = { Project project, Object ... args ->
+    project.exec { ExecSpec spec ->
+        String hgPath = new File(project.buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
+        spec.workingDir = project.projectDir
+        spec.executable = hgPath
+        spec.args = args.toList()
+    }
+}
+
+task setupHgExec {
+    dependsOn rootProject.tasks["extractMercurial"]
+}
