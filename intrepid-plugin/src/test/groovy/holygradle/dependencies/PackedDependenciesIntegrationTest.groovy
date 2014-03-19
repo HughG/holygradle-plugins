@@ -5,7 +5,6 @@ import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
 
 class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTest {
-    
     @Test
     public void testConflictingModules1() {
         invokeGradle(new File(getTestDir(), "conflicting_modules1")) { WrapperBuildLauncher launcher ->
@@ -37,9 +36,9 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
         invokeGradle(new File(getTestDir(), "unpacking_modules_to_same_location")) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                "The following dependencies are being targetted to the same location extlib:",
-                "- holygradle.test:example-framework:1.1",
-                "- holygradle.test:external-lib:1.1 required by { holygradle.test:example-framework:1.1 }"
+                "Multiple different modules/versions are targetting the same location.",
+                "unpacking_modules_to_same_location\\extlib' is being targetted by: [holygradle.test:example-framework:1.1, holygradle.test:external-lib:1.1].",
+                "That's not going to work."
             )
         }
     }

@@ -1,7 +1,6 @@
 package holygradle.packaging
 
 import holygradle.custom_gradle.VersionInfo
-import holygradle.custom_gradle.util.RetryHelper
 import holygradle.publishing.PublishPackagesExtension
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
@@ -35,13 +34,9 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 it.doLast {
                     File buildInfoDir = new File(project.projectDir, "build_info")
                     if (buildInfoDir.exists()) {
-                        RetryHelper.retry(10, 1000, logger, "delete build_info dir") {
-                            buildInfoDir.deleteDir()
-                        }
+                        buildInfoDir.deleteDir()
                     }
-                    RetryHelper.retry(10, 1000, logger, "create build_info dir") {
-                        buildInfoDir.mkdir()
-                    }
+                    buildInfoDir.mkdir()
                     
                     new File(buildInfoDir, "source_url.txt").write(sourceRepo.getUrl())
                     new File(buildInfoDir, "source_revision.txt").write(sourceRepo.getRevision())

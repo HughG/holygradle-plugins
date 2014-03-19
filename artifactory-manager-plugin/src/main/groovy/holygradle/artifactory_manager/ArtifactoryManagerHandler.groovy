@@ -18,13 +18,10 @@ class ArtifactoryManagerHandler {
     private long minRequestIntervalInMillis = 10
     private List<RepositoryHandler> repositoryHandlers = []
     private final Logger logger
-    public final File outputDir
 
     public ArtifactoryManagerHandler(Project project) {
         this.project = project
         this.logger = project.logger
-        String dateStr = new Date().format("yyyy-MM-dd_HH-mm-ss")
-        this.outputDir = new File(new File(project.buildDir, "listArtifactoryStorageSpace"), dateStr)
     }
     
     public ArtifactoryManagerHandler(Project project, ArtifactoryAPI artifactory) {
@@ -96,7 +93,7 @@ class ArtifactoryManagerHandler {
 
     public void repository(String repository, Closure closure) {
         RepositoryHandler repositoryHandler =
-            new RepositoryHandler(project.logger, repository, this, outputDir, minRequestIntervalInMillis)
+            new RepositoryHandler(project.logger, repository, this, project.buildDir, minRequestIntervalInMillis)
         repositoryHandler.username(username)
         repositoryHandler.password(password)
         ConfigureUtil.configure(closure, repositoryHandler)

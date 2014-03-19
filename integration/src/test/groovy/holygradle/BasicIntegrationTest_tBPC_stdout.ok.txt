@@ -30,7 +30,7 @@ deleteSymlinks - Remove all symlinks.
 fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildSymlinks - Rebuild all symlinks.
-symlinkMylib - Build workspace-to-cache symlink for mylib:0.0.999.
+symlinkMylib0.0.999 - Build workspace-to-cache symlink for mylib:0.0.999.
 
 DevEnv tasks
 ------------
