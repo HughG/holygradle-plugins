@@ -360,8 +360,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 LinkedHashMap<String, Node> confNodes = new LinkedHashMap()
                 localOriginalConfigurationOrder.each { String confName ->
                     Node confNode = (Node)confsNode.find { it.attribute("name") == confName }
-                    confsNode.remove(confNode)
-                    confNodes[confName] = confNode
+                    // Private configurations will have been removed, and so return null.
+                    if (confNode != null) {
+                        confsNode.remove(confNode)
+                        confNodes[confName] = confNode
+                    }
                 }
                 confNodes.values().each { Node confNode ->
                     confsNode.append(confNode)
