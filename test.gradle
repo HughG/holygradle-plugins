@@ -23,12 +23,13 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
     // containing the plugins to test is referred to with a "file:" URL, and Gradle therefore doesn't bother
     // "downloading", and just uses them in place.
     //
-    // However, we explicitly delete Mercurial, for the UnpackMercurialIntegrationTest.
+    // However, we explicitly delete Mercurial for the UnpackMercurialIntegrationTest and UnpackModuleVersionTest.
+    // We don't delete anything else, because integration test projects might leave broken symlinks around otherwise,
+    // and that may prevent Gradle from building the test!
 
     final String[] hgCoordParts = (project.MERCURIAL_DEPENDENCY_COORD as String).split(':')
     final String hgUnpackSubPath = "${hgCoordParts[0]}/${hgCoordParts[1]}-${hgCoordParts[2]}"
     final String hgUnpackPath = project.LOCAL_GRADLE_USER_HOME + "/unpackCache/${hgUnpackSubPath}"
-    println "Delete '${hgUnpackPath}'"
     t.delete(new File(hgUnpackPath))
 
     // We also delete any previously-downloaded custom-gradle distribution, to ensure we're testing the latest

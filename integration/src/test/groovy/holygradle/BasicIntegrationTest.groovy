@@ -2,7 +2,11 @@ package holygradle
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.junit.Ignore
 import org.junit.Test
+
+import java.nio.file.Files
+import java.nio.file.Paths
 
 /**
  * Very basic integration "smoke test".
@@ -29,6 +33,8 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
         String[] testNames = ["${testName}_stdout", "${testName}_stderr"]
         testNames.each { String testFileName ->
             regression.replacePatterns(testFileName, [
+                (~/\b([a-z]+)[A-Z].*HolyGradlePluginsLocalGradleUserHome/) : "\$1...HolyGradlePluginsLocalGradleUserHome",
+                (~/(^:extract[\w\.]+) SKIPPED/) : "\$1",
                 (~/^Detected a changing module.*$/) : null,
                 (~/pluginsRepoOverride=.*/) : "pluginsRepoOverride=[active]",
                 (~/Total time:.*/) : "Total time: [snipped]"
@@ -59,4 +65,29 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
                 .withArguments("--all")
         }
     }
+    
+    @Test
+    public void testUnpackAndSymlinks() {
+    
+        final String testName = "tUAS"
+        
+        // Make sure the 'symlinks' we expect this test to produce are not present before running test
+        File testProjectDir = new File(getTestDir(), testName)
+        String[] dependencyDirs = ["mylib", "anotherlib", "direct_dep_on_mylowerlevellib"]
+        dependencyDirs.each { dirName ->
+            File dependencyDir = new File(testProjectDir, dirName)
+            println "Trying to delete folder/symlink ${dependencyDir}"
+            dependencyDir.deleteDir()
+        }
+
+        // Now that the symlinks are gone, delete the corresponding parts of the unpack cache.  Specifically, anotherlib
+        // will still be present there, even though the other two libraries will have been deleted via their symlinks
+        // above.
+        (new File(gradleUserHome, "/unpackCache/com.example-corp")).deleteDir()
+
+        compareBuildOutput("tUAS") { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")                
+        }
+    }
+    
 }

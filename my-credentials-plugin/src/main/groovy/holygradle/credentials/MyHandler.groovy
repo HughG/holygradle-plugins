@@ -50,6 +50,8 @@ class MyHandler implements CredentialSource {
                 credStorageValue = credentialStoreOutput.toString()
                 credentialsCache[credStorageKey] = credStorageValue
                 project.logger.info("Requested credentials for '${credStorageKey}'. Retrieved from Credential Manager")
+            } else {
+                project.logger.warn("Requested credentials for '${credStorageKey}' from Credential Manager but failed")
             }
         }
         credStorageValue

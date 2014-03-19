@@ -1,0 +1,59 @@
+buildscript {
+    String ver = System.getProperty("holygradle.versionForIntegrationTest")
+    gplugins.use "intrepid:${ver}"
+    gplugins.use "devenv:${ver}"
+    gplugins.use "my-credentials:${ver}"
+}
+gplugins.apply()
+
+configurations {
+    it."default"
+    privateBuild
+}
+
+/*
+    Test custom-gradle-core.
+*/
+prerequisites {
+    specify("println", { checker -> 
+        try {
+            println "Hello?"
+        } catch (Exception e) {
+            checker.fail "println failed: ${e}"
+        }
+    })
+}
+
+/*
+    Test my-credentials.
+*/
+repositories.ivy {
+    credentials {
+        username my.username("Artifactory")
+        password my.password("Artifactory")
+    }
+    url (new File(project.projectDir, "local-repo").toURI())
+}
+
+packedDependencies {
+         
+    // This module has transitive dependencies on com.example-corp:mylowerlevellib:0.0.666, and
+    // anotherlib:0.0.222 (but a different configuration to the dependency on anotherlib:0.0.333 specified below)
+    "mylib" {        
+        dependency "com.example-corp:mylib:0.0.999"
+        configuration "privateBuild->default"
+    }
+
+    "anotherlib" {
+        unpackToCache = false
+        dependency "com.example-corp:anotherlib:0.0.333"
+        configuration "default->someconfig"
+    }    
+    
+    "direct_dep_on_mylowerlevellib" {
+        dependency "com.example-corp:mylowerlevellib:0.0.666"
+        configuration "privateBuild->default"
+    }
+    
+}
+
