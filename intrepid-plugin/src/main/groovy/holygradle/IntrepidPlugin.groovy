@@ -49,8 +49,12 @@ public class IntrepidPlugin implements Plugin<Project> {
          * Configurations
          **************************************/
         final ConfigurationContainer configurations = project.configurations
-        configurations.all { Configuration it ->
-            it.resolutionStrategy.failOnVersionConflict()
+        final List<String> baseTaskNames = project.gradle.startParameter.taskNames.collect { it.split(":").last() }
+        final boolean runningDependencyTask = ["dependencies", "dependencyInsight"].any { baseTaskNames.contains(it) }
+        if (!runningDependencyTask) {
+            configurations.all { Configuration it ->
+                it.resolutionStrategy.failOnVersionConflict()
+            }
         }
   
         /**************************************
