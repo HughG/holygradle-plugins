@@ -110,6 +110,14 @@ class Helper {
             String[] toConfigSet = split[1].split(",")
             fromConfigSet.each { from ->
                 toConfigSet.each { to ->
+                    if (to == "*") {
+                        throw new RuntimeException(
+                            formattingErrorMessage + " Due to Gradle bug http://issues.gradle.org/browse/GRADLE-2352 " +
+                            "(fixed in 1.5-cr-1), using '*' as the target in a configuration string will have the " +
+                            "wrong effect.  Please list configurations explicitly, use '@' if appropriate, or use " +
+                            "some other workaround."
+                        )
+                    }
                     configurations.add(new AbstractMap.SimpleEntry(from, to))
                 }
             }
