@@ -22,6 +22,8 @@ if (!f.exists()) {
 
 task createVersionedInitScript(type: Copy) {
     from initScriptsPath
+    // Depened on root properties file, since the substition values come from it (unless overridden by "-P").
+    from new File(rootProject.projectDir, "gradle.properties")
     // We don't need the hgVersionInfoFile, except to force this task to re-run if it's changed.
     from(rootProject.projectDir) {
         include rootProject.hgVersionInfoFile.toString()
