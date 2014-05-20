@@ -1,0 +1,12 @@
+/*
+    We copy the "gw.bat" to use in new wrappers from the holygradle root gw.bat.  This is because
+    it would be hard to do it the other way round -- have the root batch file use one from this
+    plugin's resources folder -- because the batch file internally grabs its own location using the
+    "%~dp0" trick.
+*/
+task(copyGwBat, type: Copy) {
+    into new File(projectDir, "src/main/resources/holygradle")
+    from new File(rootProject.projectDir, "gw.bat")
+}
+
+processResources.dependsOn copyGwBat

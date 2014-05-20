@@ -15,6 +15,8 @@ credential-store/release_version_info.h
 */src/test/**/*.test.txt
 **/packages/
 intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/projectB/settings.gradle
+custom-gradle-core-plugin/src/main/resources/holygradle/gw.bat
+gradle/distributionUrlBase.txt
 syntax: regexp
 # Gradle / Java
 ^classes/

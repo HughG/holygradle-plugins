@@ -9,6 +9,9 @@ import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.wrapper.Wrapper
 import org.gradle.process.ExecSpec
 
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 class CustomGradleCorePlugin implements Plugin<Project> {
     /**
      * Returns the path to the <tt>custom-gradle</tt> init script.
@@ -45,113 +48,34 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            String customGradleVersion = project.gradle.gradleVersion + "-" + project.holyGradleInitScriptVersion
+            final String customGradleVersion = project.gradle.gradleVersion + "-" + project.holyGradleInitScriptVersion
             wrapper.gradleVersion = customGradleVersion
-            wrapper.distributionUrl = project.holyGradlePluginsRepository + "holygradle/custom-gradle/${project.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
-            wrapper.jarFile = "${project.projectDir}/gradle/gradle-wrapper.jar"
-            wrapper.scriptFile = "${project.projectDir}/gw"
+            wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")
+            wrapper.scriptFile = new File(project.projectDir, "gw")
             wrapper.doLast {
-                String gwContent = """\
-@if "%DEBUG%" == "" @echo off
-@rem ##########################################################################
-@rem
-@rem  Gradle startup script for Windows
-@rem
-@rem ##########################################################################
+                final File gwFile = new File(project.projectDir, "gw.bat")
+                if (gwFile.exists()) {
+                    gwFile = new File(project.projectDir, "gw.bat.new")
+                }
+                gwFile.withOutputStream { os ->
+                    os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/gw.bat")
+                }
 
-@rem Set local scope for the variables with windows NT shell
-if "%OS%"=="Windows_NT" setlocal
+                // We move the default ".properties" file to ".properties.in", removing the "distributionUrl=" line.
+                // The "gw.bat" script will concatenate it with the distribution server URL (from the
+                // HOLY_GRADLE_REPOSITORY_BASE_URL environment variable) and the rest of the distribution path (which
+                // we write to a text file below).  This allows the same custom wrapper to be used from multiple sites
+                // which don't share a single server for the distribution.
+                final File propertiesInputFile = new File(wrapper.propertiesFile.toString() + ".in")
+                propertiesInputFile.withWriter { w ->
+                    wrapper.propertiesFile.withInputStream { is ->
+                        is.filterLine(w) { String line -> !line.startsWith("distributionUrl") }
+                    }
+                }
+                Files.delete(wrapper.propertiesFile.toPath())
 
-@rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
-set DEFAULT_JVM_OPTS=
-
-set DIRNAME=%~dp0
-if "%DIRNAME%" == "" set DIRNAME=.
-set APP_BASE_NAME=%~n0
-set APP_HOME=%DIRNAME%
-
-@rem Find java.exe
-if defined JAVA_HOME goto findJavaFromJavaHome
-
-set JAVA_EXE=java.exe
-%JAVA_EXE% -version >NUL 2>&1
-if "%ERRORLEVEL%" == "0" goto init
-
-echo.
-echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
-
-goto fail
-
-:findJavaFromJavaHome
-set JAVA_HOME=%JAVA_HOME:"=%
-set JAVA_EXE=%JAVA_HOME%/bin/java.exe
-
-if exist "%JAVA_EXE%" goto init
-
-echo.
-echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
-echo.
-echo Please set the JAVA_HOME variable in your environment to match the
-echo location of your Java installation.
-
-goto fail
-
-:init
-@rem Get command-line arguments, handling Windowz variants
-
-if not "%OS%" == "Windows_NT" goto win9xME_args
-if "%@eval[2+2]" == "4" goto 4NT_args
-
-:win9xME_args
-@rem Slurp the command line arguments.
-set CMD_LINE_ARGS=
-set _SKIP=2
-
-:win9xME_args_slurp
-if "x%~1" == "x" goto execute
-
-set CMD_LINE_ARGS=%*
-goto execute
-
-:4NT_args
-@rem Get arguments from the 4NT Shell from JP Software
-set CMD_LINE_ARGS=%\$
-
-:execute
-@rem Setup the command line
-
-set NO_DAEMON_OPTION=
-FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
-  if /i "%%a" == "fAD" set NO_DAEMON_OPTION=--no-daemon
-  if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
-)
-
-set CLASSPATH=%APP_HOME%\\gradle\\gradle-wrapper.jar
-
-@rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION%
-
-:end
-@rem End local scope for the variables with windows NT shell
-if "%ERRORLEVEL%"=="123456" goto execute
-if "%ERRORLEVEL%"=="0" goto mainEnd
-
-:fail
-rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
-rem the _cmd.exe /c_ return code!
-if  not "" == "%GRADLE_EXIT_CONSOLE%" exit 1
-exit /b 1
-
-:mainEnd
-if "%OS%"=="Windows_NT" endlocal
-
-:omega
-                """
-                File gwFile = new File(project.projectDir, "gw.bat")
-                gwFile.write(gwContent)
+                File distributionPathFile = new File(project.projectDir, "/gradle/distributionPath.txt")
+                distributionPathFile.text = "plugins-release/holygradle/custom-gradle/${project.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
             }
         }
     

@@ -166,8 +166,8 @@ gradle.projectsLoaded { Gradle gradle ->
     }
 }
 
-final String DEFAULT_PLUGINS_REPO = "[[ARTIFACTORY_SERVER]]plugins-release/"
-final String DEFAULT_REMOTE_REPO = "[[ARTIFACTORY_SERVER]]remote-repos/"
+final String PLUGINS_REPO_NAME = "plugins-release"
+final String REMOTE_REPO_NAME = "remote-repos"
 
 // Gradle automagically converts the closure to an Action<Project> here, so suppress IntelliJ warning.
 //noinspection GroovyAssignabilityCheck
@@ -201,27 +201,48 @@ gradle.allprojects { Project project ->
         usingLocalArtifacts = project.rootProject.property("usingLocalArtifacts")
     }
     project.ext["usingLocalArtifacts"] = usingLocalArtifacts
-    
+
     if (usingLocalArtifacts) {
+        // Make the "local_artifacts" folder be the first (ivy-format) repository the project will see,
+        // so it will end up fetching all holygradle-packaged dependencies frmo there.
         project.repositories.ivy { IvyArtifactRepository it ->
             it.url = new File(localArtifactsFile, "ivy").path
         }
     }
-    
-    // Configure holyGradlePluginsRepository
-    String pluginsRepo = DEFAULT_PLUGINS_REPO
+
+    // Configure holyGradlePluginsRepository (ivy format) and holyGradleRemoteRepository (maven format)
+    String pluginsRepo;
+    String remoteRepo;
     if (usingLocalArtifacts) {
         pluginsRepo = new File(localArtifactsFile, "ivy").path
+        remoteRepo = new File(localArtifactsFile, "maven").path
+    } else {
+        // Get the base URL for fetching the plugins and their dependencies.  This allows the same source code to be
+        // used from multiple sites which may not share a single server.  We use an environment variable instead of a
+        // property because we also need to access this value from within "gw.bat", to set the distributionUrl for
+        // bootstrapping the custom Gradle wrapper which contains this very init-script (and there's no easy way to
+        // get at Java properties from a batch file).
+
+        final String HOLY_GRADLE_REPOSITORY_BASE_URL_ENV_VAR_NAME = "HOLY_GRADLE_REPOSITORY_BASE_URL"
+        final String pluginsBaseUrl = System.getenv(HOLY_GRADLE_REPOSITORY_BASE_URL_ENV_VAR_NAME)
+        if (pluginsBaseUrl == null) {
+            throw new RuntimeException(
+                "You must set the base URL for the repository which contains the Holy Gradle plugins " +
+                "and their dependencies.  To do this, set the environment variable " +
+                HOLY_GRADLE_REPOSITORY_BASE_URL_ENV_VAR_NAME +
+                " to the base URL for your Artifactory or other repository.  For example, " +
+                "'https://artifactory-server.my-corp.com/artifactory/'"
+            )
+        }
+        if (!pluginsBaseUrl.endsWith("/")) {
+            pluginsBaseUrl += "/"
+        }
+        pluginsRepo = pluginsBaseUrl + PLUGINS_REPO_NAME
+        remoteRepo = pluginsBaseUrl + REMOTE_REPO_NAME
     }
     project.ext["holyGradlePluginsRepository"] = pluginsRepo
-   
-    // Configure holyGradleRemoteRepository
-    String remoteRepo = DEFAULT_REMOTE_REPO
-    if (usingLocalArtifacts) {
-        remoteRepo = new File(localArtifactsFile, "maven").path
-    }
     project.ext["holyGradleRemoteRepository"] = remoteRepo
-    
+
     project.extensions.create('gplugins', HolyGradlePlugins, project.buildscript, project)
 }
 

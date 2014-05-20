@@ -1,3 +1,5 @@
+@rem First, self-upgrade, in case the createWrapper task created a new gw.bat, as gw.bat.new.
+@if exist "%~dpnx0.new" (echo "Upgrading %~nx0 from %~nx0.new and re-running ..." & move /y "%~dpnx0.new" "%~dpnx0" & "%~dpnx0" %*)
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
 @rem
@@ -46,25 +48,8 @@ echo location of your Java installation.
 goto fail
 
 :init
-@rem Get command-line arguments, handling Windowz variants
-
-if not "%OS%" == "Windows_NT" goto win9xME_args
-if "%@eval[2+2]" == "4" goto 4NT_args
-
-:win9xME_args
-@rem Slurp the command line arguments.
-set CMD_LINE_ARGS=
-set _SKIP=2
-
-:win9xME_args_slurp
-if "x%~1" == "x" goto execute
-
+@rem Get command-line arguments
 set CMD_LINE_ARGS=%*
-goto execute
-
-:4NT_args
-@rem Get arguments from the 4NT Shell from JP Software
-set CMD_LINE_ARGS=%$
 
 :execute
 @rem Setup the command line
@@ -74,6 +59,19 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
   if /i "%%a" == "fAD" set NO_DAEMON_OPTION=--no-daemon
   if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
 )
+
+if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
+  echo You must set environment variable HOLY_GRADLE_REPOSITORY_BASE_URL
+  echo to the base URL for the Holy Gradle distribution and plugins,
+  echo for example, https://artifactory-server.my-corp.com/artifactory/
+  goto fail
+)
+
+@rem Write the distribution base URL to a file and concat with the properties and path.
+@rem Note that this "set" trick (to echo without a newline) sets ERRORLEVEL to 1.
+if not "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%"=="/" set HOLY_GRADLE_REPOSITORY_BASE_URL=%HOLY_GRADLE_REPOSITORY_BASE_URL%/
+<nul set /p=distributionUrl=%HOLY_GRADLE_REPOSITORY_BASE_URL%> "%APP_HOME%\gradle\distributionUrlBase.txt"
+copy >nul /y /a "%APP_HOME%\gradle\gradle-wrapper.properties.in"+"%APP_HOME%\gradle\distributionUrlBase.txt"+"%APP_HOME%\gradle\distributionPath.txt" "%APP_HOME%\gradle\gradle-wrapper.properties" /b
 
 set CLASSPATH=%APP_HOME%\gradle\gradle-wrapper.jar
 
@@ -86,8 +84,8 @@ if "%ERRORLEVEL%"=="123456" goto execute
 if "%ERRORLEVEL%"=="0" goto mainEnd
 
 :fail
-rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
-rem the _cmd.exe /c_ return code!
+@rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
+@rem the _cmd.exe /c_ return code!
 if  not "" == "%GRADLE_EXIT_CONSOLE%" exit 1
 exit /b 1
 
