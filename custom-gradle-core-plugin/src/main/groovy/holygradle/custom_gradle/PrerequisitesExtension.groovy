@@ -13,7 +13,7 @@ class PrerequisitesExtension {
     public static PrerequisitesExtension defineExtension(Project project) {
         if (project == project.rootProject) {
             project.extensions.create("prerequisites", PrerequisitesExtension, project)
-             
+
             // Task to check all specified prerequisites.
             Task checkPrerequisitesTask = project.task("checkPrerequisites", type: DefaultTask) {
                 group = "Custom Gradle"
@@ -54,7 +54,12 @@ Afterwards, please start a new command prompt and re-run the same command."""
                 }
             })
         } else {
-            project.extensions.add("prerequisites", project.rootProject.extensions.findByName("prerequisites"))
+            // Make sure that the root project has the core plugin applied, and then grab a reference to the single
+            // instance of PrerequisitesExtension.  (Note calling "apply" twice with the same plugin will only applug it
+            // once, so it's okay if the user has already applied the core plugin, or one which dependds on it, at the
+            // root.  This is to cover the case where they haven't.)
+            project.rootProject.apply plugin: CustomGradleCorePlugin
+            project.extensions.add("prerequisites", project.rootProject.extensions.getByName("prerequisites"))
         }
         
         getPrerequisites(project)

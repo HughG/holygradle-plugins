@@ -27,14 +27,18 @@ artifactoryPluginPublishRepo=<name of the (non-remote, non-virtual) repository f
   e.g., plugins-release-local>
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
-
 ```
+Also copy this file to the 'wrapper-starter-kit' subdirectory.  It needs to be a separate Gradle
+project because it _uses_ the published plugins.
 
 ## Initial Publishing
 If the plugins have never been published before within your organisation, run the following commands.
 
  - `gw -PpublishVersion=1.0.0 publishCustomGradleReally`
  - `gw -PpublishVersion=1.0.0 publishPluginsReally`
+ - `cd wrapper-starter-kit`
+ - `set WRAPPER_STARTER_KIT_VERSION=1.0.0`
+ - `gw -PwrapperVersion=1.0.0 publish`
 
 You can replace "Really" with "Locally" to publish to a folder called "local_repo", to check the contents before really
 publishing, if you want.  See the section on publishing below for more details.

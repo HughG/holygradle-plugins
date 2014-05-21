@@ -1,0 +1,55 @@
+/*
+    This project, separate from the root project hierarchy, is used for publishing a ZIP of the
+    files needed to start using a given version of the custom-gradle distribution.
+*/
+
+buildscript {
+    gplugins.use "my-credentials:${wrapperVersion}"
+}
+gplugins.apply()
+
+evaluationDependsOn("newWrapper")
+
+configurations {
+    it."default"
+}
+
+String targetDir = "${project.projectDir}/newWrapper"
+
+task makeZip(type: Zip) {
+    dependsOn tasks.getByPath(":newWrapper:createWrapper")
+    group = "Main"
+    description = 'Creates a zip file containing the starter-kit.'
+    destinationDir = project.buildDir
+    baseName = project.name
+    from("${targetDir}/gradle") {
+        into("gradle")
+        exclude("gradle-wrapper.properties")
+    }
+    from("${targetDir}/gw.bat")
+}
+
+artifacts {
+    "default" makeZip
+}
+
+project.version = wrapperVersion
+
+project.task("publish", type: Upload) { Upload t ->
+    t.configuration = configurations.default
+    t.uploadDescriptor = true
+    t.descriptorDestination = new File(project.buildDir, "ivy.xml")
+    final String PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
+    t.repositories.ivy {
+        credentials {
+            username artifactoryUsername
+            password artifactoryPassword
+        }
+        url PUBLISH_TARGET_URI
+    }
+
+    t.doLast {
+        println "Published ${project.name} ${project.version} " +
+            "to ${PUBLISH_TARGET_URI} at: " + new Date()
+    }
+}

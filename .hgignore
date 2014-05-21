@@ -16,7 +16,10 @@ credential-store/release_version_info.h
 **/packages/
 intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/projectB/settings.gradle
 custom-gradle-core-plugin/src/main/resources/holygradle/gw.bat
-gradle/distributionUrlBase.txt
+distributionUrlBase.txt
+credential-store.exe
+# Ignore any gradle[-foo].properties, as they may contain company-specific information.
+gradle*.properties
 syntax: regexp
 # Gradle / Java
 ^classes/
@@ -29,15 +32,9 @@ syntax: regexp
 ^credential-store/_ReSharper.credential-store/
 ^credential-store/(Debug|Release)
 ^ivy\.xml
-^custom-gradle/src/latestInitScript
-^integration/src/.*/credential-store.exe
-# Ignore any gradle[-foo].properties, as they may contain company-specific information.
-^gradle.*\.properties
-^wrapper-starter-kit/gradle/gradle-wrapper\.jar
-^wrapper-starter-kit/gradle/gradle-wrapper\.properties
-^wrapper-starter-kit/script/build\.gradle
-^wrapper-starter-kit/wrapperTemp
-^wrapper-starter-kit\.zip
+^wrapper-starter-kit/gradle/distributionPath\.txt
+^wrapper-starter-kit/newWrapper/gw(\.bat)?
+^wrapper-starter-kit/newWrapper/gradle
 ^intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/packages/
