@@ -1,0 +1,208 @@
+/*
+    This script checks the versions of a transitive module dependency set against a list of required
+    versions, and reports any mis-matches (in which case it also exits with failure).
+
+    For all transitive dependencies of each given configuration of the input module and version, if
+    that dependency appears in the versionsFile, then its version must match the one in the file.
+    Not all modules in the versionsFile must be dependencies of the input module, however.
+
+    The script requires several parameters to be passed as properties, set on the command line or in
+    a "gradle.properties" file.  Typically you might pass the checkModule property on the command
+    line but have the rest in a properties file.  All properties must be defined to run any tasks
+    in the project, even just "tasks".
+
+    The main task in this project is "checkVersions".
+*/
+
+buildscript {
+    // --------------------------------------------------------------------------------
+    // Add user-friendly propery checking.  This needs to be done in the buildscript block because
+    // we need to check properties to configure the buildscript's dependencies.
+
+    project.ext.missingPropertyMessages = [
+        "artifactory":
+            "This should be the 'protocol:hostname/serviceRoot' for your Artifactory server, " +
+            "for example, \"https://artifactory-server.mycorp.com/artifactory\".",
+
+        "repo":
+            "This should be the virtual repository in which the module and its dependencies can be " +
+            "found, for example, \"libs-integration\".",
+
+        "checkModule":
+            "This should be the module version plus configurations to test, in Ivy 2.0 textual form " +
+            "(see http://ant.apache.org/ivy/history/2.2.0/textual.html), " +
+            "for example, \"com.othercorp#BasicLib;2013.1.2[full,documentation]\".",
+
+        "versionsFile":
+            "This should be the local file path to a file containing a list of required versions, " +
+            "one per line, in Artifactory format (\"group:module:version\").  Lines which start with " +
+            "'#' or are blank are ignored.",
+    ]
+
+    /*
+        Method for trying to retrieve a property and warning the user helpfully if it is not set.
+    */
+    project.ext.prop = { String name ->
+        if (!project.hasProperty(name)) {
+            String msg = "Property '${name}' is required.  Put it in the gradle.properties file or " +
+                "pass it on the command line with the -Pname=\"value\" option.  " +
+                missingPropertyMessages[name]
+            throw new RuntimeException(msg)
+        }
+        return project.property(name)
+    }
+
+    // --------------------------------------------------------------------------------
+    // Configure dependencies for this script.
+
+    repositories {
+        ivy {
+            url "${project.prop('artifactory')}/plugins-release"
+        }
+    }
+    dependencies {
+        classpath "holygradle:my-credentials-plugin:6.4.2"
+    }
+}
+
+apply plugin: "my-credentials"
+
+import org.gradle.api.artifacts.*
+
+// Configure the repository from which to fetch the module to check.
+repositories {
+    ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url "${prop('artifactory')}/${prop('repo')}"
+    }
+}
+
+// Parse out the module version and set of configurations to check.
+def matcher = (prop('checkModule') =~ /([^#]+)#([^;]+);([^\[]+)\[([^\]]+)\]/)
+if (!matcher) {
+    throw new RuntimeException(
+        "Format of 'checkModule' property is incorrect.  " + missingPropertyMessages['checkModule']
+    )
+}
+def match = matcher[0]
+def moduleConfigurations = match[4].split(",")
+moduleConfigurations.each { conf ->
+    // Define a configuration matching the target, and add a dependency on it.  We keep the
+    // dependencies separate per configuration, in case there are different versions in different
+    // configurations.  If we made them all depend from one single configuration, Gradle would by 
+    // default resolve to the lexicographically latest version, and only check that.
+    configurations {
+        it."${conf}"
+    }
+    dependencies {    
+        it."${conf}" configuration: conf, group: match[1], name: match[2], version: match[3]
+    }
+}
+
+task checkVersions {
+    description = "Checks that any transitive dependencies of a given module, if they appear in a " +
+        "given 'required versions' file, match the versions in that file."
+}
+tasks.checkVersions << {
+    // ----------------------------------------------------------------------------------------
+    // Parse the list of required library versions
+    //
+    // Do this first in case it fails, so we can fail quickly.  Resolving all configurations (below)
+    // may be slow.
+
+    Map<String, String> requiredVersions = new TreeMap()
+    List<String> requiredLines = new File(prop('versionsFile')).readLines()
+    requiredLines.each {
+        it = it.trim()
+        if (!(it.startsWith("#") || it.isEmpty())) {
+            def lineMatcher = (it =~ /^([^:]+):([^:]+):([^:]+)$/)
+            if (!lineMatcher) {
+                String msg = "Each line of ${prop('versionsFile')} should be of the form " +
+                    "\"group:module:version\" but this one is not: >${it}<"
+                throw new RuntimeException(msg)
+            }
+            def lineMatch = lineMatcher[0]
+
+            String groupAndName = "${lineMatch[1]}:${lineMatch[2]}"
+            if (requiredVersions.containsKey(groupAndName)) {
+                throw new RuntimeException("Found [${it}] but already have [${groupAndName}:${requiredVersions[groupAndName]}]")
+            }
+            requiredVersions[groupAndName] = lineMatch[3]
+        }
+    }
+
+    logger.info "Required versions:"
+    requiredVersions.each { k, v -> logger.info "$k\t$v" }
+    logger.info("")
+
+    // ----------------------------------------------------------------------------------------
+    // Collect a flat list of all transitive dependencies
+    //
+    // We track the configurations we've seen of each dependency, because we might see more than one
+    // configuration as we traverse, and we want to avoid visiting the same configuration more than
+    // once (as it would be a waste of time).  We don't bother checking that the same dependency
+    // doesn't appear with more than one version, because Gradle ensures that it won't: we're
+    // looking at resolved versions all hanging off one initial configuration.
+
+    Map<String, Map<String, String>> allDeps = new TreeMap().withDefault({ new TreeMap() })
+    configurations.each { conf ->
+        Map<String, String> confDeps = allDeps[conf.name]
+        Deque<ResolvedDependency> newDeps = new LinkedList(
+            conf.resolvedConfiguration.firstLevelModuleDependencies
+        )
+        logger.info newDeps.toString()
+        while (!newDeps.isEmpty()) {
+            ResolvedDependency dep = newDeps.pop()
+            def id = dep.module.id
+            String groupAndName = "${id.group}:${id.name}"
+
+            boolean seenModuleVersion = confDeps.containsKey(groupAndName)
+            boolean seenConfiguration = false
+            if (!seenModuleVersion) {
+                confDeps[groupAndName] = [ version: id.version, configurations: [] ]
+                logger.debug "Added ${confDeps[groupAndName]} as transitive dep of ${conf.name}"
+            } else {
+                seenConfiguration = confDeps[groupAndName].configurations.contains(dep.configuration)
+            }
+
+            // If we've seen this dependency before, check whether we've seen the relevant
+            // configuration.  If not, explore its children as well.
+            if (!seenConfiguration) {
+                confDeps[groupAndName].configurations.add(dep.configuration)
+                logger.debug "Added ${dep.name} ${dep.configuration} to ${confDeps[groupAndName]}"
+                newDeps.addAll(dep.children)
+                logger.debug "From ${dep.name} ${dep.configuration} (for ${confDeps[groupAndName]}), following ${dep.children}"
+            } else {
+                logger.debug "(Already have ${dep.name} ${dep.configuration} in ${confDeps[groupAndName]})"
+            }
+        }
+
+        logger.info "All dependencies for ${conf}:"
+        confDeps.each { k, v -> logger.info "$k\t${v.version}" }
+        logger.info("")
+    }
+
+    // ----------------------------------------------------------------------------------------
+
+    boolean anyFailed = false
+    configurations.each { conf ->
+        Map<String, String  > confDeps = allDeps[conf.name]
+        requiredVersions.each { requiredModule, requiredVersion ->
+            Map actualVersionInfo = confDeps[requiredModule]
+            if (actualVersionInfo == null) {
+                println "${conf.name}\t${requiredModule}\tnot used"
+            } else if (actualVersionInfo.version == requiredVersion) {
+                println "${conf.name}\t${requiredModule}\tOK"
+            } else {
+                println "${conf.name}\t${requiredModule}\tERROR: need ${requiredVersion}, have ${actualVersionInfo.version}"
+                anyFailed = true
+            }
+        }
+    }
+    if (anyFailed) {
+        throw new RuntimeException("Failed to match all required versions")
+    }
+}
