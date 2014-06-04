@@ -55,8 +55,8 @@ Afterwards, please start a new command prompt and re-run the same command."""
             })
         } else {
             // Make sure that the root project has the core plugin applied, and then grab a reference to the single
-            // instance of PrerequisitesExtension.  (Note calling "apply" twice with the same plugin will only applug it
-            // once, so it's okay if the user has already applied the core plugin, or one which dependds on it, at the
+            // instance of PrerequisitesExtension.  (Note calling "apply" twice with the same plugin will only apply it
+            // once, so it's okay if the user has already applied the core plugin, or one which depends on it, at the
             // root.  This is to cover the case where they haven't.)
             project.rootProject.apply plugin: CustomGradleCorePlugin
             project.extensions.add("prerequisites", project.rootProject.extensions.getByName("prerequisites"))
@@ -152,7 +152,7 @@ Afterwards, please start a new command prompt and re-run the same command."""
     
     // Check all stated prerequisites, printing out failure messages and counting failures. An exception will
     // be thrown at the end if there were any failures.
-    public boolean checkAll() {
+    public void checkAll() {
         if (statedPrerequisites.count({ !it.check() })) {
             println "All prerequisites satisfied."
         } else {
