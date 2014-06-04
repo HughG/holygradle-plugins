@@ -40,6 +40,8 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/packages/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
+^utils/versionListChecker/gradle
+^utils/versionListChecker/gw.bat
 (^|/)ipch/
 # Local publishing / downloading
 ^local_repo/
