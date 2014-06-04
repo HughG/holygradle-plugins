@@ -48,14 +48,21 @@ class CustomGradleCorePlugin implements Plugin<Project> {
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
             final String customGradleVersion = project.gradle.gradleVersion + "-" + project.holyGradleInitScriptVersion
+            final File gwFile = new File(project.projectDir, "gw.bat")
             wrapper.gradleVersion = customGradleVersion
             wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")
             wrapper.scriptFile = new File(project.projectDir, "gw")
-            wrapper.doLast {
-                final File gwFile = new File(project.projectDir, "gw.bat")
+            wrapper.doFirst {
+                // If the user is running this task in a folder which already has a gw.bat, we don't want to overwrite
+                // it, or Windows will do probably-unwanted/undefined things when Gradle exits and the rest of the batch
+                // file is to be executed.
                 if (gwFile.exists()) {
-                    gwFile = new File(project.projectDir, "gw.bat.new")
+                    throw new RuntimeException(
+                        "You can only use this task in a sub-project which does not contain its own gw.bat"
+                    )
                 }
+            }
+            wrapper.doLast {
                 gwFile.withOutputStream { os ->
                     os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/gw.bat")
                 }

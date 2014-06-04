@@ -1,14 +1,23 @@
 /*
     This project, separate from the root project hierarchy, is used for publishing a ZIP of the
     files needed to start using a given version of the custom-gradle distribution.
+
+    Run it with "-PwrapperVersion=1.2.3.4" to publish a wrapper using custom-gradle-core-plugin
+    version 1.2.3.4.  You also have to set environment variable WRAPPER_STARTER_KIT_VERSION to the
+    version of the custom-gradle distribution to use to run this script.  This may or may not be the
+    same as the version you want to publish.
 */
 
 buildscript {
     gplugins.use "my-credentials:${wrapperVersion}"
 }
 gplugins.apply()
+apply plugin: 'ivy-publish'
 
 evaluationDependsOn("newWrapper")
+
+project.group = "holygradle"
+project.version = wrapperVersion
 
 configurations {
     it."default"
@@ -33,23 +42,20 @@ artifacts {
     "default" makeZip
 }
 
-project.version = wrapperVersion
+project.ext.PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
 
-project.task("publish", type: Upload) { Upload t ->
-    t.configuration = configurations.default
-    t.uploadDescriptor = true
-    t.descriptorDestination = new File(project.buildDir, "ivy.xml")
-    final String PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
-    t.repositories.ivy {
+publishing {
+    repositories.ivy {
         credentials {
             username artifactoryUsername
             password artifactoryPassword
         }
         url PUBLISH_TARGET_URI
     }
+}
 
-    t.doLast {
-        println "Published ${project.name} ${project.version} " +
-            "to ${PUBLISH_TARGET_URI} at: " + new Date()
-    }
+project.tasks["publish"] << {
+    println "Published ${project.name} ${project.version} " +
+        "to ${PUBLISH_TARGET_URI} at: " + new Date()
+    println "Once you have tested the wrapper, unzip it into this folder and commit the changes."
 }

@@ -1,5 +1,3 @@
-@rem First, self-upgrade, in case the createWrapper task created a new gw.bat, as gw.bat.new.
-@if exist "%~dpnx0.new" (echo "Upgrading %~nx0 from %~nx0.new and re-running ..." & move /y "%~dpnx0.new" "%~dpnx0" & "%~dpnx0" %*)
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
 @rem

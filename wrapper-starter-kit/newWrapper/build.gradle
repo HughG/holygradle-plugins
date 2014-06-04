@@ -2,3 +2,9 @@ buildscript {
     gplugins.use "custom-gradle-core:${wrapperVersion}"
 }
 gplugins.apply()
+
+task clean << {
+    delete "gw", "gw.bat", "gw.bat.in", "gradle"
+}
+
+createWrapper.dependsOn clean
