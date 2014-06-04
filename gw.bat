@@ -5,6 +5,11 @@
 @rem
 @rem  Gradle startup script for Windows
 @rem
+@rem  WARNING: Do not edit this script to customise your project, because it
+@rem  may be replaced when upgrading to future versions of Gradle or Holy
+@rem  Gradle.  Instead, customise within the build script, or in a script of
+@rem  your own which calls this batch file.
+@rem
 @rem ##########################################################################
 
 @rem Set local scope for the variables with windows NT shell
