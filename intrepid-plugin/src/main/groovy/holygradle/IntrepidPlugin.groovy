@@ -4,6 +4,7 @@ import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
+import holygradle.dependencies.DependencySettingsExtension
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
@@ -48,11 +49,15 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * Configurations
          **************************************/
+        DependencySettingsExtension dependencySettings =
+            DependencySettingsExtension.findOrCreateDependencySettings(project)
         final ConfigurationContainer configurations = project.configurations
         final List<String> baseTaskNames = project.gradle.startParameter.taskNames.collect { it.split(":").last() }
         final boolean runningDependencyTask = ["dependencies", "dependencyInsight"].any { baseTaskNames.contains(it) }
-        if (!runningDependencyTask) {
-            configurations.all { Configuration it ->
+        // We call failOnVersionConflict inside Configurations#all, because that's called lazily when configurations are
+        // added, so lets the script set dependencySettings.defaultFailOnVersionConflict before adding any.
+        configurations.all { Configuration it ->
+            if (dependencySettings.defaultFailOnVersionConflict && !runningDependencyTask) {
                 it.resolutionStrategy.failOnVersionConflict()
             }
         }
