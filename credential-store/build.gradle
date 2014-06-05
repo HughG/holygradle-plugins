@@ -13,20 +13,30 @@ public File getDevEnvPath() {
 
 String releaseVersionInfoFileName = 'release_version_info.h'
 task createReleaseVersionFile {
-    (new File(projectDir, releaseVersionInfoFileName)).withWriter { BufferedWriter writer ->
-        String username = System.getProperty("user.name").toLowerCase()
-        boolean isSnapshot = (project.version == "${username}-SNAPSHOT")
-        String ver = isSnapshot ? "0.0.0.0" : project.version
-        String commaVer = isSnapshot ? "0,0,0,0" : project.version.replaceAll('\\.', ',')
-        writer.writeLine "#define RELEASE_VERSION \"${ver}\""
-        writer.writeLine "#define RELEASE_VERSION_WITH_COMMAS ${commaVer}"
+    File versionFile = new File(projectDir, releaseVersionInfoFileName)
+    dependsOn rootProject.setPublishVersion
+    outputs.file(versionFile)
+    doLast {
+        versionFile.withWriter { BufferedWriter writer ->
+            String username = System.getProperty("user.name").toLowerCase()
+            boolean isSnapshot = (project.version == "${username}-SNAPSHOT")
+            String ver = isSnapshot ? "0.0.0.0" : project.version
+            String commaVer = isSnapshot ? "0,0,0,0" : project.version.replaceAll('\\.', ',')
+            writer.writeLine "#define RELEASE_VERSION \"${ver}\""
+            writer.writeLine "#define RELEASE_VERSION_WITH_COMMAS ${commaVer}"
+        }
     }
 }
 
 String projectVersionInfoFileName = 'project_version_info.h'
 task createProjectVersionFile {
-    (new File(projectDir, projectVersionInfoFileName)).withWriter { BufferedWriter writer ->
-        writer.writeLine "#define PROJECT_VERSION \"${project.rootProject.hgVersionInfo}\""
+    File versionFile = new File(projectDir, projectVersionInfoFileName)
+    dependsOn rootProject.setHgVersionInfo
+    outputs.file(versionFile)
+    doLast {
+        versionFile.withWriter { BufferedWriter writer ->
+            writer.writeLine "#define PROJECT_VERSION \"${project.rootProject.hgVersionInfo}\""
+        }
     }
 }
 

@@ -21,6 +21,9 @@ if (!f.exists()) {
 }
 
 task createVersionedInitScript(type: Copy) {
+    dependsOn rootProject.setHgVersionInfo
+    dependsOn rootProject.setPublishVersion
+
     from initScriptsPath
     // Depened on root properties file, since the substition values come from it (unless overridden by "-P").
     from new File(rootProject.projectDir, "gradle.properties")
@@ -31,7 +34,6 @@ task createVersionedInitScript(type: Copy) {
     into versionedInitScriptsPath
     filter { String line -> (line =~ /\[\[INIT_SCRIPT_SOURCE_VERSION\]\]/).replaceFirst(rootProject.hgVersionInfo) }
     filter { String line -> (line =~ /\[\[INIT_SCRIPT_VERSION\]\]/).replaceFirst(project.version) }
-    filter { String line -> (line =~ /\[\[ARTIFACTORY_SERVER\]\]/).replaceFirst(artifactoryServer) }
 }
 
 task latestInitScript(type: Copy) {

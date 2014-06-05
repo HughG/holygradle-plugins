@@ -54,15 +54,3 @@ subprojects {
         }
     }
 }
-
-// Add source version info for the two non-JAR subprojects.
-project(":custom-gradle") {
-    afterEvaluate {
-        createVersionedInitScript.dependsOn setHgVersionInfo
-    }
-}
-project(":credential-store") {
-    afterEvaluate {
-        createProjectVersionFile.dependsOn setHgVersionInfo
-    }
-}

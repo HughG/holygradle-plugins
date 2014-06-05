@@ -36,9 +36,9 @@ project.allprojects { Project p ->
     p.logger.info "Set ${p.name} version to ${p.version}"
 }
 
-// Make sure that the credential-store EXE gets rebuilt if the version number changes.  (We don't
-// need to do anything explicit for Groovy plugin projects because their output is a JAR, which has
-// the version number in its filename.)
+// Make sure that the credential-store EXE and the custom-gradle distributions get rebuilt if the
+// version number changes.  (We don't need to do anything explicit for Groovy plugin projects
+// because their output is a JAR, which has the version number in its filename.)
 task setPublishVersion {
     // Write the version to a file, so that the file can be seen as changed (or not) by other
     // tasks, to force them to re-run.
@@ -50,11 +50,6 @@ task setPublishVersion {
     // run those tasks if so.
     outputs.file(project.publishVersionFile)
     outputs.upToDateWhen { false }
-}
-project(':credential-store') {
-    afterEvaluate {
-        project.createReleaseVersionFile.dependsOn setPublishVersion
-    }
 }
 
 // Print a message, if we're actually publishing.
