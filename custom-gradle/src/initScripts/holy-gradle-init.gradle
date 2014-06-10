@@ -100,6 +100,25 @@ class HolyGradlePlugins {
             version = "${pluginsSnapshotsUser}-SNAPSHOT"
             usingSnapshots = true
         }
+        if (usingSnapshots) {
+            // If any projects being built, or any of their dependencies, use some version of the holygradle plugins,
+            // force dependency resolution to pick the SNAPSHOT version.  Note that we can't just use the
+            // ReoslutionStrategy#failOnVersionConflict method because (a) some transitive dependencies of the plugins
+            // themselves have version conflicts; and (b) that might also be intentionally true for other JARs added
+            // to the buildcript classpath by a specific project.  (Perhaps we could warn if we find a conflict not
+            // on an expected list?)
+            //noinspection GroovyAssignabilityCheck
+            project.gradle.allprojects { Project p ->
+                p.buildscript.configurations.all { Configuration conf ->
+                    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                        ModuleVersionSelector requestedVer = details.requested
+                        if (requestedVer.group == group && requestedVer.name == pluginFullName) {
+                            details.useVersion version
+                        }
+                    }
+                }
+            }
+        }
 
         // Actually add the plugins to the buildscript, and record the version.
         buildscript.dependencies { DependencyHandler depHandler ->
@@ -109,7 +128,9 @@ class HolyGradlePlugins {
         }
         usages[plugin] = version
     }
-    
+
+    // This is an API method to be called from build scripts, so suppress IntelliJ warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
     public void apply() {
         Project localProject = project // allow closures to access class-private
 
