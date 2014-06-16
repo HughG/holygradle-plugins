@@ -1,0 +1,1 @@
+plugins-release/holygradle/custom-gradle/7.0.0/custom-gradle-1.4-7.0.0.zip

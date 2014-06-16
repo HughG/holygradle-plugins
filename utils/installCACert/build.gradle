@@ -18,7 +18,7 @@
 
     Run this script with arguments as follows.
 
-        gw -b install_ca_cert.gradle {checkCACert|importCACert}
+        gw {checkCACert|importCACert}
         {
             -PcertMachine=<Windows server which controls the certificate>
             -PcertName=<name of certificate on server>
@@ -30,7 +30,7 @@
 
     For example:
 
-        gw -b install_ca_cert.gradle importCACert -PcertMachine=DomainController -PcertName=RootCA.MyCorp
+        gw importCACert -PcertMachine=DomainController -PcertName=RootCA.MyCorp
 
     All arguments are applicable to either command.
 

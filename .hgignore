@@ -35,6 +35,8 @@ syntax: regexp
 ^wrapper-starter-kit/gradle/distributionPath\.txt
 ^wrapper-starter-kit/newWrapper/gw(\.bat)?
 ^wrapper-starter-kit/newWrapper/gradle
+^https-setup-kit/plainWrapper/(gw|gradlew)(\.bat)?
+^https-setup-kit/plainWrapper/gradle
 ^intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/packages/

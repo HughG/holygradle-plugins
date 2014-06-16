@@ -1,0 +1,5 @@
+task clean << {
+    delete "gradlew", "gradlew.bat", "gw", "gw.bat", "gradle"
+}
+
+task createWrapper(type: Wrapper) {}

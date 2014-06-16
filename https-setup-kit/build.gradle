@@ -1,0 +1,62 @@
+/*
+    This project, separate from the root project hierarchy, is used for publishing a ZIP of the
+    files needed to import an SSL Certificate Autorhity xertificate, using the standard gradle
+    distribution.
+
+    Run it with "-PwrapperVersion=1.2.3.4" to publish a wrapper as version 1.2.3.4.  It will use the
+    same core Gradle version as specified in ./gradle/gradle-wrapper.properties.
+*/
+
+buildscript {
+    gplugins.use "my-credentials:7.0.0"
+}
+gplugins.apply()
+apply plugin: 'ivy-publish'
+
+evaluationDependsOn("plainWrapper")
+
+project.group = "holygradle"
+project.version = wrapperVersion
+
+configurations {
+    it."default"
+}
+
+String targetDir = "${project.projectDir}/plainWrapper"
+
+task makeZip(type: Zip) {
+    dependsOn tasks.getByPath(":plainWrapper:createWrapper")
+    group = "Main"
+    description = 'Creates a zip file containing the starter-kit.'
+    destinationDir = project.buildDir
+    baseName = project.name
+    from("${targetDir}/gradle") {
+        into("gradle")
+    }
+    from("${targetDir}/gradlew.bat") {
+        rename { "gw.bat" }
+    }
+    from("${project.projectDir}/../utils/installCACert/build.gradle")
+}
+
+artifacts {
+    "default" makeZip
+}
+
+project.ext.PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
+
+publishing {
+    repositories.ivy {
+        credentials {
+            username artifactoryUsername
+            password artifactoryPassword
+        }
+        url PUBLISH_TARGET_URI
+    }
+}
+
+project.tasks["publish"] << {
+    println "Published ${project.name} ${project.version} " +
+        "to ${PUBLISH_TARGET_URI} at: " + new Date()
+    println "Once you have tested the wrapper, unzip it into this folder and commit the changes."
+}
