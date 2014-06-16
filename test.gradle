@@ -98,9 +98,17 @@ subprojects { Project project ->
                 t.systemProperty("holygradle.versionForIntegrationTest", project.version)
             }
         }
-        // Make the real publish tasks depend on the integration test.
-        project.publishReallyTasks.each { Task publishReallyTask ->
-            publishReallyTask.dependsOn project.tasks["integTest"]
+        // Make the real publish tasks depend on the integration test (unless disabled)
+        if (project.hasProperty('noIntegTest')) {
+             if (project.version.endsWith('-SNAPSHOT')) {
+                // Skip integration testing.
+            } else {
+                throw new RuntimeException("You can only use -PnoIntegTest for SNAPSHOT releases, but this is ${project.version}")
+            }
+        } else {
+            project.publishReallyTasks.each { Task publishReallyTask ->
+                publishReallyTask.dependsOn project.tasks["integTest"]
+            }
         }
 
         task showTestReport(type: DefaultTask) {

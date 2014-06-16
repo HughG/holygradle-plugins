@@ -75,7 +75,8 @@ whole set of plugins.
  - Without any other arguments, the version used will be `<user>-SNAPSHOT`, where `<user>` is your system username (not
 your BitBucket username).
  - To publish a release version, pass the version number with `-PpublishVersion=<version number>`.
-
+ - To skip integration testing, pass `-PnoIntegTest`.  This only works for SNAPSHOT releases.
+ 
 The main sequence of tasks when publishing is as follows.  This is a summary of the output of
 `gw --dry-run publishCustomGradleReally publishPluginsReally`.  The `credential-store` project is published with the
 plugins.  The output below is not exactly true, because the `artifactory-manager-plugin` doesn't depend on
