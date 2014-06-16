@@ -1,0 +1,175 @@
+/*
+    WARNING: Make sure you trust the issuer of any certificates you import using this script.  The
+    script imports into Java's "cacerts" list, which means that all Java applications using the same
+    installation of Java will then trust HTTPS connections to servers using that certificate, or any
+    certificates signed by that certificate.  
+
+    Run this script with arguments as follows.
+
+        gw -b install_ca_cert.gradle {checkCACert|importCACert}
+        {
+            -PcertMachine=<Windows server which controls the certificate>
+            -PcertName=<name of certificate on server>
+        |
+            -PcertFile=<path to certificate file>
+        }
+            [-PcertAlias=<alias to identify certificate in cacerts keystore>
+            [-PstorePassword=<password for cacerts keystore, if different from default 'changeit'>]
+
+    For example:
+
+        gw -b install_ca_cert.gradle importCACert -PcertMachine=DomainController -PcertName=RootCA.MyCorp
+
+    All arguments are applicable to either command.
+
+    If certAlias is not supplied, an alias will be derived from the certName, or the base filename
+    of the certFile.
+*/
+
+def setupWindowsProperties() {
+    if (project.hasProperty('certFile')) {
+        if (project.hasProperty('certMachine') || project.hasProperty('certName')) {
+            throw new RuntimeException("You must not specify certMachine or certName, if you specify certFile")
+        }
+
+        if (!(project.certFile instanceof File)) {
+            project.ext.certFile = new File(project.certFile)
+        }
+    } else {
+        if (!(project.hasProperty('certMachine') && project.hasProperty('certName'))) {
+            throw new RuntimeException("You must specify certMachine and certName, if you do not specify certFile")
+        }
+
+        if (!project.hasProperty('certMachine')) {
+            throw new RuntimeException("You must specify the server holding the certificate file using -PcertMachine=<server name>")
+        }
+
+        if (!project.hasProperty('certName')) {
+            throw new RuntimeException("You must specify the name of the certificate authority using -PcertName=<certificate name>")
+        }
+
+        project.ext.certFile = new File(certName + ".cer")
+    }
+}
+
+def setupKeystoreProperties() {
+
+    // //println new TreeMap(System.getenv()) //.each { k, v -> println "$k\t=$v" }
+    // new TreeMap(System.getenv()).each { k, v -> println "$k\t=$v" }
+    // println()
+    // //println new TreeMap(System.properties) //.each { k, v -> println "$k\t=$v" }
+    // new TreeMap(System.properties).each { k, v -> println "$k\t=$v" }
+
+    String javaHomeStr = System.getProperty('java.home')
+    if (javaHomeStr == null) {
+        throw new RuntimeException("Cannot determine Java home directory from 'java.home'")
+    }
+
+    File javaHome = new File(javaHomeStr)
+    if (!javaHome.exists()) {
+        throw new RuntimeException("Java home directory does not exist: ${javaHome}")
+    }
+
+    File jreHome = new File(javaHomeStr, "jre")
+    if (jreHome.exists()) {
+        javaHome = jreHome
+    }
+    project.ext.keytoolExe = new File(javaHome, "bin/keytool.exe")
+    if (!keytoolExe.exists()) {
+        throw new RuntimeException("keytool.exe does not exist: ${keytoolExe}")
+    }
+    project.ext.cacertsFile = new File(javaHome, "lib/security/cacerts")
+    if (!cacertsFile.exists()) {
+        throw new RuntimeException("Root CA keystore does not exist: ${cacertsFile}")
+    }
+
+    if (!(project.certFile instanceof File)) {
+        project.ext.certFile = new File(project.certFile)
+    }
+    if (!certFile.exists()) {
+        throw new RuntimeException("Root CA certificate does not exist: ${certFile}")        
+    }
+    if (!project.hasProperty('certAlias')) {
+        // Default alias name: base filename (less ext), as lower, minus non-alphanumeric.
+        String alias = (certFile.name =~ /(.*)\.(.*)/)[0][1].toLowerCase().replaceAll("[^a-z0-9]+", "")
+        project.ext.certAlias = alias
+    }
+
+    final String DEFAULT_STORE_PASSWORD = "changeit"
+    if (!project.hasProperty('storePassword')) {
+        project.ext.storePassword = DEFAULT_STORE_PASSWORD
+    }
+}
+
+/*ExecResult*/ project.ext.keyToolExec = {
+    String commandName,
+    Collection<Object> extraArgs,
+    Closure configure = null
+ ->
+    return project.exec { execSpec ->
+        executable = keytoolExe
+        args = [
+            commandName,
+            '-alias', certAlias,
+            '-keystore', cacertsFile,
+            '-storepass', storePassword
+        ] + extraArgs
+        if (configure != null) {
+            configure(execSpec)
+        }
+    }
+}
+
+boolean keyExists() {
+    ExecResult result = keyToolExec('-list', []) { execSpec ->
+        execSpec.ignoreExitValue = true
+    }
+    return (0 == result.exitValue)
+}
+
+task exportCACertFromWindows << {
+    return project.exec { execSpec ->
+        executable = "certutil.exe"
+        args = [
+            '-f',
+            '-config', "${certMachine}\\${certName}",
+            '-ca.cert',
+            "${certName}.cer"
+        ]
+    }
+}
+exportCACertFromWindows.description = "Exports a CA certificate from Windows Certificate Services"
+
+task checkCACert << {
+    setupKeystoreProperties()
+
+    // TODO 2014-06-13 HUGR: Capture and log output.
+
+    if (keyExists()) {
+        println "Found key with alias ${certAlias} in ${cacertsFile}"
+    } else {
+        throw new RuntimeException("Failed to find existing key with alias ${certAlias} in ${cacertsFile}")
+    }
+
+}
+checkCACert.description = "Checks whether a certificate matching the given certAlias/certFile exists in the cacerts keystore"
+
+task importCACert << {
+    setupKeystoreProperties()
+
+    // TODO 2014-06-13 HUGR: Capture and log output.
+
+    ExecResult result = null
+    if (keyExists()) {
+        keyToolExec('-delete', [])
+    }
+
+    // (Re-)Import
+    keyToolExec('-importcert', ['-noprompt', '-file', certFile])
+}
+importCACert.description = "Imports the given certAlias/certFile exists into the cacerts keystore, or replaces it if it is already present"
+
+setupWindowsProperties()
+if (project.hasProperty('certMachine')) {
+    importCACert.dependsOn exportCACertFromWindows
+}
