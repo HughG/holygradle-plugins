@@ -1,8 +1,20 @@
 /*
+    This script is to help set up Gradle to connect to HTTPS servers, where the server's SSL
+    certificate is signed by a non-standard Certificate Authority (CA).
+
+    Running this script in the same enviroment as your build guarantees that you will set this up
+    for the same version of Java which Gradle uses.  On some machines there may be multiple versions
+    of Java in use.  In particular, continuous integration servers such as Jenkins may use several
+    versions of Java, e.g., one to run the Tomcat srever hosting Jenkins, and another to run your
+    actual Gradle scripts.  Tools such as SysInternals Process Explorer can help diagnose problems
+    in this area.
+
+    ================================================================================================
     WARNING: Make sure you trust the issuer of any certificates you import using this script.  The
     script imports into Java's "cacerts" list, which means that all Java applications using the same
     installation of Java will then trust HTTPS connections to servers using that certificate, or any
     certificates signed by that certificate.  
+    ================================================================================================
 
     Run this script with arguments as follows.
 
@@ -143,8 +155,6 @@ exportCACertFromWindows.description = "Exports a CA certificate from Windows Cer
 task checkCACert << {
     setupKeystoreProperties()
 
-    // TODO 2014-06-13 HUGR: Capture and log output.
-
     if (keyExists()) {
         println "Found key with alias ${certAlias} in ${cacertsFile}"
     } else {
@@ -156,8 +166,6 @@ checkCACert.description = "Checks whether a certificate matching the given certA
 
 task importCACert << {
     setupKeystoreProperties()
-
-    // TODO 2014-06-13 HUGR: Capture and log output.
 
     ExecResult result = null
     if (keyExists()) {
