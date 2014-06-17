@@ -63,6 +63,17 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
   if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
 )
 
+if exist local_artifacts (
+  echo %~nx0 found local_artifacts folder, so will NOT generate "%APP_HOME%\gradle\gradle-wrapper.properties".
+  if not exist "%APP_HOME%\gradle\gradle-wrapper.properties" (
+    echo ERROR: "%APP_HOME%\gradle\gradle-wrapper.properties" will not be generated but does not already exist.
+    echo This may be because a zipped release you are using was created incorrectly.
+  )
+  @rem We have to use goto here, instead of an "else (...)", because Windows will try to parse the
+  @rem "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%" inside the else, and fail because the variable isn't set.
+  goto wrapperPropertiesDone
+)
+
 if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
   echo You must set environment variable HOLY_GRADLE_REPOSITORY_BASE_URL
   echo to the base URL for the Holy Gradle distribution and plugins,
@@ -86,6 +97,7 @@ if "%APP_HOME:~-21%"=="\wrapper-starter-kit\" (
 )
 copy >nul /y /a "%APP_HOME%\gradle\gradle-wrapper.properties.in"+"%APP_HOME%\gradle\distributionUrlBase.txt"+"%APP_HOME%\gradle\distributionPath.txt" "%APP_HOME%\gradle\gradle-wrapper.properties" /b
 
+:wrapperPropertiesDone
 set CLASSPATH=%APP_HOME%\gradle\gradle-wrapper.jar
 
 @rem Execute Gradle
@@ -106,4 +118,3 @@ exit /b 1
 if "%OS%"=="Windows_NT" endlocal
 
 :omega
-                
