@@ -73,6 +73,7 @@ unitTestRelease - Run the Release unit tests for 'tAPIT'.
 Other tasks
 -----------
 buildAndTestAll - Build 'tAPIT' and all dependent projects in Debug and Release, and run unit tests.
+extractMercurial - Unpack build dependency 'Mercurial'
 
 To see all tasks and more detail, run with --all.
 

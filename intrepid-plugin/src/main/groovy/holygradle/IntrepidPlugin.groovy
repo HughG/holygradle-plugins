@@ -147,7 +147,6 @@ public class IntrepidPlugin implements Plugin<Project> {
                 hgUnpackTask.doLast {
                     Helper.addMercurialKeyringToIniFile(buildScriptDependencies.getPath("Mercurial"))
                 }
-                fetchAllDependenciesTask.dependsOn hgUnpackTask
             }
         }
 
@@ -197,11 +196,13 @@ public class IntrepidPlugin implements Plugin<Project> {
          * Source dependencies
          **************************************/        
         project.gradle.projectsEvaluated {
-            // Do we have any Hg source dependencies? Need to check for Hg prerequisite.
+            // Do we have any Hg source dependencies? Need to check for Hg prerequisite, and fetch hg.exe.
             if (sourceDependencies.findAll{it.protocol == "hg"}.size() > 0) {
                 beforeFetchSourceDependenciesTask.doFirst {
                     prerequisites.check("HgAuth")
                 }
+                Task hgUnpackTask = buildScriptDependencies.getUnpackTask("Mercurial")
+                beforeFetchSourceDependenciesTask.dependsOn hgUnpackTask
             }
             
             Map<String, Task> buildTasks = Helper.getProjectBuildTasks(project)

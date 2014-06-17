@@ -50,6 +50,7 @@ class BuildScriptDependency {
                     !dependencyPath.exists()
                 }
             }
+            unpackTask.description = "Unpack build dependency '${dependencyName}'"
         } else if (dependencyArtifact != null) {
             dependencyPath = dependencyArtifact.getFile()
         }
