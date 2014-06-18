@@ -27,9 +27,6 @@ task createVersionedInitScript(type: Copy) {
     from rootProject.setHgVersionInfo.outputs.files
     from rootProject.setPublishVersion.outputs.files
 
-    // Depend on root properties file, as the substition values come from it (unless overridden by "-P").
-    from new File(rootProject.projectDir, "gradle.properties")
-
     from initScriptsPath
     into versionedInitScriptsPath
     filter { String line -> (line =~ /\[\[INIT_SCRIPT_SOURCE_VERSION\]\]/).replaceFirst(rootProject.hgVersionInfo) }
