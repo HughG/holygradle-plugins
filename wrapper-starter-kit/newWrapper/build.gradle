@@ -3,6 +3,32 @@ buildscript {
 }
 gplugins.apply()
 
+/*
+    If the plugins snapshot override is active, the snapshot version of custom-gradle-core-plugin
+    will be used, which probably isn't what was intended.
+*/
+boolean usingPluginSnapshots = (System.getProperty('holygradle.pluginsSnapshotsUser') != null)
+if (usingPluginSnapshots != wrapperVersion.endsWith('-SNAPSHOT')) {
+    throw new RuntimeException(
+        "ERROR: holygradle.pluginsSnapshotsUser override is active but you are attempting to " +
+        "publish a wrapper for a non-snapshot version (${wrapperVersion}).  This would instead " +
+        "publish a wrapper using your snapshot version of Holy Gradle."
+    )
+}
+
+/*
+    Extra sanity check that we really are publishing with the version we asked for.  For example,
+    it doesn't make sense to try to publish with a version number like "1.2.+".
+*/
+Map<String,String> pluginUsages = project.extensions.findByName("gplugins")?.usages as Map<String,String>
+String customGradleCoreVersion = pluginUsages['custom-gradle-core']
+if (wrapperVersion != customGradleCoreVersion) {
+    throw new RuntimeException(
+        "Requested custom-gradle-core:${wrapperVersion} but actual version is " +
+        "${customGradleCoreVersion}"
+    )
+}
+
 task clean << {
     delete "gw", "gw.bat", "gw.bat.in", "gradle"
 }
