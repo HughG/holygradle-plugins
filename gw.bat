@@ -1,7 +1,8 @@
 @if "%DEBUG%" == "" @echo off
 @rem ##########################################################################
 @rem
-@rem  Gradle startup script for Windows
+@rem  Holy Gradle startup script for Windows, version [[GW_SCRIPT_VERSION]]
+@rem  Published from [[GW_SCRIPT_SOURCE_VERSION]]
 @rem
 @rem  WARNING: Do not edit this script to customise your project, because it
 @rem  may be replaced when upgrading to future versions of Gradle or Holy

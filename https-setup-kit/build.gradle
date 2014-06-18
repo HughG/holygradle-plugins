@@ -12,6 +12,7 @@ buildscript {
 }
 gplugins.apply()
 apply plugin: 'ivy-publish'
+apply from: '../versionInfo.gradle'
 
 evaluationDependsOn("plainWrapper")
 
@@ -37,6 +38,7 @@ task makeZip(type: Zip) {
         rename { "gw.bat" }
     }
     from("${project.projectDir}/../utils/installCACert/build.gradle")
+    from setHgVersionInfo.outputs.files
 }
 
 artifacts {

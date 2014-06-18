@@ -5,8 +5,17 @@
     "%~dp0" trick.
 */
 task(copyGwBat, type: Copy) {
+    // We don't need a copy of either of these files, because we'll read the info from project
+    // properties.  But these files will have changed if those property values changed since the
+    // last time this task ran, so we use them to cause this task to re-run.
+    from rootProject.setHgVersionInfo.outputs.files
+    from rootProject.setPublishVersion.outputs.files
+
     into new File(projectDir, "src/main/resources/holygradle")
-    from new File(rootProject.projectDir, "gw.bat")
+    from(new File(rootProject.projectDir, "gw.bat")) {
+        filter { String line -> (line =~ /\[\[GW_SCRIPT_SOURCE_VERSION\]\]/).replaceFirst(rootProject.hgVersionInfo) }
+        filter { String line -> (line =~ /\[\[GW_SCRIPT_VERSION\]\]/).replaceFirst(project.version) }
+    }
 }
 
 processResources.dependsOn copyGwBat
