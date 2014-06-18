@@ -13,8 +13,8 @@ public File getDevEnvPath() {
 
 String releaseVersionInfoFileName = 'release_version_info.h'
 task createReleaseVersionFile {
+    inputs.files rootProject.setPublishVersion.outputs.files
     File versionFile = new File(projectDir, releaseVersionInfoFileName)
-    dependsOn rootProject.setPublishVersion
     outputs.file(versionFile)
     doLast {
         versionFile.withWriter { BufferedWriter writer ->
@@ -30,8 +30,8 @@ task createReleaseVersionFile {
 
 String projectVersionInfoFileName = 'project_version_info.h'
 task createProjectVersionFile {
+    inputs.files rootProject.setHgVersionInfo.outputs.files
     File versionFile = new File(projectDir, projectVersionInfoFileName)
-    dependsOn rootProject.setHgVersionInfo
     outputs.file(versionFile)
     doLast {
         versionFile.withWriter { BufferedWriter writer ->

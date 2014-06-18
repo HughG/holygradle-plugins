@@ -11,28 +11,31 @@
  * https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home.
  */
 task setHgVersionInfo {
-    new ByteArrayOutputStream().withStream { OutputStream os ->
-        String hgInfoString = "unknown"
-        exec {
-            executable = "hg"
-            args = ["paths", "default"]
-            standardOutput = os
-        }
-        (new PrintStream(os)).withStream { it.print(" ") }
-        exec {
-            executable = "hg"
-            args = ["id", "-ibt"]
-            standardOutput = os
-        }
+    project.ext.hgVersionInfoFile = new File(project.buildDir, 'hgVersionInfo.txt')
 
-        // Store both command outputs in one string with no line breaks.
-        project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
+    doLast {
+        new ByteArrayOutputStream().withStream { OutputStream os ->
+            String hgInfoString = "unknown"
+            exec {
+                executable = "hg"
+                args = ["paths", "default"]
+                standardOutput = os
+            }
+            (new PrintStream(os)).withStream { it.print(" ") }
+            exec {
+                executable = "hg"
+                args = ["id", "-ibt"]
+                standardOutput = os
+            }
 
-        // Write the version to a file, so that the file can be seen as changed (or not) by other tasks, to force them
-        // to re-run.
-        project.ext.hgVersionInfoFile = new File(project.buildDir, 'hgVersionInfo.txt')
-        project.buildDir.mkdirs()
-        project.hgVersionInfoFile.text = project.hgVersionInfo
+            // Store both command outputs in one string with no line breaks.
+            project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
+
+            // Write the version to a file, so that the file can be seen as changed (or not) by
+            // other tasks, to force them to re-run.
+            project.buildDir.mkdirs()
+            project.hgVersionInfoFile.text = project.hgVersionInfo
+        }
     }
 
     // Force setHgVersionInfo to always execute.  For tasks which depend on this, Gradle will
@@ -48,8 +51,10 @@ subprojects {
         // We don't need an "afterEvaluate" here because "jar" is a standard task for "groovy" projects.
         project.jar {
             dependsOn setHgVersionInfo
-            manifest {
-                attributes(["Implementation-Version": rootProject.hgVersionInfo])
+            doFirst {
+                manifest {
+                    attributes(["Implementation-Version": rootProject.hgVersionInfo])
+                }
             }
         }
     }

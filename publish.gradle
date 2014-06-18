@@ -40,11 +40,13 @@ project.allprojects { Project p ->
 // version number changes.  (We don't need to do anything explicit for Groovy plugin projects
 // because their output is a JAR, which has the version number in its filename.)
 task setPublishVersion {
-    // Write the version to a file, so that the file can be seen as changed (or not) by other
-    // tasks, to force them to re-run.
     project.ext.publishVersionFile = new File(project.buildDir, 'publishVersion.txt')
-    project.publishVersionFile.text = publishVersion
 
+    doLast {
+        // Write the version to a file, so that the file can be seen as changed (or not) by other
+        // tasks, to force them to re-run.
+        project.publishVersionFile.text = publishVersion
+    }
     // Force setPublishVersion to always execute.  For tasks which depend on this, Gradle will
     // check the contents of the publishVersionFile to see if they have really changed, and only
     // run those tasks if so.
