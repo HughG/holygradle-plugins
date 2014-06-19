@@ -16,6 +16,7 @@ import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.source_dependencies.SourceDependencyTaskHandler
 import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
+import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.UnpackModuleVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
@@ -23,13 +24,15 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
+import org.gradle.api.artifacts.DependencyResolutionListener
+import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.publish.PublishingExtension
 import holygradle.custom_gradle.util.Symlink
 import holygradle.unpacking.UnpackModule
 import holygradle.dependencies.CollectDependenciesTask
 
 public class IntrepidPlugin implements Plugin<Project> {
-    
+
     void apply(Project project) {
         /**************************************
          * Apply other plugins
@@ -68,7 +71,6 @@ public class IntrepidPlugin implements Plugin<Project> {
         // The first properties are common to all projects, but the unpackModules collection is per-project.
         project.rootProject.ext.svnConfigPath = System.getenv("APPDATA") + "/Subversion"
         project.rootProject.ext.unpackedDependenciesCache = new File(project.gradle.gradleUserHomeDir, "unpackCache")
-        project.ext.unpackModules = null
         
         /**************************************
          * Tasks
@@ -152,7 +154,9 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         // Define the 'packedDependency' DSL for the build script.
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
-        
+
+        PackedDependenciesStateHandler packedDependenciesState = PackedDependenciesStateHandler.createExtension(project)
+
         // DSL extension to specify source dependencies
         Collection<SourceDependencyHandler> sourceDependencies = SourceDependencyHandler.createContainer(project)
         
@@ -191,7 +195,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                 }
             }
         }
-        
+
         /**************************************
          * Source dependencies
          **************************************/        
@@ -301,7 +305,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         project.gradle.projectsEvaluated {
 
             // For each artifact that is listed as a dependency, determine if we need to unpack it.
-            Iterable<UnpackModule> unpackModules = UnpackModule.getAllUnpackModules(project)
+            Iterable<UnpackModule> unpackModules = packedDependenciesState.getAllUnpackModules()
             
             Collection<String> pathsForPackedDependencies = new ArrayList<String>()
             

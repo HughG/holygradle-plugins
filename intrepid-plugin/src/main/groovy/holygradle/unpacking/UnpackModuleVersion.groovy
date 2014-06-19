@@ -290,5 +290,13 @@ class UnpackModuleVersion {
             "Unpacks dependency '${targetName}' to ${getTargetPathInWorkspace(null)}."
         }
     }
+
+
+    @Override
+    public java.lang.String toString() {
+        return "UnpackModuleVersion{" +
+            moduleVersion +
+            '}';
+    }
 }
 
