@@ -4,6 +4,8 @@ import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
+import holygradle.custom_gradle.util.Symlink
+import holygradle.dependencies.CollectDependenciesTask
 import holygradle.dependencies.DependencySettingsExtension
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.packaging.PackageArtifactHandler
@@ -17,6 +19,7 @@ import holygradle.source_dependencies.SourceDependencyTaskHandler
 import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.unpacking.PackedDependenciesStateHandler
+import holygradle.unpacking.UnpackModule
 import holygradle.unpacking.UnpackModuleVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
@@ -24,12 +27,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
-import org.gradle.api.artifacts.DependencyResolutionListener
-import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.publish.PublishingExtension
-import holygradle.custom_gradle.util.Symlink
-import holygradle.unpacking.UnpackModule
-import holygradle.dependencies.CollectDependenciesTask
 
 public class IntrepidPlugin implements Plugin<Project> {
 
@@ -155,6 +153,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define the 'packedDependency' DSL for the build script.
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
 
+        // Define the 'packedDependenciesState' DSL for the build script.
         PackedDependenciesStateHandler packedDependenciesState = PackedDependenciesStateHandler.createExtension(project)
 
         // DSL extension to specify source dependencies

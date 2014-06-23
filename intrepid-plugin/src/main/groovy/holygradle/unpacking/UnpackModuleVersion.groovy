@@ -10,10 +10,13 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {
-    public ModuleVersionIdentifier moduleVersion = null
-    public boolean includeVersionNumberInPath = false
-    public Map<ResolvedArtifact, Collection<String>> artifacts = [:] // a map from artifacts to sets of configurations that include the artifacts
-    private Map<String, String> dependencyRelativePaths = [:]
+    public final ModuleVersionIdentifier moduleVersion = null
+    public final boolean includeVersionNumberInPath = false
+    // A map from artifacts to sets of configurations that include the artifacts.
+    public final Map<ResolvedArtifact, Set<String>> artifacts = [:].withDefault { new HashSet<String>() }
+    // The set of configurations for this module which are used by the containing project.
+    public final Set<String> configurations = new HashSet<String>()
+    private final Map<String, String> dependencyRelativePaths = [:]
     private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
     
@@ -54,14 +57,9 @@ class UnpackModuleVersion {
     
     public void addArtifacts(Iterable<ResolvedArtifact> arts, String conf) {
         for (art in arts) {
-            if (artifacts.containsKey(art)) {
-                if (!artifacts[art].contains(conf)) {
-                    artifacts[art].add(conf)
-                }
-            } else {
-                artifacts[art] = [conf]
-            }
+            artifacts[art].add(conf)
         }
+        configurations.add(conf)
     }
     
     public String getFullCoordinate() {
@@ -293,7 +291,7 @@ class UnpackModuleVersion {
 
 
     @Override
-    public java.lang.String toString() {
+    public String toString() {
         return "UnpackModuleVersion{" +
             moduleVersion +
             '}';
