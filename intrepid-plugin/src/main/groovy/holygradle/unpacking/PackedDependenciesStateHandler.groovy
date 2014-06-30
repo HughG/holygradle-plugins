@@ -17,6 +17,35 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
  * This project extension provides information about the state of packed dependencies when they are resolved.
  */
 class PackedDependenciesStateHandler {
+    /**
+     * A class encapsulating choices about visiting nodes in a graph of {@link ResolvedDependency} instances.
+     *
+     * Instances of this class are used, rather than separate boolean flags, so that some of the calculation for the
+     * decisions for both node and children can be made together, on the basis of the same state.
+     */
+    private static class VisitChoice {
+        /**
+         * A flag indicating whether to call a {@code dependencyAction} on a {@link ResolvedDependency} itself..
+         */
+        public final boolean visitDependency
+        /**
+         * A value indicating whether to call a {@code dependencyAction} on the children of a {@link ResolvedDependency}.
+         */
+        public final boolean visitChildren
+
+        /**
+         * Creates an instance of {@link VisitChoice}.
+         * @param visitDependency A flag indicating whether to call a {@code dependencyAction} on a
+         * {@link ResolvedDependency} itself.
+         * @param visitChildren A value indicating whether to call a {@code dependencyAction} on the children of a
+         * {@link ResolvedDependency}.
+         */
+        VisitChoice(boolean visitDependency, boolean visitChildren) {
+            this.visitDependency = visitDependency
+            this.visitChildren = visitChildren
+        }
+    }
+
     // Map of "original configuration name" -> "original module ID" -> ivy file location
     private Map<String, Map<ModuleVersionIdentifier, File>> ivyFileMaps = new HashMap()
 
@@ -54,8 +83,7 @@ class PackedDependenciesStateHandler {
         Set<ResolvedDependency> dependencies,
         Stack<ResolvedDependency> dependencyStack,
         Closure dependencyAction,
-        Closure visitDependencyPredicate,
-        Closure visitChildrenPredicate
+        Closure getVisitChoice
     ) {
         // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
         // kept making mistakes with them, so clearly it was a bad idea.
@@ -64,17 +92,18 @@ class PackedDependenciesStateHandler {
                 dependencyStack.push(resolvedDependency)
                 println("tRD: ${dependencyStack.join(' <- ')}")
 
-                if (visitDependencyPredicate(resolvedDependency)) {
+                VisitChoice visitChoice = getVisitChoice(resolvedDependency)
+
+                if (visitChoice.visitDependency) {
                     dependencyAction(resolvedDependency)
                 }
 
-                if (visitChildrenPredicate(resolvedDependency)) {
+                if (visitChoice.visitChildren) {
                     traverseResolvedDependencies(
                         resolvedDependency.children,
                         dependencyStack,
                         dependencyAction,
-                        visitDependencyPredicate,
-                        visitChildrenPredicate
+                        getVisitChoice
                     )
                 }
             } finally {
@@ -98,8 +127,7 @@ class PackedDependenciesStateHandler {
     private static void traverseResolvedDependencies(
         Set<ResolvedDependency> dependencies,
         Closure dependencyAction,
-        Closure visitDependencyPredicate,
-        Closure visitChildrenPredicate
+        Closure getVisitChoice
     ) {
         // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
         // kept making mistakes with them, so clearly it was a bad idea.
@@ -107,14 +135,12 @@ class PackedDependenciesStateHandler {
             dependencies,
             new Stack<ResolvedDependency>(),
             dependencyAction,
-            visitDependencyPredicate,
-            visitChildrenPredicate
+            getVisitChoice
         )
     }
 
     private boolean isModuleInBuild(ModuleVersionIdentifier id) {
         return project.rootProject.allprojects.find {
-            //project.logger.debug "$it <=> $id"
             (it.group == id.group) &&
                 (it.name == id.name) &&
                 (it.version == id.version)
@@ -148,18 +174,22 @@ class PackedDependenciesStateHandler {
                     art.extension = "xml"
                 }
                 result[id] = dep
+                project.logger.info "getDependenciesForIvyFiles: Added ${dep} for ${id}"
             },
             { ResolvedDependency resolvedDependency ->
                 ModuleVersionIdentifier id = resolvedDependency.module.id
-                // Visit this dependency only if we've haven't seen it already, and it's not a module we're building from
-                // source (because we don't need an ivy file for that -- we have relative path info in the source dep).
-                !result.containsKey(id) && !isModuleInBuild(id)
-            },
-            { ResolvedDependency resolvedDependency ->
-                ModuleVersionIdentifier id = resolvedDependency.module.id
-                // Visit this dependency;s children only if we've haven't seen it already.  We still want to search into
-                // modules which are part of the source for this build, so we don't call isModuleInBuild.
-                !result.containsKey(id)
+                final boolean alreadySeen = result.containsKey(id)
+                project.logger.info "getDependenciesForIvyFiles: Considering dep ${id}: alreadySeen == ${alreadySeen}"
+                final boolean moduleIsInBuild = isModuleInBuild(id)
+                project.logger.info "getDependenciesForIvyFiles: Considering dep ${id}: isModuleInBuild(id) == ${moduleIsInBuild}"
+                return new VisitChoice(
+                    // Visit this dependency only if we've haven't seen it already, and it's not a module we're building from
+                    // source (because we don't need an ivy file for that -- we have relative path info in the source dep).
+                    !alreadySeen && !moduleIsInBuild,
+                    // Visit this dependency;s children only if we've haven't seen it already.  We still want to search into
+                    // modules which are part of the source for this build, so we don't call isModuleInBuild.
+                    !alreadySeen
+                )
             }
         )
 
@@ -173,7 +203,7 @@ class PackedDependenciesStateHandler {
      * @param dependencies A set of resolved dependencies on {@code ivy.xml} files.
      * @return The map from IDs to files.
      */
-    private static Map<ModuleVersionIdentifier, File> getResolvedIvyFiles(
+    private Map<ModuleVersionIdentifier, File> getResolvedIvyFiles(
         Set<ResolvedDependency> dependencies
     ) {
         Map<ModuleVersionIdentifier, File> ivyFiles = new HashMap<ModuleVersionIdentifier, File>()
@@ -184,14 +214,19 @@ class PackedDependenciesStateHandler {
                 final ResolvedArtifact art = resolvedDependency.moduleArtifacts.find { a -> a.name == "ivy" }
                 final File file = art?.file
                 ivyFiles[id] = file
+                project.logger.info "getResolvedIvyFiles: Added ${file} for ${id}"
             },
             { ResolvedDependency resolvedDependency ->
-                // Skip this dependency if we've seen it already.
-                !ivyFiles.containsKey(resolvedDependency.module.id)
-            },
-            { ResolvedDependency resolvedDependency ->
-                // Skip this dependency's children if we've seen it already.
-                !ivyFiles.containsKey(resolvedDependency.module.id)
+                ModuleVersionIdentifier id = resolvedDependency.module.id
+                final boolean alreadySeen = ivyFiles.containsKey(id)
+                project.logger.info "getResolvedIvyFiles: Considering dep ${id}: alreadySeen == ${alreadySeen}"
+                project.logger.info "getResolvedIvyFiles: Considering children of dep ${id}: alreadySeen == ${alreadySeen}"
+                return new VisitChoice(
+                    // Visit this dependency only if we haven't seen it already.
+                    !alreadySeen,
+                    // Visit this dependency's children only if we haven't seen it already.
+                    !alreadySeen
+                )
             }
         )
         return ivyFiles
@@ -206,6 +241,8 @@ class PackedDependenciesStateHandler {
     // We can't just ask Gradle for the locations, because it doesn't expose them.  See the forum post at
     // http://forums.gradle.org/gradle/topics/how_to_get_hold_of_ivy_xml_file_of_dependency
     private Map<ModuleVersionIdentifier, File> getIvyFilesForConfiguration(Configuration conf) {
+        project.logger.info "getIvyFilesForConfiguration(${conf})"
+
         Map<ModuleVersionIdentifier, File> ivyFiles = ivyFileMaps[conf.name]
         if (ivyFiles == null) {
             Collection<Dependency> ivyDeps = getDependenciesForIvyFiles(
@@ -302,44 +339,49 @@ class PackedDependenciesStateHandler {
                 unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), conf.name)
             },
             { ResolvedDependency resolvedDependency ->
+                // Visit this dependency only if: we've haven't seen it already for the configuration we're
+                // processing, it's not a module we're building from source (because we don't want to include those
+                // as UnpackModules), and we can find its ivy.xml file (because we need that for relativePath to
+                // other modules).
+                //
+                // Visit this dependency's children only if: we've haven't seen it already for the configuration
+                // we're processing, and we can find its ivy.xml file (because we need that for relativePath to
+                // other modules).
+
                 ModuleVersionIdentifier id = resolvedDependency.module.id
-                // Visit this dependency only if: we've haven't seen it already for the configuration we're processing,
-                // it's not a module we're building from source (because we don't want to include those as
-                // UnpackModules), and we can find its ivy.xml file (because we need that for relativePath to other
-                // modules).
-                if (unpackModules[id.module]?.getVersion(id)?.configurations?.contains(conf)) {
+                final boolean isNewModule = !(unpackModules[id.module]?.getVersion(id)?.configurations?.contains(conf))
+                if (!isNewModule) {
                     project.logger.info("collectUnpackModules: Skipping ${id} because it has already been visited")
-                    return false
                 }
 
-                if (isModuleInBuild(id)) {
+                final boolean moduleIsInBuild = isModuleInBuild(id)
+                if (moduleIsInBuild) {
                     project.logger.info("collectUnpackModules: Skipping ${id} because it is part of this build")
-                    return false
                 }
+
+                final boolean isNewNonBuildModule = isNewModule && !moduleIsInBuild
 
                 // Is there an ivy file corresponding to this dependency?
                 File ivyFile = getIvyFile(conf, resolvedDependency)
-                if (ivyFile == null) {
+                final boolean ivyFileExists = ivyFile?.exists()
+                // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
+                // we can throw an exception later (after we've checked all dependencies).
+                if (isNewNonBuildModule && !ivyFileExists) {
+                    if (ivyFile == null) {
+                        project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
+                    } else {
+                        project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
+                    }
                     modulesWithoutIvyFiles.add(id)
-                    project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
-                    // Continue anyway, so that other errors can be logged.
-                    return false
-                } else if (!ivyFile.exists()) {
-                    modulesWithoutIvyFiles.add(id)
-                    project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
-                    // Continue anyway, so that other errors can be logged.
-                    return false
                 }
 
-                project.logger.info "collectUnpackModules/vDP: Ivy file under ${conf} for ${id} is ${ivyFile}"
-                return true
-            },
-            { ResolvedDependency resolvedDependency ->
-                ModuleVersionIdentifier id = resolvedDependency.module.id
-                // Visit this dependency's children only if: we've haven't seen it already for the configuration we're
-                // processing, and we can find its ivy.xml file (because we need that for relativePath to other modules).
-                return !(unpackModules[id.module]?.getVersion(id)?.configurations?.contains(conf)) &&
-                    getIvyFile(conf, resolvedDependency)?.exists()
+                if (ivyFileExists) {
+                    project.logger.info "collectUnpackModules: Ivy file under ${conf} for ${id} is ${ivyFile}"
+                }
+                return new VisitChoice(
+                    isNewNonBuildModule && ivyFileExists,
+                    isNewModule && ivyFileExists
+                )
             }
         )
     }

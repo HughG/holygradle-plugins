@@ -14,7 +14,6 @@ credential-store/release_version_info.h
 *.bak
 */src/test/**/*.test.txt
 **/packages/
-intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/projectB/settings.gradle
 custom-gradle-core-plugin/src/main/resources/holygradle/gw.bat
 distributionUrlBase.txt
 credential-store.exe
@@ -40,8 +39,10 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/packages/
+^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/projectB/settings.gradle
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
+^intrepid-plugin/src/test/groovy/holygradle/unpacking/PackedDependenciesStateHandlerIntegrationTest/useModuleViaEmptyConfig/extlib/
 ^utils/versionListChecker/gradle
 ^utils/versionListChecker/gw.bat
 (^|/)ipch/

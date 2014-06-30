@@ -19,7 +19,12 @@ dependencies {
     }
 }
 
+/*
+    Make sure we can compile and publish all plugins locally, before we even try to compile the
+    integration test source.  If we can't, we won't be able to run the integration tests anyway, so
+    it would be a waste of time.
+*/
 pluginProjectNames.each { pluginProjectName ->
     def pluginProject = rootProject.findProject(pluginProjectName)
-    project.tasks["integTest"].dependsOn pluginProject.tasks["publishPluginsLocally"]
+    project.tasks["compileTestGroovy"].dependsOn pluginProject.tasks["publishPluginsLocally"]
 }

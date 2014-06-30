@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="holygradle.test" module="empty-config-lib" revision="1.0" status="release" publication="20140630105737"/>
+  <configurations>
+    <conf name="compileVc10Debug" visibility="public"/>
+    <conf name="compileVc10Release" visibility="public"/>
+    <conf name="everything" visibility="public" extends="compileVc10Debug,compileVc10Release,source,libs"/>
+    <conf name="source" visibility="public"/>
+    <conf name="libs" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="example-framework-compileVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>
+    <artifact name="example-framework-compileVc10Release" type="zip" ext="zip" conf="compileVc10Release"/>
+    <artifact name="example-framework-buildScript" type="zip" ext="zip" conf="everything"/>
+    <artifact name="example-framework-source" type="zip" ext="zip" conf="source"/>
+  </publications>
+  <dependencies>
+    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="libs-&gt;compile" relativePath="../extlib"/>
+  </dependencies>
+</ivy-module>
