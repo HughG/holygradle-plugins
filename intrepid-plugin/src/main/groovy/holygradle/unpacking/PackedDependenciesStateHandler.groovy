@@ -48,23 +48,68 @@ class PackedDependenciesStateHandler {
      * @param visitDependencyPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
      * call the dependencyAction for the dependency.
      * @param visitChildrenPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * visit its children.  The children will also not be visited if the visitDependencyPredicate returned null.
+     * visit its children.  The children may be visited even if the visitDependencyPredicate returned false.
+     */
+    private static void traverseResolvedDependencies(
+        Set<ResolvedDependency> dependencies,
+        Stack<ResolvedDependency> dependencyStack,
+        Closure dependencyAction,
+        Closure visitDependencyPredicate,
+        Closure visitChildrenPredicate
+    ) {
+        // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
+        // kept making mistakes with them, so clearly it was a bad idea.
+        dependencies.each { resolvedDependency ->
+            try {
+                dependencyStack.push(resolvedDependency)
+                println("tRD: ${dependencyStack.join(' <- ')}")
+
+                if (visitDependencyPredicate(resolvedDependency)) {
+                    dependencyAction(resolvedDependency)
+                }
+
+                if (visitChildrenPredicate(resolvedDependency)) {
+                    traverseResolvedDependencies(
+                        resolvedDependency.children,
+                        dependencyStack,
+                        dependencyAction,
+                        visitDependencyPredicate,
+                        visitChildrenPredicate
+                    )
+                }
+            } finally {
+                dependencyStack.pop()
+            }
+        }
+    }
+
+    /**
+     * Calls a closure for all {@link ResolvedDependency} instances in the transitive graph, selecting whether or not
+     * to visit the children of eah using a predicate.  The same dependency may be visited more than once, if it appears
+     * in the graph more than once.
+     *
+     * @param dependencies The initial set of dependencies.
+     * @param dependencyAction The closure to call for each {@link ResolvedDependency}.
+     * @param visitDependencyPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
+     * call the dependencyAction for the dependency.
+     * @param visitChildrenPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
+     * visit its children.  The children may be visited even if the visitDependencyPredicate returned false.
      */
     private static void traverseResolvedDependencies(
         Set<ResolvedDependency> dependencies,
         Closure dependencyAction,
-        Closure visitDependencyPredicate = null,
-        Closure visitChildrenPredicate = null
+        Closure visitDependencyPredicate,
+        Closure visitChildrenPredicate
     ) {
-        dependencies.each { resolvedDependency ->
-            if ((visitDependencyPredicate != null) && visitDependencyPredicate(resolvedDependency)) {
-                dependencyAction(resolvedDependency)
-
-                if ((visitChildrenPredicate != null) && visitChildrenPredicate(resolvedDependency)) {
-                    traverseResolvedDependencies(resolvedDependency.children, dependencyAction, visitChildrenPredicate)
-                }
-            }
-        }
+        // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
+        // kept making mistakes with them, so clearly it was a bad idea.
+        traverseResolvedDependencies(
+            dependencies,
+            new Stack<ResolvedDependency>(),
+            dependencyAction,
+            visitDependencyPredicate,
+            visitChildrenPredicate
+        )
     }
 
     private boolean isModuleInBuild(ModuleVersionIdentifier id) {
@@ -109,6 +154,12 @@ class PackedDependenciesStateHandler {
                 // Visit this dependency only if we've haven't seen it already, and it's not a module we're building from
                 // source (because we don't need an ivy file for that -- we have relative path info in the source dep).
                 !result.containsKey(id) && !isModuleInBuild(id)
+            },
+            { ResolvedDependency resolvedDependency ->
+                ModuleVersionIdentifier id = resolvedDependency.module.id
+                // Visit this dependency;s children only if we've haven't seen it already.  We still want to search into
+                // modules which are part of the source for this build, so we don't call isModuleInBuild.
+                !result.containsKey(id)
             }
         )
 
@@ -137,6 +188,10 @@ class PackedDependenciesStateHandler {
             { ResolvedDependency resolvedDependency ->
                 // Skip this dependency if we've seen it already.
                 !ivyFiles.containsKey(resolvedDependency.module.id)
+            },
+            { ResolvedDependency resolvedDependency ->
+                // Skip this dependency's children if we've seen it already.
+                !ivyFiles.containsKey(resolvedDependency.module.id)
             }
         )
         return ivyFiles
@@ -160,6 +215,7 @@ class PackedDependenciesStateHandler {
             Configuration ivyConf = project.configurations.detachedConfiguration(* ivyDeps)
             ivyFiles = getResolvedIvyFiles(ivyConf.resolvedConfiguration.firstLevelModuleDependencies)
             ivyFileMaps[conf.name] = ivyFiles
+            project.logger.info("Resolved ivy files for ${conf}: ${ivyFiles.entrySet().join('\r\n')}")
         }
         return ivyFiles
     }
@@ -182,6 +238,8 @@ class PackedDependenciesStateHandler {
         Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles,
         Set<ResolvedDependency> dependencies
     ) {
+        project.logger.info("collectUnpackModules for ${conf}, starting with ${unpackModules.keySet().sort().join('\r\n')}")
+
         traverseResolvedDependencies(
             dependencies,
             { ResolvedDependency resolvedDependency ->
@@ -190,12 +248,14 @@ class PackedDependenciesStateHandler {
                 // be unpacking it.  Ideally we should look for a custom XML tag that indicates that it was published
                 // by the intrepid plugin. However, that would break compatibility with lots of artifacts that have
                 // already been published.
+                project.logger.info("collectUnpackModules: processing ${id}")
 
                 // Find or create an UnpackModule instance.
                 UnpackModule unpackModule = unpackModules[id.module]
                 if (unpackModule == null) {
                     unpackModule = new UnpackModule(id.group, id.name)
                     unpackModules[id.module] = unpackModule
+                    project.logger.info("collectUnpackModules: created module for ${id.module}")
                 }
 
                 // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on
@@ -228,10 +288,17 @@ class PackedDependenciesStateHandler {
                     }
 
                     File ivyFile = getIvyFile(conf, resolvedDependency)
+                    project.logger.info "collectUnpackModules/dA: Ivy file under ${conf} for ${id} is ${ivyFile}"
                     unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
+                    project.logger.info(
+                        "collectUnpackModules: created version for ${id} " +
+                        "(pUMV = ${parentUnpackModuleVersion}, tPD = ${thisPackedDep})"
+                    )
+
                 }
 
+                project.logger.info("collectUnpackModules: adding ${id.module} conf ${conf.name} artifacts ${resolvedDependency.moduleArtifacts}")
                 unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), conf.name)
             },
             { ResolvedDependency resolvedDependency ->
@@ -240,14 +307,13 @@ class PackedDependenciesStateHandler {
                 // it's not a module we're building from source (because we don't want to include those as
                 // UnpackModules), and we can find its ivy.xml file (because we need that for relativePath to other
                 // modules).
-
                 if (unpackModules[id.module]?.getVersion(id)?.configurations?.contains(conf)) {
-                    project.logger.debug("Skipping ${id} because it has already been visited")
+                    project.logger.info("collectUnpackModules: Skipping ${id} because it has already been visited")
                     return false
                 }
 
                 if (isModuleInBuild(id)) {
-                    project.logger.debug("Skipping ${id} because it is part of this build")
+                    project.logger.info("collectUnpackModules: Skipping ${id} because it is part of this build")
                     return false
                 }
 
@@ -255,17 +321,25 @@ class PackedDependenciesStateHandler {
                 File ivyFile = getIvyFile(conf, resolvedDependency)
                 if (ivyFile == null) {
                     modulesWithoutIvyFiles.add(id)
-                    project.logger.error("Failed to find location of ivy.xml file for ${id}")
+                    project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
                     // Continue anyway, so that other errors can be logged.
                     return false
                 } else if (!ivyFile.exists()) {
                     modulesWithoutIvyFiles.add(id)
-                    project.logger.error("ivy.xml file for ${id} not found at ${ivyFile}")
+                    project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
                     // Continue anyway, so that other errors can be logged.
                     return false
                 }
 
+                project.logger.info "collectUnpackModules/vDP: Ivy file under ${conf} for ${id} is ${ivyFile}"
                 return true
+            },
+            { ResolvedDependency resolvedDependency ->
+                ModuleVersionIdentifier id = resolvedDependency.module.id
+                // Visit this dependency's children only if: we've haven't seen it already for the configuration we're
+                // processing, and we can find its ivy.xml file (because we need that for relativePath to other modules).
+                return !(unpackModules[id.module]?.getVersion(id)?.configurations?.contains(conf)) &&
+                    getIvyFile(conf, resolvedDependency)?.exists()
             }
         )
     }
@@ -277,6 +351,8 @@ class PackedDependenciesStateHandler {
      */
     public getAllUnpackModules() {
         if (unpackModulesMap == null) {
+            project.logger.info("getAllUnpackModules for ${project}")
+
             final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
             // Build a list (without duplicates) of all artifacts the project depends on.
             unpackModulesMap = [:]
