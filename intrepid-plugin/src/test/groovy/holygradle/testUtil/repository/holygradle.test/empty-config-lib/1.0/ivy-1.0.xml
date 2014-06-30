@@ -7,6 +7,7 @@
     <conf name="everything" visibility="public" extends="compileVc10Debug,compileVc10Release,source,libs"/>
     <conf name="source" visibility="public"/>
     <conf name="libs" visibility="public"/>
+    <conf name="more_libs" visibility="public"/>
   </configurations>
   <publications>
     <artifact name="example-framework-compileVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>
@@ -16,5 +17,6 @@
   </publications>
   <dependencies>
     <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="libs-&gt;compile" relativePath="../extlib"/>
+    <dependency org="holygradle.test" name="another-lib" rev="1.0" conf="more_libs-&gt;compile" relativePath="../anotherlib"/>
   </dependencies>
 </ivy-module>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="holygradle.test" module="another-lib" revision="1.0" status="release" publication="20140630160642"/>
+  <configurations>
+    <conf name="compile" visibility="public"/>
+    <conf name="everything" visibility="public" extends="compile"/>
+  </configurations>
+  <publications>
+    <artifact name="external-lib-Debug" type="zip" ext="zip" conf="compile"/>
+    <artifact name="external-lib-Release" type="zip" ext="zip" conf="compile"/>
+    <artifact name="external-lib-buildScript" type="zip" ext="zip" conf="everything"/>
+  </publications>
+</ivy-module>
