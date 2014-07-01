@@ -37,12 +37,16 @@ class UnpackModuleVersion {
         // Read the relative paths for any of the dependencies.  (No point trying to use static types here as we're
         // using GPath, so the returned objects have magic properties.)
         def ivyXml = new XmlSlurper(false, false).parseText(ivyFile.text)
-        ivyXml.dependencies.dependency.each { dependencyNode ->
-            def relativePath = dependencyNode.@relativePath
+        ivyXml.dependencies.dependency.each { dep ->
+            def relativePath = dep.@relativePath?.toString()
             if (relativePath != null) {
-                dependencyRelativePaths[
-                    "${dependencyNode.@org}:${dependencyNode.@name}:${dependencyNode.@rev}"
-                ] = relativePath.toString()
+                final String moduleVersionId = "${dep.@org}:${dep.@name}:${dep.@rev}"
+                // We've ocasionally seen hand-crafted ivy.xml files which have a trailing slash on the relativePath,
+                // which leads to us creating symlinks one level down from where we want them; so, strip it if present.
+                if (relativePath.endsWith('/')) {
+                    relativePath = relativePath[0..-2]
+                }
+                dependencyRelativePaths[moduleVersionId] = relativePath
             }
         }
     }
