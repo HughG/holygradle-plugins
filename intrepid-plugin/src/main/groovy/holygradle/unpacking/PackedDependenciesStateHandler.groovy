@@ -308,7 +308,9 @@ class PackedDependenciesStateHandler {
         Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles,
         Set<ResolvedDependency> dependencies
     ) {
-        project.logger.debug("collectUnpackModules for ${originalConf}, starting with ${unpackModules.keySet().sort().join('\r\n')}")
+        project.logger.debug("collectUnpackModules for ${originalConf}")
+        project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
+        project.logger.debug("    and packedDependencies ${packedDependencies*.name.sort().join('\r\n')}")
 
         Set<ResolvedDependencyId> dependencyConfigurationsAlreadySeen = new HashSet<ResolvedDependencyId>()
 
@@ -336,14 +338,12 @@ class PackedDependenciesStateHandler {
                 //
                 // TODO: There could be more than one parent. Deal with it gracefully.  We might need to drop the "have
                 // seen it before" filter from the visitDependencyPredicate.
-                UnpackModuleVersion parentUnpackModuleVersion = null
-                resolvedDependency.getParents().each { parentDependency ->
-                    ModuleVersionIdentifier parentDependencyVersion = parentDependency.getModule().getId()
-                    UnpackModule parentUnpackModule = unpackModules[parentDependencyVersion.module]
-                    if (parentUnpackModule != null) {
-                        parentUnpackModuleVersion = parentUnpackModule.getVersion(parentDependencyVersion)
+                UnpackModuleVersion parentUnpackModuleVersion =
+                    resolvedDependency.getParents().findResult { parentDependency ->
+                        ModuleVersionIdentifier parentDependencyVersion = parentDependency.module.id
+                        UnpackModule parentUnpackModule = unpackModules[parentDependencyVersion.module]
+                        parentUnpackModule?.getVersion(parentDependencyVersion)
                     }
-                }
 
                 // Find or create an UnpackModuleVersion instance.
                 UnpackModuleVersion unpackModuleVersion
@@ -351,12 +351,14 @@ class PackedDependenciesStateHandler {
                     unpackModuleVersion = unpackModule.versions[id.version]
                 } else {
 
-                    // If this resolved dependency is a transitive dependency, "thisPackedDep"
-                    // below will be null
+                    // If this resolved dependency is a transitive dependency, "thisPackedDep" will be null.
                     PackedDependencyHandler thisPackedDep = packedDependencies.find {
-                        (it.groupName == id.group) &&
-                            (it.dependencyName == id.name) &&
-                            (it.versionStr == id.version)
+                        // Note that we don't compare the version, because we might have resolved to another version if
+                        // multiple versions were requested in the dependency graph.  In that case, we still want to
+                        // regard this packed dependency as mapping to the given UnpackModuleVersion, i.e., to the
+                        // resolved dependency version.
+                        return (it.groupName == id.group) &&
+                            (it.dependencyName == id.name)
                     }
 
                     File ivyFile = getIvyFile(originalConf, resolvedDependency)
@@ -365,7 +367,7 @@ class PackedDependenciesStateHandler {
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
-                        "(pUMV = ${parentUnpackModuleVersion}, tPD = ${thisPackedDep})"
+                        "(pUMV = ${parentUnpackModuleVersion}, tPD = ${thisPackedDep?.name})"
                     )
 
                 }
@@ -475,11 +477,11 @@ class PackedDependenciesStateHandler {
 
             // Check if we need to force the version number to be included in the path in order to prevent
             // two different versions of a module to be unpacked to the same location.
-            Map<File, Collection<String>> targetLocations = [:].withDefault { new ArrayList<String>() }
+            Map<File, Collection<UnpackModuleVersion>> targetLocations = [:].withDefault { new ArrayList<UnpackModuleVersion>() }
             unpackModulesMap.values().each { UnpackModule module ->
                 module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
                     File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
-                    targetLocations[targetPath].add(versionInfo.getFullCoordinate())
+                    targetLocations[targetPath].add(versionInfo)
                 }
 
                 if (module.versions.size() > 1) {
@@ -508,15 +510,28 @@ class PackedDependenciesStateHandler {
             }
 
             // Check if any target locations are used by more than one module/version.
-            targetLocations.each { File target, Collection<String> coordinates ->
-                if (coordinates.size() > 1) {
-                    throw new RuntimeException(
-                        "Multiple different modules/versions are targetting the same location. " +
-                            "'${target}' is being targetted by: ${coordinates}. That's not going to work."
+            boolean foundTargetClash = targetLocations.inject(false) {
+                boolean found, File target, Collection<UnpackModuleVersion> versions
+             ->
+                final boolean thisTargetHasClashes = versions.size() > 1
+                if (thisTargetHasClashes) {
+                    project.logger.error(
+                        "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
                     )
+                    versions.each { UnpackModuleVersion version ->
+                        project.logger.error("    ${version.fullCoordinate} in configurations ${version.originalConfigurations}")
+                        while (version.parent != null) {
+                            version = version.parent
+                            project.logger.error("        which is from ${version.fullCoordinate}")
+                        }
+                        project.logger.error("        which is from packed dependency ${version.packedDependency.name}")
+                    }
                 }
+                return found || thisTargetHasClashes
             }
-
+            if (foundTargetClash) {
+                throw new RuntimeException("Multiple different dependencies/versions are targeting the same locations.")
+            }
 
             unpackModules = new ArrayList(unpackModulesMap.values())
         }

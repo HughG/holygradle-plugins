@@ -26,6 +26,11 @@ class UnpackModuleVersion {
         UnpackModuleVersion parentUnpackModuleVersion,
         PackedDependencyHandler packedDependency00
     ) {
+        // Therefore we must have a parent. Not having a parent is an error.
+        if (packedDependency00 == null && parentUnpackModuleVersion == null) {
+            throw new RuntimeException("Module '${moduleVersion}' has no parent module.")
+        }
+
         this.moduleVersion = moduleVersion
         this.parentUnpackModuleVersion = parentUnpackModuleVersion
         
@@ -157,14 +162,14 @@ class UnpackModuleVersion {
     // to the central cache. The task will depend on any symlink tasks for parent, grand-parent modules.
     // Null will be returned if this module is not unpacked to the cache.
     public Task getSymlinkTaskIfUnpackingToCache(Project project) {
-        Task symlinkTask = null
+        SymlinkTask symlinkTask = null
         if (shouldUnpackToCache()) {
             String taskName = CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
             
-            symlinkTask = project.tasks.findByName(taskName)
+            symlinkTask = project.tasks.findByName(taskName) as SymlinkTask
             if (symlinkTask == null) {
                 File linkDir = getTargetPathInWorkspace(project)
-                symlinkTask = project.task(taskName, type: SymlinkTask) {
+                symlinkTask = (SymlinkTask)project.task(taskName, type: SymlinkTask) {
                     group = "Dependencies"
                     description = "Build workspace-to-cache symlink for ${moduleVersion.getName()}:${moduleVersion.getVersion()}."
                 }
@@ -226,15 +231,7 @@ class UnpackModuleVersion {
             }
         } else {
             // If we don't return above then this must be a transitive dependency.
-            // Therefore we must have a parent. Not having a parent is an error.
-            if (parentUnpackModuleVersion == null) {
-                GString msg = "Error - module '${getFullCoordinate()}' has no parent module. "
-                if (parent != null) {
-                    msg += "(Project: ${project.name})"
-                }
-                throw new RuntimeException(msg)
-            }
-            
+
             String relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
             if (relativePathForDependency == "" ||
                 relativePathForDependency.endsWith("/") || 
