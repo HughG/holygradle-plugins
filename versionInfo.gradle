@@ -15,7 +15,6 @@ task setHgVersionInfo {
 
     doLast {
         new ByteArrayOutputStream().withStream { OutputStream os ->
-            String hgInfoString = "unknown"
             exec {
                 executable = "hg"
                 args = ["paths", "default"]
@@ -50,7 +49,7 @@ subprojects {
     if (project.plugins.hasPlugin("groovy")) {
         // We don't need an "afterEvaluate" here because "jar" is a standard task for "groovy" projects.
         project.jar {
-            dependsOn setHgVersionInfo
+            inputs.files rootProject.setHgVersionInfo.outputs.files
             doFirst {
                 manifest {
                     attributes(["Implementation-Version": rootProject.hgVersionInfo])

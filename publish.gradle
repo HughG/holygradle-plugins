@@ -1,3 +1,5 @@
+import org.gradle.process.ExecSpec
+
 def propertyOrNull(Object o, String propertyName) {
     o.hasProperty(propertyName) ? o.property(propertyName) : null
 }
@@ -57,6 +59,30 @@ task setPublishVersion {
 // Print a message, if we're actually publishing.
 project.gradle.taskGraph.whenReady {
     if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
+
+        project.tasks['setHgVersionInfo'].doLast {
+            // Fail early if any release publishing preconditions are not met.
+            if (!project.version.toString().endsWith('-SNAPSHOT')) {
+                final String hgNode = project.hgVersionInfo.split(' ')[1]
+                final boolean hasUncommittedChanges = hgNode.endsWith('+')
+                if (hasUncommittedChanges) {
+                    throw new RuntimeException("Cannot publish a non-SNAPSHOT version with uncommitted changes.")
+                }
+
+                final OutputStream stdout = new ByteArrayOutputStream()
+                project.exec { ExecSpec spec ->
+                    spec.executable = "hg"
+                    spec.args = ["phase", "."]
+                    spec.setStandardOutput stdout
+                }
+                final String output = stdout.toString().trim()
+                final String phase = output.split()[1]
+                if (phase != "public") {
+                    throw new RuntimeException("Cannot publish a non-SNAPSHOT version from non-public parent revision.")
+                }
+            }
+        }
+
         println()
         println "Publishing as version '${publishVersion}'..."
         println()
