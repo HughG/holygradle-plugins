@@ -16,6 +16,6 @@ repositories.ivy {
 packedDependencies {
     "empty-config-lib" {
         dependency "holygradle.test:empty-config-lib:1.0"
-        configuration "foo->libs,more_libs"
+        configuration "foo->libs,source,more_libs"
     }
 }

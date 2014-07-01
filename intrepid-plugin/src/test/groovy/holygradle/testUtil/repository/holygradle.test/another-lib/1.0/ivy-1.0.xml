@@ -6,8 +6,8 @@
     <conf name="everything" visibility="public" extends="compile"/>
   </configurations>
   <publications>
-    <artifact name="external-lib-Debug" type="zip" ext="zip" conf="compile"/>
-    <artifact name="external-lib-Release" type="zip" ext="zip" conf="compile"/>
-    <artifact name="external-lib-buildScript" type="zip" ext="zip" conf="everything"/>
+    <artifact name="another-lib-Debug" type="zip" ext="zip" conf="compile"/>
+    <artifact name="another-lib-Release" type="zip" ext="zip" conf="compile"/>
+    <artifact name="another-lib-buildScript" type="zip" ext="zip" conf="everything"/>
   </publications>
 </ivy-module>

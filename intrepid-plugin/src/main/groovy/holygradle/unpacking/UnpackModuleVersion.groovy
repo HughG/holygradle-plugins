@@ -14,8 +14,8 @@ class UnpackModuleVersion {
     public final boolean includeVersionNumberInPath = false
     // A map from artifacts to sets of configurations that include the artifacts.
     public final Map<ResolvedArtifact, Set<String>> artifacts = [:].withDefault { new HashSet<String>() }
-    // The set of configurations for this module which are used by the containing project.
-    public final Set<String> configurations = new HashSet<String>()
+    // The set of configurations in the containing project which lead to this module being included.
+    public final Set<String> originalConfigurations = new HashSet<String>()
     private final Map<String, String> dependencyRelativePaths = [:]
     private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
@@ -55,11 +55,11 @@ class UnpackModuleVersion {
         }
     }
     
-    public void addArtifacts(Iterable<ResolvedArtifact> arts, String conf) {
+    public void addArtifacts(Iterable<ResolvedArtifact> arts, String originalConf) {
         for (art in arts) {
-            artifacts[art].add(conf)
+            artifacts[art].add(originalConf)
         }
-        configurations.add(conf)
+        originalConfigurations.add(originalConf)
     }
     
     public String getFullCoordinate() {
