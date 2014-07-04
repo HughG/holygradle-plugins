@@ -1,6 +1,7 @@
 package holygradle.dependencies
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
+import holygradle.test.RegressionFileHelper
 import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
 
@@ -35,11 +36,19 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
     public void testUnpackingModulesToSameLocation() {
         invokeGradle(new File(getTestDir(), "unpacking_modules_to_same_location")) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(
-                "Multiple different modules/versions are targetting the same location.",
-                "unpacking_modules_to_same_location\\extlib' is being targetted by: [holygradle.test:example-framework:1.1, holygradle.test:external-lib:1.1].",
-                "That's not going to work."
-            )
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
+                """In root project 'unpacking_modules_to_same_location', location 'D:\\Projects\\Gradle\\holy-gradle-plugins\\intrepid-plugin\\src\\test\\groovy\\holygradle\\dependencies\\PackedDependenciesIntegrationTest\\unpacking_modules_to_same_location\\extlib' is targeted by multiple dependencies/versions:
+    holygradle.test:example-framework:1.1 in configurations [everything, bar]
+        which is from packed dependency sub/../extlib
+    holygradle.test:external-lib:1.1 in configurations [everything, foo, bar]
+        which is from holygradle.test:example-framework:1.1
+        which is from packed dependency sub/../extlib
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Multiple different dependencies/versions are targeting the same locations."""
+            ))
         }
     }
 }

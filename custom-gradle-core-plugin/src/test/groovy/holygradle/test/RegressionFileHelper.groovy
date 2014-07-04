@@ -1,5 +1,7 @@
 package holygradle.test
 
+import groovy.io.PlatformLineWriter
+
 import java.util.regex.Pattern
 
 import static org.junit.Assert.*
@@ -74,5 +76,17 @@ class RegressionFileHelper {
             fail("Regression output file ${testFile.path} does not exist.")
         }
         assertEquals(okFile.text, testFile.text)
+    }
+
+    public static String toStringWithPlatformLineBreaks(String lines) {
+        StringWriter s = new StringWriter()
+        AbstractHolyGradleTest.useCloseable(new PlatformLineWriter(s)) { Writer plw ->
+            plw.withPrintWriter { PrintWriter pw ->
+                lines.eachLine { String line ->
+                    pw.println(line)
+                }
+            }
+        }
+        return s.toString()
     }
 }
