@@ -246,6 +246,15 @@ class PackedDependenciesStateHandler {
                 final ModuleVersionIdentifier id = resolvedDependency.module.id
                 final ResolvedArtifact art = resolvedDependency.moduleArtifacts.find { a -> a.name == "ivy" }
                 final File file = art?.file
+                if (file == null) {
+                    // This should never happen.  It's a sanity-check against a previous bug where we visited the
+                    // children of first-level dependencies in the ivy-ile configuration and so, depending on traversal
+                    // order, we might first hit a dependency for a module-id which didn't have an ivy file artifact.
+                    // It could happen due to other bugs, so I'm leaving this check in.
+                    throw new RuntimeException(
+                        "getResolvedIvyFiles: Failed to find ivy file artifact for ${id} in ${resolvedDependency.moduleArtifacts}"
+                    )
+                }
                 ivyFiles[id] = file
                 project.logger.debug "getResolvedIvyFiles: Added ${file} for ${id}"
             },
@@ -257,8 +266,12 @@ class PackedDependenciesStateHandler {
                 return new VisitChoice(
                     // Visit this dependency only if we haven't seen it already.
                     !alreadySeen,
-                    // Visit this dependency's children only if we haven't seen it already.
-                    !alreadySeen
+                    // Never visit the children of dependencies, when looking for ivy.cml files.  We don't need to,
+                    // because all the dependencies for ivy files are added flat at the top level.  And we shouldn't,
+                    // because transitive dependencies won't be ones we added in getDependenciesForIvyFiles, which have
+                    // a single artifact for ivy files; they'll be a normal published dependency, which doesn't include
+                    // the ivy file.
+                    false
                 )
             }
         )
