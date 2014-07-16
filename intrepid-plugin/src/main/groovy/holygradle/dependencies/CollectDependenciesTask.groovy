@@ -55,11 +55,14 @@ class CollectDependenciesTask extends Copy {
      * @param artifactsWithoutMetadataFiles Output object, to which are added any artifacts for which the corresponding
      * metadata files could not be found.
      */
-    private void configureToCopyModulesFromConfiguration(
+    public void configureToCopyModulesFromConfiguration(
         Configuration conf,
         DependenciesStateHandler dependenciesState,
         Set<ResolvedArtifact> artifactsWithoutMetadataFiles
     ) {
+        // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
+        // Taking a local copy ends in a "no applicable method" error for some unknown reason.
+
         Map<ModuleVersionIdentifier, File> ivyFiles = configureToCopyIvyFiles(conf, dependenciesState)
         Map<ModuleVersionIdentifier, File> pomFiles = configureToCopyPomFiles(conf, dependenciesState)
         for (ResolvedArtifact artifact in getResolvedArtifacts(conf)) {
