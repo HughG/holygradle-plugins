@@ -92,6 +92,58 @@ class PackedDependenciesStateHandler {
         ResolvedDependenciesVisitor.traverseResolvedDependencies(
             dependencies,
             { ResolvedDependency resolvedDependency ->
+                // Visit this dependency only if: we've haven't seen it already for the configuration we're
+                // processing, it's not a module we're building from source (because we don't want to include those
+                // as UnpackModules), and we can find its ivy.xml file (because we need that for relativePath to
+                // other modules).
+                //
+                // Visit this dependency's children only if: we've haven't seen it already for the configuration
+                // we're processing, and we can find its ivy.xml file (because we need that for relativePath to
+                // other modules).
+
+                ModuleVersionIdentifier id = resolvedDependency.module.id
+
+                final ResolvedDependenciesVisitor.ResolvedDependencyId newId =
+                    new ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
+                project.logger.debug("Adding ${newId} to ${dependencyConfigurationsAlreadySeen}")
+                final boolean isNewModuleConfiguration = dependencyConfigurationsAlreadySeen.add(newId)
+                if (!isNewModuleConfiguration) {
+                    project.logger.debug(
+                        "collectUnpackModules: Skipping ${id}, conf ${resolvedDependency.configuration}, " +
+                        "because it has already been visited"
+                    )
+                }
+
+                final boolean moduleIsInBuild = dependenciesStateHandler.isModuleInBuild(id)
+                if (moduleIsInBuild) {
+                    project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
+                }
+
+                final boolean isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
+
+                // Is there an ivy file corresponding to this dependency?
+                File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
+                final boolean ivyFileExists = ivyFile?.exists()
+                // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
+                // we can throw an exception later (after we've checked all dependencies).
+                if (isNewNonBuildModuleConfiguration && !ivyFileExists) {
+                    if (ivyFile == null) {
+                        project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
+                    } else {
+                        project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
+                    }
+                    modulesWithoutIvyFiles.add(id)
+                }
+
+                if (ivyFileExists) {
+                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
+                }
+                return new ResolvedDependenciesVisitor.VisitChoice(
+                    isNewNonBuildModuleConfiguration && ivyFileExists,
+                    isNewModuleConfiguration && ivyFileExists
+                )
+            },
+            { ResolvedDependency resolvedDependency ->
                 ModuleVersionIdentifier id = resolvedDependency.module.id
                 // If we get here then we found an ivy file for the dependency, and we will just assume that we should
                 // be unpacking it.  Ideally we should look for a custom XML tag that indicates that it was published
@@ -150,58 +202,6 @@ class PackedDependenciesStateHandler {
 
                 project.logger.debug("collectUnpackModules: adding ${id.module} originalConf ${originalConf.name} artifacts ${resolvedDependency.moduleArtifacts}")
                 unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), originalConf.name)
-            },
-            { ResolvedDependency resolvedDependency ->
-                // Visit this dependency only if: we've haven't seen it already for the configuration we're
-                // processing, it's not a module we're building from source (because we don't want to include those
-                // as UnpackModules), and we can find its ivy.xml file (because we need that for relativePath to
-                // other modules).
-                //
-                // Visit this dependency's children only if: we've haven't seen it already for the configuration
-                // we're processing, and we can find its ivy.xml file (because we need that for relativePath to
-                // other modules).
-
-                ModuleVersionIdentifier id = resolvedDependency.module.id
-
-                final ResolvedDependenciesVisitor.ResolvedDependencyId newId =
-                    new ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
-                project.logger.debug("Adding ${newId} to ${dependencyConfigurationsAlreadySeen}")
-                final boolean isNewModuleConfiguration = dependencyConfigurationsAlreadySeen.add(newId)
-                if (!isNewModuleConfiguration) {
-                    project.logger.debug(
-                        "collectUnpackModules: Skipping ${id}, conf ${resolvedDependency.configuration}, " +
-                        "because it has already been visited"
-                    )
-                }
-
-                final boolean moduleIsInBuild = dependenciesStateHandler.isModuleInBuild(id)
-                if (moduleIsInBuild) {
-                    project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
-                }
-
-                final boolean isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
-
-                // Is there an ivy file corresponding to this dependency?
-                File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
-                final boolean ivyFileExists = ivyFile?.exists()
-                // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
-                // we can throw an exception later (after we've checked all dependencies).
-                if (isNewNonBuildModuleConfiguration && !ivyFileExists) {
-                    if (ivyFile == null) {
-                        project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
-                    } else {
-                        project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
-                    }
-                    modulesWithoutIvyFiles.add(id)
-                }
-
-                if (ivyFileExists) {
-                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                }
-                return new ResolvedDependenciesVisitor.VisitChoice(
-                    isNewNonBuildModuleConfiguration && ivyFileExists,
-                    isNewModuleConfiguration && ivyFileExists
-                )
             }
         )
     }
@@ -238,25 +238,6 @@ class PackedDependenciesStateHandler {
 
         if (!modulesWithoutIvyFiles.isEmpty()) {
             throw new RuntimeException("Some dependencies had no ivy.xml file")
-        }
-
-        // TODO 2014-07-15 HughG: Remove this check?  Or just log info -- but then we should do it for all dependencies.
-        // Check if we have artifacts for each entry in packedDependency.
-        if (!project.gradle.startParameter.isOffline()) {
-            boolean fail = false
-            packedDependencies.each { dep ->
-                ModuleIdentifier depId = new DefaultModuleIdentifier(dep.groupName, dep.dependencyName)
-                if (!unpackModulesMap.containsKey(depId)) {
-                    project.logger.error(
-                        "No artifacts detected for dependency '${dep.name}'. " +
-                        "Check that you have correctly defined the configurations."
-                    )
-                    fail = true
-                }
-            }
-            if (fail) {
-                throw new RuntimeException("Some dependencies had no artifacts")
-            }
         }
 
         // Check if we need to force the version number to be included in the path in order to prevent

@@ -28,7 +28,6 @@ class ResolvedDependenciesVisitor {
         }
 
         public ModuleVersionIdentifier getId() { super.getKey() }
-        //public String getConfiguration() { super.getValue() }
     }
 
     /**
@@ -68,17 +67,15 @@ class ResolvedDependenciesVisitor {
      * in the graph more than once.
      *
      * @param dependencies The initial set of dependencies.
+     * @param getVisitChoice A closure returning an object with flags indicating whether to call the
+     * {@code dependencyAction} on a given dependency, and whether to visit its children.
      * @param dependencyAction The closure to call for each {@link ResolvedDependency}.
-     * @param visitDependencyPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * call the dependencyAction for the dependency.
-     * @param visitChildrenPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * visit its children.  The children may be visited even if the visitDependencyPredicate returned false.
      */
     private static void traverseResolvedDependencies(
         Set<ResolvedDependency> dependencies,
         Stack<ResolvedDependency> dependencyStack,
-        Closure dependencyAction,
-        Closure getVisitChoice
+        Closure getVisitChoice,
+        Closure dependencyAction
     ) {
         // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
         // kept making mistakes with them, so clearly it was a bad idea.
@@ -97,8 +94,8 @@ class ResolvedDependenciesVisitor {
                     traverseResolvedDependencies(
                         resolvedDependency.children,
                         dependencyStack,
-                        dependencyAction,
-                        getVisitChoice
+                        getVisitChoice,
+                        dependencyAction
                     )
                 }
             } finally {
@@ -113,24 +110,22 @@ class ResolvedDependenciesVisitor {
      * in the graph more than once.
      *
      * @param dependencies The initial set of dependencies.
+     * @param getVisitChoice A closure returning an object with flags indicating whether to call the
+     * {@code dependencyAction} on a given dependency, and whether to visit its children.
      * @param dependencyAction The closure to call for each {@link ResolvedDependency}.
-     * @param visitDependencyPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * call the dependencyAction for the dependency.
-     * @param visitChildrenPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * visit its children.  The children may be visited even if the visitDependencyPredicate returned false.
      */
     public static void traverseResolvedDependencies(
         Set<ResolvedDependency> dependencies,
-        Closure dependencyAction,
-        Closure getVisitChoice
+        Closure getVisitChoice,
+        Closure dependencyAction
     ) {
         // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
         // kept making mistakes with them, so clearly it was a bad idea.
         traverseResolvedDependencies(
             dependencies,
             new Stack<ResolvedDependency>(),
-            dependencyAction,
-            getVisitChoice
+            getVisitChoice,
+            dependencyAction
         )
     }
 }

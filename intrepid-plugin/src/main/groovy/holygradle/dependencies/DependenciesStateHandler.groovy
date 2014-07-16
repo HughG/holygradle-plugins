@@ -112,6 +112,25 @@ class DependenciesStateHandler {
             dependencies,
             { ResolvedDependency resolvedDependency ->
                 ModuleVersionIdentifier id = resolvedDependency.module.id
+                final boolean dependencyAlreadySeen = result.containsKey(id)
+                logger.debug "getDependenciesForMetadataFiles: Considering dep ${id}: dependencyAlreadySeen == ${dependencyAlreadySeen}"
+                final boolean moduleIsInBuild = isModuleInBuild(id)
+                logger.debug "getDependenciesForMetadataFiles: Considering dep ${id}: moduleIsInBuild == ${moduleIsInBuild}"
+                final boolean dependencyConfigurationAlreadySeen = !dependencyConfigurationsAlreadySeen.add(
+                    new ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
+                )
+                logger.debug "getDependenciesForMetadataFiles: Considering dep ${id}: dependencyConfigurationAlreadySeen == ${dependencyConfigurationAlreadySeen}"
+                return new ResolvedDependenciesVisitor.VisitChoice(
+                    // Visit this dependency only if we've haven't seen it already, and it's not a module we're building from
+                    // source (because we don't need an ivy file for that -- we have relative path info in the source dep).
+                    !dependencyAlreadySeen && !moduleIsInBuild,
+                    // Visit this dependency's children only if we've haven't seen it already.  We still want to search into
+                    // modules which are part of the source for this build, so we don't call isModuleInBuild.
+                    !dependencyConfigurationAlreadySeen
+                )
+            },
+            { ResolvedDependency resolvedDependency ->
+                ModuleVersionIdentifier id = resolvedDependency.module.id
 
                 // Create a dependency which has artifacts which would match either the appropriate Ivy XML or Maven POM
                 // file.  The dependency will be used with a "lenient" configuration, so it's okay that they won't both
@@ -131,25 +150,6 @@ class DependenciesStateHandler {
                 }
                 result[id] = dep
                 logger.debug "getDependenciesForMetadataFiles: Added ${dep} for ${id}"
-            },
-            { ResolvedDependency resolvedDependency ->
-                ModuleVersionIdentifier id = resolvedDependency.module.id
-                final boolean dependencyAlreadySeen = result.containsKey(id)
-                logger.debug "getDependenciesForMetadataFiles: Considering dep ${id}: dependencyAlreadySeen == ${dependencyAlreadySeen}"
-                final boolean moduleIsInBuild = isModuleInBuild(id)
-                logger.debug "getDependenciesForMetadataFiles: Considering dep ${id}: moduleIsInBuild == ${moduleIsInBuild}"
-                final boolean dependencyConfigurationAlreadySeen = !dependencyConfigurationsAlreadySeen.add(
-                    new ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
-                )
-                logger.debug "getDependenciesForMetadataFiles: Considering dep ${id}: dependencyConfigurationAlreadySeen == ${dependencyConfigurationAlreadySeen}"
-                return new ResolvedDependenciesVisitor.VisitChoice(
-                    // Visit this dependency only if we've haven't seen it already, and it's not a module we're building from
-                    // source (because we don't need an ivy file for that -- we have relative path info in the source dep).
-                    !dependencyAlreadySeen && !moduleIsInBuild,
-                    // Visit this dependency's children only if we've haven't seen it already.  We still want to search into
-                    // modules which are part of the source for this build, so we don't call isModuleInBuild.
-                    !dependencyConfigurationAlreadySeen
-                )
             }
         )
 
@@ -177,7 +177,7 @@ class DependenciesStateHandler {
             try {
                 pomXml = new XmlSlurper(false, false).parseText(pomFile.text)
             } catch (Exception e) {
-                logger.warn("Ignoring error while parsing XML in ${pomFile}: " + e.toString())
+                logger.warn("getParentDependenciesForPomFiles: Ignoring error while parsing XML in ${pomFile}: " + e.toString())
                 return
             }
 
@@ -195,7 +195,7 @@ class DependenciesStateHandler {
 
                 String parentPomRelativePath = parentNode.relativePath.text()
                 if (parentPomRelativePath != null && !parentPomRelativePath.isEmpty()) {
-                    logger.info "Ignoring relative path for '${parentId}': ${parentPomRelativePath}"
+                    logger.info("getParentDependenciesForPomFiles: Ignoring relative path for '${parentId}': ${parentPomRelativePath}")
                 }
 
                 ExternalModuleDependency parentDep =
@@ -207,7 +207,7 @@ class DependenciesStateHandler {
                 }
                 result[parentId] = parentDep
 
-                logger.info("Added parent ${parentId} from ${pomFile}")
+                logger.debug("getParentDependenciesForPomFiles: Added parent ${parentId} from ${pomFile}")
             }
         }
 
@@ -243,7 +243,7 @@ class DependenciesStateHandler {
                 )
             }
             metadataFiles[id] = metadataFile
-            logger.info "getResolvedMetadataFilesOfType: Added ${metadataFile} for ${id}"
+            logger.debug "getResolvedMetadataFilesOfType: Added ${metadataFile} for ${id}"
         }
 
         // This should never happen, but I'd like to fail early if it does.
@@ -268,7 +268,7 @@ class DependenciesStateHandler {
      * @return
      */
     public Map<ModuleVersionIdentifier, File> getAncestorPomFiles(Configuration conf) {
-        logger.info "getAncestorPomFiles(${conf})"
+        logger.debug "getAncestorPomFiles(${conf})"
 
         // As the javadoc comment says, we don't want to treat the parent POMs as dependencies to be resolved, because
         // we might need multiple versions of the same POM, and Gradle doesn't let you have multiple versions of a
@@ -283,33 +283,25 @@ class DependenciesStateHandler {
         Map<ModuleVersionIdentifier, File> pomFiles = getPomFilesForConfiguration(conf)
         // "while(true) { if (...) break }" because Groovy has no "do { ... } while (...)"
         while (true) {
-            println("pomFiles = ${pomFiles}")
-            // ==== Create a configuration which has metadata artifacts for all transitive dependencies in conf.
             Collection<Dependency> parentPomDeps = getParentDependenciesForPomFiles(pomFiles.values())
-            println("parentPomDeps = ${parentPomDeps}")
 
             final Map<ModuleVersionIdentifier, File> newParentPomFiles =
                 parentPomDeps.collectEntries { Dependency parentPomDep ->
-                    println("finding POM for ${parentPomDep}")
                     //noinspection GroovyAssignabilityCheck
                     Configuration parentPomConf = createDetachedConfiguration(parentPomDep)
                     final LenientConfiguration lenientConf = parentPomConf.resolvedConfiguration.lenientConfiguration
                     Set<ResolvedArtifact> allResolvedArtifacts =
                         lenientConf.getArtifacts(Specs.convertClosureToSpec { true })
-                    println("allResolvedArtifacts = ${allResolvedArtifacts}")
                     Map<ModuleVersionIdentifier, File> parentPomFiles =
                         getResolvedMetadataFilesOfType(allResolvedArtifacts, "pom")
-                    println("parentPomFiles = ${parentPomFiles}")
                     parentPomFiles
                 }
 
             if (newParentPomFiles.isEmpty()) {
-                println("break")
                 break
             }
 
             ancestorPomFiles.putAll(newParentPomFiles)
-            println("ancestorPomFiles = ${ancestorPomFiles}")
 
             pomFiles = newParentPomFiles
         }
@@ -362,9 +354,11 @@ class DependenciesStateHandler {
         return pomFileMaps[conf.name]
     }
 
-    // Get the ivy file for the resolved dependency.  This may either be in the
-    // gradle cache, or exist locally in "localArtifacts" (which we create for
-    // those who may not have access to the artifact repository).  May return null.
+    /**
+     * Get the ivy file for the resolved dependency.  This may either be in the Gradle cache, or exist in a subdirectory
+     * "local_artifacts" of the project directory, which we create for those who may not have access to the artifact
+     * repository.  May return null.
+     */
     public File getIvyFile(
         Configuration conf,
         ResolvedDependency resolvedDependency
