@@ -1,79 +1,46 @@
 package holygradle.unpacking
 
+import holygradle.dependencies.DependenciesStateHandler
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.ResolvedDependenciesVisitor
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.ExternalModuleDependency
-import org.gradle.api.artifacts.ModuleIdentifier
-import org.gradle.api.artifacts.ModuleVersionIdentifier
-import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.api.artifacts.ResolvedConfiguration
-import org.gradle.api.artifacts.ResolvedDependency
+import org.gradle.api.artifacts.*
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 
 /**
  * This project extension provides information about the state of packed dependencies when they are resolved.
+ *
+ * Core Gradle holds information about the dependencies of a project in a structure like this:
+ *
+ *   project 1-->* configuration *-->* module_with_version *-->* module_with_version
+ *
+ * Each module_with_version may have dependencies on specific other module versions.  There are parallel structures for
+ * the requested and resolved sets of module.  The requested structure may contain multiple versions of the same module,
+ * for any given configuration; but the resolved structure will have only one version of each module, per configuration.
+ * If a project needs to use multiple resolved versions of a module, it must reference them from different
+ * configurations.
+ *
+ * The Holy Gradle's intrepid plugin, Perhaps through historical lack of understanding of the design of Gradle, tries to
+ * "put" all resolved module versions into one structure per project, not divided by configuration.  In saying "put", I
+ * mean specifically that it does this in order to create, in the project's folder hierarchy, symlinks to the unzipped
+ * versions of a module's artifacts, in the "unpackCache" folder in the Gradle home dir.  The structure of this
+ * information is
+ *
+ *   project 1-->* UnpackModule 1-->* UnpackModuleVersion 1-->1+ configuration_name
+ *
+ * Each UnpackModuleVersion also holds
+ *   - a mapping from resolved artifacts to the names of the project configurations which caused them to be included;
+ *   - a mapping from the IDs of its dependencies to the relative paths at which each should be symlinked
+ *
+ * (The implementation around this arrangement has a couple of problems: it is very awkward to use multiple versions of
+ * the same module; and it is not possible to symlink the same module version in at multiple locations -- although the
+ * latter is intended to be supported, I think.)
+ *
+ * The purpose of this class is to build the latter structure from the former.
  */
 class PackedDependenciesStateHandler {
-    /**
-     * This class combines a module version ID and configuration name into one immutable, equatable object.
-     *
-     * When visiting configurations in the original project's dependency graph (as opposed to in the detached
-     * configurations for ivy.xml files), we need to track not just which "module versions" we've seen, but which
-     * "module version plus module configuration", since dependencies differ per configuration.
-     */
-    private static class ResolvedDependencyId
-        extends AbstractMap.SimpleImmutableEntry<ModuleVersionIdentifier, String>
-    {
-        /**
-         *  Creates an entry representing a resolved module version, visited under a particular configuration.
-         *
-         * @param key the key represented by this entry
-         * @param value the value represented by this entry
-         */
-        ResolvedDependencyId(ModuleVersionIdentifier versionId, String configuration) {
-            super(versionId, configuration)
-        }
-
-        public ModuleVersionIdentifier getId() { super.getKey() }
-        public String getConfiguration() { super.getValue() }
-    }
-
-    /**
-     * A class encapsulating choices about visiting nodes in a graph of {@link ResolvedDependency} instances.
-     *
-     * Instances of this class are used, rather than separate boolean flags, so that some of the calculation for the
-     * decisions for both node and children can be made together, on the basis of the same state.
-     */
-    private static class VisitChoice {
-        /**
-         * A flag indicating whether to call a {@code dependencyAction} on a {@link ResolvedDependency} itself..
-         */
-        public final boolean visitDependency
-        /**
-         * A value indicating whether to call a {@code dependencyAction} on the children of a {@link ResolvedDependency}.
-         */
-        public final boolean visitChildren
-
-        /**
-         * Creates an instance of {@link VisitChoice}.
-         * @param visitDependency A flag indicating whether to call a {@code dependencyAction} on a
-         * {@link ResolvedDependency} itself.
-         * @param visitChildren A value indicating whether to call a {@code dependencyAction} on the children of a
-         * {@link ResolvedDependency}.
-         */
-        VisitChoice(boolean visitDependency, boolean visitChildren) {
-            this.visitDependency = visitDependency
-            this.visitChildren = visitChildren
-        }
-    }
-
-    // Map of "original configuration name" -> "original module ID" -> ivy file location
-    private Map<String, Map<ModuleVersionIdentifier, File>> ivyFileMaps = new HashMap()
-
     private final Project project
+    private final DependenciesStateHandler dependenciesStateHandler
     private Map<ModuleIdentifier, UnpackModule> unpackModulesMap = null
     private Collection<UnpackModule> unpackModules = null
 
@@ -89,245 +56,40 @@ class PackedDependenciesStateHandler {
      */
     public PackedDependenciesStateHandler(Project project) {
         this.project = project
+        this.dependenciesStateHandler = project.extensions.dependenciesState
     }
 
     /**
-     * Calls a closure for all {@link ResolvedDependency} instances in the transitive graph, selecting whether or not
-     * to visit the children of eah using a predicate.  The same dependency may be visited more than once, if it appears
-     * in the graph more than once.
+     * This method visits the resolved {@code dependencies} of the {@code originalConf} (a configuration of a project in the build),
+     * both direct and transitive, and fills in the {@code unpackModules} map for them.  It will create a new
+     * UnpackModule for a dependency if it doesn't yet exist, and add a new UnpackModuleVersion to it if it doesm for
+     * each dependency it visits.  It will also populate the {@code modulesWithoutIvyFiles} collection with any modules
+     * for which an Ivy XML file could not be found.
      *
-     * @param dependencies The initial set of dependencies.
-     * @param dependencyAction The closure to call for each {@link ResolvedDependency}.
-     * @param visitDependencyPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * call the dependencyAction for the dependency.
-     * @param visitChildrenPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * visit its children.  The children may be visited even if the visitDependencyPredicate returned false.
+     * @param originalConf A configuration of the project to which this handler belongs, in the context of which
+     * dependencies are to be resolved.
+     * @param packedDependencies The {@link PackedDependencyHandler} instances for this handler's project.
+     * @param unpackModules A map of {@link UnpackModule} instances, to be populated corresponding to the transitive
+     * closure of dependencies.
+     * @param modulesWithoutIvyFiles A collection of module version IDs, to be populated with IDs of any modules for
+     * which no Ivy XML file could be found.
+     * @param dependencies The top-level set of resolved dependencies
      */
-    private static void traverseResolvedDependencies(
-        Set<ResolvedDependency> dependencies,
-        Stack<ResolvedDependency> dependencyStack,
-        Closure dependencyAction,
-        Closure getVisitChoice
-    ) {
-        // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
-        // kept making mistakes with them, so clearly it was a bad idea.
-        dependencies.each { resolvedDependency ->
-            try {
-                dependencyStack.push(resolvedDependency)
-                //println("tRD: ${dependencyStack.join(' <- ')}")
-
-                VisitChoice visitChoice = getVisitChoice(resolvedDependency)
-
-                if (visitChoice.visitDependency) {
-                    dependencyAction(resolvedDependency)
-                }
-
-                if (visitChoice.visitChildren) {
-                    traverseResolvedDependencies(
-                        resolvedDependency.children,
-                        dependencyStack,
-                        dependencyAction,
-                        getVisitChoice
-                    )
-                }
-            } finally {
-                dependencyStack.pop()
-            }
-        }
-    }
-
-    /**
-     * Calls a closure for all {@link ResolvedDependency} instances in the transitive graph, selecting whether or not
-     * to visit the children of eah using a predicate.  The same dependency may be visited more than once, if it appears
-     * in the graph more than once.
-     *
-     * @param dependencies The initial set of dependencies.
-     * @param dependencyAction The closure to call for each {@link ResolvedDependency}.
-     * @param visitDependencyPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * call the dependencyAction for the dependency.
-     * @param visitChildrenPredicate A predicate closure to call for {@link ResolvedDependency} to decide whether to
-     * visit its children.  The children may be visited even if the visitDependencyPredicate returned false.
-     */
-    private static void traverseResolvedDependencies(
-        Set<ResolvedDependency> dependencies,
-        Closure dependencyAction,
-        Closure getVisitChoice
-    ) {
-        // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
-        // kept making mistakes with them, so clearly it was a bad idea.
-        traverseResolvedDependencies(
-            dependencies,
-            new Stack<ResolvedDependency>(),
-            dependencyAction,
-            getVisitChoice
-        )
-    }
-
-    private boolean isModuleInBuild(ModuleVersionIdentifier id) {
-        return project.rootProject.allprojects.find {
-            (it.group == id.group) &&
-                (it.name == id.name) &&
-                (it.version == id.version)
-        } != null
-    }
-
-    /**
-     * Given a set of resolved dependencies, returns a collection of unresolved dependencies for the {@code ivy.xml}
-     * files corresponding to the resolved modules.  This allows us to find those files on disk (to read custom parts of
-     * the XML), even though Gradle doesn't normally expose their location.
-     *
-     * @param dependencies A set of resolved dependencies.
-     * @return A set of unresolved dependencies for the corresponding {@code ivy.xml} files.
-     */
-    private Collection<Dependency> getDependenciesForIvyFiles(
-        Set<ResolvedDependency> dependencies
-    ) {
-        Map<ModuleVersionIdentifier, Dependency> result = [:]
-        Set<ResolvedDependencyId> dependencyConfigurationsAlreadySeen = new HashSet<ResolvedDependencyId>()
-
-        traverseResolvedDependencies(
-            dependencies,
-            { ResolvedDependency resolvedDependency ->
-                ModuleVersionIdentifier id = resolvedDependency.module.id
-
-                ExternalModuleDependency dep = new DefaultExternalModuleDependency(
-                    id.group, id.name, id.version, resolvedDependency.configuration
-                )
-                dep.artifact { art ->
-                    art.name = "ivy"
-                    art.type = "ivy"
-                    art.extension = "xml"
-                }
-                result[id] = dep
-                project.logger.debug "getDependenciesForIvyFiles: Added ${dep} for ${id}"
-            },
-            { ResolvedDependency resolvedDependency ->
-                ModuleVersionIdentifier id = resolvedDependency.module.id
-                final boolean dependencyAlreadySeen = result.containsKey(id)
-                project.logger.debug "getDependenciesForIvyFiles: Considering dep ${id}: dependencyAlreadySeen == ${dependencyAlreadySeen}"
-                final boolean moduleIsInBuild = isModuleInBuild(id)
-                project.logger.debug "getDependenciesForIvyFiles: Considering dep ${id}: moduleIsInBuild == ${moduleIsInBuild}"
-                final boolean dependencyConfigurationAlreadySeen = !dependencyConfigurationsAlreadySeen.add(
-                    new ResolvedDependencyId(id, resolvedDependency.configuration)
-                )
-                project.logger.debug "getDependenciesForIvyFiles: Considering dep ${id}: dependencyConfigurationAlreadySeen == ${dependencyConfigurationAlreadySeen}"
-                return new VisitChoice(
-                    // Visit this dependency only if we've haven't seen it already, and it's not a module we're building from
-                    // source (because we don't need an ivy file for that -- we have relative path info in the source dep).
-                    !dependencyAlreadySeen && !moduleIsInBuild,
-                    // Visit this dependency;s children only if we've haven't seen it already.  We still want to search into
-                    // modules which are part of the source for this build, so we don't call isModuleInBuild.
-                    !dependencyConfigurationAlreadySeen
-                )
-            }
-        )
-
-        return new ArrayList(result.values())
-    }
-
-    /**
-     * Populates a map from module version ID to the file location (in the local Gradle cache) of the corresponding
-     * {@code ivy.xml} file.
-     *
-     * @param dependencies A set of resolved dependencies on {@code ivy.xml} files.
-     * @return The map from IDs to files.
-     */
-    private Map<ModuleVersionIdentifier, File> getResolvedIvyFiles(
-        Set<ResolvedDependency> dependencies
-    ) {
-        Map<ModuleVersionIdentifier, File> ivyFiles = new HashMap<ModuleVersionIdentifier, File>()
-        // Don't care about tracking resolved dependency configurations here, because we're resolving the single
-        // configuration of the extra graph of dependencies on ivy.xml files which this class constructs, and that is
-        // flat and doesn't use dependencies on multiple configurations.
-
-        traverseResolvedDependencies(
-            dependencies,
-            { ResolvedDependency resolvedDependency ->
-                final ModuleVersionIdentifier id = resolvedDependency.module.id
-                final ResolvedArtifact art = resolvedDependency.moduleArtifacts.find { a -> a.name == "ivy" }
-                final File file = art?.file
-                if (file == null) {
-                    // This should never happen.  It's a sanity-check against a previous bug where we visited the
-                    // children of first-level dependencies in the ivy-ile configuration and so, depending on traversal
-                    // order, we might first hit a dependency for a module-id which didn't have an ivy file artifact.
-                    // It could happen due to other bugs, so I'm leaving this check in.
-                    throw new RuntimeException(
-                        "getResolvedIvyFiles: Failed to find ivy file artifact for ${id} in ${resolvedDependency.moduleArtifacts}"
-                    )
-                }
-                ivyFiles[id] = file
-                project.logger.debug "getResolvedIvyFiles: Added ${file} for ${id}"
-            },
-            { ResolvedDependency resolvedDependency ->
-                ModuleVersionIdentifier id = resolvedDependency.module.id
-                final boolean alreadySeen = ivyFiles.containsKey(id)
-                project.logger.debug "getResolvedIvyFiles: Considering dep ${id}: alreadySeen == ${alreadySeen}"
-                project.logger.debug "getResolvedIvyFiles: Considering children of dep ${id}: alreadySeen == ${alreadySeen}"
-                return new VisitChoice(
-                    // Visit this dependency only if we haven't seen it already.
-                    !alreadySeen,
-                    // Never visit the children of dependencies, when looking for ivy.cml files.  We don't need to,
-                    // because all the dependencies for ivy files are added flat at the top level.  And we shouldn't,
-                    // because transitive dependencies won't be ones we added in getDependenciesForIvyFiles, which have
-                    // a single artifact for ivy files; they'll be a normal published dependency, which doesn't include
-                    // the ivy file.
-                    false
-                )
-            }
-        )
-        return ivyFiles
-    }
-
-    // Get the ivy files for a given configuration by
-    //  (a) finding all the resolved modules for the configuration;
-    //  (b) making a matching collection of unresolved dependencies with the same module versions, but with the ivy.xml
-    // file as the only artifact;
-    //  (c) resolving the latter collection and pulling out the artifact locations.
-    //
-    // We can't just ask Gradle for the locations, because it doesn't expose them.  See the forum post at
-    // http://forums.gradle.org/gradle/topics/how_to_get_hold_of_ivy_xml_file_of_dependency
-    private Map<ModuleVersionIdentifier, File> getIvyFilesForConfiguration(Configuration conf) {
-        project.logger.debug "getIvyFilesForConfiguration(${conf})"
-
-        Map<ModuleVersionIdentifier, File> ivyFiles = ivyFileMaps[conf.name]
-        if (ivyFiles == null) {
-            Collection<Dependency> ivyDeps = getDependenciesForIvyFiles(
-                conf.resolvedConfiguration.firstLevelModuleDependencies
-            )
-            //noinspection GroovyAssignabilityCheck
-            Configuration ivyConf = project.configurations.detachedConfiguration(* ivyDeps)
-            ivyFiles = getResolvedIvyFiles(ivyConf.resolvedConfiguration.firstLevelModuleDependencies)
-            ivyFileMaps[conf.name] = ivyFiles
-            project.logger.debug("Resolved ivy files for ${conf}: ${ivyFiles.entrySet().join('\r\n')}")
-        }
-        return ivyFiles
-    }
-
-    // Get the ivy file for the resolved dependency.  This may either be in the
-    // gradle cache, or exist locally in "localArtifacts" (which we create for
-    // those who may not have access to the artifact repository).  May return null.
-    private File getIvyFile(
-        Configuration conf,
-        ResolvedDependency resolvedDependency
-    ) {
-        Map<ModuleVersionIdentifier, File> ivyFiles = getIvyFilesForConfiguration(conf)
-        return ivyFiles[resolvedDependency.module.id]
-    }
-
     private void collectUnpackModules(
         Configuration originalConf,
+        Set<ResolvedDependency> dependencies,
         Collection<PackedDependencyHandler> packedDependencies,
         Map<ModuleIdentifier, UnpackModule> unpackModules,
-        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles,
-        Set<ResolvedDependency> dependencies
+        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles
     ) {
         project.logger.debug("collectUnpackModules for ${originalConf}")
         project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
         project.logger.debug("    and packedDependencies ${packedDependencies*.name.sort().join('\r\n')}")
 
-        Set<ResolvedDependencyId> dependencyConfigurationsAlreadySeen = new HashSet<ResolvedDependencyId>()
+        Set<ResolvedDependenciesVisitor.ResolvedDependencyId> dependencyConfigurationsAlreadySeen =
+            new HashSet<ResolvedDependenciesVisitor.ResolvedDependencyId>()
 
-        traverseResolvedDependencies(
+        ResolvedDependenciesVisitor.traverseResolvedDependencies(
             dependencies,
             { ResolvedDependency resolvedDependency ->
                 ModuleVersionIdentifier id = resolvedDependency.module.id
@@ -345,9 +107,9 @@ class PackedDependenciesStateHandler {
                     project.logger.debug("collectUnpackModules: created module for ${id.module}")
                 }
 
-                // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on
-                // 'this' UnpackModuleVersion. There will only be a parent if this is a transitive
-                // dependency.
+                // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on 'this'
+                // UnpackModuleVersion. There will only be a parent if this is a transitive dependency, and not if it
+                // is a direct dependency of the project.
                 //
                 // TODO: There could be more than one parent. Deal with it gracefully.  We might need to drop the "have
                 // seen it before" filter from the visitDependencyPredicate.
@@ -364,7 +126,8 @@ class PackedDependenciesStateHandler {
                     unpackModuleVersion = unpackModule.versions[id.version]
                 } else {
 
-                    // If this resolved dependency is a transitive dependency, "thisPackedDep" will be null.
+                    // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
+                    // dependency is a transitive dependency, "thisPackedDep" will be null.
                     PackedDependencyHandler thisPackedDep = packedDependencies.find {
                         // Note that we don't compare the version, because we might have resolved to another version if
                         // multiple versions were requested in the dependency graph.  In that case, we still want to
@@ -374,7 +137,7 @@ class PackedDependenciesStateHandler {
                             (it.dependencyName == id.name)
                     }
 
-                    File ivyFile = getIvyFile(originalConf, resolvedDependency)
+                    File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
                     unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
@@ -400,7 +163,8 @@ class PackedDependenciesStateHandler {
 
                 ModuleVersionIdentifier id = resolvedDependency.module.id
 
-                final ResolvedDependencyId newId = new ResolvedDependencyId(id, resolvedDependency.configuration)
+                final ResolvedDependenciesVisitor.ResolvedDependencyId newId =
+                    new ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
                 project.logger.debug("Adding ${newId} to ${dependencyConfigurationsAlreadySeen}")
                 final boolean isNewModuleConfiguration = dependencyConfigurationsAlreadySeen.add(newId)
                 if (!isNewModuleConfiguration) {
@@ -410,7 +174,7 @@ class PackedDependenciesStateHandler {
                     )
                 }
 
-                final boolean moduleIsInBuild = isModuleInBuild(id)
+                final boolean moduleIsInBuild = dependenciesStateHandler.isModuleInBuild(id)
                 if (moduleIsInBuild) {
                     project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
                 }
@@ -418,7 +182,7 @@ class PackedDependenciesStateHandler {
                 final boolean isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
 
                 // Is there an ivy file corresponding to this dependency?
-                File ivyFile = getIvyFile(originalConf, resolvedDependency)
+                File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                 final boolean ivyFileExists = ivyFile?.exists()
                 // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
                 // we can throw an exception later (after we've checked all dependencies).
@@ -434,7 +198,7 @@ class PackedDependenciesStateHandler {
                 if (ivyFileExists) {
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
                 }
-                return new VisitChoice(
+                return new ResolvedDependenciesVisitor.VisitChoice(
                     isNewNonBuildModuleConfiguration && ivyFileExists,
                     isNewModuleConfiguration && ivyFileExists
                 )
@@ -449,106 +213,113 @@ class PackedDependenciesStateHandler {
      */
     public getAllUnpackModules() {
         if (unpackModulesMap == null) {
-            project.logger.debug("getAllUnpackModules for ${project}")
+            unpackModules = initializeAllUnpackModules()
+        }
+        unpackModules
+    }
 
-            final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
-            // Build a list (without duplicates) of all artifacts the project depends on.
-            unpackModulesMap = [:]
-            Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
-            project.configurations.each { conf ->
-                ResolvedConfiguration resConf = conf.resolvedConfiguration
-                collectUnpackModules(
-                    conf,
-                    packedDependencies,
-                    unpackModulesMap,
-                    modulesWithoutIvyFiles,
-                    resConf.getFirstLevelModuleDependencies()
-                )
-            }
+    private ArrayList initializeAllUnpackModules() {
+        project.logger.debug("getAllUnpackModules for ${project}")
 
-            if (!modulesWithoutIvyFiles.isEmpty()) {
-                throw new RuntimeException("Some dependencies had no ivy.xml file")
-            }
-
-            // Check if we have artifacts for each entry in packedDependency.
-            if (!project.gradle.startParameter.isOffline()) {
-                boolean fail = false
-                packedDependencies.each { dep ->
-                    ModuleIdentifier depId = new DefaultModuleIdentifier(dep.groupName, dep.dependencyName)
-                    if (!unpackModulesMap.containsKey(depId)) {
-                        project.logger.error(
-                            "No artifacts detected for dependency '${dep.name}'. " +
-                            "Check that you have correctly defined the configurations."
-                        )
-                        fail = true
-                    }
-                }
-                if (fail) {
-                    throw new RuntimeException("Some dependencies had no artifacts")
-                }
-            }
-
-            // Check if we need to force the version number to be included in the path in order to prevent
-            // two different versions of a module to be unpacked to the same location.
-            Map<File, Collection<UnpackModuleVersion>> targetLocations = [:].withDefault { new ArrayList<UnpackModuleVersion>() }
-            unpackModulesMap.values().each { UnpackModule module ->
-                module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                    File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
-                    targetLocations[targetPath].add(versionInfo)
-                }
-
-                if (module.versions.size() > 1) {
-                    int noIncludesCount = 0
-                    module.versions.any { String versionStr, UnpackModuleVersion versionInfo ->
-                        !versionInfo.includeVersionNumberInPath
-                    }
-                    if (noIncludesCount > 0) {
-                        project.logger.warn(
-                            "Dependencies have been detected on different versions of the module '${module.name}'. " +
-                            "To prevent different versions of this module being unpacked to the same location, " +
-                            "the version number will be appended to the path as '${module.name}-<version>'. You can " +
-                            "make this warning disappear by changing the locations to which these dependencies are " +
-                            "being unpacked. For your information, here are the details of the affected dependencies:"
-                        )
-                        module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                            final String originalInfo = versionInfo.getIncludeInfo()
-                            versionInfo.includeVersionNumberInPath = true
-                            project.logger.warn(
-                                "  ${module.group}:${module.name}:${versionStr} : "
-                                + originalInfo + " -> " + versionInfo.getIncludeInfo()
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Check if any target locations are used by more than one module/version.
-            boolean foundTargetClash = targetLocations.inject(false) {
-                boolean found, File target, Collection<UnpackModuleVersion> versions
-             ->
-                final boolean thisTargetHasClashes = versions.size() > 1
-                if (thisTargetHasClashes) {
-                    project.logger.error(
-                        "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
-                    )
-                    versions.each { UnpackModuleVersion version ->
-                        project.logger.error("    ${version.fullCoordinate} in configurations ${version.originalConfigurations}")
-                        while (version.parent != null) {
-                            version = version.parent
-                            project.logger.error("        which is from ${version.fullCoordinate}")
-                        }
-                        project.logger.error("        which is from packed dependency ${version.packedDependency.name}")
-                    }
-                }
-                return found || thisTargetHasClashes
-            }
-            if (foundTargetClash) {
-                throw new RuntimeException("Multiple different dependencies/versions are targeting the same locations.")
-            }
-
-            unpackModules = new ArrayList(unpackModulesMap.values())
+        final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
+        // Build a list (without duplicates) of all artifacts the project depends on.
+        unpackModulesMap = [:]
+        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
+        project.configurations.each { conf ->
+            ResolvedConfiguration resConf = conf.resolvedConfiguration
+            collectUnpackModules(
+                conf,
+                resConf.getFirstLevelModuleDependencies(),
+                packedDependencies,
+                unpackModulesMap,
+                modulesWithoutIvyFiles
+            )
         }
 
+        if (!modulesWithoutIvyFiles.isEmpty()) {
+            throw new RuntimeException("Some dependencies had no ivy.xml file")
+        }
+
+        // TODO 2014-07-15 HughG: Remove this check?  Or just log info -- but then we should do it for all dependencies.
+        // Check if we have artifacts for each entry in packedDependency.
+        if (!project.gradle.startParameter.isOffline()) {
+            boolean fail = false
+            packedDependencies.each { dep ->
+                ModuleIdentifier depId = new DefaultModuleIdentifier(dep.groupName, dep.dependencyName)
+                if (!unpackModulesMap.containsKey(depId)) {
+                    project.logger.error(
+                        "No artifacts detected for dependency '${dep.name}'. " +
+                        "Check that you have correctly defined the configurations."
+                    )
+                    fail = true
+                }
+            }
+            if (fail) {
+                throw new RuntimeException("Some dependencies had no artifacts")
+            }
+        }
+
+        // Check if we need to force the version number to be included in the path in order to prevent
+        // two different versions of a module to be unpacked to the same location.
+        Map<File, Collection<UnpackModuleVersion>> targetLocations =
+            [:].withDefault { new ArrayList<UnpackModuleVersion>() }
+        unpackModulesMap.values().each { UnpackModule module ->
+            module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
+                File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+                targetLocations[targetPath].add(versionInfo)
+            }
+
+            if (module.versions.size() > 1) {
+                int noIncludesCount = 0
+                module.versions.any { String versionStr, UnpackModuleVersion versionInfo ->
+                    !versionInfo.includeVersionNumberInPath
+                }
+                if (noIncludesCount > 0) {
+                    project.logger.warn(
+                        "Dependencies have been detected on different versions of the module '${module.name}'. " +
+                        "To prevent different versions of this module being unpacked to the same location, " +
+                        "the version number will be appended to the path as '${module.name}-<version>'. You can " +
+                        "make this warning disappear by changing the locations to which these dependencies are " +
+                        "being unpacked. For your information, here are the details of the affected dependencies:"
+                    )
+                    module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
+                        final String originalInfo = versionInfo.getIncludeInfo()
+                        versionInfo.includeVersionNumberInPath = true
+                        project.logger.warn(
+                            "  ${module.group}:${module.name}:${versionStr} : "
+                                + originalInfo + " -> " + versionInfo.getIncludeInfo()
+                        )
+                    }
+                }
+            }
+        }
+
+        // Check if any target locations are used by more than one module/version.  (We use "inject", instead of "any",
+        // because we want to keep checking even after we find a problem, so we can log them all.)
+        boolean foundTargetClash = targetLocations.inject(false) {
+            boolean found, File target, Collection<UnpackModuleVersion> versions
+             ->
+            final boolean thisTargetHasClashes = versions.size() > 1
+            if (thisTargetHasClashes) {
+                project.logger.error(
+                    "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
+                )
+                versions.each { UnpackModuleVersion version ->
+                    project.logger.error("    ${version.fullCoordinate} in configurations ${version.originalConfigurations}")
+                    while (version.parent != null) {
+                        version = version.parent
+                        project.logger.error("        which is from ${version.fullCoordinate}")
+                    }
+                    project.logger.error("        which is from packed dependency ${version.packedDependency.name}")
+                }
+            }
+            return found || thisTargetHasClashes
+        }
+        if (foundTargetClash) {
+            throw new RuntimeException("Multiple different dependencies/versions are targeting the same locations.")
+        }
+
+        unpackModules = new ArrayList(unpackModulesMap.values())
         unpackModules
     }
 }

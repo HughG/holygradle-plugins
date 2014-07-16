@@ -8,6 +8,7 @@ import holygradle.custom_gradle.util.Symlink
 import holygradle.dependencies.CollectDependenciesTask
 import holygradle.dependencies.DependencySettingsExtension
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.DependenciesStateHandler
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
@@ -150,10 +151,16 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
         }
 
-        // Define the 'packedDependency' DSL for the build script.
+        // Define the 'packedDependency' DSL for the project.
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
 
-        // Define the 'packedDependenciesState' DSL for the build script.
+        // Define the 'dependenciesState' DSL for the project.
+        DependenciesStateHandler dependenciesState = DependenciesStateHandler.createExtension(project)
+
+        // Define the 'dependenciesState' DSL for the project's build script.
+        DependenciesStateHandler buildscriptDependenciesState = DependenciesStateHandler.createExtension(project, true)
+
+        // Define the 'packedDependenciesState' DSL for the project.
         PackedDependenciesStateHandler packedDependenciesState = PackedDependenciesStateHandler.createExtension(project)
 
         // DSL extension to specify source dependencies
@@ -171,7 +178,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define 'symlinks' DSL block.
         SymlinkHandler symlinks = SymlinkHandler.createExtension(project)
         
-        // Define 'packageArtifacts' DSL for the build script.
+        // Define 'packageArtifacts' DSL for the project.
         PackageArtifactHandler.createContainer(project)
         
         // Define 'copyArtifacts' DSL
