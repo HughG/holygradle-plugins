@@ -11,6 +11,8 @@ This repository contains:
 # Prerequisites
  - Java JDK 1.7 - you do need the dev-kit, not just the run-time.
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
+   - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
+   "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
  - An Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
    - a remote repo pointing to Maven Central 
@@ -28,6 +30,10 @@ artifactoryPluginPublishRepo=<name of the (non-remote, non-virtual) repository f
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
+
+Note that IntelliJ IDEA will fail to open the project until you've created this file (because it parses the
+"build.gradle" files, and some of them depend on these properties).
+
 Also copy this file to the 'wrapper-starter-kit' subdirectory.  It needs to be a separate Gradle
 project because it _uses_ the published plugins.
 
