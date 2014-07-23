@@ -325,7 +325,7 @@ class DependenciesStateHandler {
         Map<ModuleVersionIdentifier, File> ivyFiles = ivyFileMaps[conf.name]
         Map<ModuleVersionIdentifier, File> pomFiles = pomFileMaps[conf.name]
         if (ivyFiles == null && pomFiles == null) {
-            // ==== Create a configuration which has metadata artifacts for all transitive dependencies in conf.
+            // Create a configuration which has metadata artifacts for all transitive dependencies in conf.
             Collection<Dependency> metadataDeps = getDependenciesForMetadataFiles(
                 conf.resolvedConfiguration.firstLevelModuleDependencies
             )

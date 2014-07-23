@@ -306,7 +306,16 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * Unpacking stuff
          **************************************/
-        
+
+        // This task will be initialized once the project is evaluated, because we need packed dependencies info.
+        CollectDependenciesTask collectDependenciesTask = (CollectDependenciesTask)project.task(
+            "collectDependencies",
+            type: CollectDependenciesTask
+        ) { CollectDependenciesTask task ->
+            task.group = "Dependencies"
+            task.description = "Collect all non-source dependencies into a 'local_artifacts' folder."
+        }
+
         // One 'unpack' task per 'packedDependency' block of DSL in the build script.
         project.gradle.projectsEvaluated {
 
@@ -353,13 +362,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             /**************************************
              * Collecting dependencies
              **************************************/
-            CollectDependenciesTask collectDependenciesTask = (CollectDependenciesTask)project.task(
-                "collectDependencies",
-                type: CollectDependenciesTask
-            ) { CollectDependenciesTask task ->
-                task.group = "Dependencies"
-                task.description = "Collect all non-source dependencies into a 'local_artifacts' folder."
-            }
             collectDependenciesTask.initialize(project)
             
             /**************************************

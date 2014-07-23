@@ -65,7 +65,7 @@ class CollectDependenciesTask extends Copy {
 
         Map<ModuleVersionIdentifier, File> ivyFiles = configureToCopyIvyFiles(conf, dependenciesState)
         Map<ModuleVersionIdentifier, File> pomFiles = configureToCopyPomFiles(conf, dependenciesState)
-        for (ResolvedArtifact artifact in getResolvedArtifacts(conf)) {
+        for (ResolvedArtifact artifact in getResolvedArtifacts(conf, dependenciesState)) {
             if (!configureToCopyArtifact(artifact, ivyFiles, pomFiles)) {
                 artifactsWithoutMetadataFiles.add(artifact)
             }
@@ -136,15 +136,18 @@ class CollectDependenciesTask extends Copy {
     /**
      * Returns the complete set of resolved artifacts for a given configuration.
      */
-    public Set<ResolvedArtifact> getResolvedArtifacts(Configuration conf) {
+    public Set<ResolvedArtifact> getResolvedArtifacts(Configuration conf, DependenciesStateHandler state) {
         // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
         // Taking a local copy ends in a "no applicable method" error for some unknown reason.
 
         Set<ResolvedArtifact> dependencyArtifacts = new HashSet<ResolvedArtifact>()
         ResolvedConfiguration resConf = conf.resolvedConfiguration
         resConf.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
-            resolvedDependency.allModuleArtifacts.each { ResolvedArtifact artifact ->
-                dependencyArtifacts.add(artifact)
+            // Only include artifacts for modules which we are not building from source.
+            if (!state.isModuleInBuild(resolvedDependency.module.id)) {
+                resolvedDependency.allModuleArtifacts.each { ResolvedArtifact artifact ->
+                    dependencyArtifacts.add(artifact)
+                }
             }
         }
         return dependencyArtifacts
