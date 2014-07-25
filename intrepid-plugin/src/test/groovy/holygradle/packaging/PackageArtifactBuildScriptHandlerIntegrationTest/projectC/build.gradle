@@ -1,0 +1,44 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    preBuiltArtifacts
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+packedDependencies {
+
+	// Add a couple of packed dependencies, deliberately make the name of one a substring of the other
+	// as a regression test for GR #4543.
+	"../projectAlreadyFetchedPackedDependency" {	
+		dependency "holygradle.test:external-lib:1.0"
+		configuration "preBuiltArtifacts->testRuntime"
+	}
+	
+	"../projectAlreadyFetchedPackedDependencyNotWantedInOutputBuildScript" {
+		dependency "holygradle.test:example-framework:1.0"
+		configuration "preBuiltArtifacts->compileVc10Debug"
+	}		
+}
+
+packageArtifacts {
+    preBuiltArtifacts {
+        to "preBuiltArtifacts"
+        // We need to include at least one pre-existing file, or the build script generation doesn't run. GR #3080
+        include "dummy.txt"
+        includeBuildScript {
+            add "// Meta-package for ${project.name} pre-built artifacts ${project.version}"
+            add "// ---------------------------------------------------"
+            //addIvyRepository "TODO", "Artifactory"
+			
+			// This should create a packedDependency in the generated build script - before a fix for GR #4543
+			// this actually creates the wrong packedDependency (projectAlreadyFetchedPackedDependencyNotWantedInOutputBuildScript)
+			addPackedDependency "projectAlreadyFetchedPackedDependency", "preBuiltArtifacts->someConfig"
+        }
+    }
+}

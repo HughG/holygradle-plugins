@@ -82,45 +82,59 @@ class PackageArtifactBuildScriptHandler {
     public boolean buildScriptRequired() {
         return pinnedSourceDependencies.size() > 0 || packedDependencies.size() > 0
     }
-    
-    private static List<SourceDependencyHandler> findSourceDependencies(Project project, String sourceDepWildcard) {
+
+    private static List<SourceDependencyHandler> findSourceDependencies(Project project, String sourceDepName) {
         List<SourceDependencyHandler> matches = new LinkedList<SourceDependencyHandler>()
         
         project.subprojects { Project p ->
-            matches.addAll(findSourceDependencies(p, sourceDepWildcard))
+            matches.addAll(findSourceDependencies(p, sourceDepName))
         }
         
         Collection<SourceDependencyHandler> sourceDependencies =
             project.extensions.findByName("sourceDependencies") as Collection<SourceDependencyHandler>
         if (sourceDependencies != null) {
             sourceDependencies.each {
-                if (Wildcard.match(sourceDepWildcard, it.name)) {
-                    matches.add(it)
+                // Each sourceDependency name is actually a path - here we are only interested in matching the
+                // last entity of the path with the name provided in the user's "addSourceDependency"
+                Matcher folderNameUsingRegex = it.name =~ /([^\\/]+)$/
+
+                if (!folderNameUsingRegex.find()) {
+                    project.logger.warn "Failed to parse dependency name from path ${it.name}"
+                } else {
+                    if (folderNameUsingRegex.group(1) == sourceDepName) {
+                        matches.add(it)
+                    }
                 }
             }
         }
-        
-        matches
+        return matches
     }
     
-    private static List<PackedDependencyHandler> findPackedDependencies(Project project, String packedDepWildcard) {
+    private static List<PackedDependencyHandler> findPackedDependencies(Project project, String packedDepName) {
         List<PackedDependencyHandler> matches = new LinkedList<PackedDependencyHandler>()
         
         project.subprojects { Project p ->
-            matches.addAll(findPackedDependencies(p, packedDepWildcard))
+            matches.addAll(findPackedDependencies(p, packedDepName))
         }
 
         Collection<PackedDependencyHandler> packedDependencies =
             project.extensions.findByName("packedDependencies") as Collection<PackedDependencyHandler>
         if (packedDependencies != null) {
             packedDependencies.each {
-                if (Wildcard.match(packedDepWildcard, it.name)) {
-                    matches.add(it)
+                // Each packedDependency name is actually a path - here we are only interested in matching the
+                // last entity of the path with the name provided in the user's "addPackedDependency"
+                Matcher folderNameUsingRegex = it.name =~ /([^\\/]+)$/
+
+                if (!folderNameUsingRegex.find()) {
+                    project.logger.warn "Failed to parse dependency name from path ${it.name}"
+                } else {
+                    if (folderNameUsingRegex.group(1) == packedDepName) {
+                        matches.add(it)
+                    }
                 }
             }
         }
-        
-        matches
+        return matches
     }
 
     private static Map<String, SourceDependencyHandler> collectSourceDependenciesForPacked(

@@ -121,6 +121,15 @@ Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAP
 ```
  - You can also run `gw versionInfo` to get a complete list of version numbers.
 
+# Diagnosing suspected plugin problems found in gradle scripts 
+
+## clone/update the plugins
+## if necessary, follow the "getting started" steps detailed above
+## add your println/log entries to the plugins for helping to diagnosing the problem
+## use "gw -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>-SNAPSHOT
+## now to force the user's build script to use the snapshots you've just published, set the property "systemProp.holygradle.pluginsSnapshotsUser=<user>" in your %GRADLE_USER_HOME%/gradle.properties file.
+## before fixing, try to add a new integration test that replicates the issue, to help verify the fix and prevent future regression
+ 
 # Documentation
 Some documentation is on the BitBucket wiki, but we're experimenting with building static HTML pages using AsciiDoc, to
 provide code syntax highlighting and diagrams using GraphViz.
