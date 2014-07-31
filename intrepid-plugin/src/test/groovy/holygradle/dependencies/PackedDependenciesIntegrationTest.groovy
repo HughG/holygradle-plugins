@@ -37,7 +37,7 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
         invokeGradle(new File(getTestDir(), "unpacking_modules_to_same_location")) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-                """In root project 'unpacking_modules_to_same_location', location 'D:\\Projects\\Gradle\\holy-gradle-plugins\\intrepid-plugin\\src\\test\\groovy\\holygradle\\dependencies\\PackedDependenciesIntegrationTest\\unpacking_modules_to_same_location\\extlib' is targeted by multiple dependencies/versions:
+                """In root project 'unpacking_modules_to_same_location', location 'C:\\Projects\\holy-gradle-plugins\\intrepid-plugin\\src\\test\\groovy\\holygradle\\dependencies\\PackedDependenciesIntegrationTest\\unpacking_modules_to_same_location\\extlib' is targeted by multiple dependencies/versions:
     holygradle.test:example-framework:1.1 in configurations [everything, bar]
         which is from packed dependency sub/../extlib
     holygradle.test:external-lib:1.1 in configurations [everything, foo, bar]

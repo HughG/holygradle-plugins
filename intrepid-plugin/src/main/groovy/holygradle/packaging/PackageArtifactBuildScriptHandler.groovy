@@ -83,11 +83,15 @@ class PackageArtifactBuildScriptHandler {
         return pinnedSourceDependencies.size() > 0 || packedDependencies.size() > 0
     }
 
-    private static List<SourceDependencyHandler> findSourceDependencies(Project project, String sourceDepName) {
+    private static List<SourceDependencyHandler> findSourceDependencies(
+            Project project,
+            String sourceDepNameToFind,
+            boolean allowWildcard)
+    {
         List<SourceDependencyHandler> matches = new LinkedList<SourceDependencyHandler>()
         
         project.subprojects { Project p ->
-            matches.addAll(findSourceDependencies(p, sourceDepName))
+            matches.addAll(findSourceDependencies(p, sourceDepNameToFind, allowWildcard))
         }
         
         Collection<SourceDependencyHandler> sourceDependencies =
@@ -101,7 +105,11 @@ class PackageArtifactBuildScriptHandler {
                 if (!folderNameUsingRegex.find()) {
                     project.logger.warn "Failed to parse dependency name from path ${it.name}"
                 } else {
-                    if (folderNameUsingRegex.group(1) == sourceDepName) {
+                    if (allowWildcard) {
+                        if (Wildcard.match(sourceDepNameToFind, folderNameUsingRegex.group(1))) {
+                            matches.add(it)
+                        }
+                    } else if (folderNameUsingRegex.group(1) == sourceDepNameToFind) {
                         matches.add(it)
                     }
                 }
@@ -136,6 +144,7 @@ class PackageArtifactBuildScriptHandler {
         }
         return matches
     }
+    
 
     private static Map<String, SourceDependencyHandler> collectSourceDependenciesForPacked(
         Project project,
@@ -143,7 +152,7 @@ class PackageArtifactBuildScriptHandler {
     ) {
         Map<String, SourceDependencyHandler> allSourceDeps = [:]
         sourceDepNames.each { String sourceDepName ->
-            findSourceDependencies(project.rootProject, sourceDepName).each { SourceDependencyHandler sourceDep ->
+            findSourceDependencies(project.rootProject, sourceDepName, /*allowWildcard=*/false ).each { SourceDependencyHandler sourceDep ->
                 if (allSourceDeps.containsKey(sourceDepName)) {
                     int curConf = allSourceDeps[sourceDepName].publishingHandler.configurations.size()
                     int itConf = sourceDep.publishingHandler.configurations.size()
@@ -164,7 +173,7 @@ class PackageArtifactBuildScriptHandler {
     ) {
         Map<String, SourceDependencyHandler> allSourceDeps = [:]
         dependencyWildcards.each { String wildcard ->
-            findSourceDependencies(project.rootProject, wildcard).each { SourceDependencyHandler sourceDep ->
+            findSourceDependencies(project.rootProject, wildcard, /*allowWildcard=*/true).each { SourceDependencyHandler sourceDep ->
                 String targetPath = sourceDep.name
                 if (allSourceDeps.containsKey(targetPath)) {
                     int curConf = allSourceDeps[targetPath].publishingHandler.configurations.size()
