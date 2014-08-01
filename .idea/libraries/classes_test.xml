@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="classes-test">
-    <CLASSES>
-      <root url="file://$PROJECT_DIR$/custom-gradle-core-plugin/build/classes/test" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

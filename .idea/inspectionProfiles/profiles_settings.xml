@@ -5,13 +5,13 @@
     <version value="1.0" />
     <info color="52503a">
       <option name="EFFECT_COLOR" value="52503a" />
-      <option name="EFFECT_TYPE" value="2" />
       <option name="ERROR_STRIPE_COLOR" value="52503a" />
+      <option name="EFFECT_TYPE" value="2" />
       <option name="myName" value="VERY WEAK WARNING" />
       <option name="myVal" value="50" />
       <option name="myExternalName" value="VERY WEAK WARNING" />
       <option name="myDefaultAttributes">
-        <value />
+        <option name="EFFECT_TYPE" value="0" />
       </option>
     </info>
     <list size="7">

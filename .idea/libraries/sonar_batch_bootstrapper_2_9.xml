@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="sonar-batch-bootstrapper-2.9">
-    <CLASSES>
-      <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-1.4-bin/47n6g3pbi5plc7n8fn58nkinje/gradle-1.4/lib/plugins/sonar-batch-bootstrapper-2.9.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

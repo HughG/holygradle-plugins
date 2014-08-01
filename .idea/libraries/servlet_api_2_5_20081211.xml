@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="servlet-api-2.5-20081211">
-    <CLASSES>
-      <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-1.4-bin/47n6g3pbi5plc7n8fn58nkinje/gradle-1.4/lib/plugins/servlet-api-2.5-20081211.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

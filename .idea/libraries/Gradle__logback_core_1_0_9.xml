@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: logback-core-1.0.9">
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-1.4-bin/47n6g3pbi5plc7n8fn58nkinje/gradle-1.4/lib/logback-core-1.0.9.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
