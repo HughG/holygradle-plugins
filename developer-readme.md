@@ -17,7 +17,9 @@ This repository contains:
    - one for publishing plugin snapshots for testing modifications to plugins without affecting existing plugin users.
    If you prefer you could use just one repository.
  
-# Getting started - with a clean checkout
+# Getting started with a clean checkout
+
+## Creating gradle.properties
 Create 'gradle.properties' in the root of your workspace add define these properties:
 ```
 artifactoryServer=<fully qualified domain name of artifactory server, including port if necessary,
@@ -30,6 +32,20 @@ artifactoryPassword=<encrypted artifactory password>
 ```
 Also copy this file to the 'wrapper-starter-kit' subdirectory.  It needs to be a separate Gradle
 project because it _uses_ the published plugins.
+
+## IntelliJ IDEA
+
+Before opening the project in IntelliJ, make sure you have GRADLE_USER_HOME set as desired,
+and then run `gw tasks` in this folder, to make sure the base Gradle distribution is
+downloaded to your cache, so you can point IntelliJ to it.
+
+If you open the project with IntelliJ IDEA, it will complain that GRADLE_USER_HOME isn't set.
+You need to set it to the same value as your GRADLE_USER_HOME environment variable.
+
+After loading, it will prompt you (in the Event Log) to "Import Gradle Project".  You will
+have to manually select "Use local Gradle distribution" and point to
+
+  <your GRADLE_USER_HOME>\wrapper\dists\gradle-1.4-bin\47n6g3pbi5plc7n8fn58nkinje\gradle-1.4
 
 ## Initial Publishing
 If the plugins have never been published before within your organisation, run the following commands.
@@ -120,15 +136,15 @@ provide code syntax highlighting and diagrams using GraphViz.
 
 To install AsciiDoc under Cygwin in Windows, follow these steps.
 
-1. Download `setup_x86_64.exe` (or setup_x86.exe for 32-bit) from `http://www.cygwin.com/`.
+1. Download `setup-x86_64.exe` (or setup_x86.exe for 32-bit) from `http://www.cygwin.com/`.
 2. Run the following command line.  This assumes that your company has an HTTP proxy, and that
 `cygwin.mirror.uk.sargasso.net` is an appropriate mirror server for you.
 ```
-setup_x86_64.exe -q -p proxy-server.company.com:8080
+setup-x86_64.exe -q -p proxy-server.company.com:8080
   -s http://cygwin.mirror.uk.sargasso.net/ -P asciidoc dblatex texlive
 ```
 
-To install GraphViz for digrams, and Pygments for syntax highlighting, you have to install packages from
+To install GraphViz for diagrams, and Pygments for syntax highlighting, you have to install packages from
 `cygwinports.org`, with the following steps.
 
 1. Follow the instructions at `http://cygwinports.org/` to register their public key and add their site to your list of

@@ -16,13 +16,18 @@ void initializeBuildWebsiteTask(Task t, boolean buildQuickly = false) {
         t.outputs.file ascOut
 
         t.doLast {
+            File outputDir = new File(WEBSITE_OUTPUT_DIR)
+            if (!(outputDir.exists() || outputDir.mkdirs())) {
+                throw new RuntimeException("Failed to create ${WEBSITE_OUTPUT_DIR}")
+            }
             def baseArgs = ["/c", "make-asciidoc.bat"]
             def buildQuicklyArgs = buildQuickly ? ['"-a source-highlighter=none"'] : []
             def filenameArgs = [
+                "-v",
                 "-o", "${WEBSITE_OUTPUT_SUBDIR}/${ascOutJustFileName}", "${asc.name}"
             ]
             exec {
-                workingDir "${projectDir}/doc/website"
+                workingDir WEBSITE_DIR
                 executable "cmd.exe"
                 args = baseArgs + buildQuicklyArgs + filenameArgs
             }
@@ -35,8 +40,8 @@ void initializeBuildWebsiteTask(Task t, boolean buildQuickly = false) {
         }
         t.doLast {
             copy {
-                from "${WEBSITE_DIR}"
-                into "${WEBSITE_DIR}/output"
+                from WEBSITE_DIR
+                into WEBSITE_OUTPUT_DIR
                 include "asciidoc/**"
             }
         }
