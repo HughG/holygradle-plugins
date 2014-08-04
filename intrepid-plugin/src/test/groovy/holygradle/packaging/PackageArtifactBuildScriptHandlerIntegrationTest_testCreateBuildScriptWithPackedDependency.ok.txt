@@ -16,7 +16,7 @@ packedDependenciesDefault {
 }
 
 packedDependencies {
-    "..\projectAlreadyFetchedPackedDependency" {
+    "..\projectCDep" {
         dependency "holygradle.test:external-lib:1.0"
         configuration "preBuiltArtifacts->someConfig"
     }

@@ -13,17 +13,19 @@ repositories.ivy {
 
 packedDependencies {
 
-	// Add a couple of packed dependencies, deliberately make the name of one a substring of the other
-	// as a regression test for GR #4543.
-	"../projectAlreadyFetchedPackedDependency" {	
-		dependency "holygradle.test:external-lib:1.0"
-		configuration "preBuiltArtifacts->testRuntime"
-	}
-	
-	"../projectAlreadyFetchedPackedDependencyNotWantedInOutputBuildScript" {
-		dependency "holygradle.test:example-framework:1.0"
-		configuration "preBuiltArtifacts->compileVc10Debug"
-	}		
+    // Add a couple of packed dependencies, deliberately make the name of one a substring of the other
+    // as a regression test for GR #4543.
+    "../projectCDep" {    
+        dependency "holygradle.test:external-lib:1.0"
+        configuration "preBuiltArtifacts->testRuntime"
+    }
+    
+    // This one shouldn't appear in the output build script, despite the previous one being an
+    // initial-substring match for it.
+    "../projectCDepUnwanted" {
+        dependency "holygradle.test:example-framework:1.0"
+        configuration "preBuiltArtifacts->compileVc10Debug"
+    }        
 }
 
 packageArtifacts {
@@ -35,10 +37,10 @@ packageArtifacts {
             add "// Meta-package for ${project.name} pre-built artifacts ${project.version}"
             add "// ---------------------------------------------------"
             //addIvyRepository "TODO", "Artifactory"
-			
-			// This should create a packedDependency in the generated build script - before a fix for GR #4543
-			// this actually creates the wrong packedDependency (projectAlreadyFetchedPackedDependencyNotWantedInOutputBuildScript)
-			addPackedDependency "projectAlreadyFetchedPackedDependency", "preBuiltArtifacts->someConfig"
+            
+            // This should create a packedDependency in the generated build script - before a fix for GR #4543
+            // this actually creates the wrong packedDependency (projectAlreadyFetchedPackedDependencyNotWantedInOutputBuildScript)
+            addPackedDependency "projectCDep", "preBuiltArtifacts->someConfig"
         }
     }
 }

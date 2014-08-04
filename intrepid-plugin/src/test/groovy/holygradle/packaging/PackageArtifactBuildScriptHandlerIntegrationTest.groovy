@@ -63,30 +63,30 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         )
         regression.checkForRegression("testCreateBuildScriptWithPinnedSourceDependency")
     }
-	
+
     @Test
     public void testCreateBuildScriptWithPackedDependency() {
         // ProjectC references a couple of packed dependencies, and when we run packageEverything it 
         // should generate a buildScript which only references only one of these - and the right one!
-		
+
         File projectCDir = new File(getTestDir(), "projectC")
         File projectCPackagesDir = new File(projectCDir, "packages")
         if (projectCPackagesDir.exists()) {
             assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
         }
-		
+
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies", "packageEverything")
         }
-		
+
         ZipFile packageZip = new ZipFile(new File(projectCPackagesDir, "projectC-preBuiltArtifacts.zip"))
         ZipEntry packageBuildFile = packageZip.getEntry("preBuiltArtifacts/build.gradle")
-		File testFile = regression.getTestFile("testCreateBuildScriptWithPackedDependency")
+        File testFile = regression.getTestFile("testCreateBuildScriptWithPackedDependency")
         testFile.text = packageZip.getInputStream(packageBuildFile).text.replaceAll(
             "gplugins.use \"(.*):.*\"",
             "gplugins.use \"\$1:dummy\""
-        )		
-		regression.checkForRegression("testCreateBuildScriptWithPackedDependency")
-	}
+        )
+        regression.checkForRegression("testCreateBuildScriptWithPackedDependency")
+    }
 
 }
