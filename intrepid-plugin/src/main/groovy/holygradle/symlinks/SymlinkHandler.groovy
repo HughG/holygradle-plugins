@@ -82,7 +82,7 @@ class SymlinkHandler {
     
     public Collection<Mapping> getMappings() {
         Collection<Mapping> mappings = []
-        getMappings(mappings)
+        collectMappings(mappings)
         mappings
     }
     
@@ -93,13 +93,13 @@ class SymlinkHandler {
     public void writeScript(StringBuilder str) {
         if (countToLocations() > 0) {
             str.append("symlinks {\n")
-            writeScript(str, 4)
+            writeScriptIndented(str, 4)
             str.append("}\n")
             str.append("\n")
         }
     }    
     
-    private void writeScript(StringBuilder str, int indent) {
+    private void writeScriptIndented(StringBuilder str, int indent) {
         int toIndent = indent
         if (toLocations.size() > 0 || children.size() > 0) {
             if (fromLocation != ".") {
@@ -116,7 +116,7 @@ class SymlinkHandler {
                 str.append("\n")
             }
             children.each {
-                it.writeScript(str, toIndent)
+                it.writeScriptIndented(str, toIndent)
             }
             if (fromLocation != ".") {
                 str.append(" "*indent)
@@ -142,12 +142,12 @@ class SymlinkHandler {
         }
     }
     
-    private void getMappings(Collection<Mapping> mappings) {
+    private void collectMappings(Collection<Mapping> mappings) {
         for (toLocation in toLocations) {
             mappings.add(new Mapping(getLinkPath(toLocation), getTargetPath(toLocation)))
         }
         for (child in children) {
-            child.getMappings(mappings)
+            child.collectMappings(mappings)
         }
     }
 }

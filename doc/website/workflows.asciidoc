@@ -1126,7 +1126,7 @@ products aren't still based on old versions of dependencies.
 Once your build works correctly, you should re-check packaging, as described in
 <<_check_packaging>>.
 
-[[_check_build_after_changing_dependencies]]
+[[_check_publishing_after_changing_dependencies]]
 ==== Check Publishing
 
 When you are happy with the packaged outputs and the +ivy.xml+ file, you may want to re-check

@@ -174,7 +174,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         rootPackageDescriptor.includeSettingsFile(closure)
     }
     
-    private void configureCopySpec(Project project, PackageArtifactDescriptor descriptor, CopySpec copySpec) {
+    private void doConfigureCopySpec(Project project, PackageArtifactDescriptor descriptor, CopySpec copySpec) {
         descriptor.includeHandlers.each { PackageArtifactIncludeHandler includeHandler ->
             File fromDir = project.projectDir
             if (descriptor.fromLocation != ".") {
@@ -186,12 +186,12 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
         }
         for (fromDescriptor in descriptor.fromDescriptors) {
-            configureCopySpec(project, fromDescriptor, copySpec)
+            doConfigureCopySpec(project, fromDescriptor, copySpec)
         }
     }
     
     public void configureCopySpec(Project project, CopySpec copySpec) {
-        configureCopySpec(project, rootPackageDescriptor, copySpec)
+        doConfigureCopySpec(project, rootPackageDescriptor, copySpec)
     }
     
     public Task definePackageTask(Project project, Task createPublishNotesTask) {

@@ -5,7 +5,7 @@ public class CamelCase {
         StringBuilder camelCase = new StringBuilder()
         boolean firstCharacterLowerCase = true
         components.each { String component ->
-            component.split("[_\\-\\s\\/]+").each { chunk ->
+            component.split("[_\\-\\s/]+").each { chunk ->
                 if (chunk != null && chunk.length() > 0) {
                     if (firstCharacterLowerCase) {
                         camelCase.append(chunk[0].toLowerCase())

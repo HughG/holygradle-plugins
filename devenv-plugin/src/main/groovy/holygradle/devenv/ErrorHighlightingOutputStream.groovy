@@ -67,14 +67,14 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
     public void summarise() {
         output.println()
         if (errors.size() > 0) {
-            summarise(errors, "errors", StyledTextOutput.Style.Failure)
+            summariseMessages(errors, "errors", StyledTextOutput.Style.Failure)
         }
         if (warnings.size() > 0) {
-            summarise(warnings, "warnings", StyledTextOutput.Style.Info)
+            summariseMessages(warnings, "warnings", StyledTextOutput.Style.Info)
         }
     }
 
-    private void summarise(Collection<String> messages, String type, StyledTextOutput.Style style) {
+    private void summariseMessages(Collection<String> messages, String type, StyledTextOutput.Style style) {
         final int LINE_LENGTH = 75
         String msg = " ${projectName}: ${messages.size()} ${type} "
         int firstDashes = (int) (LINE_LENGTH - msg.length()) / 2

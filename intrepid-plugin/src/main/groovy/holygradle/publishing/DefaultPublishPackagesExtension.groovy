@@ -203,7 +203,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return getVersionFromFile(getVersionFile());
     }
     
-    private static String incrementVersionNumber(File versionFile) {
+    private static String doIncrementVersionNumber(File versionFile) {
         String versionStr = versionFile.text
         int lastDot = versionStr.lastIndexOf('.')
         int nextVersion = versionStr[lastDot+1..-1].toInteger() + 1
@@ -295,7 +295,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     
     public String incrementVersionNumber() {
         if (autoIncrementFilePath != null) {
-            incrementVersionNumber(getVersionFile());
+            doIncrementVersionNumber(getVersionFile());
         }
         return getCurrentVersionNumber();
     }

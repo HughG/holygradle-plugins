@@ -18,12 +18,12 @@ class Helper {
     // Recursively navigates down subprojects to gather the names of all sourceDependencies which
     // have not specified sourceControlRevisionForPublishedArtifacts.
     public static Collection<SourceDependencyHandler> getTransitiveSourceDependencies(Project project) {
-        getTransitiveSourceDependencies(project, project.sourceDependencies as Collection<SourceDependencyHandler>)
+        doGetTransitiveSourceDependencies(project, project.sourceDependencies as Collection<SourceDependencyHandler>)
     }
     
     // Recursively navigates down subprojects to gather the names of all sourceDependencies which
     // have not specified sourceControlRevisionForPublishedArtifacts.
-    private static Collection<SourceDependencyHandler> getTransitiveSourceDependencies(
+    private static Collection<SourceDependencyHandler> doGetTransitiveSourceDependencies(
         Project project,
         Collection<SourceDependencyHandler> sourceDependencies
     ) {
@@ -42,7 +42,7 @@ class Helper {
                 Collection<SourceDependencyHandler> subprojSourceDep =
                     proj.extensions.findByName("sourceDependencies") as Collection<SourceDependencyHandler>
                 if (subprojSourceDep != null) {
-                    Collection<SourceDependencyHandler> transSubprojSourceDep = getTransitiveSourceDependencies(project, subprojSourceDep)
+                    Collection<SourceDependencyHandler> transSubprojSourceDep = doGetTransitiveSourceDependencies(project, subprojSourceDep)
                     transSourceDep.addAll(transSubprojSourceDep)
                 }
             }

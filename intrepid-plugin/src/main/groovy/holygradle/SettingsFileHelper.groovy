@@ -46,7 +46,7 @@ class SettingsFileHelper {
         List<String> previousIncludes = []
         if (settingsFile.exists()) {
             String includeText = settingsFile.text.readLines()[0]
-            Matcher matches = includeText =~ /[\'\"](.+?)[\'\"]/
+            Matcher matches = includeText =~ /['"](.+?)['"]/
             matches.each { List<String> groups ->
                 previousIncludes.add groups[1].replace("\\\\", "\\")
             }

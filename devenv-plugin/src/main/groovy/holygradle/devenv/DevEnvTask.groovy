@@ -55,7 +55,7 @@ class DevEnvTask extends DefaultTask {
                 addStampingDependencyForProject(project.rootProject)
             }
 
-            configureBuildTask(
+            doConfigureBuildTask(
                 project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(),
                 devEnvHandler.useIncredibuild(), platform, configuration, 
                 devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
@@ -103,7 +103,7 @@ class DevEnvTask extends DefaultTask {
         
         if (devEnvHandler.getVsSolutionFile() != null) {
             configureTaskDependencies()
-            configureCleanTask(
+            doConfigureCleanTask(
                 project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), 
                 devEnvHandler.useIncredibuild(), platform, configuration, 
                 devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
@@ -111,7 +111,7 @@ class DevEnvTask extends DefaultTask {
         }
     }
     
-    private void configureBuildTask(
+    private void doConfigureBuildTask(
         Project project, File buildToolPath, File solutionFile, boolean useIncredibuild, 
         String platform, String configuration, Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
@@ -128,7 +128,7 @@ class DevEnvTask extends DefaultTask {
         ) 
     }
     
-    private void configureCleanTask(
+    private void doConfigureCleanTask(
         Project project, File buildToolPath, File solutionFile, boolean useIncredibuild, 
         String platform, String configuration, Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
