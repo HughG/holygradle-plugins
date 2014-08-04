@@ -14,7 +14,7 @@ class HgRepositoryTest extends AbstractHolyGradleTest {
     @Test
     public void testGetRevision() {
         final String expectedRevision = "12345abcdefg"
-        final List<String> expectedArgs  = ["log", "-l", "1", "--template", "\"{node}\""]
+        final List<String> expectedArgs  = ["log", "-r", "12345abcdefg", "-l", "1", "--template", "\"{node}\""]
         final ExecSpec stubSpec = ExecUtil.makeStubExecSpec()
 
         final HgCommand hgCommand = [ execute : { Closure configure -> configure(stubSpec); "12345abcdefg"} ] as HgCommand

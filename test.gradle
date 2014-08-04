@@ -75,6 +75,10 @@ subprojects { Project project ->
         t.include "**/*Test.*"
         t.exclude "**/Abstract*.*"
         t.exclude "**/*IntegrationTest.*"
+
+        if (project.name != "integration") {
+            project.tasks["publishPluginsLocally"].dependsOn(t)
+        }
     }
     project.task([type: Test], "integTest") { Test t ->
         t.group = "Verification"
