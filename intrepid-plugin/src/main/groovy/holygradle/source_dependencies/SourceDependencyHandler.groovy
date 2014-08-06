@@ -6,6 +6,7 @@ import holygradle.custom_gradle.BuildDependency
 import holygradle.dependencies.DependencyHandler
 import holygradle.scm.HgCommandLine
 import holygradle.scm.HgDependency
+import holygradle.scm.HgRepository
 import holygradle.scm.SvnDependency
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
@@ -186,7 +187,9 @@ class SourceDependencyHandler extends DependencyHandler {
             sourceDependency = new SvnDependency(project, this)
         } else {
             def hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
+            Task hgUnpackTask = HgRepository.findOrCreateToolSetupTask(project)
             def hgCommand = new HgCommandLine(
+                hgUnpackTask,
                 hgPath,
                 project.&exec
             )
