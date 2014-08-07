@@ -38,7 +38,7 @@ import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
  *
  * The purpose of this class is to build the latter structure from the former.
  */
-class PackedDependenciesStateHandler {
+class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
     private final Project project
     private final DependenciesStateHandler dependenciesStateHandler
     private Map<ModuleIdentifier, UnpackModule> unpackModulesMap = null
@@ -211,7 +211,7 @@ class PackedDependenciesStateHandler {
      *
      * @return The transitive set of unpacked modules used by the project.
      */
-    public getAllUnpackModules() {
+    public Collection<UnpackModule> getAllUnpackModules() {
         if (unpackModulesMap == null) {
             unpackModules = initializeAllUnpackModules()
         }

@@ -16,6 +16,7 @@ class PackedDependencyHandler extends DependencyHandler {
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
     public Boolean unpackToCache = null
+    private Boolean createSymlinkToCache = null
     public Boolean createSettingsFile = null
     public Boolean publishDependency = null
     
@@ -79,11 +80,16 @@ class PackedDependencyHandler extends DependencyHandler {
             projectForHandler.extensions.packedDependenciesDefault
         }
     }
-    
+
+    /**
+     * @deprecated Use {@code project.packedDependencies['someDependency'].unpackToCache = false} instead.
+     */
+    @Deprecated
     public void unpackToCache(boolean doUnpack) {
+        project.logger.warn("The syntax 'unpackToCache false' is deprecated. Use 'unpackToCache = false' instead.")
         this.unpackToCache = doUnpack
     }
-    
+
     public boolean shouldUnpackToCache() {
         if (unpackToCache == null) {
             PackedDependencyHandler p = getParentHandler()
@@ -96,7 +102,24 @@ class PackedDependencyHandler extends DependencyHandler {
             return unpackToCache
         }
     }
-    
+
+    public void noCreateSymlinkToCache() {
+        this.createSymlinkToCache = false
+    }
+
+    public boolean shouldCreateSymlinkToCache() {
+        if (createSymlinkToCache == null) {
+            PackedDependencyHandler p = getParentHandler()
+            if (p != null) {
+                return p.shouldCreateSymlinkToCache()
+            } else {
+                return shouldUnpackToCache()
+            }
+        } else {
+            return createSymlinkToCache
+        }
+    }
+
     public boolean shouldCreateSettingsFile() {
         if (createSettingsFile == null) {
             PackedDependencyHandler p = getParentHandler()

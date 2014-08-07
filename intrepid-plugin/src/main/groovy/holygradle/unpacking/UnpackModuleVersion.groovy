@@ -3,7 +3,7 @@ package holygradle.unpacking
 import holygradle.Helper
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.PackedDependencyHandler
-import holygradle.symlinks.SymlinkTask
+import holygradle.symlinks.SymlinksToCacheTask
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -46,7 +46,7 @@ class UnpackModuleVersion {
             def relativePath = dep.@relativePath?.toString()
             if (relativePath != null) {
                 final String moduleVersionId = "${dep.@org}:${dep.@name}:${dep.@rev}"
-                // We've ocasionally seen hand-crafted ivy.xml files which have a trailing slash on the relativePath,
+                // We've occasionally seen hand-crafted ivy.xml files which have a trailing slash on the relativePath,
                 // which leads to us creating symlinks one level down from where we want them; so, strip it if present.
                 if (relativePath.endsWith('/')) {
                     relativePath = relativePath[0..-2]
@@ -144,55 +144,27 @@ class UnpackModuleVersion {
         
         unpackTask
     }
-    
-    // Collect all parent, grand-parent, etc symlink tasks for creating symlinks in the workspace, pointing
-    // to the central cache.
-    public Collection<Task> collectParentSymlinkTasks(Project project) {
-        Collection<Task> symlinkTasks = []
-        if (parentUnpackModuleVersion != null) {
-            parentUnpackModuleVersion.collectParentSymlinkTasks(project).each { 
-                symlinkTasks.add(it)
-            }
-        }
-        symlinkTasks.add(getSymlinkTaskIfUnpackingToCache(project))
-        symlinkTasks
-    }
-    
-    // This method returns a fully configured symlink task for creating a symlink in the workspace, pointing
+
+    // This method configures symlink task for creating a symlink in the workspace, pointing
     // to the central cache. The task will depend on any symlink tasks for parent, grand-parent modules.
     // Null will be returned if this module is not unpacked to the cache.
-    public Task getSymlinkTaskIfUnpackingToCache(Project project) {
-        SymlinkTask symlinkTask = null
-        if (shouldUnpackToCache()) {
-            String taskName = CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
-            
-            symlinkTask = project.tasks.findByName(taskName) as SymlinkTask
-            if (symlinkTask == null) {
-                File linkDir = getTargetPathInWorkspace(project)
-                symlinkTask = (SymlinkTask)project.task(taskName, type: SymlinkTask) {
-                    group = "Dependencies"
-                    description = "Build workspace-to-cache symlink for ${moduleVersion.getName()}:${moduleVersion.getVersion()}."
-                }
-                symlinkTask.configure(project, linkDir, getUnpackDir(project))
-            }
-            
-            // Define dependencies from this symlink task to the symlink tasks for parent modules.
-            // This ensures that the unpacking is done in a specific order, which is very useful because
-            // it means that when 
-            if (parentUnpackModuleVersion != null) {
-                parentUnpackModuleVersion.collectParentSymlinkTasks(project).each {
-                    symlinkTask.dependsOn it
-                }
-            }
+    /**
+     * This method configures the {@code symlinksToCacheTask} to create a symlink to the version of this module in the
+     * cache, provided that the relevant {@code packedDependencies} entry has {@code unpackToCache = true} and has not
+     * had {@code noCreateSymlinkToCache() called}; otherwise, it does not change the task's configuration.
+     * @param symlinksToCacheTask
+     */
+    public void addToSymlinkTaskIfRequired(SymlinksToCacheTask symlinksToCacheTask) {
+        if (shouldCreateSymlinkToCache()) {
+            symlinksToCacheTask.addUnpackModuleVersion(this)
         }
-        symlinkTask
     }
     
     // This returns the packedDependencies entry which configures some aspects of this module.
     // The entry could be specifically for this module, in the case where a project directly
     // specifies a dependency. Or this entry could be for a 'parent' packedDependency entry 
     // i.e. one which causes this module to be pulled in as a transitive dependency.
-    public PackedDependencyHandler getParentPackedDependency() {
+    public PackedDependencyHandler getSelfOrAncestorPackedDependency() {
         if (packedDependency00 != null) {
             return packedDependency00
         }
@@ -202,7 +174,7 @@ class UnpackModuleVersion {
         if (parentUnpackModuleVersion == null) {
             throw new RuntimeException("Error - module '${getFullCoordinate()}' has no parent module.")
         }
-        return parentUnpackModuleVersion.getParentPackedDependency()
+        return parentUnpackModuleVersion.getSelfOrAncestorPackedDependency()
     }
     
     // Return the name of the directory that should be constructed in the workspace for the unpacked artifacts. 
@@ -233,14 +205,9 @@ class UnpackModuleVersion {
             // If we don't return above then this must be a transitive dependency.
 
             String relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
-            if (relativePathForDependency == "" ||
-                relativePathForDependency.endsWith("/") || 
-                relativePathForDependency.endsWith("\\")
-            ) {
-                // If the relative path is empty, or ends with a slash then assume that the path does not indicate  
-                // the name of the directory for the module, but only indicates the path to the parent directory.
-                // So we need to add the name of the target directory ourselves.
-                relativePathForDependency = relativePathForDependency + getTargetDirName() 
+            if (relativePathForDependency == "") {
+                // If the relative path is empty we need to supply the name of the target directory ourselves.
+                relativePathForDependency = getTargetDirName()
             }
             
             if (relativePathForDependency.startsWith("/") || 
@@ -263,12 +230,17 @@ class UnpackModuleVersion {
     // If true this module should be unpacked to the central cache, otherwise it should be unpacked
     // directly to the workspace.
     private boolean shouldUnpackToCache() {
-        getParentPackedDependency().shouldUnpackToCache()
+        getSelfOrAncestorPackedDependency().shouldUnpackToCache()
     }
-    
+
+    // If true, a symlink for this module should be created, to the central cache, otherwise no symlink is created.
+    private boolean shouldCreateSymlinkToCache() {
+        getSelfOrAncestorPackedDependency().shouldCreateSymlinkToCache()
+    }
+
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
     // cache or it could be to somewhere in the workspace.
-    private File getUnpackDir(Project project) {
+    public File getUnpackDir(Project project) {
         if (shouldUnpackToCache()) {
             // Our closest packed-dependency entry (which could be for 'this' module, or any parent module)
             // dictated that we should unpack to the global cache.
@@ -294,7 +266,16 @@ class UnpackModuleVersion {
     @Override
     public String toString() {
         return "UnpackModuleVersion{" +
-            moduleVersion +
+            "moduleVersion=" + moduleVersion +
+            ", packedDependency target path=" + (packedDependency00 == null ?
+                "n/a" :
+                packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
+            ) +
+            ", parent relative path=" + (packedDependency00 == null ?
+                parentUnpackModuleVersion?.getRelativePathForDependency(this) :
+                "n/a"
+            ) +
+            ", parentUnpackModuleVersion=" + parentUnpackModuleVersion?.moduleVersion +
             '}';
     }
 }

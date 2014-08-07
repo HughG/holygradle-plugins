@@ -2,6 +2,7 @@ package holygradle.publishing
 
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.source_dependencies.SourceDependencyHandler
+import holygradle.unpacking.PackedDependenciesStateSource
 import holygradle.unpacking.UnpackModule
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
@@ -112,7 +113,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
     
-    public void defineCheckTask(Iterable<UnpackModule> unpackModules) {
+    public void defineCheckTask(PackedDependenciesStateSource packedDependenciesStateSource) {
         RepublishHandler republishHandler = getRepublishHandler()
         if (republishHandler != null) {
             String repoUrl = republishHandler.getToRepository()
@@ -127,7 +128,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 ) { CheckPublishedDependenciesTask it ->
                     it.group = "Publishing"
                     it.description = "Check if all packed dependencies are accessible in the target repo."
-                    it.initialize(unpackModules, repoUrl, repo.getCredentials())
+                    it.initialize(packedDependenciesStateSource, repoUrl, repo.getCredentials())
                 }
             }
         }
@@ -432,7 +433,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         // which I don't think we care about for now).
 
         // Pre-calculate the indices for the original conficguration order, so we can easily sort the configuration
-        // mapping entries by source config, so that the order matches the order in which the configs were defined.
+        // mapping versions by source config, so that the order matches the order in which the configs were defined.
         final LinkedHashMap<String, Integer> configIndices = [:]
         originalConfigurationOrder.eachWithIndex { String entry, int i -> configIndices[entry] = i }
 

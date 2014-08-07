@@ -2,12 +2,16 @@ package holygradle.devenv
 
 import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesExtension
+import holygradle.custom_gradle.util.ProfilingHelper
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 
 class DevEnvPlugin implements Plugin<Project> {
     void apply(Project project) {
+        ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
+        def timer = profilingHelper.startBlock("DevEnvPlugin#apply(${project})")
+
         /**************************************
          * Apply other plugins
          **************************************/
@@ -114,6 +118,8 @@ class DevEnvPlugin implements Plugin<Project> {
                 cleanRelease.each { it.configureTaskDependencies() }
             }
         }
+
+        timer.endBlock()
     }
 }
 

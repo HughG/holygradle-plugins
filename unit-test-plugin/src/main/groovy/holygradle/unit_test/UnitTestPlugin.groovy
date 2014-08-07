@@ -1,9 +1,13 @@
 package holygradle.unit_test
 
+import holygradle.custom_gradle.util.ProfilingHelper
 import org.gradle.api.*
 
 class UnitTestPlugin implements Plugin<Project> {        
     void apply(Project project) {
+        ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
+        def timer = profilingHelper.startBlock("UnitTestPlugin#apply(${project})")
+
         /**************************************
          * DSL extensions
          **************************************/
@@ -18,8 +22,12 @@ class UnitTestPlugin implements Plugin<Project> {
          **************************************/
         //TestHandler.preDefineTasks(project)
         project.gradle.projectsEvaluated {
-            TestHandler.defineTasks(project)
+            profilingHelper.timing("UnitTestPlugin(${project})#projectsEvaluated for defining tasks") {
+                TestHandler.defineTasks(project)
+            }
         }
+
+        timer.endBlock()
     }
 }
 

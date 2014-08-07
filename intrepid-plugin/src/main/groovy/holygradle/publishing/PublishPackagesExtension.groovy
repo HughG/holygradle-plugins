@@ -1,8 +1,7 @@
 package holygradle.publishing
 
-import holygradle.unpacking.UnpackModule
+import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.Action
-import org.gradle.api.Task
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 
 public interface PublishPackagesExtension {
@@ -24,5 +23,5 @@ public interface PublishPackagesExtension {
 
     RepublishHandler getRepublishHandler()
 
-    void defineCheckTask(Iterable<UnpackModule> unpackModules)
+    void defineCheckTask(PackedDependenciesStateSource packedDependenciesStateSource)
 }

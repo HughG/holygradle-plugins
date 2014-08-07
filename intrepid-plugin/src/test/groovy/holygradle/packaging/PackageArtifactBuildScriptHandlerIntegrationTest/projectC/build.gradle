@@ -12,12 +12,15 @@ repositories.ivy {
 }
 
 packedDependencies {
+    // This test uses noCreateSymlinkToCache() because we don't actually want to test the fetching
+    // unpacking, and symlinking of dependencies, just the finding of them by name in includeBuildScript.
 
     // Add a couple of packed dependencies, deliberately make the name of one a substring of the other
     // as a regression test for GR #4543.
     "../projectCDep" {    
         dependency "holygradle.test:external-lib:1.0"
         configuration "preBuiltArtifacts->testRuntime"
+        noCreateSymlinkToCache()
     }
     
     // This one shouldn't appear in the output build script, despite the previous one being an
@@ -25,6 +28,7 @@ packedDependencies {
     "../projectCDepUnwanted" {
         dependency "holygradle.test:example-framework:1.0"
         configuration "preBuiltArtifacts->compileVc10Debug"
+        noCreateSymlinkToCache()
     }        
 }
 
@@ -39,7 +43,7 @@ packageArtifacts {
             //addIvyRepository "TODO", "Artifactory"
             
             // This should create a packedDependency in the generated build script - before a fix for GR #4543
-            // this actually creates the wrong packedDependency (projectAlreadyFetchedPackedDependencyNotWantedInOutputBuildScript)
+            // this actually creates the wrong packedDependency (projectCDepUnwanted)
             addPackedDependency "projectCDep", "preBuiltArtifacts->someConfig"
         }
     }

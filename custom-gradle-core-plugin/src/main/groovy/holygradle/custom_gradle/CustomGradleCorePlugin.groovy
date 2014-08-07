@@ -1,5 +1,6 @@
 package holygradle.custom_gradle
 
+import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.VersionNumber
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
@@ -22,6 +23,9 @@ class CustomGradleCorePlugin implements Plugin<Project> {
     }
     
     void apply(Project project) {
+        ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
+        def timer = profilingHelper.startBlock("CustomGradleCorePlugin#apply(${project})")
+
         File gradlePropsFile = new File(project.gradle.gradleUserHomeDir, "gradle.properties")
         
         // DSL extension to specify build dependencies
@@ -190,6 +194,8 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 }
             }
         }
+
+        timer.endBlock()
     }
 }
 

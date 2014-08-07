@@ -1,5 +1,6 @@
 package holygradle.credentials
 
+import holygradle.custom_gradle.util.ProfilingHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -9,6 +10,9 @@ import org.gradle.api.file.CopySpec
 
 class MyCredentialsPlugin implements Plugin<Project> {
     void apply(Project project) {
+        ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
+        def timer = profilingHelper.startBlock("MyCredentialsPlugin#apply(${project})")
+
         /**************************************
          * Dependencies
          **************************************/
@@ -62,6 +66,8 @@ class MyCredentialsPlugin implements Plugin<Project> {
                 println "-" * 80
             }
         }
+
+        timer.endBlock()
     }
 }
 

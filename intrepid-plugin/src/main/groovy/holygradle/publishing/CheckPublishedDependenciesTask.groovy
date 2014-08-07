@@ -1,5 +1,6 @@
 package holygradle.publishing
 
+import holygradle.unpacking.PackedDependenciesStateSource
 import holygradle.unpacking.UnpackModule
 import holygradle.unpacking.UnpackModuleVersion
 import org.gradle.api.DefaultTask
@@ -15,7 +16,11 @@ class CheckPublishedDependenciesTask extends DefaultTask {
         output = services.get(StyledTextOutputFactory).create(CheckPublishedDependenciesTask)
     }
     
-    public void initialize(Iterable<UnpackModule> unpackModules, String repoUrl, PasswordCredentials repoCredentials) {
+    public void initialize(
+        PackedDependenciesStateSource packedDependenciesStateSource,
+        String repoUrl,
+        PasswordCredentials repoCredentials
+    ) {
         StyledTextOutput localOutput = output // capture private for closure
         doLast {
             ArtifactoryHelper helper = new ArtifactoryHelper(
@@ -24,7 +29,7 @@ class CheckPublishedDependenciesTask extends DefaultTask {
                 repoCredentials.getPassword()
             )
             Map<String, Boolean> modules = [:]
-            unpackModules.each { module ->
+            packedDependenciesStateSource.allUnpackModules.each { module ->
                 module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
                     String coord = versionInfo.getFullCoordinate().replace(":", "/")
                     modules[versionInfo.getFullCoordinate()] = helper.artifactExists(coord)

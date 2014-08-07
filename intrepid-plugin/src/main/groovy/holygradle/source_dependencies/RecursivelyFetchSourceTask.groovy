@@ -7,7 +7,8 @@ import holygradle.SettingsFileHelper
 class RecursivelyFetchSourceTask extends DefaultTask {
     public boolean generateSettingsFileForSubprojects = true
     public boolean recursive = true
-    
+    private boolean addedUnpackTasks
+
     RecursivelyFetchSourceTask() {
         /*println "-------> Configuring '${project.name}' tasks."
         println "  rootProject: " + project.rootProject.name
@@ -17,6 +18,13 @@ class RecursivelyFetchSourceTask extends DefaultTask {
             println "Started fetching '${project.name}'. Start param: " + project.gradle.startParameter.newInstance()
         }*/
         doLast {
+            if (!getAddedUnpackTasks()) {
+                throw new RuntimeException(
+                    "The '${this.name}' task can only be specified explicitly on the command line, " +
+                    "not run implicitly as a dependency of other tasks."
+                )
+            }
+
             Collection<FetchSourceDependencyTask> sourceDepTasks = []
             taskDependencies.getDependencies(this).each { t ->
                 if (t instanceof FetchSourceDependencyTask && t.getDidWork()) {
@@ -64,4 +72,13 @@ class RecursivelyFetchSourceTask extends DefaultTask {
             }
         }
     }
+
+    public void setAddedUnpackTasks() {
+        addedUnpackTasks = true
+    }
+
+    public boolean getAddedUnpackTasks() {
+        return addedUnpackTasks
+    }
+
 }

@@ -18,7 +18,7 @@ public class Symlink {
         }
     }
     
-    public static void rebuild(File link, File target, Project project, boolean fileLink=false) {
+    public static void rebuild(File link, File target) {
         File canonicalLink = link.getCanonicalFile()
         
         // Delete the symlink if it exists
@@ -33,22 +33,10 @@ public class Symlink {
                 linkParentDir.mkdirs()
             }
         }
-        
-        // Run 'mklink'
-        ExecResult execResult = project.exec { ExecSpec it ->
-            if (fileLink) {
-                it.commandLine "cmd", "/c", "mklink", '"' + canonicalLink.path + '"', '"' + target.path + '"'
-            } else {
-                it.commandLine "cmd", "/c", "mklink", "/D", '"' + canonicalLink.path + '"', '"' + target.path + '"'
-            }
-            it.setStandardOutput new ByteArrayOutputStream()
-            it.setErrorOutput new ByteArrayOutputStream()
-            it.setIgnoreExitValue true
+
+        if (!target.exists()) {
+            throw new RuntimeException("Cannot create link to non-existent target; from '${canonicalLink}' to '${target}'")
         }
-        if (execResult.getExitValue() != 0) {
-            println "Failed to create symlink at location '${canonicalLink}' pointing to '${target}'. " +
-                "This could be due to User Account Control, or failing to use an Administrator command prompt."
-            execResult.rethrowFailure()
-        }
+        Files.createSymbolicLink(canonicalLink.toPath(), target.toPath())
     }
 }

@@ -5,19 +5,33 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 
 class SymlinkTask extends DefaultTask {
-    public void configure(Project project, File linkDir, File targetDir) {
-        boolean linkExists = linkDir.exists()
-        boolean isSymlink = Symlink.isJunctionOrSymlink(linkDir)
-        
+    private Map<File, File> entries = [:]
+
+    public void initialize() {
+        Map<File, File> localEntries = entries // capture private for closure
         doFirst {
-            if (linkExists && !isSymlink) {
-                println "-"*80
-                println "Could not create a symlink from '${linkDir.path}' to '${targetDir.path}' because the " +
-                        "former already exists and is not a symlink. Continuing..."
-                println "-"*80
-            } else {
-                Symlink.rebuild(linkDir, targetDir, project)
+            localEntries.each { File linkDir, File targetDir ->
+                final boolean linkExists = linkDir.exists()
+                final boolean isSymlink = Symlink.isJunctionOrSymlink(linkDir)
+                if (linkExists && !isSymlink) {
+                    throw new RuntimeException(
+                        "Could not create a symlink from '${linkDir.path}' to '${targetDir.path}' " +
+                        "because the former already exists and is not a symlink."
+                    )
+                }
+
+                Symlink.rebuild(linkDir, targetDir)
             }
         }
+    }
+
+    public void addLink(File linkDir, File targetDir) {
+        if (entries.containsKey(linkDir)) {
+            throw new RuntimeException(
+                "Cannot initialize for symlink from '${linkDir.path}' to '${targetDir.path}' " +
+                "because a symlink has already been added from there to '${entries[linkDir].path}'"
+            )
+        }
+        entries[linkDir] = targetDir
     }
 }
