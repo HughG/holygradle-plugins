@@ -135,9 +135,9 @@ class SourceDependencyHandler extends DependencyHandler {
             sourceDep.initialize(sourceDepPublishing)
             sourceDep  
         }
-        project.extensions.sourceDependencies
+        project.sourceDependencies as Collection<SourceDependencyHandler>
     }
-    
+
     public SourceDependencyHandler(String depName) {
         super(depName)
     }

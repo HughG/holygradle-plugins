@@ -101,9 +101,7 @@ class UnpackModuleVersion {
     public UnpackModuleVersion getParent() {
         parentUnpackModuleVersion
     }
-    
-    // Return a fully configured task for unpacking the module artifacts to the appropriate location.
-    // This could be to the central cache or directly to the workspace.
+
     /**
      * Returns a fully configured task for unpacking the module artifacts to the appropriate location, which also
      * implements the {@link Unpack} interface.
@@ -145,14 +143,12 @@ class UnpackModuleVersion {
         unpackTask
     }
 
-    // This method configures symlink task for creating a symlink in the workspace, pointing
-    // to the central cache. The task will depend on any symlink tasks for parent, grand-parent modules.
-    // Null will be returned if this module is not unpacked to the cache.
     /**
      * This method configures the {@code symlinksToCacheTask} to create a symlink to the version of this module in the
      * cache, provided that the relevant {@code packedDependencies} entry has {@code unpackToCache = true} and has not
      * had {@code noCreateSymlinkToCache() called}; otherwise, it does not change the task's configuration.
      * @param symlinksToCacheTask
+     * @return true if this version was added to the task, otherwise false
      */
     public void addToSymlinkTaskIfRequired(SymlinksToCacheTask symlinksToCacheTask) {
         if (shouldCreateSymlinkToCache()) {

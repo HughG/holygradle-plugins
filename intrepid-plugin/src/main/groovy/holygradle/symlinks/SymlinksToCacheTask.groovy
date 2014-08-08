@@ -30,9 +30,7 @@ class SymlinksToCacheTask extends DefaultTask {
                 File linkDir = version.getTargetPathInWorkspace(project)
                 File targetDir = version.getUnpackDir(project)
                 final boolean linkExists = linkDir.exists()
-                println "linkExists = ${linkExists} for ${linkDir}"
                 final boolean isSymlink = Symlink.isJunctionOrSymlink(linkDir)
-                println "isSymlink = ${isSymlink} for ${linkDir}"
                 if (linkExists && !isSymlink) {
                     throw new RuntimeException(
                         "Could not create a symlink from '${linkDir.path}' to '${targetDir.path}' " +

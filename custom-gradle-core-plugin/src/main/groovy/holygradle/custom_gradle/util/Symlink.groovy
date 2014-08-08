@@ -1,9 +1,5 @@
 package holygradle.custom_gradle.util
 
-import org.gradle.api.Project
-import org.gradle.process.ExecResult
-import org.gradle.process.ExecSpec
-
 import java.nio.file.Files
 import java.nio.file.Paths
 

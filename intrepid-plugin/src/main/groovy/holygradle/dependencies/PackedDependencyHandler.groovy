@@ -104,14 +104,21 @@ class PackedDependencyHandler extends DependencyHandler {
     }
 
     public void noCreateSymlinkToCache() {
-        this.createSymlinkToCache = false
+        createSymlinkToCache = false
+    }
+
+    protected Boolean getCreateSymlinkToCache() {
+        createSymlinkToCache
     }
 
     public boolean shouldCreateSymlinkToCache() {
         if (createSymlinkToCache == null) {
+            // This property is different from the others: we only use the parent (default) value if it has been
+            // explicitly set.  If we were to call p.shouldCreateSymlinkToCache(), it would always have a fallback value
+            // (of p.shouldUnpackToCache()), so we'd never get to the fallback value we want, this.shouldUnpackToCache().
             PackedDependencyHandler p = getParentHandler()
-            if (p != null) {
-                return p.shouldCreateSymlinkToCache()
+            if (p != null && p.getCreateSymlinkToCache() != null) {
+                return p.getCreateSymlinkToCache()
             } else {
                 return shouldUnpackToCache()
             }

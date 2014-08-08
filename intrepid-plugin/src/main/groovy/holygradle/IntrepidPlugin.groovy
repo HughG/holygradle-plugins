@@ -16,6 +16,7 @@ import holygradle.publishing.PublishPackagesExtension
 import holygradle.scm.SourceControlRepositories
 import holygradle.source_dependencies.CopyArtifactsHandler
 import holygradle.source_dependencies.RecursivelyFetchSourceTask
+import holygradle.source_dependencies.SourceDependenciesStateHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.source_dependencies.SourceDependencyTaskHandler
 import holygradle.symlinks.SymlinkHandler
@@ -191,7 +192,10 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         // DSL extension to specify source dependencies
         Collection<SourceDependencyHandler> sourceDependencies = SourceDependencyHandler.createContainer(project)
-        
+
+        // Define the 'packedDependenciesState' DSL for the project.
+        SourceDependenciesStateHandler sourceDependenciesState = SourceDependenciesStateHandler.createExtension(project)
+
         // Define 'publishPackages' DSL block.
         PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         project.extensions.create(
@@ -352,8 +356,23 @@ public class IntrepidPlugin implements Plugin<Project> {
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for populating symlink-to-cache tasks") {
                 // Initialize for symlinks from workspace to the unpack cache, for each dependency which was unpacked to
                 // the unpack cache (as opposed to unpacked directly to the workspace).
+                //
+                // Need to do this in projectsEvaluated so we can be sure that all packed dependencies have been set up.
                 deleteSymlinksToacheTask.addUnpackModuleVersions(packedDependenciesState)
                 rebuildSymlinksToacheTask.addUnpackModuleVersions(packedDependenciesState)
+            }
+
+            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for cross-project symlink task dependencies") {
+                // Make the symlink creation in this project depend on that in its source dependencies.  This makes it
+                // possible to create symlinks (using the "symlinks" DSL) which point to symlinks in other projects.
+                // Without this dependency, the target symlinks might not have been created when this project tries to
+                // create symlinks to them.
+                //
+                // Need to do this in projectsEvaluated so we can be sure that all source dependencies have been set up.
+                sourceDependenciesState.allConfigurationsWithSourceDependencies.each { Configuration conf ->
+                    rebuildSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, rebuildSymlinksTask.name)
+                    deleteSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, deleteSymlinksTask.name)
+                }
             }
 
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for populating pathsForPackedDependencies") {
@@ -373,6 +392,9 @@ public class IntrepidPlugin implements Plugin<Project> {
                             // TODO 2014-08-05 HughG: Delay getting unpack tasks, somehow.
                             Task unpackTask = versionInfo.getUnpackTask(project)
                             fetchAllDependenciesTask.dependsOn unpackTask
+                            // We also need to make sure we unpack before trying to create a symlink to the cache, or
+                            // we will end up with a broken file symlink, instead of a working directory symlink.
+                            rebuildSymlinksToacheTask.dependsOn unpackTask
                         }
                     }
                     fetchAllDependenciesTask.setAddedUnpackTasks()

@@ -82,6 +82,22 @@
                     <option name="myStatic" value="false" />
                     <option name="myName" value="packedDependenciesState" />
                   </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="sourceDependenciesState" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.source_dependencies.SourceDependenciesStateHandler" />
+                    <option name="myType" value="holygradle.source_dependencies.SourceDependenciesStateHandler" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="sourceDependenciesState" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="sourceDependencies" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;SourceDependencyHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;SourceDependencyHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="sourceDependencies" />
+                  </DPropertyElement>
                 </set>
               </option>
             </DClassElement>
