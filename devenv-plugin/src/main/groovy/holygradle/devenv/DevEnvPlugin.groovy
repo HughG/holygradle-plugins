@@ -53,11 +53,6 @@ class DevEnvPlugin implements Plugin<Project> {
             it.group = "DevEnv"
             it.description = "This task is a dependency of all clean tasks, so will run before any of them"
         }
-        // We should rebuild symlinks before running any build task.
-        Task rebuildSymlinksTask = project.tasks.findByName("rebuildSymlinks")
-        if (rebuildSymlinksTask != null) {
-            beforeBuild.dependsOn rebuildSymlinksTask
-        }
 
         List<DevEnvTask> buildDebug = devEnvHandler.defineBuildTasks(project, "buildDebug", "Debug")
         List<DevEnvTask> buildRelease = devEnvHandler.defineBuildTasks(project, "buildRelease", "Release")
