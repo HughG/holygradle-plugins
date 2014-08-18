@@ -1,16 +1,32 @@
 package holygradle.custom_gradle.util
 
+import java.util.regex.Matcher
+import java.lang.StringBuilder
+
 public class Wildcard {
     public static boolean match(String pattern, String input) {
-        for (chunk in pattern.split("\\*")) {
-            int index = input.indexOf(chunk)
-            if (index < 0) {
-                return false
+
+        // Convert to a regex
+        StringBuilder regexPattern = new StringBuilder();
+
+        pattern.toList().each { String c ->
+            String append;
+            if (c == '.') {
+                append = "\\."
+            } else if (c == '?') {
+                append = ".?"
+            } else if (c == '*') {
+                append = ".*"
+            } else {
+                append = c;
             }
-            input = input.substring(index + chunk.length())
+            regexPattern.append(append);
         }
-        
-        return true
+
+        String regexPatternString = regexPattern.toString()
+        Matcher globRegex = input =~ regexPatternString
+        return globRegex.matches();
+
     }
     
     public static boolean anyMatch(List<String> patterns, String input) {

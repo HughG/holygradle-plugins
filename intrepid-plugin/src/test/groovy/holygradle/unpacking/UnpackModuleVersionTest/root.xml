@@ -10,6 +10,6 @@
   <dependencies>
     <dependency org="org" name="apricot" rev="1.1" conf="default-&gt;default" relativePath="aa"/>
     <dependency org="org" name="blueberry" rev="1.2" conf="default-&gt;default" relativePath="sub/bb"/>
-    <dependency org="org" name="coconut" rev="1.3" conf="default-&gt;default" relativePath="sub/"/>
+    <dependency org="org" name="coconut" rev="1.3" conf="default-&gt;default" relativePath="sub/coconut"/>
   </dependencies>
 </ivy-module>

@@ -23,7 +23,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler)
         // In this case, we create a new SourceControlRepository instead of trying to get the "sourceControl" extension
         // from the project, because we don't want a DummySourceControl if there's no SCM info here.
-        SourceControlRepository sourceRepo = SourceControlRepositories.get(project.rootProject, project.projectDir)
+        SourceControlRepository sourceRepo = SourceControlRepositories.create(project.rootProject, project.projectDir)
 
         // Create an internal 'createPublishNotes' task to create some text files to be included in all
         // released packages.
@@ -32,6 +32,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             createPublishNotesTask = project.task("createPublishNotes", type: DefaultTask) { Task it ->
                 it.group = "Publishing"
                 it.description = "Creates 'build_info' directory which will be included in published packages."
+                it.dependsOn sourceRepo.toolSetupTask
                 it.doLast {
                     File buildInfoDir = new File(project.projectDir, "build_info")
                     if (buildInfoDir.exists()) {
@@ -202,6 +203,9 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         if (createPublishNotesTask != null) {
             t.dependsOn createPublishNotesTask
         }
+        // Writing the "package files" below may involve gathering information for source control repositories, so we
+        // need to make sure any necessary tools are set up.
+        t.dependsOn SourceControlRepositories.getToolSetupTask(project)
         t.baseName = project.name + "-" + name
         t.destinationDir = new File(project.projectDir, "packages")
         t.includeEmptyDirs = false

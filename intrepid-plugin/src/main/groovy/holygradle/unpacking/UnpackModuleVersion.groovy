@@ -10,10 +10,13 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {
-    public ModuleVersionIdentifier moduleVersion = null
-    public boolean includeVersionNumberInPath = false
-    public Map<ResolvedArtifact, Collection<String>> artifacts = [:] // a map from artifacts to sets of configurations that include the artifacts
-    private Map<String, String> dependencyRelativePaths = [:]
+    public final ModuleVersionIdentifier moduleVersion = null
+    public final boolean includeVersionNumberInPath = false
+    // A map from artifacts to sets of configurations that include the artifacts.
+    public final Map<ResolvedArtifact, Set<String>> artifacts = [:].withDefault { new HashSet<String>() }
+    // The set of configurations in the containing project which lead to this module being included.
+    public final Set<String> originalConfigurations = new HashSet<String>()
+    private final Map<String, String> dependencyRelativePaths = [:]
     private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
     
@@ -23,6 +26,11 @@ class UnpackModuleVersion {
         UnpackModuleVersion parentUnpackModuleVersion,
         PackedDependencyHandler packedDependency00
     ) {
+        // Therefore we must have a parent. Not having a parent is an error.
+        if (packedDependency00 == null && parentUnpackModuleVersion == null) {
+            throw new RuntimeException("Module '${moduleVersion}' has no parent module.")
+        }
+
         this.moduleVersion = moduleVersion
         this.parentUnpackModuleVersion = parentUnpackModuleVersion
         
@@ -34,12 +42,16 @@ class UnpackModuleVersion {
         // Read the relative paths for any of the dependencies.  (No point trying to use static types here as we're
         // using GPath, so the returned objects have magic properties.)
         def ivyXml = new XmlSlurper(false, false).parseText(ivyFile.text)
-        ivyXml.dependencies.dependency.each { dependencyNode ->
-            def relativePath = dependencyNode.@relativePath
+        ivyXml.dependencies.dependency.each { dep ->
+            def relativePath = dep.@relativePath?.toString()
             if (relativePath != null) {
-                dependencyRelativePaths[
-                    "${dependencyNode.@org}:${dependencyNode.@name}:${dependencyNode.@rev}"
-                ] = relativePath.toString()
+                final String moduleVersionId = "${dep.@org}:${dep.@name}:${dep.@rev}"
+                // We've ocasionally seen hand-crafted ivy.xml files which have a trailing slash on the relativePath,
+                // which leads to us creating symlinks one level down from where we want them; so, strip it if present.
+                if (relativePath.endsWith('/')) {
+                    relativePath = relativePath[0..-2]
+                }
+                dependencyRelativePaths[moduleVersionId] = relativePath
             }
         }
     }
@@ -52,16 +64,11 @@ class UnpackModuleVersion {
         }
     }
     
-    public void addArtifacts(Iterable<ResolvedArtifact> arts, String conf) {
+    public void addArtifacts(Iterable<ResolvedArtifact> arts, String originalConf) {
         for (art in arts) {
-            if (artifacts.containsKey(art)) {
-                if (!artifacts[art].contains(conf)) {
-                    artifacts[art].add(conf)
-                }
-            } else {
-                artifacts[art] = [conf]
-            }
+            artifacts[art].add(originalConf)
         }
+        originalConfigurations.add(originalConf)
     }
     
     public String getFullCoordinate() {
@@ -155,14 +162,14 @@ class UnpackModuleVersion {
     // to the central cache. The task will depend on any symlink tasks for parent, grand-parent modules.
     // Null will be returned if this module is not unpacked to the cache.
     public Task getSymlinkTaskIfUnpackingToCache(Project project) {
-        Task symlinkTask = null
+        SymlinkTask symlinkTask = null
         if (shouldUnpackToCache()) {
             String taskName = CamelCase.build("symlink", moduleVersion.getName()+moduleVersion.getVersion())
             
-            symlinkTask = project.tasks.findByName(taskName)
+            symlinkTask = project.tasks.findByName(taskName) as SymlinkTask
             if (symlinkTask == null) {
                 File linkDir = getTargetPathInWorkspace(project)
-                symlinkTask = project.task(taskName, type: SymlinkTask) {
+                symlinkTask = (SymlinkTask)project.task(taskName, type: SymlinkTask) {
                     group = "Dependencies"
                     description = "Build workspace-to-cache symlink for ${moduleVersion.getName()}:${moduleVersion.getVersion()}."
                 }
@@ -224,15 +231,7 @@ class UnpackModuleVersion {
             }
         } else {
             // If we don't return above then this must be a transitive dependency.
-            // Therefore we must have a parent. Not having a parent is an error.
-            if (parentUnpackModuleVersion == null) {
-                GString msg = "Error - module '${getFullCoordinate()}' has no parent module. "
-                if (parent != null) {
-                    msg += "(Project: ${project.name})"
-                }
-                throw new RuntimeException(msg)
-            }
-            
+
             String relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
             if (relativePathForDependency == "" ||
                 relativePathForDependency.endsWith("/") || 
@@ -289,6 +288,14 @@ class UnpackModuleVersion {
         } else {
             "Unpacks dependency '${targetName}' to ${getTargetPathInWorkspace(null)}."
         }
+    }
+
+
+    @Override
+    public String toString() {
+        return "UnpackModuleVersion{" +
+            moduleVersion +
+            '}';
     }
 }
 

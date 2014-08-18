@@ -11,6 +11,8 @@ This repository contains:
 # Prerequisites
  - Java JDK 1.7 - you do need the dev-kit, not just the run-time.
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
+   - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
+   "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
  - An Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
    - a remote repo pointing to Maven Central 
@@ -30,6 +32,10 @@ artifactoryPluginPublishRepo=<name of the (non-remote, non-virtual) repository f
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
+
+Note that IntelliJ IDEA will fail to open the project until you've created this file (because it parses the
+"build.gradle" files, and some of them depend on these properties).
+
 Also copy this file to the 'wrapper-starter-kit' subdirectory.  It needs to be a separate Gradle
 project because it _uses_ the published plugins.
 
@@ -92,7 +98,10 @@ whole set of plugins.
 your BitBucket username).
  - To publish a release version, pass the version number with `-PpublishVersion=<version number>`.
  - To skip integration testing, pass `-PnoIntegTest`.  This only works for SNAPSHOT releases.
- 
+
+You can't publish a release version unless the working copy has no uncommitted changes, and the
+parent of the working copy has been pushed (i.e., is in the "public" phase).
+
 The main sequence of tasks when publishing is as follows.  This is a summary of the output of
 `gw --dry-run publishCustomGradleReally publishPluginsReally`.  The `credential-store` project is published with the
 plugins.  The output below is not exactly true, because the `artifactory-manager-plugin` doesn't depend on
@@ -128,6 +137,15 @@ Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAP
 ```
  - You can also run `gw versionInfo` to get a complete list of version numbers.
 
+# Diagnosing suspected plugin problems found in gradle scripts 
+
+## clone/update the plugins
+## if necessary, follow the "getting started" steps detailed above
+## add your println/log entries to the plugins for helping to diagnosing the problem
+## use "gw -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>-SNAPSHOT
+## now to force the user's build script to use the snapshots you've just published, set the property "systemProp.holygradle.pluginsSnapshotsUser=<user>" in your %GRADLE_USER_HOME%/gradle.properties file.
+## before fixing, try to add a new integration test that replicates the issue, to help verify the fix and prevent future regression
+ 
 # Documentation
 Some documentation is on the BitBucket wiki, but we're experimenting with building static HTML pages using AsciiDoc, to
 provide code syntax highlighting and diagrams using GraphViz.

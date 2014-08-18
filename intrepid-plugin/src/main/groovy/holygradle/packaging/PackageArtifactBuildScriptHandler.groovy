@@ -82,46 +82,69 @@ class PackageArtifactBuildScriptHandler {
     public boolean buildScriptRequired() {
         return pinnedSourceDependencies.size() > 0 || packedDependencies.size() > 0
     }
-    
-    private static List<SourceDependencyHandler> findSourceDependencies(Project project, String sourceDepWildcard) {
+
+    private static List<SourceDependencyHandler> findSourceDependencies(
+            Project project,
+            String sourceDepNameToFind,
+            boolean allowWildcard)
+    {
         List<SourceDependencyHandler> matches = new LinkedList<SourceDependencyHandler>()
         
         project.subprojects { Project p ->
-            matches.addAll(findSourceDependencies(p, sourceDepWildcard))
+            matches.addAll(findSourceDependencies(p, sourceDepNameToFind, allowWildcard))
         }
         
         Collection<SourceDependencyHandler> sourceDependencies =
             project.extensions.findByName("sourceDependencies") as Collection<SourceDependencyHandler>
         if (sourceDependencies != null) {
             sourceDependencies.each {
-                if (Wildcard.match(sourceDepWildcard, it.name)) {
-                    matches.add(it)
+                // Each sourceDependency name is actually a path - here we are only interested in matching the
+                // last entity of the path with the name provided in the user's "addSourceDependency"
+                Matcher folderNameUsingRegex = it.name =~ /([^\\/]+)$/
+
+                if (!folderNameUsingRegex.find()) {
+                    project.logger.warn "Failed to parse dependency name from path ${it.name}"
+                } else {
+                    if (allowWildcard) {
+                        if (Wildcard.match(sourceDepNameToFind, folderNameUsingRegex.group(1))) {
+                            matches.add(it)
+                        }
+                    } else if (folderNameUsingRegex.group(1) == sourceDepNameToFind) {
+                        matches.add(it)
+                    }
                 }
             }
         }
-        
-        matches
+        return matches
     }
     
-    private static List<PackedDependencyHandler> findPackedDependencies(Project project, String packedDepWildcard) {
+    private static List<PackedDependencyHandler> findPackedDependencies(Project project, String packedDepName) {
         List<PackedDependencyHandler> matches = new LinkedList<PackedDependencyHandler>()
         
         project.subprojects { Project p ->
-            matches.addAll(findPackedDependencies(p, packedDepWildcard))
+            matches.addAll(findPackedDependencies(p, packedDepName))
         }
 
         Collection<PackedDependencyHandler> packedDependencies =
             project.extensions.findByName("packedDependencies") as Collection<PackedDependencyHandler>
         if (packedDependencies != null) {
             packedDependencies.each {
-                if (Wildcard.match(packedDepWildcard, it.name)) {
-                    matches.add(it)
+                // Each packedDependency name is actually a path - here we are only interested in matching the
+                // last entity of the path with the name provided in the user's "addPackedDependency"
+                Matcher folderNameUsingRegex = it.name =~ /([^\\/]+)$/
+
+                if (!folderNameUsingRegex.find()) {
+                    project.logger.warn "Failed to parse dependency name from path ${it.name}"
+                } else {
+                    if (folderNameUsingRegex.group(1) == packedDepName) {
+                        matches.add(it)
+                    }
                 }
             }
         }
-        
-        matches
+        return matches
     }
+    
 
     private static Map<String, SourceDependencyHandler> collectSourceDependenciesForPacked(
         Project project,
@@ -129,7 +152,7 @@ class PackageArtifactBuildScriptHandler {
     ) {
         Map<String, SourceDependencyHandler> allSourceDeps = [:]
         sourceDepNames.each { String sourceDepName ->
-            findSourceDependencies(project.rootProject, sourceDepName).each { SourceDependencyHandler sourceDep ->
+            findSourceDependencies(project.rootProject, sourceDepName, /*allowWildcard=*/false ).each { SourceDependencyHandler sourceDep ->
                 if (allSourceDeps.containsKey(sourceDepName)) {
                     int curConf = allSourceDeps[sourceDepName].publishingHandler.configurations.size()
                     int itConf = sourceDep.publishingHandler.configurations.size()
@@ -150,7 +173,7 @@ class PackageArtifactBuildScriptHandler {
     ) {
         Map<String, SourceDependencyHandler> allSourceDeps = [:]
         dependencyWildcards.each { String wildcard ->
-            findSourceDependencies(project.rootProject, wildcard).each { SourceDependencyHandler sourceDep ->
+            findSourceDependencies(project.rootProject, wildcard, /*allowWildcard=*/true).each { SourceDependencyHandler sourceDep ->
                 String targetPath = sourceDep.name
                 if (allSourceDeps.containsKey(targetPath)) {
                     int curConf = allSourceDeps[targetPath].publishingHandler.configurations.size()
@@ -264,9 +287,9 @@ class PackageArtifactBuildScriptHandler {
             for (SourceDependencyHandler sourceDep in pinnedSourceDeps) {
                 // In this case, we create a new SourceControlRepository instead of trying to get the "sourceControl"
                 // extension from the sourceDep.project, because that project itself may not have the intrepid plugin
-                // applied, in which case it won't have that extension.  We need to get the SourceControlRepository
-                // object, instead of just using the SourceDependencyHandler, to get the actual revision.
-                SourceControlRepository repo = SourceControlRepositories.get(project.rootProject, sourceDep.absolutePath)
+                // applied, in which case it won't have that extension.  We need to create the SourceControlRepository
+                // object, instead of just using the SourceDependencyHandler, to create the actual revision.
+                SourceControlRepository repo = SourceControlRepositories.create(project.rootProject, sourceDep.absolutePath)
                 if (repo != null) {
                     buildScript.append(" "*4)
                     buildScript.append("\"")

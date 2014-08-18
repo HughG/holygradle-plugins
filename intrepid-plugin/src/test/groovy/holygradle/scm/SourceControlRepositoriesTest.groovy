@@ -1,10 +1,8 @@
 package holygradle.scm
 
 import holygradle.test.*
-import holygradle.testUtil.ExecUtil
 import holygradle.testUtil.ZipUtil
 import org.gradle.api.Project
-import org.gradle.process.ExecSpec
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder
 import static org.junit.Assert.*
@@ -53,7 +51,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
     public void testGetWithoutDummy() {
         File dummyDir = new File(getTestDir(), "dummy")
         Project project = ProjectBuilder.builder().withProjectDir(dummyDir).build()
-        SourceControlRepository repo = SourceControlRepositories.get(project, dummyDir)
+        SourceControlRepository repo = SourceControlRepositories.create(project, dummyDir)
         assertNull(repo)
     }
 }

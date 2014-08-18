@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import java.nio.file.Path
+
 import org.gradle.process.JavaForkOptions
 
 void maybeForward(JavaForkOptions forkOptions, String propertyName) {
@@ -62,76 +65,120 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
 subprojects { Project project ->
     // For any projects with a "test" task, other than the custom distribution project, add integration tests and a way
     // to launch the test report then run tests.
-    if (project.tasks.findByPath("test") != null & project.path != ":custom-gradle") {
-        // Separate out unit tests and integration tests
-        project.tasks.test { Test t ->
-            t.description = "Run the unit tests (test classes not ending in 'IntegrationTest')."
-            t.include "**/*Test.*"
-            t.exclude "**/Abstract*.*"
-            t.exclude "**/*IntegrationTest.*"
+    if (project.tasks.findByPath("test") == null || project.path == ":custom-gradle") {
+        return
+    }
 
-            if (project.name != "integration") {
-                project.tasks["publishPluginsLocally"].dependsOn(t)
-            }
-        }
-        project.task([type: Test], "integTest") { Test t ->
-            t.group = "Verification"
-            t.description = "Run the integration tests (test classes ending in 'IntegrationTest')."
-            t.include "**/*IntegrationTest.*"
-            t.exclude "**/Abstract*.*"
-            t.testReportDir = file("${project.reporting.baseDir}/$name")
-            // The overall "integration" project has integration tests but doesn't publish its own plugin: it tests all
-            // the plugins from other projects.
-            if (project.name != "integration") {
-                t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
-                t.dependsOn(project.tasks["publishPluginsLocally"])
-            }
+    // Separate out unit tests and integration tests
+    project.tasks.test { Test t ->
+        t.description = "Run the unit tests (test classes not ending in 'IntegrationTest')."
+        t.include "**/*Test.*"
+        t.exclude "**/Abstract*.*"
+        t.exclude "**/*IntegrationTest.*"
 
-            t.doFirst {
-                // Set up a number of system properties needed by the integration tests.  We have to set these up in a
-                // doFirst block, because the project version isn't set at task creation time, but is by task execution.
-                maybeForwardHttpProxyProperties(t)
-                maybeForwardExtraArguments(t)
-                final String customDistBaseName = project.findProject(":custom-gradle").CUSTOM_GRADLE_BASE_NAME
-                final String customDistName = "${customDistBaseName}-${project.version}"
-                final String distributionPath = "holygradle/custom-gradle/${project.version}/${customDistName}.zip"
-                final String distributionURIString = URI.create(project.PUBLISH_LOCAL_TARGET_URI + distributionPath).toString()
-                t.systemProperty("holygradle.pluginsRepoOverride", project.PUBLISH_LOCAL_TARGET_URI.toString())
-                t.systemProperty("holygradle.distributionForIntegrationTest", distributionURIString)
-                t.systemProperty("holygradle.gradleUserHomeForIntegrationTest", project.LOCAL_GRADLE_USER_HOME.toString())
-                t.systemProperty("holygradle.versionForIntegrationTest", project.version)
-            }
+        if (project.name != "integration") {
+            project.tasks["publishPluginsLocally"].dependsOn(t)
         }
-        // Make the real publish tasks depend on the integration test (unless disabled)
-        if (project.hasProperty('noIntegTest')) {
-             if (project.version.endsWith('-SNAPSHOT')) {
-                // Skip integration testing.
-            } else {
-                throw new RuntimeException("You can only use -PnoIntegTest for SNAPSHOT releases, but this is ${project.version}")
-            }
+    }
+    project.task([type: Test], "integTest") { Test t ->
+        t.group = "Verification"
+        t.description = "Run the integration tests (test classes ending in 'IntegrationTest')."
+        t.include "**/*IntegrationTest.*"
+        t.exclude "**/Abstract*.*"
+        t.testReportDir = file("${project.reporting.baseDir}/$name")
+        // The overall "integration" project has integration tests but doesn't publish its own plugin: it tests all
+        // the plugins from other projects.
+        if (project.name != "integration") {
+            t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
+            t.dependsOn(project.tasks["publishPluginsLocally"])
+        }
+
+        t.doFirst {
+            // Set up a number of system properties needed by the integration tests.  We have to set these up in a
+            // doFirst block, because the project version isn't set at task creation time, but is by task execution.
+            maybeForwardHttpProxyProperties(t)
+            maybeForwardExtraArguments(t)
+            final String customDistBaseName = project.findProject(":custom-gradle").CUSTOM_GRADLE_BASE_NAME
+            final String customDistName = "${customDistBaseName}-${project.version}"
+            final String distributionPath = "holygradle/custom-gradle/${project.version}/${customDistName}.zip"
+            final String distributionURIString = URI.create(project.PUBLISH_LOCAL_TARGET_URI + distributionPath).toString()
+            t.systemProperty("holygradle.pluginsRepoOverride", project.PUBLISH_LOCAL_TARGET_URI.toString())
+            t.systemProperty("holygradle.distributionForIntegrationTest", distributionURIString)
+            t.systemProperty("holygradle.gradleUserHomeForIntegrationTest", project.LOCAL_GRADLE_USER_HOME.toString())
+            t.systemProperty("holygradle.versionForIntegrationTest", project.version)
+        }
+    }
+    // Make the real publish tasks depend on the integration test (unless disabled)
+    if (project.hasProperty('noIntegTest')) {
+         if (project.version.endsWith('-SNAPSHOT')) {
+            // Skip integration testing.
         } else {
-            project.publishReallyTasks.each { Task publishReallyTask ->
-                publishReallyTask.dependsOn project.tasks["integTest"]
+            throw new RuntimeException("You can only use -PnoIntegTest for SNAPSHOT releases, but this is ${project.version}")
+        }
+    } else {
+        project.publishReallyTasks.each { Task publishReallyTask ->
+            publishReallyTask.dependsOn project.tasks["integTest"]
+        }
+    }
+
+    task showTestReport(type: DefaultTask) {
+        group = "Verification"
+        description "Opens the unit test report."
+        doLast {
+            project.exec {
+                commandLine "cmd", "/c", "start", "${test.testReportDir}/index.html"
             }
+        }
+    }
+    task showIntegrationTestReport(type: DefaultTask) {
+        group = "Verification"
+        description "Opens the integration test report."
+        doLast {
+            project.exec {
+                commandLine "cmd", "/c", "start", "${integTest.testReportDir}/index.html"
+            }
+        }
+    }
+
+    /*
+        This method detects and removes broken directory (and file) symlinks.
+
+        Through experimentation, I have discovered that the following APIs return values as follow
+        for broken directory symlinks.  (I haven't checked what happens for broken file symlinks.)
+
+            Files.isSymbolicLink    true
+            Files.isRegularFile     false
+            Files.isDirectory       false   (but returns true for non-broken directory symlinks)
+            Fiies.exists            false   (again, true for non-broken directory symlinks)
+            Path.toRealPath         throws IOException (java.nio.file.NoSuchFileException)
+     */
+    project.ext.deleteBrokenSymlinksRecursively = { File dir ->
+        if (!dir.exists()) {
+            project.logger.info "Skipping non-existent ${dir}"
+            return
         }
 
-        task showTestReport(type: DefaultTask) {
-            group = "Verification"
-            description "Opens the unit test report."
-            doLast {
-                project.exec {
-                    commandLine "cmd", "/c", "start", "${test.testReportDir}/index.html"
-                }
-            }
-        }
-        task showIntegrationTestReport(type: DefaultTask) {
-            group = "Verification"
-            description "Opens the integration test report."
-            doLast {
-                project.exec {
-                    commandLine "cmd", "/c", "start", "${integTest.testReportDir}/index.html"
+        dir.eachFileRecurse(groovy.io.FileType.FILES) { File f ->
+            java.nio.file.Path p = f.toPath()
+            if (Files.isSymbolicLink(p) && !Files.exists(p)) {
+                if (f.delete()) {
+                    project.logger.info "Deleted broken symlink ${f}"
+                } else {
+                    project.logger.warn "Failed to delete apparently broken symlink ${f}"
                 }
             }
         }
     }
+
+    task deleteTestSymlinks {
+        description = "Delete any broken symlinks in the test source folder(s), to make sure it can build."
+        doFirst {
+            // Broken symlinks will cause compileTestGroovy to fail (because it tries to scan the folder
+            // hierarchy for source).  Broken symlinks can appear if the top-level test repo dir is
+            // deleted directly.
+            sourceSets.test.allSource.srcDirs.each { dir -> deleteBrokenSymlinksRecursively dir }
+        }
+        tasks["compileTestGroovy"].dependsOn it
+    }
+
 }

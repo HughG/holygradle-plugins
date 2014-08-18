@@ -51,12 +51,56 @@
               <option name="myProperties">
                 <set>
                   <DPropertyElement>
+                    <option name="name" value="hgVersionInfo" />
+                    <option name="static" value="false" />
+                    <option name="type" value="java.lang.String" />
+                    <option name="myType" value="java.lang.String" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="hgVersionInfo" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="hgVersionInfoFile" />
+                    <option name="static" value="false" />
+                    <option name="type" value="java.io.File" />
+                    <option name="myType" value="java.io.File" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="hgVersionInfoFile" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="ext" />
                     <option name="static" value="false" />
                     <option name="type" value="org.gradle.api.plugins.ExtraPropertiesExtension" />
                     <option name="myType" value="org.gradle.api.plugins.ExtraPropertiesExtension" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="ext" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="packedDependenciesState" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.unpacking.PackedDependenciesStateHandler" />
+                    <option name="myType" value="holygradle.unpacking.PackedDependenciesStateHandler" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packedDependenciesState" />
+                  </DPropertyElement>
+                </set>
+              </option>
+            </DClassElement>
+          </value>
+        </entry>
+        <entry key="org.gradle.api.plugins.ExtensionContainer">
+          <value>
+            <DClassElement>
+              <option name="name" value="org.gradle.api.plugins.ExtensionContainer" />
+              <option name="myName" value="org.gradle.api.plugins.ExtensionContainer" />
+              <option name="myProperties">
+                <set>
+                  <DPropertyElement>
+                    <option name="name" value="packedDependenciesState" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.unpacking.PackedDependenciesStateHandler" />
+                    <option name="myType" value="holygradle.unpacking.PackedDependenciesStateHandler" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packedDependenciesState" />
                   </DPropertyElement>
                 </set>
               </option>
@@ -68,6 +112,26 @@
             <DClassElement>
               <option name="name" value="publish" />
               <option name="myName" value="publish" />
+              <option name="myProperties">
+                <set>
+                  <DPropertyElement>
+                    <option name="name" value="project" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.Project" />
+                    <option name="myType" value="org.gradle.api.Project" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="project" />
+                  </DPropertyElement>
+                </set>
+              </option>
+            </DClassElement>
+          </value>
+        </entry>
+        <entry key="versionInfo">
+          <value>
+            <DClassElement>
+              <option name="name" value="versionInfo" />
+              <option name="myName" value="versionInfo" />
               <option name="myProperties">
                 <set>
                   <DPropertyElement>
