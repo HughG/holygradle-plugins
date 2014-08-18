@@ -1,17 +1,14 @@
 package holygradle.unpacking
 
 import holygradle.Helper
-import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.PackedDependencyHandler
-import holygradle.symlinks.SymlinksToCacheTask
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {
-    public final ModuleVersionIdentifier moduleVersion = null
-    public final boolean includeVersionNumberInPath = false
+    public final ModuleVersionIdentifier moduleVersion
+    public boolean includeVersionNumberInPath
     // A map from artifacts to sets of configurations that include the artifacts.
     public final Map<ResolvedArtifact, Set<String>> artifacts = [:].withDefault { new HashSet<String>() }
     // The set of configurations in the containing project which lead to this module being included.
@@ -26,22 +23,32 @@ class UnpackModuleVersion {
         UnpackModuleVersion parentUnpackModuleVersion,
         PackedDependencyHandler packedDependency00
     ) {
+        this(moduleVersion, ivyFile.text, parentUnpackModuleVersion, packedDependency00)
+    }
+
+    UnpackModuleVersion(
+        ModuleVersionIdentifier moduleVersion,
+        String ivyText,
+        UnpackModuleVersion parentUnpackModuleVersion,
+        PackedDependencyHandler packedDependency00
+    ) {
+        this.moduleVersion = moduleVersion
+        this.parentUnpackModuleVersion = parentUnpackModuleVersion
+        this.packedDependency00 = packedDependency00
+        if (packedDependency00 == null) {
+            this.includeVersionNumberInPath = false
+        } else {
+            this.includeVersionNumberInPath = packedDependency00.pathIncludesVersionNumber()
+        }
+
         // Therefore we must have a parent. Not having a parent is an error.
         if (packedDependency00 == null && parentUnpackModuleVersion == null) {
             throw new RuntimeException("Module '${moduleVersion}' has no parent module.")
         }
 
-        this.moduleVersion = moduleVersion
-        this.parentUnpackModuleVersion = parentUnpackModuleVersion
-        
-        this.packedDependency00 = packedDependency00
-        if (packedDependency00 != null) {
-            this.includeVersionNumberInPath = packedDependency00.pathIncludesVersionNumber()
-        }
-        
         // Read the relative paths for any of the dependencies.  (No point trying to use static types here as we're
         // using GPath, so the returned objects have magic properties.)
-        def ivyXml = new XmlSlurper(false, false).parseText(ivyFile.text)
+        def ivyXml = new XmlSlurper(false, false).parseText(ivyText)
         ivyXml.dependencies.dependency.each { dep ->
             def relativePath = dep.@relativePath?.toString()
             if (relativePath != null) {
@@ -70,7 +77,11 @@ class UnpackModuleVersion {
         }
         originalConfigurations.add(originalConf)
     }
-    
+
+    public boolean hasArtifacts() {
+        !artifacts.keySet().empty
+    }
+
     public String getFullCoordinate() {
         "${moduleVersion.getGroup()}:${moduleVersion.getName()}:${moduleVersion.getVersion()}"
     }
@@ -103,59 +114,21 @@ class UnpackModuleVersion {
     }
 
     /**
-     * Returns a fully configured task for unpacking the module artifacts to the appropriate location, which also
-     * implements the {@link Unpack} interface.
-     * This could be to the central cache or directly to the workspace.
-     *
-     * @param project The project from which to get the unpack task.
-     * @return A fully configured task for unpacking the module artifacts to the appropriate location, which also
-     * implements the {@link Unpack} interface.
+     * Returns an {@link UnpackEntry} object which describes how to unpack this module version in the context of the
+     * given {@code project}.  This is suitable for passing to
+     * {@link SpeedyUnpackManyTask#addEntry(ModuleVersionIdentifier,UnpackEntry)}
+     * @param project
+     * @return An {@link UnpackEntry} object which describes how to unpack this module version
      */
-    public Task getUnpackTask(Project project) {
-        boolean shouldApplyUpToDateChecks = false
-        PackedDependencyHandler packedDependency = getPackedDependency()
-        if (packedDependency != null) {
-            shouldApplyUpToDateChecks = packedDependency.shouldApplyUpToDateChecks()
-        }
-        
-        String taskName = CamelCase.build("extract", moduleVersion.getName()+moduleVersion.getVersion())
-        Task unpackTask = project.tasks.findByName(taskName)
-        if (unpackTask == null) {
-            // The task hasn't already been defined, so we should define it.
-            final SevenZipHelper sevenZipHelper = new SevenZipHelper(project)
-            if (!shouldApplyUpToDateChecks && sevenZipHelper.isUsable) {
-                unpackTask = project.task(taskName, type: SpeedyUnpackTask) { SpeedyUnpackTask task ->
-                    task.initialize(
-                        sevenZipHelper,
-                        getUnpackDir(project),
-                        getPackedDependency(),
-                        artifacts.keySet()
-                    )
-                }
-            } else {
-                unpackTask = project.task(taskName, type: UnpackTask) { UnpackTask task ->
-                    task.initialize(project, getUnpackDir(project), artifacts.keySet())
-                }
-            }
-            unpackTask.description = getUnpackDescription()
-        }
-        
-        unpackTask
+    public UnpackEntry getUnpackEntry(Project project) {
+        return new UnpackEntry(
+            artifacts.keySet()*.file,
+            getUnpackDir(project),
+            (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
+            (boolean)getPackedDependency()?.shouldMakeReadonly()
+        )
     }
 
-    /**
-     * This method configures the {@code symlinksToCacheTask} to create a symlink to the version of this module in the
-     * cache, provided that the relevant {@code packedDependencies} entry has {@code unpackToCache = true} and has not
-     * had {@code noCreateSymlinkToCache() called}; otherwise, it does not change the task's configuration.
-     * @param symlinksToCacheTask
-     * @return true if this version was added to the task, otherwise false
-     */
-    public void addToSymlinkTaskIfRequired(SymlinksToCacheTask symlinksToCacheTask) {
-        if (shouldCreateSymlinkToCache()) {
-            symlinksToCacheTask.addUnpackModuleVersion(this)
-        }
-    }
-    
     // This returns the packedDependencies entry which configures some aspects of this module.
     // The entry could be specifically for this module, in the case where a project directly
     // specifies a dependency. Or this entry could be for a 'parent' packedDependency entry 
@@ -229,9 +202,19 @@ class UnpackModuleVersion {
         getSelfOrAncestorPackedDependency().shouldUnpackToCache()
     }
 
-    // If true, a symlink for this module should be created, to the central cache, otherwise no symlink is created.
-    private boolean shouldCreateSymlinkToCache() {
-        getSelfOrAncestorPackedDependency().shouldCreateSymlinkToCache()
+    /**
+     * If true, a symlink for this module should be created, to the central cache, otherwise no symlink should be
+     * created.  A symlink should be created if
+     * <ul>
+     *     <li>the relevant {@code packedDependencies} entry has {@code unpackToCache = true} (the default);</li>
+     *     <li>that entry has not had {@code noCreateSymlinkToCache() called on it; and</li>
+     *     <li>this module version actually has any artifacts -- if not, nothing will be unpacked in the cache, so there
+     *     will be no folder to which to make a symlink.</li>
+ *     </ul>
+     * @return A flag indicating whether to create a symlink to the unpack cache for this version.
+     */
+    public boolean shouldCreateSymlinkToCache() {
+        getSelfOrAncestorPackedDependency().shouldCreateSymlinkToCache() && hasArtifacts()
     }
 
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
@@ -246,32 +229,20 @@ class UnpackModuleVersion {
             getTargetPathInWorkspace(project)
         }
     }
-    
-    // Return a description to be used for the unpack task.
-    private String getUnpackDescription() {
-        String version = moduleVersion.getVersion()
-        String targetName = moduleVersion.getName()
-        if (shouldUnpackToCache()) {
-            "Unpacks dependency '${targetName}' (version $version) to the cache."
-        } else {
-            "Unpacks dependency '${targetName}' to ${getTargetPathInWorkspace(null)}."
-        }
-    }
-
 
     @Override
     public String toString() {
         return "UnpackModuleVersion{" +
             "moduleVersion=" + moduleVersion +
-            ", packedDependency target path=" + (packedDependency00 == null ?
+            ", packedDependency target path='" + (packedDependency00 == null ?
                 "n/a" :
                 packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             ) +
-            ", parent relative path=" + (packedDependency00 == null ?
+            "', parent relative path='" + (packedDependency00 == null ?
                 parentUnpackModuleVersion?.getRelativePathForDependency(this) :
                 "n/a"
             ) +
-            ", parentUnpackModuleVersion=" + parentUnpackModuleVersion?.moduleVersion +
+            "', parentUnpackModuleVersion=" + parentUnpackModuleVersion?.moduleVersion +
             '}';
     }
 }

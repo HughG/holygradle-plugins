@@ -6,8 +6,7 @@ import holygradle.SettingsFileHelper
 
 class RecursivelyFetchSourceTask extends DefaultTask {
     public boolean generateSettingsFileForSubprojects = true
-    public boolean recursive = true
-    private boolean addedUnpackTasks
+    public String recursiveTaskName = null
 
     RecursivelyFetchSourceTask() {
         /*println "-------> Configuring '${project.name}' tasks."
@@ -18,13 +17,6 @@ class RecursivelyFetchSourceTask extends DefaultTask {
             println "Started fetching '${project.name}'. Start param: " + project.gradle.startParameter.newInstance()
         }*/
         doLast {
-            if (!getAddedUnpackTasks()) {
-                throw new RuntimeException(
-                    "The '${this.name}' task can only be specified explicitly on the command line, " +
-                    "not run implicitly as a dependency of other tasks."
-                )
-            }
-
             Collection<FetchSourceDependencyTask> sourceDepTasks = []
             taskDependencies.getDependencies(this).each { t ->
                 if (t instanceof FetchSourceDependencyTask && t.getDidWork()) {
@@ -38,7 +30,7 @@ class RecursivelyFetchSourceTask extends DefaultTask {
                     needToReRun = true
                 }
             }
-            if (recursive) {
+            if (recursiveTaskName != null) {
                 String command = System.getProperty("sun.java.command").split(" ")[0]
                 //println "command: $command"
                 if (command.contains("daemon")) {
@@ -49,7 +41,7 @@ class RecursivelyFetchSourceTask extends DefaultTask {
                         StartParameter startParam = project.gradle.startParameter.newInstance()
                         startParam.setBuildFile(new File(t.destinationDir, sourceDirName + ".gradle"))
                         startParam.setCurrentDir(project.rootProject.projectDir)
-                        startParam.setTaskNames(["fetchAllDependencies"])
+                        startParam.setTaskNames([recursiveTaskName])
                         GradleLauncher launcher = GradleLauncher.newInstance(startParam)
                         launcher.run()
                     }
@@ -72,13 +64,4 @@ class RecursivelyFetchSourceTask extends DefaultTask {
             }
         }
     }
-
-    public void setAddedUnpackTasks() {
-        addedUnpackTasks = true
-    }
-
-    public boolean getAddedUnpackTasks() {
-        return addedUnpackTasks
-    }
-
 }

@@ -63,11 +63,18 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
 (project.rootProject.tasks["publishCustomGradleLocally"] as Task).dependsOn(cleanIntegrationTestState)
 
 subprojects { Project project ->
-    // For any projects with a "test" task, other than the custom distribution project, add integration tests and a way
-    // to launch the test report then run tests.
+    // For any projects with a "test" task, other than the custom distribution project, add
+    //   - extra test dependencies;
+    //   - integration tests; and
+    //   - a way to launch the test reports.
     if (project.tasks.findByPath("test") == null || project.path == ":custom-gradle") {
         return
     }
+
+    project.dependencies { DependencyHandler deps ->
+        deps.add('testCompile', 'org.hamcrest:hamcrest-library:1.3')
+    }
+
 
     // Separate out unit tests and integration tests
     project.tasks.test { Test t ->

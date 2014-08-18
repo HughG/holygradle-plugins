@@ -1,0 +1,23 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    it."default"
+}
+
+repositories.ivy {
+    url "..\\..\\..\\..\\testUtil\\repository\\"
+}
+
+sourceDependencies {
+    "../projB" {
+        hg "http://a_dummy_url_that_we_wont_need"
+        publishing.configuration "default"
+    }
+}
+
+symlinks {
+    to "../projB/ext_dep"
+}

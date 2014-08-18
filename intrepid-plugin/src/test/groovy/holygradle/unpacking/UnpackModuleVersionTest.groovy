@@ -3,9 +3,9 @@ package holygradle.unpacking
 import holygradle.test.*
 import org.junit.Test
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.testfixtures.ProjectBuilder
 import static org.junit.Assert.*
+import static org.hamcrest.collection.IsEmptyCollection.*
 
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import holygradle.dependencies.PackedDependencyHandler
@@ -61,17 +61,13 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertNotNull("getSelfOrAncestorPackedDependency not null", apricot.getSelfOrAncestorPackedDependency())
         assertEquals("apricot", apricot.getSelfOrAncestorPackedDependency().name)
         assertNull("getParent is null", apricot.getParent())
-                
-        Task unpackTask = apricot.getUnpackTask(project)
-        assertEquals("extractApricot1.1", unpackTask.name)
-        assertEquals(new File(project.unpackedDependenciesCache as File, "org/apricot-1.1"), unpackTask.unpackDir)
-        assertEquals("Unpacks dependency 'apricot' (version 1.1) to the cache.", unpackTask.description)
-        
-//        Collection<Task> symlinkTasks = apricot.collectParentSymlinkTasks(project)
-//        assertEquals(1, symlinkTasks.size())
-//        Task symlinkTask = symlinkTasks.find() // finds the first (non-null) one
-//        assertEquals("symlinkApricot1.1", symlinkTask.name)
-        
+
+        UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
+        assertEquals(new File(project.unpackedDependenciesCache as File, "org/apricot-1.1"), unpackEntry.unpackDir)
+        assertThat("no zip files", unpackEntry.zipFiles, empty())
+        assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
+        assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
+
         assertEquals("apricot", apricot.getTargetDirName())
         assertEquals(new File(project.projectDir, "apricot"), apricot.getTargetPathInWorkspace(project))
     }
@@ -84,8 +80,9 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         PackedDependencyHandler packedDep = apricot.getPackedDependency()
         packedDep.applyUpToDateChecks = true
         
-        Task unpackTask = apricot.getUnpackTask(project)
-        assertTrue("Uses to UnpackTask when applyUpToDateChecks=true", unpackTask instanceof UnpackTask)
+        UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
+        assertTrue("UnpackEntry reports correct applyUpToDateChecks value", unpackEntry.applyUpToDateChecks)
+
     }
     
     @Test
@@ -112,11 +109,12 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         File targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))
         assertEquals(new File("coconut"), coconut.getTargetPathInWorkspace(null))
-        
-        Task unpackTask = coconut.getUnpackTask(project)
-        Unpack unpack = unpackTask as Unpack
-        assertEquals(targetPath, unpack.unpackDir)
-        assertEquals("Unpacks dependency 'coconut' to coconut.", unpackTask.description)
+
+        UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
+        assertEquals("unpackDir should be as expected", targetPath, unpackEntry.unpackDir)
+        assertThat("no zip files", unpackEntry.zipFiles, empty())
+        assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
+        assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
     }
     
     @Test
@@ -127,12 +125,13 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         
         assertNotNull("getParent not null", date.getParent())
         assertEquals(coconut, date.getParent())
-        
-//        Collection<Task> symlinkTasks = date.collectParentSymlinkTasks(project)
-//        assertEquals(2, symlinkTasks.size())
-//        assertEquals("symlinkCoconut1.3", symlinkTasks[0].name)
-//        assertEquals("symlinkDate1.4", symlinkTasks[1].name)
-        
+
+        UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
+        assertEquals(new File(project.unpackedDependenciesCache as File, "org/coconut-1.3"), unpackEntry.unpackDir)
+        assertThat("no zip files", unpackEntry.zipFiles, empty())
+        assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
+        assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
+
         assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependency())
         
         File targetPath = new File(project.projectDir, "coconut")

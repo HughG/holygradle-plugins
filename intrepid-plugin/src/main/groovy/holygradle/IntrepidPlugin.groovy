@@ -7,24 +7,18 @@ import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.Symlink
 import holygradle.dependencies.CollectDependenciesTask
+import holygradle.dependencies.DependenciesStateHandler
 import holygradle.dependencies.DependencySettingsExtension
 import holygradle.dependencies.PackedDependencyHandler
-import holygradle.dependencies.DependenciesStateHandler
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.scm.SourceControlRepositories
-import holygradle.source_dependencies.CopyArtifactsHandler
-import holygradle.source_dependencies.RecursivelyFetchSourceTask
-import holygradle.source_dependencies.SourceDependenciesStateHandler
-import holygradle.source_dependencies.SourceDependencyHandler
-import holygradle.source_dependencies.SourceDependencyTaskHandler
+import holygradle.source_dependencies.*
 import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.symlinks.SymlinksToCacheTask
-import holygradle.unpacking.PackedDependenciesStateHandler
-import holygradle.unpacking.UnpackModule
-import holygradle.unpacking.UnpackModuleVersion
+import holygradle.unpacking.*
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -32,7 +26,6 @@ import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.publish.PublishingExtension
-import org.gradle.util.NameMatcher
 
 public class IntrepidPlugin implements Plugin<Project> {
     void apply(Project project) {
@@ -76,96 +69,16 @@ public class IntrepidPlugin implements Plugin<Project> {
         // The first properties are common to all projects, but the unpackModules collection is per-project.
         project.rootProject.ext.svnConfigPath = System.getenv("APPDATA") + "/Subversion"
         project.rootProject.ext.unpackedDependenciesCache = new File(project.gradle.gradleUserHomeDir, "unpackCache")
-        
-        /**************************************
-         * Tasks
-         **************************************/
-        SymlinksToCacheTask deleteSymlinksToacheTask = (SymlinksToCacheTask)project.task(
-            "deleteSymlinksToCache", type: SymlinksToCacheTask
-        ) { Task it ->
-            it.group = "Dependencies"
-            it.description = "Delete all symlinks to the unpack cache"
-        }
-        deleteSymlinksToacheTask.initialize(SymlinksToCacheTask.Mode.CLEAN)
-        SymlinksToCacheTask rebuildSymlinksToacheTask = (SymlinksToCacheTask)project.task(
-            "rebuildSymlinksToCache", type: SymlinksToCacheTask
-        ) { Task it ->
-            it.group = "Dependencies"
-            it.description = "Rebuild all symlinks to the unpack cache"
-        }
-        rebuildSymlinksToacheTask.initialize(SymlinksToCacheTask.Mode.BUILD)
-
-        Task deleteSymlinksTask = project.task("deleteSymlinks", type: DefaultTask) { Task it ->
-            it.group = "Dependencies"
-            it.description = "Remove all symlinks."
-            it.dependsOn deleteSymlinksToacheTask
-        }
-        SymlinkTask rebuildSymlinksTask = (SymlinkTask)project.task("rebuildSymlinks", type: SymlinkTask) { Task it ->
-            it.group = "Dependencies"
-            it.description = "Rebuild all symlinks."
-            it.dependsOn rebuildSymlinksToacheTask
-        }
-        rebuildSymlinksTask.initialize()
-
-        RecursivelyFetchSourceTask fetchAllDependenciesTask = (RecursivelyFetchSourceTask)project.task(
-            "fetchAllDependencies",
-            type: RecursivelyFetchSourceTask
-        ) { Task it ->
-            it.group = "Dependencies"
-            it.description = "Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks."
-            it.dependsOn rebuildSymlinksTask
-        }
-        RecursivelyFetchSourceTask fetchFirstLevelSourceDependenciesTask = (RecursivelyFetchSourceTask)project.task(
-            "fetchFirstLevelSourceDependencies",
-            type: RecursivelyFetchSourceTask
-        ) { RecursivelyFetchSourceTask it ->
-            it.group = "Dependencies"
-            it.description = "Retrieves only the first level 'sourceDependencies'."
-            it.recursive = false
-        }
-        Task beforeFetchSourceDependenciesTask = (DefaultTask)project.task(
-            "beforeFetchSourceDependencies",
-            type: DefaultTask
-        ) { DefaultTask it ->
-            it.group = "Dependencies"
-            it.description = "Runs before source dependencies are fetched, to check authorisation setup. " +
-                "Extend it with doLast if needed."
-        }
-        project.task("fixMercurialIni", type: DefaultTask) { Task it ->
-            it.group = "Source Dependencies"
-            it.description = "Modify/create your mercurial.ini file as required."
-            it.doLast {
-                Helper.fixMercurialIni()
-            }
-        }
-
-        // Lazy configuration is a "secret" internal feature for use by plugins.  If a task adds a ".ext.lazyConfiguration"
-        // property containing a single Closure, it will be executed just before that specific task runs.  As long as
-        // intrepid-plugin is applied in a build script, this is available to all plugins.
-        project.rootProject.gradle.taskGraph.beforeTask { Task task ->
-            if (task.hasProperty("lazyConfiguration")) {
-                Closure lazyConfig = task.lazyConfiguration
-                if (lazyConfig != null) {
-                    task.logger.info("Applying lazyConfiguration for task ${task.name}.")
-                    profilingHelper.timing("${task.name}#!lazyConfiguration") {
-                        task.configure lazyConfig
-                    }
-                    task.lazyConfiguration = null
-                }
-            }
-        }
 
         /**************************************
          * DSL extensions
          **************************************/
         // Prepare dependencies that this plugin will require.
         BuildScriptDependencies buildScriptDependencies = BuildScriptDependencies.initialize(project)
-        // Only define the build script dependencies for the root project because they're shared
-        // accross all projects.
+        // Only define the build script dependencies for the root project because they're shared across all projects.
         if (project == project.rootProject) {
             // 7zip
             buildScriptDependencies.add("sevenZip", true)
-            fetchAllDependenciesTask.dependsOn buildScriptDependencies.getUnpackTask("sevenZip")
 
             // Mercurial
             buildScriptDependencies.add("Mercurial", true)
@@ -217,7 +130,111 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define 'sourceDependencyTasks' DSL
         Collection<SourceDependencyTaskHandler> sourceDependencyTasks = SourceDependencyTaskHandler.createContainer(project)
 
-        
+        /**************************************
+         * Tasks
+         **************************************/
+        SpeedyUnpackManyTask unpackDependenciesTask = (SpeedyUnpackManyTask)project.task(
+            "extractPackedDependencies", type: SpeedyUnpackManyTask
+        ) { SpeedyUnpackManyTask it ->
+            it.group = "Dependencies"
+            it.description = "Extract all packed dependencies, to the unpack cache or to the workspace"
+            final SevenZipHelper sevenZipHelper = new SevenZipHelper(project)
+            if (sevenZipHelper.isUsable) {
+                it.initialize(sevenZipHelper)
+            } else {
+                it.initialize(new GradleZipHelper(project))
+            }
+        }
+
+        SymlinksToCacheTask deleteSymlinksToCacheTask = (SymlinksToCacheTask)project.task(
+            "deleteSymlinksToCache", type: SymlinksToCacheTask
+        ) { Task it ->
+            it.group = "Dependencies"
+            it.description = "Delete all symlinks to the unpack cache"
+        }
+        deleteSymlinksToCacheTask.initialize(SymlinksToCacheTask.Mode.CLEAN)
+        SymlinksToCacheTask rebuildSymlinksToCacheTask = (SymlinksToCacheTask)project.task(
+            "rebuildSymlinksToCache", type: SymlinksToCacheTask
+        ) { Task it ->
+            it.group = "Dependencies"
+            it.description = "Rebuild all symlinks to the unpack cache"
+            // We need to make sure we unpack before trying to create a symlink to the cache, or we will end up with
+            // broken file symlinks, instead of working directory symlinks.
+            it.dependsOn unpackDependenciesTask
+        }
+        rebuildSymlinksToCacheTask.initialize(SymlinksToCacheTask.Mode.BUILD)
+
+        final FETCH_ALL_DEPENDENCIES_TASK_NAME = "fetchAllDependencies"
+        RecursivelyFetchSourceTask fetchAllSourceDependenciesTask = (RecursivelyFetchSourceTask)project.task(
+            "fetchAllSourceDependencies",
+            type: RecursivelyFetchSourceTask
+        ) { RecursivelyFetchSourceTask it ->
+            it.group = "Dependencies"
+            it.description = "Retrieves all 'sourceDependencies' recursively."
+            it.recursiveTaskName = FETCH_ALL_DEPENDENCIES_TASK_NAME
+        }
+
+        Task deleteSymlinksTask = project.task("deleteSymlinks", type: DefaultTask) { Task it ->
+            it.group = "Dependencies"
+            it.description = "Remove all symlinks."
+            it.dependsOn deleteSymlinksToCacheTask
+        }
+        SymlinkTask rebuildSymlinksTask = (SymlinkTask)project.task("rebuildSymlinks", type: SymlinkTask) { Task it ->
+            it.group = "Dependencies"
+            it.description = "Rebuild all symlinks."
+            it.dependsOn rebuildSymlinksToCacheTask
+            // Some symlinks might be to other source folders, so make sure we fetch them first.
+            it.dependsOn fetchAllSourceDependenciesTask
+        }
+        rebuildSymlinksTask.initialize()
+
+        Task fetchAllDependenciesTask = project.task(
+            FETCH_ALL_DEPENDENCIES_TASK_NAME,
+            type: DefaultTask
+        ) { Task it ->
+            it.group = "Dependencies"
+            it.description = "Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks."
+            it.dependsOn rebuildSymlinksTask
+        }
+        RecursivelyFetchSourceTask fetchFirstLevelSourceDependenciesTask = (RecursivelyFetchSourceTask)project.task(
+            "fetchFirstLevelSourceDependencies",
+            type: RecursivelyFetchSourceTask
+        ) { RecursivelyFetchSourceTask it ->
+            it.group = "Dependencies"
+            it.description = "Retrieves only the first level 'sourceDependencies'."
+        }
+        Task beforeFetchSourceDependenciesTask = (DefaultTask)project.task(
+            "beforeFetchSourceDependencies",
+            type: DefaultTask
+        ) { DefaultTask it ->
+            it.group = "Dependencies"
+            it.description = "Runs before source dependencies are fetched, to check authorisation setup. " +
+                "Extend it with doLast if needed."
+        }
+        project.task("fixMercurialIni", type: DefaultTask) { Task it ->
+            it.group = "Source Dependencies"
+            it.description = "Modify/create your mercurial.ini file as required."
+            it.doLast {
+                Helper.fixMercurialIni()
+            }
+        }
+
+        // Lazy configuration is a "secret" internal feature for use by plugins.  If a task adds a ".ext.lazyConfiguration"
+        // property containing a single Closure, it will be executed just before that specific task runs.  As long as
+        // intrepid-plugin is applied in a build script, this is available to all plugins.
+        project.rootProject.gradle.taskGraph.beforeTask { Task task ->
+            if (task.hasProperty("lazyConfiguration")) {
+                Closure lazyConfig = task.lazyConfiguration
+                if (lazyConfig != null) {
+                    task.logger.info("Applying lazyConfiguration for task ${task.name}.")
+                    profilingHelper.timing("${task.name}#!lazyConfiguration") {
+                        task.configure lazyConfig
+                    }
+                    task.lazyConfiguration = null
+                }
+            }
+        }
+
         /**************************************
          * Packaging and publishing stuff
          **************************************/
@@ -264,7 +281,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                     } else {
                         Task fetchTask = sourceDep.createFetchTask(project, buildScriptDependencies)
                         fetchTask.dependsOn beforeFetchSourceDependenciesTask
-                        fetchAllDependenciesTask.dependsOn fetchTask
+                        fetchAllSourceDependenciesTask.dependsOn fetchTask
                         fetchFirstLevelSourceDependenciesTask.dependsOn fetchTask
 
                         // Set up build task dependencies.
@@ -358,8 +375,8 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // the unpack cache (as opposed to unpacked directly to the workspace).
                 //
                 // Need to do this in projectsEvaluated so we can be sure that all packed dependencies have been set up.
-                deleteSymlinksToacheTask.addUnpackModuleVersions(packedDependenciesState)
-                rebuildSymlinksToacheTask.addUnpackModuleVersions(packedDependenciesState)
+                deleteSymlinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
+                rebuildSymlinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
             }
 
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for cross-project symlink task dependencies") {
@@ -369,36 +386,14 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // create symlinks to them.
                 //
                 // Need to do this in projectsEvaluated so we can be sure that all source dependencies have been set up.
-                sourceDependenciesState.allConfigurationsWithSourceDependencies.each { Configuration conf ->
+                sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
                     rebuildSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, rebuildSymlinksTask.name)
                     deleteSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, deleteSymlinksTask.name)
                 }
             }
 
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for populating pathsForPackedDependencies") {
-                // If the fetchAllDependenciesTask has been specified on the command line, create the unpack tasks and
-                // add them as dependencies of it.  We do this because working out which unpack tasks to create can be
-                // very expensive.  This has the downside that "fetchAllDependencies" only works if specified explicitly
-                // on the command line, not as an implicit dependency, but (so far) we never run it that way anyway.
-                Collection<String> existingTaskNames = project.tasks*.name
-                NameMatcher nameMatcher = new NameMatcher()
-                if (project.gradle.startParameter.taskNames.any {
-                    nameMatcher.find(it, existingTaskNames) == fetchAllDependenciesTask.name
-                }) {
-                    // For each artifact that is listed as a dependency, construct a task to unpack the artifact.
-                    packedDependenciesState.allUnpackModules.each { UnpackModule module ->
-                        module.versions.values().each { UnpackModuleVersion versionInfo ->
-                            // Get the unpack task which will unpack the module to the cache or directly to the workspace.
-                            // TODO 2014-08-05 HughG: Delay getting unpack tasks, somehow.
-                            Task unpackTask = versionInfo.getUnpackTask(project)
-                            fetchAllDependenciesTask.dependsOn unpackTask
-                            // We also need to make sure we unpack before trying to create a symlink to the cache, or
-                            // we will end up with a broken file symlink, instead of a working directory symlink.
-                            rebuildSymlinksToacheTask.dependsOn unpackTask
-                        }
-                    }
-                    fetchAllDependenciesTask.setAddedUnpackTasks()
-                }
+                unpackDependenciesTask.addUnpackModuleVersions(packedDependenciesState)
             }
 
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for createSettingsFileForPackedDependencies") {
@@ -409,6 +404,11 @@ public class IntrepidPlugin implements Plugin<Project> {
                             Collection<String> pathsForPackedDependencies = new ArrayList<String>()
                             packedDependenciesState.allUnpackModules.each { UnpackModule module ->
                                 module.versions.values().each { UnpackModuleVersion versionInfo ->
+                                    if (!versionInfo.hasArtifacts()) {
+                                        // Nothing will have been unpacked/symlinked, so don't try to include it.
+                                        logger.info("Not writing settings entry for empty packedDependency ${versionInfo.moduleVersion}")
+                                        return
+                                    }
                                     final File targetPathInWorkspace = versionInfo.getTargetPathInWorkspace(project)
                                     final relativePathInWorkspace =
                                         Helper.relativizePath(targetPathInWorkspace, project.rootProject.projectDir)

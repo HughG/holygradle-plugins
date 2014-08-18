@@ -28,7 +28,9 @@ beforeFetchSourceDependencies - Runs before source dependencies are fetched, to 
 collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder.
 deleteSymlinks - Remove all symlinks.
 deleteSymlinksToCache - Delete all symlinks to the unpack cache
+extractPackedDependencies - Extract all packed dependencies, to the unpack cache or to the workspace
 fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks.
+fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildSymlinks - Rebuild all symlinks.
 rebuildSymlinksToCache - Rebuild all symlinks to the unpack cache

@@ -31,7 +31,7 @@ public class Symlink {
         }
 
         if (!target.exists()) {
-            throw new RuntimeException("Cannot create link to non-existent target; from '${canonicalLink}' to '${target}'")
+            throw new IOException("Cannot create link to non-existent target; from '${canonicalLink}' to '${target}'")
         }
         Files.createSymbolicLink(canonicalLink.toPath(), target.toPath())
     }

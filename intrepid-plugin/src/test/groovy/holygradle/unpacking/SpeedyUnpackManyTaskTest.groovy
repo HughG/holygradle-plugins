@@ -1,18 +1,18 @@
 package holygradle.unpacking
 
 import groovy.mock.interceptor.StubFor
-import holygradle.dependencies.PackedDependencyHandler
 import holygradle.test.AbstractHolyGradleTest
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Assert
 import org.junit.Test
 
 /**
- * Unit test for {@link SpeedyUnpackTask}.
+ * Unit test for {@link SpeedyUnpackManyTask}.
  */
-class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
+class SpeedyUnpackManyTaskTest extends AbstractHolyGradleTest {
     /*
      * These tests use several Groovy testing mechanisms, and avoid using certain other ones.
      *
@@ -36,17 +36,6 @@ class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
     // See <http://docs.codehaus.org/display/GROOVY/Developer+Testing+using+Closures+instead+of+Mocks>.
 
     private static final String TEST_UNPACK_DIR = "testUnpackDir"
-
-    /**
-     * Returns an instance of {@link ResolvedArtifact} whose {@link ResolvedArtifact#getFile()} method will return a
-     * {@link File} pointing at {@code fileName}.
-     * @param fileName The name to use for the result of {@link ResolvedArtifact#getFile()}.
-     * @return A dummy instance of {@link ResolvedArtifact}.
-     */
-    ResolvedArtifact makeDummyResolvedArtifact(String fileName) {
-        File file = new File(fileName)
-        return [ getFile : { file } ] as ResolvedArtifact
-    }
 
     /**
      * Check that repeatedly running a task to unpack multiple artifacts does nothing after the first run (assuming
@@ -80,19 +69,9 @@ class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
         stubForSZH.ignore("unzip") { File zipFile, File targetDirectory -> ranSevenZip = true }
         SevenZipHelper dummySZH = (SevenZipHelper)stubForSZH.proxyInstance([project] as Object[])
 
-        // Stub the PackedDependencyHandler class to control the result of shouldMakeReadonly().
-        StubFor stubForPDH = new StubFor(PackedDependencyHandler)
-        stubForPDH.ignore("shouldMakeReadonly") { true }
-        PackedDependencyHandler dummyPDH = (PackedDependencyHandler)stubForPDH.proxyInstance(["name", project] as Object[])
+        List<File> files = (1..3).collect { new File("file${it}") }
 
-        // Make some dummy ResolvedArtifact instances.
-        List<ResolvedArtifact> artifacts = [
-            makeDummyResolvedArtifact("file1"),
-            makeDummyResolvedArtifact("file2"),
-            makeDummyResolvedArtifact("file3"),
-        ]
-
-        // (Re)create the directory which SpeedyUnpackTask will use.
+        // (Re)create the directory which SpeedyUnpackManyTask will use.
         File testUnpackDir = new File(testDir, TEST_UNPACK_DIR)
         if (testUnpackDir.exists()) {
             // Note: File#delete() doesn't delete non-empty directory, but Groovy deleteDir extension method does.
@@ -104,10 +83,12 @@ class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
         ////////////////////////////////////////////////////////////////////////////////////////
         // Now for the actual test.
 
+        ModuleVersionIdentifier id = new DefaultModuleVersionIdentifier("org", "something", "1.0")
+
         // Set up the first task to test.
-        SpeedyUnpackTask task1 = (SpeedyUnpackTask)project.task([type: SpeedyUnpackTask], "speedyUnpack1")
-        task1.initialize(dummySZH, testUnpackDir, dummyPDH, artifacts)
-        task1.lazyConfiguration(task1)
+        SpeedyUnpackManyTask task1 = (SpeedyUnpackManyTask)project.task([type: SpeedyUnpackManyTask], "speedyUnpack1")
+        task1.initialize(dummySZH)
+        task1.addEntry(id, new UnpackEntry(files, testUnpackDir, false, true))
 
         // Run the task's action once and check that the unzipping happens (i.e., that the task tries to run 7zip)
         ranSevenZip = false
@@ -116,9 +97,9 @@ class SpeedyUnpackTaskTest extends AbstractHolyGradleTest {
 
         // Set a second task to test.  (The first task will have internally recorded that it has already run, and will
         // do nothing if we try to execute it again.)
-        SpeedyUnpackTask task2 = (SpeedyUnpackTask)project.task([type: SpeedyUnpackTask], "speedyUnpack2")
-        task2.initialize(dummySZH, testUnpackDir, dummyPDH, artifacts)
-        task2.lazyConfiguration(task2)
+        SpeedyUnpackManyTask task2 = (SpeedyUnpackManyTask)project.task([type: SpeedyUnpackManyTask], "speedyUnpack2")
+        task2.initialize(dummySZH)
+        task2.addEntry(id, new UnpackEntry(files, testUnpackDir, false, true))
 
         // Now run it again and check that it does nothing.
         ranSevenZip = false

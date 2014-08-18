@@ -1,0 +1,20 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    it."default"
+}
+
+repositories.ivy {
+    url "..\\..\\..\\..\\testUtil\\repository\\"
+}
+
+// Declare a packed dependency for this root project
+packedDependencies {
+    "ext_dep" {
+        dependency "holygradle.test:external-lib:1.1"
+        configuration "default->everything"
+    }
+}

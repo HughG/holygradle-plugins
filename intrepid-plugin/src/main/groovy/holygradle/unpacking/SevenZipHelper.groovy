@@ -10,7 +10,7 @@ import org.gradle.process.ExecSpec
  *
  * This class is factored out separately to help make classes which use it more testable.
  */
-class SevenZipHelper {
+class SevenZipHelper implements Unzipper {
     private final Project project
     private final Task sevenZipUnpackTask
 
@@ -40,6 +40,7 @@ class SevenZipHelper {
      * which uses this class should be set up to depend on the result of this method.
      * @return Dependencies required for this class to be used.
      */
+    @Override
     Object getDependencies() {
         return sevenZipUnpackTask
     }
@@ -49,6 +50,7 @@ class SevenZipHelper {
      * @param zipFile The file to unzip.
      * @param targetDirectory The output directory into which to unzip the {@code zipFile}
      */
+    @Override
     void unzip(File zipFile, File targetDirectory) {
         String sevenZipPath = new File((sevenZipUnpackTask.destinationDir as File), "7z.exe").path
         project.exec { ExecSpec spec ->

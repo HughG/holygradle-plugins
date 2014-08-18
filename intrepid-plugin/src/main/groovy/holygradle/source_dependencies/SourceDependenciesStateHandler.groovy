@@ -3,6 +3,9 @@ package holygradle.source_dependencies
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 
+/**
+ * This project extension provides information about the state of source dependencies.
+ */
 class SourceDependenciesStateHandler {
     private final Project project
 
@@ -29,7 +32,7 @@ class SourceDependenciesStateHandler {
      * source dependencies.
      * @return A list of configurations which depend on source dependencies.
      */
-    public Collection<Configuration> getAllConfigurationsWithSourceDependencies() {
+    public Collection<Configuration> getAllConfigurationsPublishingSourceDependencies() {
         // Get a flattened list of all configurations in this project which have dependencies on configurations in
         // source dependencies (which are used when this project and its source dependencies are published together).
         Collection<String> configurationNames =
