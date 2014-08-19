@@ -10,17 +10,22 @@ import static groovyx.net.http.ContentType.TEXT
 class ArtifactoryHelper {
     private final HTTPBuilder http 
     private final String repository
-    
-    public ArtifactoryHelper(String repositoryUrl) {
+
+    private static List<String> parseRepositoryUrl(String repositoryUrl) {
         Matcher urlMatch = repositoryUrl =~ /(http\w*[:\/]+[\w\.]+)\/.*\/([\w\-]+)/
         if (urlMatch.size() == 0) {
             throw new RuntimeException("Failed to parse URL for server and repository")
         }
-        String server = urlMatch[0][1]
-        repository = urlMatch[0][2]
-        http = new HTTPBuilder(server + "/")
+
+        return urlMatch[0] as List<String>
     }
-    
+
+    public ArtifactoryHelper(String repositoryUrl) {
+        List<String> parts = parseRepositoryUrl(repositoryUrl)
+        http = new HTTPBuilder(parts[1] + "/")
+        repository = parts[2]
+    }
+
     public ArtifactoryHelper(String repositoryUrl, String username, String password) {
         this(repositoryUrl)
         
@@ -30,10 +35,6 @@ class ArtifactoryHelper {
         String auth = "${username}:${password}".toString()
         String authEncoded = auth.bytes.encodeBase64().toString()
         http.setHeaders( ['Authorization' : 'Basic ' + authEncoded ] )    
-    }
-    
-    public boolean artifactExists(String group, String module, String version) {
-        return artifactExists("$group/$module/$version")
     }
     
     public boolean artifactExists(String artifactPath) {

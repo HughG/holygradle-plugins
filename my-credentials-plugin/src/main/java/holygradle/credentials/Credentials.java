@@ -20,6 +20,7 @@ public final class Credentials {
         Credentials that = (Credentials) o;
 
         if (password != null ? !password.equals(that.password) : that.password != null) return false;
+        //noinspection RedundantIfStatement
         if (userName != null ? !userName.equals(that.userName) : that.userName != null) return false;
 
         return true;

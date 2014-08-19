@@ -54,7 +54,6 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // We remove the "<username>-" prefix from plugin version numbers, as it will be different for every user.
         File projectBPackageDir = new File(projectBDir, "packages")
         File testFile = regression.getTestFile("testCreateBuildScriptWithPinnedSourceDependency")
-        String username = System.getProperty("user.name").toLowerCase()
         ZipFile packageZip = new ZipFile(new File(projectBPackageDir, "projectB-preBuiltArtifacts.zip"))
         ZipEntry packageBuildFile = packageZip.getEntry("preBuiltArtifacts/build.gradle")
         testFile.text = packageZip.getInputStream(packageBuildFile).text.replaceAll(

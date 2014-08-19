@@ -27,6 +27,7 @@ class DependencySettingsExtension {
         if (ext == null) {
             throw new RuntimeException("Failed to find dependencySettings extension on " + project)
         }
+        return ext
     }
 
     DependencySettingsExtension(Project project) {

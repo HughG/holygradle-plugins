@@ -15,7 +15,7 @@ class SourceDependenciesStateHandler {
     }
 
     /**
-     * Creates an instance of {@link SoureDependenciesStateHandler} for the given project.
+     * Creates an instance of {@link SourceDependenciesStateHandler} for the given project.
      *
      * @param project The project to which this extension instance applies.
      */

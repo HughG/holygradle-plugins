@@ -203,6 +203,7 @@ class SourceDependencyHandler extends DependencyHandler {
         String fetchTaskName = CamelCase.build("fetch", targetName)
         FetchSourceDependencyTask fetchTask =
             (FetchSourceDependencyTask)project.task(fetchTaskName, type: FetchSourceDependencyTask)
+        fetchTask.description = sourceDependency.fetchTaskDescription
         if (overrideWarningMessages.size() > 0) {
             Collection<String> messages = []
             messages.add "-"*80

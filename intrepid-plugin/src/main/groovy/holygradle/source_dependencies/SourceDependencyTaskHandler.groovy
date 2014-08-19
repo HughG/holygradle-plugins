@@ -88,7 +88,7 @@ class SourceDependencyTaskHandler {
             for (int i = 1; i < invocations.size(); i++) {
                 Task thisTask = project.tasks.getByName("${name}_${i}")
                 Set<Task> prevTasks = project.rootProject.getTasksByName("${name}_${i-1}", true)
-                prevTasks.each { t ->
+                prevTasks.each { Task t ->
                     thisTask.dependsOn t
                 }
             }

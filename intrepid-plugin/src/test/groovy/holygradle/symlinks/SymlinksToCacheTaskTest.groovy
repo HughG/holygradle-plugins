@@ -47,14 +47,14 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
         return version
     }
 
-    private Project getProject() {
+    private static Project getProject() {
         Project project = ProjectBuilder.builder().build()
         project.ext.unpackedDependenciesCache = new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
     }
 
-    private SymlinksToCacheTask makeSymlinksTask(Project project) {
+    private static SymlinksToCacheTask makeSymlinksTask(Project project) {
         project.task("symlinksToCache", type: SymlinksToCacheTask) as SymlinksToCacheTask
     }
 

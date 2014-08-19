@@ -4,7 +4,6 @@ import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.RetryHelper
 import holygradle.publishing.PublishPackagesExtension
 import org.gradle.api.*
-import org.gradle.api.artifacts.*
 import org.gradle.api.file.*
 import org.gradle.api.tasks.bundling.*
 import org.gradle.util.ConfigureUtil
@@ -102,22 +101,14 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
         }
                 
-        project.extensions.packageArtifacts
+        project.packageArtifacts
     }
-    
-    public PackageArtifactHandler() {
-        this.name = null
-    }
-    
+
     public PackageArtifactHandler(String name) {
         this.name = name
         this.configurationName = name
     }
 
-    public void lazy(Closure lazyConfigure) {
-        lazyConfigurations.add(lazyConfigure)
-    }
-    
     public PackageArtifactIncludeHandler include(String... patterns) {
         rootPackageDescriptor.include(patterns)
     }
@@ -157,10 +148,6 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     
     public String getPackageTaskName() {
         CamelCase.build("package", name)
-    }
-    
-    public Task getPackageTask(Project project) {
-        project.tasks.getByName(getPackageTaskName())
     }
     
     public void includeBuildScript(Closure closure) {

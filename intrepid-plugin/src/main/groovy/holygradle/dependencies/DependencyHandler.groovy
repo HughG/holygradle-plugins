@@ -10,12 +10,12 @@ abstract class DependencyHandler {
     public final Project project
     
     public DependencyHandler(String depName) {
-        this.name = depName
-        this.targetName = (new File(depName)).name
+        this(depName, null)
     }
     
     public DependencyHandler(String depName, Project project) {
-        this(depName)
+        this.name = depName
+        this.targetName = (new File(depName)).name
         this.project = project
     }
     

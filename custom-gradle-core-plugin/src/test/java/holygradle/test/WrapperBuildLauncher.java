@@ -12,9 +12,9 @@ import java.util.*;
  * @see AbstractHolyGradleIntegrationTest
  */
 public class WrapperBuildLauncher implements BuildLauncher {
-    private BuildLauncher launcher;
-    private List<String> expectedFailures = new LinkedList<String>();
-    private List<String> arguments = new LinkedList<String>();
+    private final BuildLauncher launcher;
+    private final List<String> expectedFailures = new LinkedList<String>();
+    private final List<String> arguments = new LinkedList<String>();
 
     public WrapperBuildLauncher(BuildLauncher launcher) {
         this.launcher = launcher;
@@ -76,7 +76,7 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     /**
-     * Adds expected error messages to the collection returned by {@link #expectFailure(String...)}.
+     * Adds expected error messages to the collection returned by {@link #getExpectedFailures()}.
      * {@link AbstractHolyGradleIntegrationTest#invokeGradle(java.io.File, groovy.lang.Closure)} uses this to check for
      * error messages when an invoked instance of Gradle has finished.
      * @param messages The messages to add.

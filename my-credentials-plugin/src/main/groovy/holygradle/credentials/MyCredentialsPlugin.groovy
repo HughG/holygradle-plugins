@@ -18,7 +18,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
          **************************************/
         
         ResolvedArtifact credentialStoreArtifact = null
-        project.getBuildscript().getConfigurations().each { conf ->
+        project.getBuildscript().getConfigurations().each((Closure){ conf ->
             conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { resolvedDependency ->
                 resolvedDependency.getAllModuleArtifacts().each { ResolvedArtifact art ->
                     String artName = art.getName()
@@ -27,7 +27,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
                     }
                 }
             }
-        }
+        })
         String credentialStorePath = credentialStoreArtifact.getFile().path
         
         // Copy the credential-store to the root of the workspace.

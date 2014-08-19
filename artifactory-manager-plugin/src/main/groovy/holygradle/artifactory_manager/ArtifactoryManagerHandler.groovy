@@ -78,11 +78,13 @@ class ArtifactoryManagerHandler {
             if (urlMatch.size() == 0) {
                 throw new RuntimeException("Failed to parse URL for server and repository")
             }
+
+            final List<String> matches = urlMatch[0] as List<String>
             if (server == null) {
-                server = urlMatch[0][1]
+                server = matches[1]
             }
             if (repository == null) {
-                repository = urlMatch[0][2]
+                repository = matches[2]
             }
             if (username == null) {
                 username = targetRepo.credentials.username

@@ -71,7 +71,7 @@ class ResolvedDependenciesVisitor {
      * {@code dependencyAction} on a given dependency, and whether to visit its children.
      * @param dependencyAction The closure to call for each {@link ResolvedDependency}.
      */
-    private static void traverseResolvedDependencies(
+    private static void doTraverseResolvedDependencies(
         Set<ResolvedDependency> dependencies,
         Stack<ResolvedDependency> dependencyStack,
         Closure getVisitChoice,
@@ -91,7 +91,7 @@ class ResolvedDependenciesVisitor {
                 }
 
                 if (visitChoice.visitChildren) {
-                    traverseResolvedDependencies(
+                    doTraverseResolvedDependencies(
                         resolvedDependency.children,
                         dependencyStack,
                         getVisitChoice,
@@ -121,7 +121,7 @@ class ResolvedDependenciesVisitor {
     ) {
         // Note: This method used to have the predicates as optional arguments, where null meant "always true", but I
         // kept making mistakes with them, so clearly it was a bad idea.
-        traverseResolvedDependencies(
+        doTraverseResolvedDependencies(
             dependencies,
             new Stack<ResolvedDependency>(),
             getVisitChoice,

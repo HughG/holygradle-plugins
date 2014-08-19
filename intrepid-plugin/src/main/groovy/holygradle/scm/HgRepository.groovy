@@ -48,6 +48,7 @@ class HgRepository implements SourceControlRepository {
                     final List<String> matches = match[0] as List<String>
                     url = matches[1]
                 }
+                return
             }
         }
         url

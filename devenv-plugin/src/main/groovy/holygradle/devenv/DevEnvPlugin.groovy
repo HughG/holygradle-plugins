@@ -79,28 +79,28 @@ class DevEnvPlugin implements Plugin<Project> {
                 platforms.each { platform ->
                     String p = platform[0].toUpperCase() + platform[1..-1]
                     List<DevEnvTask> platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, "build${p}Debug", "Debug")
-                    buildDebug.eachWithIndex { b, i ->
+                    buildDebug.eachWithIndex { DevEnvTask b, int i ->
                         platformBuildDebugTasks[i].configureBuildTask(devEnvHandler, p)
                         b.dependsOn platformBuildDebugTasks[i]
                     }
                     platformBuildDebugTasks.each { it.dependsOn beforeBuild }
 
                     List<DevEnvTask> platformBuildReleaseTasks = devEnvHandler.defineBuildTasks(project, "build${p}Release", "Release")
-                    buildRelease.eachWithIndex { b, i ->
+                    buildRelease.eachWithIndex { DevEnvTask b, int i ->
                         platformBuildReleaseTasks[i].configureBuildTask(devEnvHandler, p)
                         b.dependsOn platformBuildReleaseTasks[i]
                     }
                     platformBuildReleaseTasks.each { it.dependsOn beforeBuild }
 
                     List<DevEnvTask> platformCleanDebugTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Debug", "Debug")
-                    cleanDebug.eachWithIndex { b, i ->
+                    cleanDebug.eachWithIndex { DevEnvTask b, int i ->
                         platformCleanDebugTasks[i].configureCleanTask(devEnvHandler, p)
                         b.dependsOn platformCleanDebugTasks[i]
                     }
                     platformCleanDebugTasks.each { it.dependsOn beforeClean }
 
                     List<DevEnvTask> platformCleanReleaseTasks = devEnvHandler.defineCleanTasks(project, "clean${p}Release", "Release")
-                    cleanRelease.eachWithIndex { b, i ->
+                    cleanRelease.eachWithIndex { DevEnvTask b, int i ->
                         platformCleanReleaseTasks[i].configureCleanTask(devEnvHandler, p)
                         b.dependsOn platformCleanReleaseTasks[i]
                     }

@@ -43,7 +43,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         )
     }
     
-    private Project getProject() {
+    private static Project getProject() {
         Project project = ProjectBuilder.builder().build()
         project.ext.unpackedDependenciesCache = new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)

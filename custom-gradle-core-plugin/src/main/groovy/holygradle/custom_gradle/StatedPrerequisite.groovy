@@ -6,18 +6,18 @@ import org.gradle.api.Task
 class StatedPrerequisite {
     public final String name
     private final PrerequisitesChecker checker
-    public final Object[] params = null
+    public final String[] params
     private boolean hasRun = false
     private boolean ok = false
     private Task checkTask = null
     
     StatedPrerequisite(PrerequisitesChecker checker) {
-        this.name = checker.name
-        this.checker = checker
+        this(checker, null)
     }
     
     StatedPrerequisite(PrerequisitesChecker checker, Object[] params) {
-        this(checker)
+        this.name = checker.name
+        this.checker = checker
         this.params = params
     }
     

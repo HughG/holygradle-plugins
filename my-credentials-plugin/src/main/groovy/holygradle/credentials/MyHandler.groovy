@@ -17,11 +17,12 @@ class MyHandler implements CredentialSource {
 
         if (project == project.rootProject) {
             myExtension = project.extensions.create("my", MyHandler, project, credentialStorePath)
-            project.my.extensions.instructions = project.container(InstructionsHandler) { instructionName ->
+            project.my.extensions.instructions = project.container(InstructionsHandler) { String instructionName ->
                 project.my.extensions.create(instructionName, InstructionsHandler, instructionName)
-            }
+            } as InstructionsHandler
         } else {
-            myExtension = project.extensions.add("my", project.rootProject.extensions.findByName("my"))
+            myExtension = project.rootProject.extensions.findByName("my") as MyHandler
+            project.extensions.add("my", myExtension)
         }
         
         myExtension
@@ -86,7 +87,7 @@ class MyHandler implements CredentialSource {
         return new Credentials(username, password)
     }
     
-    private String getCredentialStorageKey(String credentialType) {
+    private static String getCredentialStorageKey(String credentialType) {
         "Intrepid - ${credentialType}"
     }
     

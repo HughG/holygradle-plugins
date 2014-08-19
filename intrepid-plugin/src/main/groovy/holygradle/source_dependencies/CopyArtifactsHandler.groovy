@@ -78,7 +78,7 @@ class CopyArtifactsHandler {
         Collection<String> configurations,
         Collection<File> artifactZips
     ) {
-        UnpackModule.getAllUnpackModules(project).each { module ->
+        project.packedDependenciesState.allUnpackModules.each { module ->
             if (dependencyName == null || dependencyName == module.name) {
                 if (!alreadyHandled.contains(module.name)) {
                     alreadyHandled.add(module.name)
@@ -132,7 +132,7 @@ class CopyArtifactsHandler {
                                     final Collection<PackageArtifactHandler> packageArtifactsHandlers =
                                         sourceDepProject.packageArtifacts as Collection<PackageArtifactHandler>
                                     packageArtifactsHandlers.each { PackageArtifactHandler packArt ->
-                                        if (f.configurations.contains(packArt.configurationName)) {
+                                        if (f.configurations.contains(packArt.configuration)) {
                                             packArt.configureCopySpec(sourceDepProject, copySpec)
                                         }
                                     }

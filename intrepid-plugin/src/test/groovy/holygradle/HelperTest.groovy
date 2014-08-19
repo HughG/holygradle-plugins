@@ -29,7 +29,7 @@ class HelperTest extends AbstractHolyGradleTest {
         Project rootProject = SourceDependencyHandlerTest.makeProjectWithSourceDependencies("root", testDir)
         Project projectA = SourceDependencyHandlerTest.makeProjectWithSourceDependencies("A", new File(testDir, "A"))
         Project projectB = SourceDependencyHandlerTest.makeProjectWithSourceDependencies("B", new File(testDir, "B"))
-        Project projectC = SourceDependencyHandlerTest.makeProjectWithSourceDependencies("C", new File(testDir, "C"))
+        /*Project projectC =*/ SourceDependencyHandlerTest.makeProjectWithSourceDependencies("C", new File(testDir, "C"))
 
         SourceDependencyHandlerTest.addSourceDependency(rootProject, "A")
         SourceDependencyHandlerTest.addSourceDependency(projectA, "B")
@@ -51,7 +51,7 @@ class HelperTest extends AbstractHolyGradleTest {
         Project projectA = SourceDependencyHandlerTest.makeProjectWithSourceDependencies(rootProject, "A")
         Project projectB = SourceDependencyHandlerTest.makeProjectWithSourceDependencies(rootProject, "B")
         Project projectC = SourceDependencyHandlerTest.makeProjectWithSourceDependencies(rootProject, "C")
-        Project projectD = SourceDependencyHandlerTest.makeProjectWithSourceDependencies(rootProject, "D")
+        /*Project projectD =*/ SourceDependencyHandlerTest.makeProjectWithSourceDependencies(rootProject, "D")
 
         SourceDependencyHandlerTest.addSourceDependency(rootProject, "A")
         SourceDependencyHandlerTest.addSourceDependency(projectA, "B")

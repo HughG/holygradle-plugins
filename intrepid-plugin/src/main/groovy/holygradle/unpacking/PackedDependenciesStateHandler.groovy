@@ -225,7 +225,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         // Build a list (without duplicates) of all artifacts the project depends on.
         unpackModulesMap = [:]
         Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
-        project.configurations.each { conf ->
+        project.configurations.each((Closure){ Configuration conf ->
             ResolvedConfiguration resConf = conf.resolvedConfiguration
             collectUnpackModules(
                 conf,
@@ -234,7 +234,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 unpackModulesMap,
                 modulesWithoutIvyFiles
             )
-        }
+        })
 
         if (!modulesWithoutIvyFiles.isEmpty()) {
             throw new RuntimeException("Some dependencies had no ivy.xml file")

@@ -1,10 +1,7 @@
 package holygradle.credentials;
 
-import javax.swing.*;
-import java.awt.*;
 import java.awt.event.*;
-import java.util.AbstractMap;
-import java.util.Timer;
+import java.util.*;
  
 class CancelTimerMouseListener implements MouseListener {
     private final Timer timer;

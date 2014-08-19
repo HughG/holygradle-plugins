@@ -1,6 +1,7 @@
 package holygradle.custom_gradle
 
 import org.gradle.api.*
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.process.ExecSpec
@@ -13,9 +14,11 @@ class VersionInfo {
     
     public static VersionInfo defineExtension(Project project) {
         if (project == project.rootProject) {
-            project.extensions.create("versionInfo", VersionInfo, project)
+            return project.extensions.create("versionInfo", VersionInfo, project)
         } else {
-            project.extensions.add("versionInfo", project.rootProject.extensions.findByName("versionInfo"))
+            VersionInfo rootProjectExtension = project.rootProject.extensions.findByName("versionInfo") as VersionInfo
+            project.extensions.add("versionInfo", rootProjectExtension)
+            return rootProjectExtension
         }
     }
     
@@ -51,7 +54,7 @@ class VersionInfo {
         if (buildscriptDependencies == null) {
             Map<String,String> pluginUsages = project.extensions.findByName("gplugins")?.usages as Map<String,String>
             buildscriptDependencies = [:]
-            project.getBuildscript().getConfigurations().each { conf ->
+            project.getBuildscript().getConfigurations().each((Closure){ Configuration conf ->
                 conf.resolvedConfiguration.getResolvedArtifacts().each { ResolvedArtifact art ->
                     ModuleVersionIdentifier depModuleVersion = art.getModuleVersion().getId()
                     String requestedVersion = "none"
@@ -66,7 +69,7 @@ class VersionInfo {
         
                     buildscriptDependencies[depModuleVersion] = requestedVersion
                 }
-            }
+            })
         }
         buildscriptDependencies
     }

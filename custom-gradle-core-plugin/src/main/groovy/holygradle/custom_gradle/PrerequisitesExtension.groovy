@@ -84,8 +84,8 @@ Afterwards, please start a new command prompt and re-run the same command."""
     
     private void addStatedPrerequisite(StatedPrerequisite prerequisite) {
         boolean add = true
-        statedPrerequisites.each { 
-            if (it.name == prerequisite.name && it.params == prerequisite.params) {
+        statedPrerequisites.each {
+            if (it.name == prerequisite.name && Arrays.equals((Object[])it.params, (Object[])prerequisite.params)) {
                 add = false
             }
         }
@@ -132,7 +132,7 @@ Afterwards, please start a new command prompt and re-run the same command."""
             return prerequisites[0].getTask()
         } else {
             Task uberTask = project.task(CamelCase.build("checkPrerequisite", prerequisiteName), type: DefaultTask)
-            prerequisites.each { prerequisite ->
+            prerequisites.each { StatedPrerequisite prerequisite ->
                 uberTask.dependsOn prerequisite.getTask()
             }
             return uberTask

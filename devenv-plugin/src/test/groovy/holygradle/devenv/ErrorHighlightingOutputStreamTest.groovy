@@ -7,7 +7,7 @@ import org.gradle.logging.StyledTextOutput
 import org.gradle.logging.StyledTextOutput.Style
 
 class ErrorHighlightingOutputStreamTest {
-    private static void verifyStyle(Writer writer, List<String> recording, String txt, StyledTextOutput.Style style) {
+    private static void verifyStyle(Writer writer, List<String> recording, String txt, Style style) {
         writer.write(txt)
         writer.flush()
         assertTrue(recording[0] == "withStyle: $style")

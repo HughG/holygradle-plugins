@@ -1,13 +1,17 @@
 package holygradle.packaging
 
 class PackageArtifactPlainTextFileHandler implements PackageArtifactTextFileHandler {
-    public final String name
+    private final String name
     private Collection<String> lines = []
 
     public PackageArtifactPlainTextFileHandler(String name) {
         this.name = name
     }
-    
+
+    public String getName() {
+        return name
+    }
+
     public void add(String text) {
         lines.add(text)
     }

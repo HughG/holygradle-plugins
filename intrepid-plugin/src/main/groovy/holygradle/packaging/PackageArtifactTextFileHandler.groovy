@@ -1,7 +1,7 @@
 package holygradle.packaging
 
 interface PackageArtifactTextFileHandler {
-    final String name
+    String getName()
 
     void writeFile(File targetFile)
 }

@@ -24,8 +24,8 @@ class RegressionFileHelper {
      */
     public void replacePatterns(String testName, Map<Pattern, String> patterns) {
         final File testFile = getTestFile(testName)
-        holygradle.test.AbstractHolyGradleTest.useCloseable(new StringWriter()) { StringWriter s ->
-            holygradle.test.AbstractHolyGradleTest.useCloseable(new PrintWriter(s)) { PrintWriter p ->
+        AbstractHolyGradleTest.useCloseable(new StringWriter()) { StringWriter s ->
+            AbstractHolyGradleTest.useCloseable(new PrintWriter(s)) { PrintWriter p ->
                 testFile.eachLine { String line ->
                     boolean deleteLine = false
 

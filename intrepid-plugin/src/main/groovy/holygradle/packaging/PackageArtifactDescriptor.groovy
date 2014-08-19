@@ -154,17 +154,17 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
     private Collection<File> collectPackageFilePaths() {
         Collection<File> paths = []
         if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
-            paths.add(getTargetFile(null, "build.gradle").path)
+            paths.add(getTargetFile(null, "build.gradle"))
         }
         for (textFileHandler in textFileHandlers) {
-            paths.add(getTargetFile(null, textFileHandler.name).path)
+            paths.add(getTargetFile(null, textFileHandler.name))
         }
         paths
     }
     
     public void configureZipTask(Zip zipTask, File taskDir, RepublishHandler republish) {
         zipTask.from(taskDir.path) { CopySpec spec ->
-            spec.include collectPackageFilePaths()
+            spec.include collectPackageFilePaths()*.toString()
             spec.excludes = []
             // If we're republishing then apply the search & replace rules to all of the auto-generated files. It's fair
             // to assume that they're text files and wouldn't mind having filtering applied to them.

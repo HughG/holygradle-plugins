@@ -6,8 +6,7 @@ import holygradle.Helper
 abstract class SourceDependency {
     public final SourceDependencyHandler sourceDependency
     public final Project project
-    public final File destinationDir
-    
+
     public SourceDependency(Project project, SourceDependencyHandler sourceDependency) {
         this.sourceDependency = sourceDependency
         this.project = project
@@ -65,8 +64,6 @@ abstract class SourceDependency {
             println "  ${commandName} failed."
         }
     }
-    
-    public String getFetchTaskDescription() {
-        "description"
-    }
+
+    public abstract String getFetchTaskDescription()
 }

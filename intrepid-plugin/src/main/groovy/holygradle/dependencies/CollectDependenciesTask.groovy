@@ -28,9 +28,9 @@ class CollectDependenciesTask extends Copy {
             configurationsWithState.each {
                 ConfigurationContainer configurations, DependenciesStateHandler dependenciesState
              ->
-                configurations.each { Configuration conf ->
+                configurations.each((Closure){ Configuration conf ->
                     configureToCopyModulesFromConfiguration(conf, dependenciesState, artifactsWithoutMetadataFiles)
-                }
+                })
             }
 
             if (!artifactsWithoutMetadataFiles.isEmpty()) {

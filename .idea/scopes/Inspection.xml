@@ -1,3 +1,3 @@
 <component name="DependencyValidationManager">
-  <scope name="Inspection" pattern="(src:*..*||test:*..*)&amp;&amp;!file:build//*" />
+  <scope name="Inspection" pattern="(src:*..*||test:*..*)&amp;&amp;!(file:*//build/tmp//*||file:*//.gradle//*||file:*//packages//*)||file[credential-store]:*/||file[custom-gradle-core-plugin]:*/" />
 </component>

@@ -3,7 +3,6 @@ package holygradle.publishing
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.PackedDependenciesStateSource
-import holygradle.unpacking.UnpackModule
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
@@ -40,12 +39,12 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         // the same order, for human-readability.
         final ConfigurationContainer configurations = project.configurations
         final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
-        configurations.whenObjectAdded { Configuration c ->
+        configurations.whenObjectAdded((Closure){ Configuration c ->
             localOriginalConfigurationOrder.add(c.name)
-        }
-        configurations.whenObjectRemoved { Configuration c ->
+        })
+        configurations.whenObjectRemoved((Closure){ Configuration c ->
             localOriginalConfigurationOrder.remove(c.name)
-        }
+        })
 
         this.publishingExtension = publishingExtension
         this.repositories = publishingExtension.getRepositories()
@@ -175,17 +174,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return republishHandler
     }
     
-    public String getPublishGroup() {
-        publishGroup
-    }
-    
     public void group(String publishGroup) {
         this.publishGroup = publishGroup
         applyGroupName()
-    }
-    
-    public String getPublishName() {
-        publishName
     }
     
     public void name(String publishName) {
@@ -376,14 +367,14 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     private static String getDependencyVersion(Project project, String group, String module) {
         String version = null
-        project.configurations.each { conf ->
+        project.configurations.each((Closure){ conf ->
             conf.resolvedConfiguration.getResolvedArtifacts().each { artifact ->
                 ModuleVersionIdentifier ver = artifact.getModuleVersion().getId()
                 if (ver.getGroup() == group && ver.getName() == module) {
                     version = ver.getVersion()
                 }
             }
-        }
+        })
         return version
     }
 
@@ -413,7 +404,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     confSplit = conf.split("-&gt;")
                 }
                 Collection<String> newConf = []
-                confSplit.each { c ->
+                confSplit.each { String c ->
                     newConf.add(c.replaceAll("(.*)_conflict.*", { it[1] }))
                 }
                 depNode.@conf = newConf.join("->")
@@ -444,7 +435,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             xml.asNode().dependencies.each { depsNode ->
                 depsNode.dependency.each { depNode ->
                     String coord = "${depNode.@org}:${depNode.@name}:${depNode.@rev}"
-                    configsByCoord[coord] << depNode.@conf
+                    configsByCoord[coord] << ((String)depNode.@conf)
                 }
                 depsNode.children().clear()
                 configsByCoord.each { String coord, List<String> configs ->

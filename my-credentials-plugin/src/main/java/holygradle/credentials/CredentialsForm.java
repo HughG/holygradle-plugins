@@ -8,12 +8,6 @@ import java.util.Timer;
 
 public class CredentialsForm {
     public static Credentials getCredentialsFromUser(
-        String frameTitle, Collection<String> instructions, String initialUserName
-    ) {
-        return getCredentialsFromUser(frameTitle, instructions, initialUserName, -1);
-    }
-    
-    public static Credentials getCredentialsFromUser(
         String frameTitle, Collection<String> instructions, String initialUserName, int timeoutSeconds
     ) {
         Timer hideDialogTimer = new Timer();
@@ -83,7 +77,7 @@ public class CredentialsForm {
         
         c.weightx = 0.5;
         c.gridx = 1;
-        c.gridy = yPos++;
+        c.gridy = yPos/*++*/;
         c.ipadx = 50;
         c.anchor = GridBagConstraints.WEST;
         JButton okButton = new JButton("OK");

@@ -17,7 +17,7 @@ class BuildScriptDependency {
     public BuildScriptDependency(Project project, String dependencyName, boolean needsUnpacked) {
         this.dependencyName = dependencyName
         ResolvedArtifact dependencyArtifact = null
-        project.buildscript.configurations.each { Configuration conf ->
+        project.buildscript.configurations.each((Closure){ Configuration conf ->
             conf.resolvedConfiguration.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
                 resolvedDependency.allModuleArtifacts.each { ResolvedArtifact art ->
                     if (art.name.startsWith(dependencyName)) {
@@ -25,7 +25,7 @@ class BuildScriptDependency {
                     }
                 }
             }
-        }
+        })
         
         if (needsUnpacked) {
             if (dependencyArtifact == null) {

@@ -27,7 +27,7 @@ class SourceDependencyHandlerTest extends AbstractHolyGradleTest {
         Project projectB = makeProjectWithSourceDependencies(rootProject, "B")
         // Project C is constructed differently, so that it doesn't appear to be under the root project, to simulate the
         // case where a source dependency has been checked out but not (yet) added to the Gradle project hierarchy.
-        Project projectC = makeProjectWithSourceDependencies("B", new File(testDir, "B"))
+        /*Project projectC =*/ makeProjectWithSourceDependencies("B", new File(testDir, "B"))
 
         addSourceDependency(rootProject, "A")
         SourceDependencyHandler projectBSourceDependencyHandler = addSourceDependency(projectA, "B")

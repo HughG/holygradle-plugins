@@ -57,11 +57,11 @@ public class IntrepidPlugin implements Plugin<Project> {
         final boolean runningDependencyTask = ["dependencies", "dependencyInsight"].any { baseTaskNames.contains(it) }
         // We call failOnVersionConflict inside Configurations#all, because that's called lazily when configurations are
         // added, so lets the script set dependencySettings.defaultFailOnVersionConflict before adding any.
-        configurations.all { Configuration it ->
+        configurations.all((Closure){ Configuration it ->
             if (dependencySettings.defaultFailOnVersionConflict && !runningDependencyTask) {
                 it.resolutionStrategy.failOnVersionConflict()
             }
-        }
+        })
   
         /**************************************
          * Properties
@@ -95,10 +95,10 @@ public class IntrepidPlugin implements Plugin<Project> {
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
 
         // Define the 'dependenciesState' DSL for the project.
-        DependenciesStateHandler dependenciesState = DependenciesStateHandler.createExtension(project)
+        /*DependenciesStateHandler dependenciesState =*/ DependenciesStateHandler.createExtension(project)
 
         // Define the 'dependenciesState' DSL for the project's build script.
-        DependenciesStateHandler buildscriptDependenciesState = DependenciesStateHandler.createExtension(project, true)
+        /*DependenciesStateHandler buildscriptDependenciesState =*/ DependenciesStateHandler.createExtension(project, true)
 
         // Define the 'packedDependenciesState' DSL for the project.
         PackedDependenciesStateHandler packedDependenciesState = PackedDependenciesStateHandler.createExtension(project)
@@ -242,11 +242,11 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define an 'everything' configuration which depends on all other configurations.
         Configuration everythingConf = configurations.findByName("everything") ?: configurations.add("everything")
         project.gradle.projectsEvaluated {
-            configurations.each { Configuration conf ->
+            configurations.each((Closure){ Configuration conf ->
                 if (conf.name != "everything" && !conf.name.startsWith("private")) {
                     everythingConf.extendsFrom conf
                 }
-            }
+            })
         }
 
         /**************************************
@@ -288,7 +288,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                         Project depProject = project.findProject(":${sourceDep.name}")
                         if (depProject != null) {
                             Map<String, Task> subBuildTasks = Helper.getProjectBuildTasks(depProject)
-                            buildTasks.each { taskName, task ->
+                            buildTasks.each { String taskName, Task task ->
                                 if (subBuildTasks.containsKey(taskName)) {
                                     task.dependsOn subBuildTasks[taskName]
                                 }

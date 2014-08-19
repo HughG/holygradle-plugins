@@ -43,6 +43,26 @@
             </DClassElement>
           </value>
         </entry>
+        <entry key="holygradle.credentials.MyHandler">
+          <value>
+            <DClassElement>
+              <option name="name" value="holygradle.credentials.MyHandler" />
+              <option name="myName" value="holygradle.credentials.MyHandler" />
+              <option name="myProperties">
+                <set>
+                  <DPropertyElement>
+                    <option name="name" value="extensions" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.plugins.ExtensionContainer" />
+                    <option name="myType" value="org.gradle.api.plugins.ExtensionContainer" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="extensions" />
+                  </DPropertyElement>
+                </set>
+              </option>
+            </DClassElement>
+          </value>
+        </entry>
         <entry key="org.gradle.api.Project">
           <value>
             <DClassElement>
@@ -50,6 +70,14 @@
               <option name="myName" value="org.gradle.api.Project" />
               <option name="myProperties">
                 <set>
+                  <DPropertyElement>
+                    <option name="name" value="buildScriptDependencies" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.buildscript.BuildScriptDependencies" />
+                    <option name="myType" value="holygradle.buildscript.BuildScriptDependencies" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="buildScriptDependencies" />
+                  </DPropertyElement>
                   <DPropertyElement>
                     <option name="name" value="hgVersionInfo" />
                     <option name="static" value="false" />
@@ -75,12 +103,36 @@
                     <option name="myName" value="ext" />
                   </DPropertyElement>
                   <DPropertyElement>
+                    <option name="name" value="my" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.credentials.MyHandler" />
+                    <option name="myType" value="holygradle.credentials.MyHandler" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="my" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="packageArtifacts" />
+                    <option name="static" value="false" />
+                    <option name="type" value="java.util.Collection&lt;holygradle.packaging.PackageArtifactHandler&gt;" />
+                    <option name="myType" value="java.util.Collection&lt;holygradle.packaging.PackageArtifactHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packageArtifacts" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="packedDependenciesState" />
                     <option name="static" value="false" />
                     <option name="type" value="holygradle.unpacking.PackedDependenciesStateHandler" />
                     <option name="myType" value="holygradle.unpacking.PackedDependenciesStateHandler" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="packedDependenciesState" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="publishPackages" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.publishing.PublishPackagesExtension" />
+                    <option name="myType" value="holygradle.publishing.PublishPackagesExtension" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="publishPackages" />
                   </DPropertyElement>
                   <DPropertyElement>
                     <option name="name" value="sourceDependenciesState" />
@@ -111,12 +163,28 @@
               <option name="myProperties">
                 <set>
                   <DPropertyElement>
+                    <option name="name" value="instructions" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.credentials.InstructionsHandler" />
+                    <option name="myType" value="holygradle.credentials.InstructionsHandler" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="instructions" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="packedDependenciesState" />
                     <option name="static" value="false" />
                     <option name="type" value="holygradle.unpacking.PackedDependenciesStateHandler" />
                     <option name="myType" value="holygradle.unpacking.PackedDependenciesStateHandler" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="packedDependenciesState" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="packageArtifacts" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.packaging.PackageArtifactHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.packaging.PackageArtifactHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packageArtifacts" />
                   </DPropertyElement>
                 </set>
               </option>

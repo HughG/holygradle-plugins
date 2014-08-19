@@ -30,7 +30,7 @@ class SymlinkHandler {
     
     SymlinkHandler(SymlinkHandler that) {
         this.fromLocation = that.getFromLocation()
-        this.toLocations = that.getToLocations().clone()
+        this.toLocations = new ArrayList<String>(that.getToLocations())
         
         that.getChildHandlers().each { child ->
             this.children.add(new SymlinkHandler(child))
@@ -72,11 +72,11 @@ class SymlinkHandler {
         fromLocation
     }
     
-    public Iterable<String> getToLocations() {
+    public Collection<String> getToLocations() {
         toLocations
     }
     
-    public Iterable<String> getChildHandlers() {
+    public Collection<SymlinkHandler> getChildHandlers() {
         children
     }
     
