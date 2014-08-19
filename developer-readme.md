@@ -69,10 +69,12 @@ publishing, if you want.  See the section on publishing below for more details.
 
 Run tests with `gw test` for unit tests, and `gw integTest` for integration tests.  These use JUnit, so you can do the
 usual Gradle JUnit tricks, such as running a single test class (which is especially useful for integration tests, as
-these can't be run within a normal JUnit test runner).  You can't run just one test method, though.
+these can't be run within a normal JUnit test runner).  You can't run just one test method, though.  You need to include
+the subproject in the task name, or Gradle will try to run the same test in all subprojects, whereas it probably only 
+exists in one of them.
 
-  - `gw -Dtest.single=SomeIntegrationTest test`
-  - `gw -DintegTest.single=SomeIntegrationTest integTest`
+  - `gw subproject:test -Dtest.single=SomeTest`
+  - `gw subproject:integTest -DintegTest.single=SomeIntegrationTest`
 
 ## Unit tests
 Unit tests (if any) will be automatically run prior to any publish operation, so you can't publish unless the tests
