@@ -1,3 +1,5 @@
+// NOTE: IntelliJ claims that these are unused imports but, for some reason, Gradle (1.4) needs them when this init
+// script is actually run.
 import org.gradle.api.artifacts.repositories.ArtifactRepository
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
@@ -43,14 +45,16 @@ class HolyGradlePlugins {
 
         // By default, set the resolution strategy for buildscript dependencies so that those
         // specified with dynamic version numbers (e.g. "1.0.+") are cached for 1 hour.
-        buildscript.configurations.all { Configuration conf ->
+        buildscript.configurations.all ((Closure){ Configuration conf ->
             conf.resolutionStrategy { ResolutionStrategy res ->
                 res.cacheChangingModulesFor 1, 'seconds'
                 res.cacheDynamicVersionsFor 1, 'hours'
             }
-        }
+        })
     }
-    
+
+    // This is an API for use by build scripts, so ignore the "unused" warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
     public void use(String plugin_version) {
         String group = "holygradle"
         String plugin
@@ -73,7 +77,9 @@ class HolyGradlePlugins {
         }
         useInternal(group, plugin, version)
     }
-    
+
+    // This is an API for use by build scripts, so ignore the "unused" warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
     public void use(String plugin, String version) {
         useInternal "holygradle", plugin, version
     }
@@ -110,6 +116,8 @@ class HolyGradlePlugins {
             //noinspection GroovyAssignabilityCheck
             project.gradle.allprojects { Project p ->
                 p.buildscript.configurations.all { Configuration conf ->
+                    // Gradle magically converts Closures to Action<>, so ignore the IntelliJ warning.
+                    //noinspection GroovyAssignabilityCheck
                     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
                         ModuleVersionSelector requestedVer = details.requested
                         if (requestedVer.group == group && requestedVer.name == pluginFullName) {
@@ -225,18 +233,22 @@ gradle.allprojects { Project project ->
 
     if (usingLocalArtifacts) {
         // Make the "local_artifacts" folder be the first (ivy-format) repository the project will see,
-        // so it will end up fetching all holygradle-packaged dependencies frmo there.
+        // so it will end up fetching all holygradle-packaged dependencies from there.
         project.repositories.ivy { IvyArtifactRepository it ->
             it.url = new File(localArtifactsFile, "ivy").path
         }
     }
 
     // Configure holyGradlePluginsRepository (ivy format) and holyGradleRemoteRepository (maven format)
+    String repoBase;
     String pluginsRepo;
     String remoteRepo;
     if (usingLocalArtifacts) {
-        pluginsRepo = new File(localArtifactsFile, "ivy").path
-        remoteRepo = new File(localArtifactsFile, "maven").path
+        // There is no sensible "base repo URL" in this case, and normal use of it will be overridden by the
+        // "if (usingLocalArtifacts)" block above anyway, so just make it a dummy value.
+        repoBase = "__using_local_artifacts";
+        pluginsRepo = new File(localArtifactsFile, "ivy").toURI().toString()
+        remoteRepo = new File(localArtifactsFile, "maven").toURI().toString()
     } else {
         // Get the base URL for fetching the plugins and their dependencies.  This allows the same source code to be
         // used from multiple sites which may not share a single server.  We use an environment variable instead of a
@@ -245,8 +257,8 @@ gradle.allprojects { Project project ->
         // get at Java properties from a batch file).
 
         final String HOLY_GRADLE_REPOSITORY_BASE_URL_ENV_VAR_NAME = "HOLY_GRADLE_REPOSITORY_BASE_URL"
-        final String pluginsBaseUrl = System.getenv(HOLY_GRADLE_REPOSITORY_BASE_URL_ENV_VAR_NAME)
-        if (pluginsBaseUrl == null) {
+        repoBase = System.getenv(HOLY_GRADLE_REPOSITORY_BASE_URL_ENV_VAR_NAME)
+        if (repoBase == null) {
             throw new RuntimeException(
                 "You must set the base URL for the repository which contains the Holy Gradle plugins " +
                 "and their dependencies.  To do this, set the environment variable " +
@@ -255,12 +267,13 @@ gradle.allprojects { Project project ->
                 "'https://artifactory-server.my-corp.com/artifactory/'"
             )
         }
-        if (!pluginsBaseUrl.endsWith("/")) {
-            pluginsBaseUrl += "/"
+        if (!repoBase.endsWith("/")) {
+            repoBase += "/"
         }
-        pluginsRepo = pluginsBaseUrl + PLUGINS_REPO_NAME
-        remoteRepo = pluginsBaseUrl + REMOTE_REPO_NAME
+        pluginsRepo = repoBase + PLUGINS_REPO_NAME
+        remoteRepo = repoBase + REMOTE_REPO_NAME
     }
+    project.ext["holyGradleRepositoryBase"] = repoBase
     project.ext["holyGradlePluginsRepository"] = pluginsRepo
     project.ext["holyGradleRemoteRepository"] = remoteRepo
 
