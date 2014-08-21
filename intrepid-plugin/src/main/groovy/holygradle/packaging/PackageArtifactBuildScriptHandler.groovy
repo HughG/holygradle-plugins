@@ -84,10 +84,10 @@ class PackageArtifactBuildScriptHandler {
     }
 
     private static List<SourceDependencyHandler> findSourceDependencies(
-            Project project,
-            String sourceDepNameToFind,
-            boolean allowWildcard)
-    {
+        Project project,
+        String sourceDepNameToFind,
+        boolean allowWildcard
+    ) {
         List<SourceDependencyHandler> matches = new LinkedList<SourceDependencyHandler>()
         
         project.subprojects { Project p ->
@@ -213,8 +213,8 @@ class PackageArtifactBuildScriptHandler {
     }
     
     public void createBuildScript(Project project, File buildFile) {
-        if (!buildFile.parentFile.exists()) {
-            buildFile.parentFile.mkdirs()
+        if (!buildFile.parentFile.exists() && !buildFile.parentFile.mkdirs()) {
+            throw new RuntimeException("Failed to create output folder for build script ${buildFile}")
         }
     
         StringBuilder buildScript = new StringBuilder()
@@ -349,11 +349,12 @@ class PackageArtifactBuildScriptHandler {
             buildScript.append("packedDependencies {\n")
             Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
-                SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
+                final SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
+                final Project sourceDepProject = sourceDep.project
                 writePackedDependency(
                     buildScript,
                     sourceDep.getFullTargetPathRelativeToRootProject(),
-                    sourceDep.getLatestPublishedDependencyCoordinate(project),
+                    "${sourceDepProject.group}:${sourceDepProject.name}:${sourceDepProject.version}",
                     packedDependencies[sourceDepName]
                 )
                 

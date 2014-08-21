@@ -128,8 +128,11 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
         }
         String sourceText = sourceFile.text
         String targetText = "// Processed...\n\n" + sourceText
-        
-        targetFile.parentFile.mkdirs()
+
+        if (!targetFile.parentFile.exists() && !targetFile.parentFile.mkdirs()) {
+            throw new RuntimeException("Failed to create output folder for ${targetFile}")
+        }
+
         targetFile.withWriter { Writer writer -> writer.write(targetText) }
     }
     

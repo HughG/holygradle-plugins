@@ -30,18 +30,20 @@ class SymlinkHandler {
     
     SymlinkHandler(SymlinkHandler that) {
         this.fromLocation = that.getFromLocation()
-        this.toLocations = new ArrayList<String>(that.getToLocations())
-        
-        that.getChildHandlers().each { child ->
-            this.children.add(new SymlinkHandler(child))
+        this.merge(that)
+    }
+
+    // Copy the "to locations" and "child handlers", but not the "fromLocation", from other to this
+    private void merge(SymlinkHandler other) {
+        to(other.getToLocations())
+        other.childHandlers.each { child ->
+            children.add(new SymlinkHandler(child))
         }
     }
-    
+
     public void addFrom(String fromLocation, SymlinkHandler handler) {
         SymlinkHandler fromHandler = from(fromLocation)
-        for (toLocation in handler.getToLocations()) {
-            fromHandler.to(toLocation)
-        }
+        fromHandler.merge(handler)
     }
     
     public SymlinkHandler from(String location) {
@@ -63,11 +65,15 @@ class SymlinkHandler {
     }
     
     public void to(String... locations) {
+        to(locations.toList())
+    }
+
+    public void to(Iterable<String> locations) {
         for (location in locations) {
             toLocations.add(location)
         }
     }
-    
+
     public String getFromLocation() {
         fromLocation
     }

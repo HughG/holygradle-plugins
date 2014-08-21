@@ -25,8 +25,8 @@ public class Symlink {
         // Make sure the parent directory exists
         final File linkParentDir = canonicalLink.parentFile
         if (linkParentDir != null) {
-            if (!linkParentDir.exists()) {
-                linkParentDir.mkdirs()
+            if (!linkParentDir.exists() && !linkParentDir.mkdirs()) {
+                throw new RuntimeException("Failed to create parent folder ${linkParentDir} for symlink ${canonicalLink.name}")
             }
         }
 

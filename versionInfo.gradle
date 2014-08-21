@@ -32,7 +32,9 @@ task setHgVersionInfo {
 
             // Write the version to a file, so that the file can be seen as changed (or not) by
             // other tasks, to force them to re-run.
-            project.buildDir.mkdirs()
+            if (!(project.buildDir.exists() || project.buildDir.mkdirs())) {
+                throw new RuntimeException("Failed to create output folder for ${project.hgVersionInfo}")
+            }
             project.hgVersionInfoFile.text = project.hgVersionInfo
         }
     }

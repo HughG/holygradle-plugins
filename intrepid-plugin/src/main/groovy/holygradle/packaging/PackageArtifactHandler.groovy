@@ -211,8 +211,8 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             
             File taskDir = new File(it.destinationDir, taskName)
-            if (!taskDir.exists()) {
-                taskDir.mkdirs()
+            if (!taskDir.exists() && !taskDir.mkdirs()) {
+                throw new RuntimeException("Failed to create output folder for publish notes ${taskDir}")
             }
         
             // If we're publishing then let's generate the auto-generatable files. But if we're 'republishing'
