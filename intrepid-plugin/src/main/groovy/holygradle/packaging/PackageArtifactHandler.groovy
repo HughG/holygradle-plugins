@@ -1,8 +1,10 @@
 package holygradle.packaging
 
+import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.RetryHelper
 import holygradle.publishing.PublishPackagesExtension
+import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
 import org.gradle.api.file.*
 import org.gradle.api.tasks.bundling.*
@@ -20,54 +22,12 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     
     public static Collection<PackageArtifactHandler> createContainer(Project project) {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler)
-        // In this case, we create a new SourceControlRepository instead of trying to get the "sourceControl" extension
-        // from the project, because we don't want a DummySourceControl if there's no SCM info here.
-        SourceControlRepository sourceRepo = SourceControlRepositories.create(project.rootProject, project.projectDir)
-
-        // Create an internal 'createPublishNotes' task to create some text files to be included in all
-        // released packages.
-        Task createPublishNotesTask = null
-        if (sourceRepo != null) {
-            createPublishNotesTask = project.task("createPublishNotes", type: DefaultTask) { Task it ->
-                it.group = "Publishing"
-                it.description = "Creates 'build_info' directory which will be included in published packages."
-                it.dependsOn sourceRepo.toolSetupTask
-                it.doLast {
-                    File buildInfoDir = new File(project.projectDir, "build_info")
-                    if (buildInfoDir.exists()) {
-                        RetryHelper.retry(10, 1000, logger, "delete build_info dir") {
-                            buildInfoDir.deleteDir()
-                        }
-                    }
-                    RetryHelper.retry(10, 1000, logger, "create build_info dir") {
-                        buildInfoDir.mkdir()
-                    }
-                    
-                    new File(buildInfoDir, "source_url.txt").write(sourceRepo.getUrl())
-                    new File(buildInfoDir, "source_revision.txt").write(sourceRepo.getRevision())
-                    
-                    String buildNumber = System.getenv("BUILD_NUMBER")
-                    if (buildNumber != null) {
-                        new File(buildInfoDir, "build_number.txt").write(buildNumber)
-                    }
-                    
-                    String buildUrl = System.getenv("BUILD_URL")
-                    if (buildUrl != null) {
-                        new File(buildInfoDir, "build_url.txt").write(buildUrl)
-                    }
-                    
-                    VersionInfo versionInfoExtension = project.extensions.findByName("versionInfo") as VersionInfo
-                    if (versionInfoExtension != null) {
-                        versionInfoExtension.writeFile(new File(buildInfoDir, "versions.txt"))
-                    }
-                }
-            }
-        }
-        
-        // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.
+        // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.  We do this in a
+        // projectsEvaluated block because otherwise the source dependency information won't be available, and some
+        // tesks which we want to depend on won't have been created.
         project.gradle.projectsEvaluated {
-            NamedDomainObjectCollection<PackageArtifactHandler> packageArtifactHandlers =
-                project.packageArtifacts as NamedDomainObjectCollection<PackageArtifactHandler>
+            NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers =
+                project.packageArtifacts as NamedDomainObjectContainer<PackageArtifactHandler>
             PackageArtifactHandler buildScriptHandler =
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
             buildScriptHandler.include project.buildFile.name
@@ -94,6 +54,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                     republishTask.dependsOn repackageEverythingTask
                 }
             }
+            Task createPublishNotesTask = defineCreatePublishNotesTask(project)
             packageArtifactHandlers.each { packArt ->
                 Task packageTask = packArt.definePackageTask(project, createPublishNotesTask)
                 project.artifacts.add(packArt.getConfiguration(), packageTask)
@@ -102,6 +63,134 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         }
                 
         project.packageArtifacts
+    }
+
+    private static Task defineCreatePublishNotesTask(Project project) {
+        // Create an internal 'createPublishNotes' task to create some text files to be included in all
+        // released packages.
+        return project.task("createPublishNotes", type: DefaultTask) { Task t ->
+            t.group = "Publishing"
+            t.description = "Creates 'build_info' directory which will be included in published packages."
+            File buildInfoDir = new File(project.projectDir, "build_info")
+            t.doLast {
+                if (buildInfoDir.exists()) {
+                    RetryHelper.retry(10, 1000, logger, "delete ${buildInfoDir.name} dir") {
+                        buildInfoDir.deleteDir()
+                    }
+                }
+                RetryHelper.retry(10, 1000, logger, "create ${buildInfoDir.name} dir") {
+                    buildInfoDir.mkdir()
+                }
+
+                String buildNumber = System.getenv("BUILD_NUMBER")
+                if (buildNumber != null) {
+                    new File(buildInfoDir, "build_number.txt").write(buildNumber)
+                }
+
+                String buildUrl = System.getenv("BUILD_URL")
+                if (buildUrl != null) {
+                    new File(buildInfoDir, "build_url.txt").write(buildUrl)
+                }
+
+                VersionInfo versionInfoExtension = project.extensions.findByName("versionInfo") as VersionInfo
+                if (versionInfoExtension != null) {
+                    versionInfoExtension.writeFile(new File(buildInfoDir, "versions.txt"))
+                }
+            }
+            addSourceRepositoryInfo(t, buildInfoDir)
+            Collection<SourceDependencyHandler> allSourceDependencies = findAllSourceDependencies(project)
+            File sourceDependenciesDir = new File(buildInfoDir, "source_dependencies")
+            t.doLast {
+                RetryHelper.retry(10, 1000, project.logger, "create ${sourceDependenciesDir.name} dir") {
+                    sourceDependenciesDir.mkdir()
+                }
+            }
+            allSourceDependencies.each { SourceDependencyHandler handler ->
+                addSourceRepositoryInfo(t, sourceDependenciesDir, handler)
+            }
+        }
+    }
+
+    /**
+     * Collect all source dependencies keyed by absolute path, because the same repo might be a dependency of
+     * several projects in the project graph, each maybe using a different relative path to end up at the same
+     * place.  (If they use equivalent paths to depend on different repos, behaviour is undefined!)
+     *
+     * @param project The project whose set of transitive source dependencies is to be returned.
+     * @return The set of transitive source dependencies for the {@code project}
+     */
+    private static Collection<SourceDependencyHandler> findAllSourceDependencies(Project project) {
+        Map<String, SourceDependencyHandler> handlers = [:]
+        collectAllSourceDependencies(project, project, handlers)
+        return handlers.values()
+    }
+
+    private static void collectAllSourceDependencies(
+        Project originatingProject,
+        Project project,
+        Map<String, SourceDependencyHandler> handlers
+    ) {
+        project.sourceDependencies.each { SourceDependencyHandler handler ->
+            handlers[handler.absolutePath.canonicalPath] = handler
+        }
+        project.subprojects { Project subProject ->
+            collectAllSourceDependencies(originatingProject, subProject, handlers)
+        }
+    }
+
+    private static void addSourceRepositoryInfo(
+        Task createPublishNotesTask,
+        File baseDir,
+        SourceDependencyHandler handler = null
+    ) {
+        Project project = createPublishNotesTask.project
+        // For the originating project we will be passed a null handler (because we're looking at it as the root which
+        // has source dependencies, not a source dependency itself), in which case we want that originating project,
+        // which we can get from the task.
+        File sourceRepoDir
+        if (handler == null) {
+            sourceRepoDir = project.projectDir
+        } else {
+            // We don't use handler..getSourceDependencyProject(...).projectDir, because source dependencies don't have
+            // to contain a Gradle project.
+            sourceRepoDir = handler.destinationDir
+        }
+
+        // We create a new SourceControlRepository instead of trying to get the "sourceControl" extension from the
+        // project, because we don't want a DummySourceControl if there's no SCM info here.  Also, some source
+        // dependencies may not have a project.
+        SourceControlRepository sourceRepo = SourceControlRepositories.create(
+            project.rootProject,
+            sourceRepoDir
+        )
+        if (sourceRepo != null) {
+            createPublishNotesTask.dependsOn sourceRepo.toolSetupTask
+            createPublishNotesTask.doLast {
+                File sourceDepInfoDir
+                if (handler == null) {
+                    // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
+                    sourceDepInfoDir = baseDir
+                } else {
+                    // We're adding info for a subproject source dependency, so put it in a sub-folder; in this case,
+                    // baseDir = "build_info/source_dependencies"
+                    sourceDepInfoDir = new File(baseDir, handler.targetName)
+                    RetryHelper.retry(10, 1000, project.logger, "create ${sourceDepInfoDir.name} dir") {
+                        sourceDepInfoDir.mkdir()
+                    }
+                }
+
+                new File(sourceDepInfoDir, "source_url.txt").write(sourceRepo.getUrl())
+                new File(sourceDepInfoDir, "source_revision.txt").write(sourceRepo.getRevision())
+                // The path from the createPublishNotes task's project to the source repository.
+                String relativePath
+                if (handler == null) {
+                    relativePath = '.'
+                } else {
+                    relativePath = Helper.relativizePath(handler.absolutePath, project.projectDir)
+                }
+                new File(sourceDepInfoDir, "source_path.txt").write(relativePath)
+            }
+        }
     }
 
     public PackageArtifactHandler(String name) {
@@ -207,7 +296,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             
             it.from(project.projectDir) {
-                include "build_info/*.txt"
+                include "build_info/**"
             }
             
             File taskDir = new File(it.destinationDir, taskName)

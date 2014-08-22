@@ -75,6 +75,7 @@ tasks - Displays the tasks runnable from root project 'tBPC' (some of the displa
 
 Publishing tasks
 ----------------
+createPublishNotes - Creates 'build_info' directory which will be included in published packages.
 generateIvyModuleDescriptor - Generates the Ivy Module Descriptor XML file for publication 'ivy'
 packageEverything - Creates all zip packages for project 'tBPC'.
 publish - Publishes all publications for this module.
