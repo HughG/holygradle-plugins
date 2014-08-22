@@ -349,12 +349,11 @@ class PackageArtifactBuildScriptHandler {
             buildScript.append("packedDependencies {\n")
             Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
-                final SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
-                final Project sourceDepProject = sourceDep.getSourceDependencyProject(project)
+                SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
                 writePackedDependency(
                     buildScript,
                     sourceDep.getFullTargetPathRelativeToRootProject(),
-                    "${sourceDepProject.group}:${sourceDepProject.name}:${sourceDepProject.version}",
+                    sourceDep.getLatestPublishedDependencyCoordinate(project),
                     packedDependencies[sourceDepName]
                 )
                 
