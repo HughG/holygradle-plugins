@@ -18,8 +18,7 @@ class PackedDependencyHandler extends DependencyHandler {
     public Boolean unpackToCache = null
     private Boolean createSymlinkToCache = null
     public Boolean createSettingsFile = null
-    public Boolean publishDependency = null
-    
+
     public static Collection<PackedDependencyHandler> createContainer(Project project) {
         if (project == project.rootProject) {
             project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "rootDefault")
@@ -163,19 +162,6 @@ class PackedDependencyHandler extends DependencyHandler {
             }
         } else {
             return applyUpToDateChecks
-        }
-    }
-    
-    public boolean shouldPublishDependency() {
-        if (publishDependency == null) {
-            PackedDependencyHandler p = getParentHandler()
-            if (p != null) {
-                return p.shouldPublishDependency()
-            } else {
-                return true
-            }
-        } else {
-            return publishDependency
         }
     }
     

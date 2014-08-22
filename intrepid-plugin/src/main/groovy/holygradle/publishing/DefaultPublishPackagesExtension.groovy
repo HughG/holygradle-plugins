@@ -61,7 +61,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
 
-                this.removeUnwantedDependencies(packedDependencies)
+                this.removeUnwantedDependencies()
                 this.freezeDynamicDependencyVersions(project)
                 this.fixUpConflictConfigurations()
                 this.removePrivateConfigurations()
@@ -70,6 +70,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
 
                 ivyPublishTask.doFirst {
+                    this.failIfPackedDependenciesNotCreatingSymlink(packedDependencies)
                     this.verifyGroupName()
                     this.verifyVersionNumber()
                 }
@@ -304,23 +305,26 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return currentVersionNumber
     }
 
-    // Remove dependencies which were explicitly specified as "publishDependency = false", or whose configuration
-    // name starts with "private".
-    public void removeUnwantedDependencies(Collection<PackedDependencyHandler> packedDependencies) {
-        Collection<String> unwantedDependencies = []
-        packedDependencies.each { packedDep ->
-            if (!packedDep.shouldPublishDependency()) {
-                unwantedDependencies.add(packedDep.getDependencyName())
-            }
+    // Throw an exception if any packed dependencies are marked with noCreateSymlinkToCache()
+    public void failIfPackedDependenciesNotCreatingSymlink(Collection<PackedDependencyHandler> packedDependencies) {
+        Collection<PackedDependencyHandler> nonSymlinkedPackedDependencies =
+            packedDependencies.findAll { it.shouldUnpackToCache() && !it.shouldCreateSymlinkToCache() }
+        if (!nonSymlinkedPackedDependencies.empty) {
+            String dependenciesDescription = (nonSymlinkedPackedDependencies*.dependencyCoordinate).join(", ")
+            throw new RuntimeException(
+                "Cannot publish ${project.name} because some packed dependencies are using noCreateSymlinkToCache(), " +
+                "which means Gradle cannot know the real version of those dependencies: [${dependenciesDescription}]"
+            )
         }
+    }
 
+    // Remove dependencies whose configuration name starts with "private".
+    public void removeUnwantedDependencies() {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
-                if (unwantedDependencies.contains(depNode.@name) ||
-                    depNode.@conf.startsWith("private")
-                ) {
+                if (depNode.@conf.startsWith("private")) {
                     depNode.parent().remove(depNode)
                 }
             }
