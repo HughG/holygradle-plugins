@@ -19,7 +19,7 @@ class MyHandler implements CredentialSource {
             myExtension = project.extensions.create("my", MyHandler, project, credentialStorePath)
             project.my.extensions.instructions = project.container(InstructionsHandler) { String instructionName ->
                 project.my.extensions.create(instructionName, InstructionsHandler, instructionName)
-            } as InstructionsHandler
+            }
         } else {
             myExtension = project.rootProject.extensions.findByName("my") as MyHandler
             project.extensions.add("my", myExtension)

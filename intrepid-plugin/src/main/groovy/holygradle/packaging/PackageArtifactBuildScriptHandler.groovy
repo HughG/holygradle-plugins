@@ -350,7 +350,7 @@ class PackageArtifactBuildScriptHandler {
             Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
                 final SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
-                final Project sourceDepProject = sourceDep.project
+                final Project sourceDepProject = sourceDep.getSourceDependencyProject(project)
                 writePackedDependency(
                     buildScript,
                     sourceDep.getFullTargetPathRelativeToRootProject(),
