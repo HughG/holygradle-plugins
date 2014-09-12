@@ -8,6 +8,7 @@
     <conf name="source" visibility="public"/>
     <conf name="libs" visibility="public"/>
     <conf name="more_libs" visibility="public"/>
+    <conf name="empty_config" visibility="public"/>
   </configurations>
   <publications>
     <artifact name="empty-config-lib-compileVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>

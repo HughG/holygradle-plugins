@@ -51,8 +51,8 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
      * This is a (regression) test for a case discovered while developing GR #4125.
      */
     @Test
-    public void useOnlyEmptyConfigs() {
-        final File projectDir = new File(getTestDir(), "useOnlyEmptyConfigs")
+    public void useOnlyViaEmptyConfigs() {
+        final File projectDir = new File(getTestDir(), "useOnlyViaEmptyConfigs")
         final File emptyConfigLibDir = new File(projectDir, "empty-config-lib")
         final File extLibDir = new File(projectDir, "extlib")
         final File anotherLibDir = new File(projectDir, "anotherlib")
