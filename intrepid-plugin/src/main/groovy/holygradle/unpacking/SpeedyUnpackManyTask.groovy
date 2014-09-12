@@ -117,6 +117,7 @@ class SpeedyUnpackManyTask
 
         Unzipper localUnzipper = unzipper // capture private for closure
         entry.zipFiles.each { File file ->
+            logger.lifecycle "Unpack ${file.name}"
             logger.info "SpeedyUnpackManyTask: extracting ${file.path} to ${entry.unpackDir.path}"
             localUnzipper.unzip(file, entry.unpackDir)
 
