@@ -5,7 +5,11 @@ import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import static org.junit.Assert.*
+import static org.hamcrest.Matchers.*
 
 class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIntegrationTest {
     /**
@@ -77,5 +81,38 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
                 assertTrue("Symlink target folder is not empty under ${file}", file.list().length > 0)
             }
         }
+    }
+
+    /**
+     * Test that, if you depend on conflicting versions of a module, the winning one is correctly unpacked.
+     *
+     * This is a (regression) test for a case discovered while developing GR #4071.
+     */
+    @Test
+    public void useConflictingVersions() {
+        final File projectDir = new File(getTestDir(), "useConflictingVersions")
+        final File emptyConfigLibDir = new File(projectDir, "example-framework")
+        final File extLibDir = new File(projectDir, "external-lib")
+        final Collection<File> allPackedDepDirs = [emptyConfigLibDir, extLibDir]
+        allPackedDepDirs.each {
+            if (it.exists()) {
+                assertTrue("Removed existing packed dep symlink ${it}", it.delete())
+            }
+        }
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.addArguments("--info")
+            launcher.forTasks("fAD")
+        }
+
+        allPackedDepDirs.each { File file ->
+            assertTrue(
+                "Symlink to packed dep has been created at ${file}",
+                file.exists() && Symlink.isJunctionOrSymlink(file)
+            )
+        }
+        Path linkTarget = Files.readSymbolicLink(extLibDir.toPath())
+        println "linkTarget = ${linkTarget}"
+        assertThat(linkTarget.toString(), endsWith("\\external-lib-1.1"))
     }
 }

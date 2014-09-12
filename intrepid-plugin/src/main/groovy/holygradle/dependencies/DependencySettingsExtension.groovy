@@ -61,8 +61,13 @@ class DependencySettingsExtension {
     public boolean getDefaultFailOnVersionConflict() {
         // Fall back to the settings from the root project, if its extension has already been added there.  (It normally
         // will have, but not if the evaluation order is changed with "evaluationDependsOn" or similar.)
-        return failOnVersionConflict ?:
-            getFallback()?.defaultFailOnVersionConflict ?:
-            DEFAULT_FAIL_ON_VERSION_CONFLICT_DEFAULT
+        if (failOnVersionConflict != null) {
+            return failOnVersionConflict
+        }
+        DependencySettingsExtension fallback = getFallback()
+        if (fallback != null) {
+            return fallback.getDefaultFailOnVersionConflict()
+        }
+        return DEFAULT_FAIL_ON_VERSION_CONFLICT_DEFAULT
     }
 }

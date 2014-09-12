@@ -55,13 +55,19 @@ public class IntrepidPlugin implements Plugin<Project> {
         final ConfigurationContainer configurations = project.configurations
         final List<String> baseTaskNames = project.gradle.startParameter.taskNames.collect { it.split(":").last() }
         final boolean runningDependencyTask = ["dependencies", "dependencyInsight"].any { baseTaskNames.contains(it) }
-        // We call failOnVersionConflict inside Configurations#all, because that's called lazily when configurations are
-        // added, so lets the script set dependencySettings.defaultFailOnVersionConflict before adding any.
-        configurations.all((Closure){ Configuration it ->
-            if (dependencySettings.defaultFailOnVersionConflict && !runningDependencyTask) {
-                it.resolutionStrategy.failOnVersionConflict()
-            }
-        })
+        // We call failOnVersionConflict inside projectsEvaluated so that the script can set
+        // dependencySettings.defaultFailOnVersionConflict at any point, instead of having to be careful to call it
+        // before any configurations are added, which would be a surprising constraint--at least, it surprised me,
+        // coming back to this option after a couple of months.  We don't just use project.afterEvaluate because the
+        // default involves falling back to the root project's setting.
+        project.gradle.projectsEvaluated {
+            configurations.all((Closure) { Configuration conf ->
+                    if (dependencySettings.defaultFailOnVersionConflict && !runningDependencyTask) {
+                        conf.resolutionStrategy.failOnVersionConflict()
+                    }
+                }
+            )
+        }
   
         /**************************************
          * Properties
