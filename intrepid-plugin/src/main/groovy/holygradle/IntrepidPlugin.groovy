@@ -129,10 +129,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         
         // Define 'packageArtifacts' DSL for the project.
         PackageArtifactHandler.createContainer(project)
-        
-        // Define 'copyArtifacts' DSL
-        CopyArtifactsHandler copyArtifacts = CopyArtifactsHandler.createExtension(project)
-        
+
         // Define 'sourceDependencyTasks' DSL
         Collection<SourceDependencyTaskHandler> sourceDependencyTasks = SourceDependencyTaskHandler.createContainer(project)
 
@@ -441,13 +438,6 @@ public class IntrepidPlugin implements Plugin<Project> {
                  * Collecting dependencies
                  **************************************/
                 collectDependenciesTask.initialize(project)
-            }
-
-            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for copyArtifacts") {
-                /**************************************
-                 * Copying artifacts
-                 **************************************/
-                copyArtifacts.defineCopyTask(project)
             }
         }
 
