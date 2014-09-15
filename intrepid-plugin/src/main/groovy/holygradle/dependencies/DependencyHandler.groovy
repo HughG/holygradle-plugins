@@ -5,8 +5,18 @@ import org.gradle.api.Project
 import java.util.regex.Matcher
 
 abstract class DependencyHandler {
+    /**
+     * The path to the folder in which the dependency is to appear, relative to the containing project, as given by
+     * {@link #project}.
+     */
     public final String name
+    /**
+     * The name of the folder in which the dependency is to appear; that is, the past part of {@link #name}.
+     */
     public final String targetName
+    /**
+     * The {@Link Project} containing this dependency.
+     */
     public final Project project
     
     public DependencyHandler(String depName) {

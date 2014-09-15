@@ -1,7 +1,7 @@
 package holygradle.packaging
 
 import holygradle.custom_gradle.PluginUsages
-import holygradle.custom_gradle.util.Wildcard
+import holygradle.dependencies.DependencyHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.publishing.RepublishHandler
 import holygradle.scm.SourceControlRepository
@@ -17,13 +17,12 @@ import java.util.regex.Matcher
 class PackageArtifactBuildScriptHandler {
     private boolean atTop = true
     private Collection<String> textAtTop = []
-    private Collection<String> pinnedSourceDependencies = []
+    private Collection<String> pinnedSourceDependencies = new HashSet<String>()
     private Map<String, Collection<String>> packedDependencies = [:]
     private Collection<String> textAtBottom = []
     private Collection<String> ivyRepositories = []
     private RepublishHandler republishHandler = null
     private String myCredentialsConfig
-    private List<String> symlinkPatterns = []
     private String publishUrl = null
     private String publishCredentials = null
     public boolean generateSettingsFileForSubprojects = true
@@ -60,99 +59,69 @@ class PackageArtifactBuildScriptHandler {
         pinnedSourceDependencies.addAll(sourceDep)
         atTop = false
     }
-    
+
+    public void addPinnedSourceDependency(SourceDependencyHandler... sourceDep) {
+        pinnedSourceDependencies.addAll(sourceDep*.targetName)
+        atTop = false
+    }
+
     public void addPackedDependency(String packedDepName, String... configurations) {
         packedDependencies[packedDepName] = configurations as Collection<String>
         atTop = false
     }
-    
+
+    public void addPackedDependency(DependencyHandler dep, String... configurations) {
+        packedDependencies[dep.targetName] = configurations as Collection<String>
+        atTop = false
+    }
+
     public void addRepublishing(Closure closure) {
         if (republishHandler == null) {
             republishHandler = new RepublishHandler()
         }
         ConfigureUtil.configure(closure, republishHandler)
     }
-    
-    public void includeSymlinks(String... patterns) {
-        for (p in patterns) {
-            symlinkPatterns.add(p)
-        }
-    }
-    
+
     public boolean buildScriptRequired() {
         return pinnedSourceDependencies.size() > 0 || packedDependencies.size() > 0
     }
 
-    private static List<SourceDependencyHandler> findSourceDependencies(
+    private static <T extends DependencyHandler> void findDependencies(
         Project project,
-        String sourceDepNameToFind,
-        boolean allowWildcard
+        String depNameToFind,
+        String depsExtensionName,
+        Collection<T> matches
     ) {
-        List<SourceDependencyHandler> matches = new LinkedList<SourceDependencyHandler>()
-        
         project.subprojects { Project p ->
-            matches.addAll(findSourceDependencies(p, sourceDepNameToFind, allowWildcard))
+            findDependencies(p, depNameToFind, depsExtensionName, matches)
         }
-        
-        Collection<SourceDependencyHandler> sourceDependencies =
-            project.extensions.findByName("sourceDependencies") as Collection<SourceDependencyHandler>
-        if (sourceDependencies != null) {
-            sourceDependencies.each {
-                // Each sourceDependency name is actually a path - here we are only interested in matching the
-                // last entity of the path with the name provided in the user's "addSourceDependency"
-                Matcher folderNameUsingRegex = it.name =~ /([^\\/]+)$/
 
-                if (!folderNameUsingRegex.find()) {
-                    project.logger.warn "Failed to parse dependency name from path ${it.name}"
-                } else {
-                    if (allowWildcard) {
-                        if (Wildcard.match(sourceDepNameToFind, folderNameUsingRegex.group(1))) {
-                            matches.add(it)
-                        }
-                    } else if (folderNameUsingRegex.group(1) == sourceDepNameToFind) {
-                        matches.add(it)
-                    }
-                }
-            }
+        Collection<T> dependencies = project.extensions.findByName(depsExtensionName) as Collection<T>
+        if (dependencies != null) {
+            matches.addAll(dependencies.findAll { it.targetName == depNameToFind })
         }
+    }
+
+    private static List<SourceDependencyHandler> findSourceDependencies(Project project, String sourceDepName) {
+        List<SourceDependencyHandler> matches = new LinkedList<SourceDependencyHandler>()
+        findDependencies(project, sourceDepName, "sourceDependencies", matches)
         return matches
     }
     
     private static List<PackedDependencyHandler> findPackedDependencies(Project project, String packedDepName) {
         List<PackedDependencyHandler> matches = new LinkedList<PackedDependencyHandler>()
-        
-        project.subprojects { Project p ->
-            matches.addAll(findPackedDependencies(p, packedDepName))
-        }
-
-        Collection<PackedDependencyHandler> packedDependencies =
-            project.extensions.findByName("packedDependencies") as Collection<PackedDependencyHandler>
-        if (packedDependencies != null) {
-            packedDependencies.each {
-                // Each packedDependency name is actually a path - here we are only interested in matching the
-                // last entity of the path with the name provided in the user's "addPackedDependency"
-                Matcher folderNameUsingRegex = it.name =~ /([^\\/]+)$/
-
-                if (!folderNameUsingRegex.find()) {
-                    project.logger.warn "Failed to parse dependency name from path ${it.name}"
-                } else {
-                    if (folderNameUsingRegex.group(1) == packedDepName) {
-                        matches.add(it)
-                    }
-                }
-            }
-        }
+        findDependencies(project, packedDepName, "packedDependencies", matches)
         return matches
     }
     
 
-    private static Map<String, SourceDependencyHandler> collectSourceDependenciesForPacked(
+    private static Map<String, SourceDependencyHandler> collectSourceDependencies(
         Project project,
         Iterable<String> sourceDepNames
     ) {
         Map<String, SourceDependencyHandler> allSourceDeps = [:]
         sourceDepNames.each { String sourceDepName ->
-            findSourceDependencies(project.rootProject, sourceDepName, /*allowWildcard=*/false ).each { SourceDependencyHandler sourceDep ->
+            findSourceDependencies(project.rootProject, sourceDepName).each { SourceDependencyHandler sourceDep ->
                 if (allSourceDeps.containsKey(sourceDepName)) {
                     int curConf = allSourceDeps[sourceDepName].publishingHandler.configurations.size()
                     int itConf = sourceDep.publishingHandler.configurations.size()
@@ -167,28 +136,6 @@ class PackageArtifactBuildScriptHandler {
         allSourceDeps
     }
 
-    private static Collection<SourceDependencyHandler> collectSourceDependenciesForPinned(
-        Project project,
-        Iterable<String> dependencyWildcards
-    ) {
-        Map<String, SourceDependencyHandler> allSourceDeps = [:]
-        dependencyWildcards.each { String wildcard ->
-            findSourceDependencies(project.rootProject, wildcard, /*allowWildcard=*/true).each { SourceDependencyHandler sourceDep ->
-                String targetPath = sourceDep.name
-                if (allSourceDeps.containsKey(targetPath)) {
-                    int curConf = allSourceDeps[targetPath].publishingHandler.configurations.size()
-                    int itConf = sourceDep.publishingHandler.configurations.size()
-                    if (itConf > curConf) {
-                        allSourceDeps[targetPath] = sourceDep
-                    }
-                } else {
-                    allSourceDeps[targetPath] = sourceDep
-                }
-            }
-        }
-        allSourceDeps.values()
-    }
-
     private static Map<String, PackedDependencyHandler> collectPackedDependencies(
         Project project,
         Collection<String> packedDepNames
@@ -201,17 +148,7 @@ class PackageArtifactBuildScriptHandler {
         }
         allPackedDeps
     }
-    
-    private void collectSymlinks(Project project, String sourceDepName, SymlinkHandler allSymlinks) {
-        if (Wildcard.anyMatch(symlinkPatterns, sourceDepName)) {
-            Project depProject = project.rootProject.findProject(sourceDepName)
-            if (depProject != null) {
-                SymlinkHandler depSymlinks = depProject.extensions.findByName("symlinks") as SymlinkHandler
-                allSymlinks.addFrom(sourceDepName, depSymlinks)
-            }
-        }
-    }
-    
+
     public void createBuildScript(Project project, File buildFile) {
         if (!buildFile.parentFile.exists() && !buildFile.parentFile.mkdirs()) {
             throw new RuntimeException("Failed to create output folder for build script ${buildFile}")
@@ -274,7 +211,7 @@ class PackageArtifactBuildScriptHandler {
         
         // sourceDependencies block
         Collection<SourceDependencyHandler> pinnedSourceDeps =
-            collectSourceDependenciesForPinned(project, pinnedSourceDependencies)
+            collectSourceDependencies(project, pinnedSourceDependencies).values()
         if (pinnedSourceDeps.size() > 0) {
             if (!generateSettingsFileForSubprojects) {
                 buildScript.append("fetchAllDependencies {\n")
@@ -305,8 +242,6 @@ class PackageArtifactBuildScriptHandler {
                     buildScript.append(" "*4)
                     buildScript.append("}\n")
                 }
-                
-                collectSymlinks(project, sourceDep.targetName, allSymlinks)
             }
             buildScript.append("}\n")
         }
@@ -347,7 +282,7 @@ class PackageArtifactBuildScriptHandler {
         
         if (packedDependencies.size() > 0) {
             buildScript.append("packedDependencies {\n")
-            Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependenciesForPacked(project, packedDependencies.keySet())
+            Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependencies(project, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
                 SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
                 writePackedDependency(
@@ -356,8 +291,6 @@ class PackageArtifactBuildScriptHandler {
                     sourceDep.getLatestPublishedDependencyCoordinate(project),
                     packedDependencies[sourceDepName]
                 )
-                
-                collectSymlinks(project, sourceDep.targetName, allSymlinks)
             }
             Map<String, PackedDependencyHandler> packedDeps = collectPackedDependencies(project, packedDependencies.keySet())
             for (packedDepName in packedDeps.keySet()) {
