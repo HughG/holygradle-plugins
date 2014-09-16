@@ -1,0 +1,99 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    explicitFile
+    pinnedSource
+    packedDependencyByName
+    packedDependencyByCoordinate
+    selfAsPackedDependencyByCoordinate
+    packedDependencyFromSource
+    ivyRepository
+    withPublishPackages
+    text
+    withRepublishing
+}
+
+sourceDependencies {
+    // Add projectA sourceDependency.  We have both the target folder and the source repo being the same place, so that
+    // we don't actually have to fetch any source.
+    "../projectA" {
+        hg new File(project.projectDir, "../projectA").toURI().toString()
+    }
+}
+
+packedDependencies {
+    // This test uses noCreateSymlinkToCache() because we don't actually want to test the fetching
+    // unpacking, and symlinking of dependencies, just the finding of them by name in includeBuildScript.
+    "../projectCDep" {    
+        dependency "holygradle.test:external-lib:1.0"
+        configurations.each { configuration "${it}->testRuntime" }
+        noCreateSymlinkToCache()
+    }
+}
+
+publishPackages {
+    group "holygradle.test"
+    nextVersionNumber "1.2.3"
+}
+
+packageArtifacts {
+    explicitFile {
+        include "dummy.txt"
+        includeBuildScript {
+        }
+    }
+    pinnedSource {
+        includeBuildScript {
+            addPinnedSourceDependency "projectA"
+        }
+    }
+    packedDependencyByName {
+        includeBuildScript {
+            addPackedDependency "projectCDep", "default"
+        }
+    }
+    packedDependencyByCoordinate {
+        includeBuildScript {
+            addPackedDependency "holygradle.test:external-lib:1.0", "default->compile"
+        }
+    }
+    selfAsPackedDependencyByCoordinate {
+        includeBuildScript {
+            addPackedDependency "${project.group}:${project.name}:${project.version}", "default->explicitFile"
+        }
+    }
+    packedDependencyFromSource {
+        includeBuildScript {
+            addPackedDependency "projectA", "default"
+        }
+    }
+    ivyRepository {
+        includeBuildScript {
+            addIvyRepository "file://nul", "Artifactory"
+        }
+    }
+    withPublishPackages {
+        includeBuildScript {
+            addPublishPackages "file://nul", "Artifactory"
+        } 
+    }
+    text {
+        includeBuildScript {
+            add "// This is some sample text"
+        }
+    }
+    withRepublishing {
+        includeBuildScript {
+            addRepublishing {
+                from "file://nul"
+                to "file://con"
+            }
+        } 
+    }
+}
+packageArtifacts.each { it ->
+    it.to it.name
+}

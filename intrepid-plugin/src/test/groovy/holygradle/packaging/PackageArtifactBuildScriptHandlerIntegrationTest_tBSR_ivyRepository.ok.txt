@@ -1,0 +1,22 @@
+buildscript {
+    gplugins.use "intrepid:dummy"
+    gplugins.use "devenv:dummy"
+    gplugins.use "my-credentials:dummy"
+}
+gplugins.apply()
+
+repositories {
+    ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url "file://nul"
+    }
+}
+
+packedDependenciesDefault {
+    unpackToCache = false
+}
+
+

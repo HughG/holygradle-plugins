@@ -1,0 +1,19 @@
+buildscript {
+    gplugins.use "intrepid:dummy"
+    gplugins.use "devenv:dummy"
+    gplugins.use "my-credentials:dummy"
+}
+gplugins.apply()
+
+packedDependenciesDefault {
+    unpackToCache = false
+}
+
+
+publishPackages {
+    republish {
+        from "file://nul"
+        to "file://con"
+    }
+}
+

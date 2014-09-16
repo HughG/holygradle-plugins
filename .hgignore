@@ -30,6 +30,7 @@ syntax: regexp
 # Generated doc
 ^doc/website/output/
 # Other
+^[^/]+/src/test/groovy/holygradle/.*/settings.gradle
 ^credential-store/_ReSharper.credential-store/
 ^credential-store/(Debug|Release)
 ^ivy\.xml
@@ -41,7 +42,6 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/(build_info|packages)/
-^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/projectB/settings.gradle
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/[^/]+/build_info/.*
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/CollectDependenciesIntegrationTest/[^/]+/(gradle|local_artifacts)/

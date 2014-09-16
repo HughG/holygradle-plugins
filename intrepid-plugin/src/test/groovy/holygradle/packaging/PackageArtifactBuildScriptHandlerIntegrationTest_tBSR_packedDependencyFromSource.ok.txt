@@ -1,0 +1,22 @@
+buildscript {
+    gplugins.use "intrepid:dummy"
+    gplugins.use "devenv:dummy"
+    gplugins.use "my-credentials:dummy"
+}
+gplugins.apply()
+
+configurations {
+    it."default"
+}
+
+packedDependenciesDefault {
+    unpackToCache = false
+}
+
+packedDependencies {
+    "..\projectA" {
+        dependency "buildScriptRequired:projectA:unspecified"
+        configuration "default"
+    }
+}
+

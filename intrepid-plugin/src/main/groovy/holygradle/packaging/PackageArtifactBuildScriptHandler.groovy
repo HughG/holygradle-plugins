@@ -61,17 +61,24 @@ class PackageArtifactBuildScriptHandler {
     }
 
     public void addPinnedSourceDependency(SourceDependencyHandler... sourceDep) {
-        pinnedSourceDependencies.addAll(sourceDep*.targetName)
+        //noinspection GroovyAssignabilityCheck
+        addPinnedSourceDependency(*(sourceDep*.targetName))
         atTop = false
     }
 
     public void addPackedDependency(String packedDepName, String... configurations) {
+        if (configurations.length == 0) {
+            throw new RuntimeException(
+                "Packed dependency ${packedDepName} was added with no configurations; need at least one."
+            )
+        }
         packedDependencies[packedDepName] = configurations as Collection<String>
         atTop = false
     }
 
     public void addPackedDependency(DependencyHandler dep, String... configurations) {
-        packedDependencies[dep.targetName] = configurations as Collection<String>
+        //noinspection GroovyAssignabilityCheck
+        addPackedDependency(*(dep*.targetName), configurations)
         atTop = false
     }
 
@@ -83,7 +90,14 @@ class PackageArtifactBuildScriptHandler {
     }
 
     public boolean buildScriptRequired() {
-        return pinnedSourceDependencies.size() > 0 || packedDependencies.size() > 0
+        return [
+            textAtTop,
+            textAtBottom,
+            packedDependencies,
+            pinnedSourceDependencies,
+            ivyRepositories
+        ].any { !it.empty } ||
+            publishInfoSpecified()
     }
 
     private static <T extends DependencyHandler> void findDependencies(
@@ -319,9 +333,7 @@ class PackageArtifactBuildScriptHandler {
         allSymlinks.writeScript(buildScript)
         
         // Generate the 'publishPackages' block:
-        boolean openPublishPackages = (publishUrl != null && publishCredentials != null) || republishHandler != null
-        
-        if (openPublishPackages) {
+        if (publishInfoSpecified()) {
             buildScript.append('publishPackages {\n')
             if (publishUrl != null && publishCredentials != null) {
                 buildScript.append('    group "')
@@ -359,7 +371,11 @@ class PackageArtifactBuildScriptHandler {
         
         buildFile.write(buildScript.toString())
     }
-    
+
+    private boolean publishInfoSpecified() {
+        return (publishUrl != null && publishCredentials != null) || republishHandler != null
+    }
+
     private static void writePackedDependency(
         StringBuilder buildScript,
         String name,

@@ -1,0 +1,24 @@
+buildscript {
+    gplugins.use "intrepid:dummy"
+    gplugins.use "devenv:dummy"
+    gplugins.use "my-credentials:dummy"
+}
+gplugins.apply()
+
+packedDependenciesDefault {
+    unpackToCache = false
+}
+
+
+publishPackages {
+    group "holygradle.test"
+    nextVersionNumber "1.2.3"
+    repositories.ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url "file://nul"
+    }
+}
+

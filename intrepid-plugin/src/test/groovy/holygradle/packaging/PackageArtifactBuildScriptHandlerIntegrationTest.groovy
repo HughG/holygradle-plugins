@@ -2,7 +2,9 @@ package holygradle.packaging
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ErrorCollector
 
 import java.nio.file.Files
 import java.util.zip.ZipEntry
@@ -14,6 +16,9 @@ import static org.junit.Assert.*
  * Integration tests for {@link holygradle.packaging.PackageArtifactBuildScriptHandler}
  */
 class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradleIntegrationTest {
+    @Rule
+    public ErrorCollector collector = new ErrorCollector();
+
     /**
      * Test that build script generated using "addPinnedSourceDependency" produces the expected output.  (This is a
      * regression test for a bug introduced during GR#2081, whereby the "url@node" of the source dependency appeared as
@@ -86,6 +91,57 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
             "gplugins.use \"\$1:dummy\""
         )
         regression.checkForRegression("testCreateBuildScriptWithPackedDependency")
+    }
+
+    @Test
+    public void testBuildScriptRequired() {
+        // ProjectC references a couple of packed dependencies, and when we run packageEverything it
+        // should generate a buildScript which only references only one of these - and the right one!
+
+        File projectCDir = new File(getTestDir(), "buildScriptRequired")
+        File projectCPackagesDir = new File(projectCDir, "packages")
+        if (projectCPackagesDir.exists()) {
+            assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
+        }
+
+        invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies", "packageEverything")
+        }
+
+        def configurations = [
+            "explicitFile",
+            "pinnedSource",
+            "packedDependencyByName",
+            "packedDependencyByCoordinate",
+            "selfAsPackedDependencyByCoordinate",
+            "packedDependencyFromSource",
+            "ivyRepository",
+            "withPublishPackages",
+            "text",
+            "withRepublishing",
+        ]
+        configurations.each {
+            try {
+                ZipFile packageZip = new ZipFile(new File(projectCPackagesDir, "buildScriptRequired-${it}.zip"))
+                ZipEntry packageBuildFile = packageZip.getEntry("${it}/build.gradle")
+                final String regressionFileName = "tBSR_${it}"
+                File testFile = regression.getTestFile(regressionFileName)
+                if (packageBuildFile == null) {
+                    testFile.text = ""
+                } else {
+                    testFile.text = packageZip.getInputStream(packageBuildFile).text
+                }
+                regression.replacePatterns(regressionFileName, [
+                    (~/gplugins.use "(.*):.*"/) : "gplugins.use \"\$1:dummy\"",
+                    (~/hg "unknown@[]+"]/) : "hg \"unknown@[sniupped]\""
+                ])
+                regression.checkForRegression(regressionFileName)
+            } catch (AssertionError e) {
+                // This allows us to catch any assertion failures from a single configuration, carry on testing the
+                // rest, and report all failures at the end.
+                collector.addError(e)
+            }
+        }
     }
 
 }
