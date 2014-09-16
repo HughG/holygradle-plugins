@@ -139,6 +139,7 @@ class PackageArtifactBuildScriptHandler {
                 if (allSourceDeps.containsKey(sourceDepName)) {
                     int curConf = allSourceDeps[sourceDepName].publishingHandler.configurations.size()
                     int itConf = sourceDep.publishingHandler.configurations.size()
+                    // NOTE 2014-09-16 HughG: This comparison is nonsense.  See GR #4824.
                     if (itConf > curConf) {
                         allSourceDeps[sourceDepName] = sourceDep
                     }
