@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: artifactory-papi-3.3.0">
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.artifactory/artifactory-papi/3.3.0/jar/51a2c9dbecf3b4f53e7a00032ce64f4bdcb3ef9c/artifactory-papi-3.3.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.artifactory/artifactory-papi/3.3.0/source/79bb6072790164e4b6c40bf5975a4f338094e78b/artifactory-papi-3.3.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

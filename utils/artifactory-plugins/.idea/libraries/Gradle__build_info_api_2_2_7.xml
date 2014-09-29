@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: build-info-api-2.2.7">
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.jfrog.buildinfo/build-info-api/2.2.7/jar/8acf04da2dd2b997e4ee0b5a8f1b763ee651abb4/build-info-api-2.2.7.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.jfrog.buildinfo/build-info-api/2.2.7/source/2f4fbb09f4ec69bf7fd6a4aca7db8b7862b3be34/build-info-api-2.2.7-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,28 @@
+/**
+ * Note: This project doesn't need to be built or deployed, because Artifactory loads plugins from source.  This
+ * build.gradle file is just here to help IntelliJ fond all the dependencies, to get syntax highlighting correct.
+ */
+
+group = "holygradle"
+
+apply plugin: "groovy"
+
+dependencies {
+    groovy localGroovy()
+
+    // These libraries can be found in // from http://repo.jfrog.org/artifactory/libs-releases/org/artifactory/artifactory-papi/
+    compile "org.slf4j:slf4j-api:1.7.5" // (also from repo1)
+    compile "org.artifactory:artifactory-papi:3.3.0"
+}
+
+repositories {
+    maven {
+        url artifactoryServer + 'remote-repos/'
+        // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users, depending
+        // on local Artifactory configuration; or they may not be able to deploy into caches.
+        credentials {
+            username artifactoryUsername
+            password artifactoryPassword
+        }
+    }
+}

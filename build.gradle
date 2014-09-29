@@ -41,7 +41,7 @@ subprojects {
         ivy {
             url artifactoryServer + artifactoryPluginRepo
             // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users, depending
-            // on local Artifactory configuration.
+            // on local Artifactory configuration; or they may not be able to deploy into caches.
             credentials {
                 username artifactoryUsername
                 password artifactoryPassword
