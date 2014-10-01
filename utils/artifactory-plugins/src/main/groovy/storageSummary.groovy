@@ -171,6 +171,7 @@ private void outputIt360Table(StringWriter sw, Collection<RepoStats> repoStats, 
  * @param total The total for all stats (which may be more than are in the collection), for calculating percentages.
  */
 private void outputXhtml(StringWriter sw, Collection<RepoStats> repoStats, RepoStats total) {
+    sw.println('<?xml version="1.0" encoding="UTF-8"?>')
     def build = new MarkupBuilder(sw)
     build.html {
         body {
