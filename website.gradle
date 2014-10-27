@@ -10,12 +10,18 @@ void initializeBuildWebsiteTask(
 ) {
     String websiteOutputDir = "${WEBSITE_DIR}/${websiteOutputSubdir}"
 
+    ConfigurableFileTree otherInputs = fileTree(WEBSITE_DIR) {
+        include "**/*.conf"
+        include "**/*.ascinc"
+        include "**/*.asciidoc"
+    }
     fileTree(WEBSITE_DIR).include("*.asciidoc").each { File asc ->
         String ascName = asc.name
         String ascBase = asc.name - ".asciidoc"
         String ascOutJustFileName = ascBase + ".html"
         String ascOut = "${websiteOutputDir}/${ascOutJustFileName}"
 
+        t.inputs.files otherInputs
         t.inputs.file asc
         t.outputs.file ascOut
 
@@ -43,19 +49,13 @@ void initializeBuildWebsiteTask(
         t.inputs.files.files.each { File f ->
             t.outputs.file "${websiteOutputDir}/asciidoc/${f.name}"
         }
-        t.doLast {
-            copy {
-                from WEBSITE_DIR
-                into websiteOutputDir
-                include "asciidoc/**"
-            }
-        }
     }
 }
 
 [false, true].each { local ->
     String namePart = local ? "Local" : "Public"
     String websiteOutputSubdir = local ? 'output-local' : 'output'
+    String websiteOutputDir = "${WEBSITE_DIR}/${websiteOutputSubdir}"
 
     task "clean${namePart}Website" { Task t ->
         t.group = "Documentation"
@@ -68,17 +68,28 @@ void initializeBuildWebsiteTask(
         }
     }
 
+    task "copy${namePart}WebsiteExtraFiles"(type: Copy) {
+        from WEBSITE_DIR
+        into websiteOutputDir
+        include "asciidoc/**"
+        if (local) {
+            include "local/asciidoc/**"
+        }
+    }
+
     task "build${namePart}Website" { Task t ->
         t.group = "Documentation"
         t.description = "Build the ${namePart} website (more slowly, using nice code highlighting)"
         // Clean the website before we build it, so we can be sure files weren't build with buildWebsiteQuickly
         t.dependsOn "clean${namePart}Website"
+        t.dependsOn "copy${namePart}WebsiteExtraFiles"
         initializeBuildWebsiteTask(t, websiteOutputSubdir, local: local)
     }
 
     task "build${namePart}WebsiteQuickly" { Task t ->
         t.group = "Documentation"
         t.description = "Build the ${namePart} website (quickly, using no code highlighting)"
+        t.dependsOn "copy${namePart}WebsiteExtraFiles"
         initializeBuildWebsiteTask(t, websiteOutputSubdir, quickly: true, local: local)
     }
 

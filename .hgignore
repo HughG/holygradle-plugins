@@ -28,7 +28,8 @@ syntax: regexp
 .idea/workspace.xml
 .idea/tasks.xml
 # Generated doc
-^doc/website/output/
+^doc/website/output(-local)?/
+^doc/website/local/
 # Other
 ^[^/]+/src/test/groovy/holygradle/.*/settings.gradle
 ^credential-store/_ReSharper.credential-store/
