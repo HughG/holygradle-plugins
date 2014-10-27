@@ -1,0 +1,45 @@
+<!--
+The JavaScript part of this file is adapted from "asciidoc.js", which is licensed as follows.
+
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+-->
+
+<link href="asciidoc/jquery-ui-1.11.1.custom/jquery-ui.css" rel="stylesheet">
+<script src="asciidoc/jquery-ui-1.11.1.custom/external/jquery/jquery.js"></script>
+<script src="asciidoc/jquery-ui-1.11.1.custom/jquery-ui.js"></script>
+<script>
+var asciidocTabs = {
+
+install: function() {
+  var timerId;
+
+  function reinstall() {
+    $( "#multi-code" ).tabs();
+  }
+
+  function reinstallAndRemoveTimer() {
+    clearInterval(timerId);
+    reinstall();
+  }
+
+  timerId = setInterval(reinstall, 500);
+  if (document.addEventListener)
+    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
+  else
+    window.onload = reinstallAndRemoveTimer;
+}
+
+}
+asciidocTabs.install();
+</script>
