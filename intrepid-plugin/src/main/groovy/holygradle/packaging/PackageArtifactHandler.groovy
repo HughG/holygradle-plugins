@@ -72,6 +72,13 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             t.group = "Publishing"
             t.description = "Creates 'build_info' directory which will be included in published packages."
             File buildInfoDir = new File(project.projectDir, "build_info")
+            t.onlyIf {
+                // Don't do anything if we are republishing, or we will end up deleting the original build_info and
+                // replacing it with nearly no info.
+                Task republishTask = project.tasks.findByName("republish")
+                boolean republishing = (republishTask != null) && project.gradle.taskGraph.hasTask(republishTask)
+                return !republishing
+            }
             t.doLast {
                 if (buildInfoDir.exists()) {
                     RetryHelper.retry(10, 1000, logger, "delete ${buildInfoDir.name} dir") {
