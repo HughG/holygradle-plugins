@@ -1,0 +1,70 @@
+:docinfo1:
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: master.css
+:toc2:
+:toclevels: 3
+:numbered:
+
+= First Steps
+
+include::sitemap.ascinc[]
+
+This page describes how to use gloss:artifactory[Artifactory] and the gloss:holygradle[Holy Gradle] for the first time.
+
+
+== System Requirements
+
+Artifactory runs as a web service which can be accessed through any modern browser or with tools such as the Holy Gradle.  The easiest way to use it is through such tools.  The web interface is mainly useful for investigating problems.
+
+The Holy Gradle is a set of plugins for the gloss:gradle[Gradle] tool, which is a Java application.  They have only been tested on the following platform.
+
+* Windows 7
+* Java 7 (JRE or JDK)
+
+
+== Preparation
+
+=== Windows
+
+If you are an Administrator on your system, then you need to turn User Account Control off.  This is because the Holy Gradle plugins create symbolic links (symlinks), and Windows disables this by default for Administator accounts.
+
+=== Java
+
+Install Java 7 on your system if it is not already installed--usually under +C:\Program Files\Java+.  Windows 7 comes with an older version of Java pre-installed, usually at +C:\Windows\System32\java.exe+.  To make sure that Gradle uses the correct version, do one of the following things.
+
+. Set the +JAVA_HOME+ environment variable to the root folder of your Java 7 installation, for example, +C:\Program Files\Java\jre7+ or +C:\Program Files\Java\jdk1.7.0_55+.
+
+. Make sure that the +bin+ folder in your Java install location is first on your +PATH+.  To check the versions of +java.exe+ on your path you can run +where java+, which lists them in order; for example:
++
+----
+C:\Users\hughg>where java
+C:\Program Files\Java\jre7\bin\java.exe
+C:\Windows\System32\java.exe
+----
+
+
+== Accessing Artifactory
+
+The first step is, of course, to find the web address of your local Artifactory server.  With a default Artifactory setup, the base URL will have the server name followed by +/artifactory/+. Browsing to this URL will show you any publically available modules, and allow you to log in.
+
+ifndef::localDoc[]
+You must contact your site administrator to get login details and set up permissions.
+endif::localDoc[]
+
+include::{localDoc}/first_steps_artifactory.ascinc[]
+
+
+== Running The Holy Gradle
+
+Although Gradle can be installed system-wide, usually you will add some "bootstrap" files to your project, known as a gloss:gradle-wrapper[Gradle Wrapper].  The wrapper includes a batch file which will download a Gradle distribution if necessary, then run it using that download location, so you do not need to modify your path.  The wrapper files should be committed to the source control repository for each project which uses Gradle.
+
+The Gradle distribution, plus the dependencies for all your projects, are stored in a cache of downloaded and unpacked files in the Gradle User Home directory.  This defaults to `.gradle` in your home directory, but you can override the location by setting the +GRADLE_USER_HOME+ environment variable.  You may wish to move this if your home directory is on a small or slow drive.  Also, Gradle never clears out this cache: you must do so manually, from time to time.
+
+ifndef::localDoc[]
+There ar
+endif::localDoc[]
+
+include::{localDoc}/first_steps_artifactory.ascinc[]
+

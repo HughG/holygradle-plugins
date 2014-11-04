@@ -58,6 +58,9 @@
     #sitemap ul {
         padding-left: 0;
     }
+    #sitemap ul ul {
+        padding-left: 1em;
+    }
     #sitemap li {
         padding: 0.2em 0em;
     }
