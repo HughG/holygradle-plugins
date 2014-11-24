@@ -75,7 +75,7 @@ class RegressionFileHelper {
         if (!testFile.exists()) {
             fail("Regression output file ${testFile.path} does not exist.")
         }
-        assertEquals(okFile.text, testFile.text)
+        assertEquals("Regression file check for ${testFile.name}", okFile.text, testFile.text)
     }
 
     public static String toStringWithPlatformLineBreaks(String lines) {

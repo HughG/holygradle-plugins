@@ -1,0 +1,17 @@
+buildscript {
+    gplugins.use "intrepid:dummy"
+    gplugins.use "devenv:dummy"
+    gplugins.use "my-credentials:dummy"
+}
+gplugins.apply()
+
+sourceDependencies {
+    "..\projectA" {
+        hg "unknown@d7496a8c5c14e5ea8afb554dd42ca03f7d13b630"
+    }
+}
+packedDependenciesDefault {
+    unpackToCache = false
+}
+
+

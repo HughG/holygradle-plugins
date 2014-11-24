@@ -17,7 +17,7 @@ import static org.junit.Assert.*
  */
 class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Rule
-    public ErrorCollector collector = new ErrorCollector();
+    public ErrorCollector collector = new ErrorCollector()
 
     /**
      * Test that build script generated using "addPinnedSourceDependency" produces the expected output.  (This is a
@@ -51,21 +51,24 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         if (projectBPackagesDir.exists()) {
             assertTrue("Deleted pre-existing ${projectBPackagesDir}", projectBPackagesDir.deleteDir())
         }
-        invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
-            launcher.forTasks("fetchAllDependencies", "packageEverything")
-        }
 
-        // We do the regression test by pulling the build file out of the ZIP and writing it to a file for comparison.
-        // We remove the "<username>-" prefix from plugin version numbers, as it will be different for every user.
-        File projectBPackageDir = new File(projectBDir, "packages")
-        File testFile = regression.getTestFile("testCreateBuildScriptWithPinnedSourceDependency")
-        ZipFile packageZip = new ZipFile(new File(projectBPackageDir, "projectB-preBuiltArtifacts.zip"))
-        ZipEntry packageBuildFile = packageZip.getEntry("preBuiltArtifacts/build.gradle")
-        testFile.text = packageZip.getInputStream(packageBuildFile).text.replaceAll(
-            "gplugins.use \"(.*):.*\"",
-            "gplugins.use \"\$1:dummy\""
-        )
-        regression.checkForRegression("testCreateBuildScriptWithPinnedSourceDependency")
+        // These two configurations should build normally.
+        invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies", "packagePreBuiltArtifacts", "packagePinnedSource")
+        }
+        def configurations = [
+            "preBuiltArtifacts",
+            "pinnedSource",
+        ]
+        regressionTestBuildScriptForMultiplePackages("projectB", projectBPackagesDir, "tCBSWPSD", configurations)
+
+        // This configuration should just fail to build.
+        invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies", "packagePinnedSourceBad")
+            launcher.expectFailure(
+                "Looking for source dependencies [nonExistentSourceDep], failed to find [nonExistentSourceDep]"
+            )
+        }
     }
 
     @Test
@@ -93,11 +96,12 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         regression.checkForRegression("testCreateBuildScriptWithPackedDependency")
     }
 
+    /**
+     * This test checks that the plugin correctly detects all the separate conditions which mean that it needs to write
+     * a build script when packaging an artifact.
+     */
     @Test
     public void testBuildScriptRequired() {
-        // ProjectC references a couple of packed dependencies, and when we run packageEverything it
-        // should generate a buildScript which only references only one of these - and the right one!
-
         File projectCDir = new File(getTestDir(), "buildScriptRequired")
         File projectCPackagesDir = new File(projectCDir, "packages")
         if (projectCPackagesDir.exists()) {
@@ -120,21 +124,32 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
             "text",
             "withRepublishing",
         ]
-        configurations.each {
+        regressionTestBuildScriptForMultiplePackages("buildScriptRequired", projectCPackagesDir, "tBSR", configurations)
+    }
+
+    private ArrayList<String> regressionTestBuildScriptForMultiplePackages(
+        String projectName,
+        File packagesDir,
+        String regressionFilePrefix,
+        ArrayList<String> configurations
+    ) {
+        return configurations.each {
             try {
-                ZipFile packageZip = new ZipFile(new File(projectCPackagesDir, "buildScriptRequired-${it}.zip"))
+                ZipFile packageZip = new ZipFile(new File(packagesDir, "${projectName}-${it}.zip"))
                 ZipEntry packageBuildFile = packageZip.getEntry("${it}/build.gradle")
-                final String regressionFileName = "tBSR_${it}"
+                final String regressionFileName = "${regressionFilePrefix}_${it}"
                 File testFile = regression.getTestFile(regressionFileName)
                 if (packageBuildFile == null) {
                     testFile.text = ""
                 } else {
                     testFile.text = packageZip.getInputStream(packageBuildFile).text
                 }
-                regression.replacePatterns(regressionFileName, [
-                    (~/gplugins.use "(.*):.*"/) : "gplugins.use \"\$1:dummy\"",
-                    (~/hg "unknown@[]+"]/) : "hg \"unknown@[sniupped]\""
-                ])
+                regression.replacePatterns(
+                    regressionFileName, [
+                    (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
+                    (~/hg "unknown@[]+"]/)     : "hg \"unknown@[snipped]\""
+                ]
+                )
                 regression.checkForRegression(regressionFileName)
             } catch (AssertionError e) {
                 // This allows us to catch any assertion failures from a single configuration, carry on testing the
@@ -143,5 +158,4 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
             }
         }
     }
-
 }

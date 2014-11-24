@@ -35,12 +35,9 @@ packedDependencies {
 packageArtifacts {
     preBuiltArtifacts {
         to "preBuiltArtifacts"
-        // We need to include at least one pre-existing file, or the build script generation doesn't run. GR #3080
-        include "dummy.txt"
         includeBuildScript {
             add "// Meta-package for ${project.name} pre-built artifacts ${project.version}"
             add "// ---------------------------------------------------"
-            //addIvyRepository "TODO", "Artifactory"
             
             // This should create a packedDependency in the generated build script - before a fix for GR #4543
             // this actually creates the wrong packedDependency (projectCDepUnwanted)

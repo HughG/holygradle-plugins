@@ -131,6 +131,7 @@ class PackageArtifactBuildScriptHandler {
 
     private static Map<String, SourceDependencyHandler> collectSourceDependencies(
         Project project,
+        boolean throwIfAnyMissing,
         Iterable<String> sourceDepNames
     ) {
         Map<String, SourceDependencyHandler> allSourceDeps = [:]
@@ -146,6 +147,17 @@ class PackageArtifactBuildScriptHandler {
                 } else {
                     allSourceDeps[sourceDepName] = sourceDep
                 }
+            }
+        }
+        if (throwIfAnyMissing) {
+            Set<String> wantedSourceDepNames = new TreeSet<String>()
+            sourceDepNames.each { wantedSourceDepNames.add(it) }
+            Set<String> foundSourceDepNames = new TreeSet<String>(allSourceDeps.keySet())
+            Set<String> missingSourceDepNames = wantedSourceDepNames - foundSourceDepNames
+            if (!missingSourceDepNames.empty) {
+                throw new RuntimeException(
+                    "Looking for source dependencies ${wantedSourceDepNames}, failed to find ${missingSourceDepNames}"
+                )
             }
         }
         allSourceDeps
@@ -226,7 +238,7 @@ class PackageArtifactBuildScriptHandler {
         
         // sourceDependencies block
         Collection<SourceDependencyHandler> pinnedSourceDeps =
-            collectSourceDependencies(project, pinnedSourceDependencies).values()
+            collectSourceDependencies(project, true, pinnedSourceDependencies).values()
         if (pinnedSourceDeps.size() > 0) {
             if (!generateSettingsFileForSubprojects) {
                 buildScript.append("fetchAllDependencies {\n")
@@ -297,7 +309,9 @@ class PackageArtifactBuildScriptHandler {
         
         if (packedDependencies.size() > 0) {
             buildScript.append("packedDependencies {\n")
-            Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependencies(project, packedDependencies.keySet())
+            // The user may want to treat a build-time source dependency as a use-time packed dependency, so first check
+            // the source dependencies.
+            Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependencies(project, false, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
                 SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
                 writePackedDependency(

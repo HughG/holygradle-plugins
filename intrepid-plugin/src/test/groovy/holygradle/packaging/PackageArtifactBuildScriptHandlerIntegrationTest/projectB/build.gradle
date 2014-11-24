@@ -5,6 +5,8 @@ gplugins.apply()
 
 configurations {
     preBuiltArtifacts
+    pinnedSource
+    pinnedSourceBad
 }
 
 sourceDependencies {
@@ -18,14 +20,20 @@ sourceDependencies {
 packageArtifacts {
     preBuiltArtifacts {
         to "preBuiltArtifacts"
-        // We need to include at least one pre-existing file, or the build script generation doesn't run. GR #3080
-        include "dummy.txt"
         includeBuildScript {
-            add "// Meta-package for ${project.name} pre-built artifacts ${project.version}"
-            add "// ---------------------------------------------------"
-            //addIvyRepository "TODO", "Artifactory"
-
+            addPackedDependency "projectA", "preBuiltArtifacts->someConfig"
+        }
+    }
+    pinnedSource {
+        to "pinnedSource"
+        includeBuildScript {
             addPinnedSourceDependency "projectA"
+        }
+    }
+    pinnedSourceBad {
+        to "pinnedSourceBad"
+        includeBuildScript {
+            addPinnedSourceDependency "nonExistentSourceDep"
         }
     }
 }
