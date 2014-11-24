@@ -23,6 +23,9 @@ project.ext.publishReallyTasks = []
         setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
     }
 }
+project.publishTasks.each { Task t ->
+    t.dependsOn setHgVersionInfo
+}
 
 // Pick a version number.
 String publishVersion = "unspecified"
@@ -126,11 +129,6 @@ project.subprojects {
             }
             url PUBLISH_TARGET_URI
         }
-
-        t.doLast {
-            println "Published ${project.name} ${project.version} " +
-                "to ${PUBLISH_TARGET_URI} at: " + new Date()
-        }
     }
     project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
         t.configuration = configurations.default
@@ -154,10 +152,11 @@ project.subprojects {
             )
         }
         t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "${project.group}/${project.name}/${project.version}"
-
+    }
+    project.publishTasks.each { Task t ->
         t.doLast {
             println "Published ${project.name} ${project.version} " +
-                "to ${PUBLISH_LOCAL_TARGET_URI} at: " + new Date()
+                "to ${PUBLISH_TARGET_URI} at ${new Date()} from ${project.releaseNoteInfo}"
         }
     }
 }

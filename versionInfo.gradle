@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 /**
  * This task puts the Hg master repo URL and working directory version/branch/tags into a property and text file, which
  * feed into the packaging tasks for all sub-projects, so all build outputs are stamped with info on where they came
@@ -28,7 +30,34 @@ task setHgVersionInfo {
             }
 
             // Store both command outputs in one string with no line breaks.
+            String infoWithoutDate = os.toString().replaceAll("[\\r\\n]", "")
+        
+            // Add the date/time.
+            (new PrintStream(os)).withStream { it.print(" ") }
+            SimpleDateFormat rfc3339dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
+            String rev = infoWithoutDate.split()[1]
+            if (rev.endsWith('+')) {
+                // There are local changes, so just use the current date/time.
+                (new PrintStream(os)).withStream {
+                    it.print(rfc3339dateFormat.format(new Date()))
+                }
+            } else {
+                // Pull from the Hg log.
+                exec {
+                    executable = "hg"
+                    args = ["log", "-r", rev, "-T", '"{date|rfc3339date}"']
+                    standardOutput = os
+                }
+            }
+
             project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
+
+            Date dateFromInfo = rfc3339dateFormat.parse(project.hgVersionInfo.split().last())
+            
+            SimpleDateFormat releaseNotesDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z")
+            releaseNotesDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            String releaseNotesDate = releaseNotesDateFormat.format(dateFromInfo)
+            project.ext.releaseNoteInfo = "${rev} at ${releaseNotesDate}"
 
             // Write the version to a file, so that the file can be seen as changed (or not) by
             // other tasks, to force them to re-run.
