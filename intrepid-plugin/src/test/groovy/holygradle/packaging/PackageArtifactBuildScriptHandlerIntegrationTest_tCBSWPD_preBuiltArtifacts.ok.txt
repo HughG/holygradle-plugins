@@ -1,0 +1,22 @@
+buildscript {
+    gplugins.use "intrepid:dummy"
+    gplugins.use "devenv:dummy"
+    gplugins.use "my-credentials:dummy"
+}
+gplugins.apply()
+
+configurations {
+    preBuiltArtifacts
+}
+
+packedDependenciesDefault {
+    unpackToCache = false
+}
+
+packedDependencies {
+    "..\projectCDep" {
+        dependency "holygradle.test:external-lib:1.0"
+        configuration "preBuiltArtifacts->someConfig"
+    }
+}
+

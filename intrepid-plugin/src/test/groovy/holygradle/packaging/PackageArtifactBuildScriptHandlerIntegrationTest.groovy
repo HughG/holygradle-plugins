@@ -82,18 +82,23 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
             assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
         }
 
+        // These two configurations should build normally.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
-            launcher.forTasks("fetchAllDependencies", "packageEverything")
+            launcher.forTasks("fetchAllDependencies", "packagePreBuiltArtifacts", "packagePreBuiltArtifactsByCoord")
         }
+        def configurations = [
+            "preBuiltArtifacts",
+            "preBuiltArtifactsByCoord",
+        ]
+        regressionTestBuildScriptForMultiplePackages("projectC", projectCPackagesDir, "tCBSWPD", configurations)
 
-        ZipFile packageZip = new ZipFile(new File(projectCPackagesDir, "projectC-preBuiltArtifacts.zip"))
-        ZipEntry packageBuildFile = packageZip.getEntry("preBuiltArtifacts/build.gradle")
-        File testFile = regression.getTestFile("testCreateBuildScriptWithPackedDependency")
-        testFile.text = packageZip.getInputStream(packageBuildFile).text.replaceAll(
-            "gplugins.use \"(.*):.*\"",
-            "gplugins.use \"\$1:dummy\""
-        )
-        regression.checkForRegression("testCreateBuildScriptWithPackedDependency")
+        // This configuration should just fail to build.
+        invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies", "packagePreBuiltArtifactsBad")
+            launcher.expectFailure(
+                "Looking for packed dependencies [nonExistentPackedDep], failed to find [nonExistentPackedDep]"
+            )
+        }
     }
 
     /**

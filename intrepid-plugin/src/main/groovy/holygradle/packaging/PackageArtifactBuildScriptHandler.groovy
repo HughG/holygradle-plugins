@@ -308,6 +308,9 @@ class PackageArtifactBuildScriptHandler {
         }
         
         if (packedDependencies.size() > 0) {
+            Set<String> wantedPackedDepNames = new TreeSet<String>(packedDependencies.keySet())
+            Set<String> missingPackedDepNames = new TreeSet<String>(packedDependencies.keySet())
+
             buildScript.append("packedDependencies {\n")
             // The user may want to treat a build-time source dependency as a use-time packed dependency, so first check
             // the source dependencies.
@@ -321,6 +324,7 @@ class PackageArtifactBuildScriptHandler {
                     packedDependencies[sourceDepName]
                 )
             }
+            missingPackedDepNames.removeAll(sourceDeps.keySet())
             Map<String, PackedDependencyHandler> packedDeps = collectPackedDependencies(project, packedDependencies.keySet())
             for (packedDepName in packedDeps.keySet()) {
                 PackedDependencyHandler packedDep = packedDeps[packedDepName]
@@ -331,6 +335,7 @@ class PackageArtifactBuildScriptHandler {
                     packedDependencies[packedDepName]
                 )
             }
+            missingPackedDepNames.removeAll(packedDeps.keySet())
             // Some packed dependencies will explicitly specify the full coordinate, so just
             // publish them as-is.
             packedDependencies.each { String packedDepName, Collection<String> packedDepConfigs ->
@@ -338,9 +343,16 @@ class PackageArtifactBuildScriptHandler {
                 if (groupMatch.size() > 0) {
                     final List<String> match = (List<String>) groupMatch[0]
                     writePackedDependency(buildScript, match[1], packedDepName, packedDepConfigs)
+                    missingPackedDepNames.remove(packedDepName)
                 }
             }
             buildScript.append("}\n")
+
+            if (!missingPackedDepNames.empty) {
+                throw new RuntimeException(
+                    "Looking for packed dependencies ${wantedPackedDepNames}, failed to find ${missingPackedDepNames}"
+                )
+            }
         }
         buildScript.append("\n")
         

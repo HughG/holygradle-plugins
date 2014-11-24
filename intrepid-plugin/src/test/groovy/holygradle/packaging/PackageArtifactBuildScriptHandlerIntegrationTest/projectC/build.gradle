@@ -5,6 +5,8 @@ gplugins.apply()
 
 configurations {
     preBuiltArtifacts
+    preBuiltArtifactsByCoord
+    preBuiltArtifactsBad
 }
 
 repositories.ivy {
@@ -36,12 +38,21 @@ packageArtifacts {
     preBuiltArtifacts {
         to "preBuiltArtifacts"
         includeBuildScript {
-            add "// Meta-package for ${project.name} pre-built artifacts ${project.version}"
-            add "// ---------------------------------------------------"
-            
             // This should create a packedDependency in the generated build script - before a fix for GR #4543
             // this actually creates the wrong packedDependency (projectCDepUnwanted)
             addPackedDependency "projectCDep", "preBuiltArtifacts->someConfig"
+        }
+    }
+    preBuiltArtifactsByCoord {
+        to "preBuiltArtifactsByCoord"
+        includeBuildScript {
+            addPackedDependency "holygradle.test:external-lib:1.0", "preBuiltArtifacts->someConfig"
+        }
+    }
+    preBuiltArtifactsBad {
+        to "preBuiltArtifactsBad"
+        includeBuildScript {
+            addPackedDependency "nonExistentPackedDep", "preBuiltArtifacts->someConfig"
         }
     }
 }
