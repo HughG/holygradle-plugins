@@ -97,7 +97,7 @@ public class LinkTextFiller {
     private void fillLink(Link link) {
         String fillText = getFillText(link)
         if (fillText != null) {
-            link.node.setValue(fillText)
+            link.node.setValue(fillText.trim())
         }
     }
 
@@ -170,7 +170,7 @@ public class LinkTextFiller {
         // NOTE: We can't just use XmlUtil.serialize because it turns head/script into an empty tag, instead of
         // start/end, which means Firefox won't load the script.  The default XmlNodePrinter adds extra whitespace, so
         // I made a custom version.
-        final XmlNodePrinter printer = new XhtmlNodePrinter(new PrintWriter(new FileWriter(outputFile)), "")
+        final XmlNodePrinter printer = new XhtmlNodePrinter(new PrintWriter(outputFile, "UTF-8"), "")
         printer.expandEmptyElements = true // for Firefox
         printer.preserveWhitespace = true // to avoid extra line breaks
         printer.print(doc.node)
