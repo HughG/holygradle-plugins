@@ -1,7 +1,4 @@
 syntax: glob
-# Gradle / Java
-.gradle
-build
 # Visual Studio / ReSharper
 *.ReSharper.user
 *.sdf
@@ -23,12 +20,14 @@ credential-store.exe
 gradle*.properties
 syntax: regexp
 # Gradle / Java
+(^|/).gradle/
+(^|/)build/
 ^classes/
 # IntelliJ IDEA
 .idea/workspace.xml
 .idea/tasks.xml
 # Generated doc
-^doc/website/output(-local)?/
+^doc/website/(raw-html|output)(-local)?/
 ^doc/website/local/
 # Other
 ^[^/]+/src/test/groovy/holygradle/.*/settings.gradle

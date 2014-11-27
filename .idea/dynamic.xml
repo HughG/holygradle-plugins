@@ -71,6 +71,14 @@
               <option name="myProperties">
                 <set>
                   <DPropertyElement>
+                    <option name="name" value="WEBSITE_DIR" />
+                    <option name="static" value="false" />
+                    <option name="type" value="java.lang.String" />
+                    <option name="myType" value="java.lang.String" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="WEBSITE_DIR" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="buildScriptDependencies" />
                     <option name="static" value="false" />
                     <option name="type" value="holygradle.buildscript.BuildScriptDependencies" />
@@ -177,6 +185,26 @@
                     <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.packaging.PackageArtifactHandler&gt;" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="packageArtifacts" />
+                  </DPropertyElement>
+                </set>
+              </option>
+            </DClassElement>
+          </value>
+        </entry>
+        <entry key="org.gradle.api.plugins.ExtraPropertiesExtension">
+          <value>
+            <DClassElement>
+              <option name="name" value="org.gradle.api.plugins.ExtraPropertiesExtension" />
+              <option name="myName" value="org.gradle.api.plugins.ExtraPropertiesExtension" />
+              <option name="myProperties">
+                <set>
+                  <DPropertyElement>
+                    <option name="name" value="WEBSITE_DIR" />
+                    <option name="static" value="false" />
+                    <option name="type" value="java.lang.String" />
+                    <option name="myType" value="java.lang.String" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="WEBSITE_DIR" />
                   </DPropertyElement>
                 </set>
               </option>

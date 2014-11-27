@@ -1,3 +1,5 @@
+import holygradle.buildHelpers.*
+
 import java.util.regex.*
 
 /**
@@ -8,17 +10,18 @@ project.ext.WEBSITE_DIR = "${projectDir}/doc/website"
 void initializeBuildWebsiteTask(
     Map options = [quickly: false, local: false],
     Task buildTask,
-    String websiteOutputSubdir,
+    String asciidocOutputSubdir,
     String namePart
 ) {
-    String websiteOutputDir = "${WEBSITE_DIR}/${websiteOutputSubdir}"
+    String asciidocOutputDir = "${project.WEBSITE_DIR}/${asciidocOutputSubdir}"
+    final File quicklyFile = new File("${asciidocOutputSubdir}/_quickly.txt")
 
-    ConfigurableFileTree otherInputs = fileTree(WEBSITE_DIR) {
+    ConfigurableFileTree otherInputs = fileTree(project.WEBSITE_DIR) {
         include "**/*.conf"
         include "**/*.ascinc"
+        include "docinfo.html"
     }
-    fileTree(WEBSITE_DIR).include("*.asciidoc").each { File asc ->
-        String ascName = asc.name
+    fileTree(project.WEBSITE_DIR).include("*.asciidoc").each { File asc ->
         String ascBase = asc.name - ".asciidoc"
         String ascOutJustFileName = ascBase + ".html"
         String parentRelativeToProject =
@@ -26,7 +29,7 @@ void initializeBuildWebsiteTask(
         String ascPathPlusBaseAsName =
             parentRelativeToProject.split(Pattern.quote(File.separator))*.capitalize().join("") +
             ascBase.capitalize()
-        String ascOut = "${websiteOutputDir}/${ascOutJustFileName}"
+        String ascOut = "${asciidocOutputDir}/${ascOutJustFileName}"
         String ascTaskName = "build" +
             namePart +
             ascPathPlusBaseAsName +
@@ -38,22 +41,27 @@ void initializeBuildWebsiteTask(
             t.inputs.file asc
             t.outputs.file ascOut
 
+            if (!options.quickly && quicklyFile.exists()) {
+                // Clean the website before we build it, so we can be sure files weren't built with buildWebsiteQuickly
+                t.dependsOn "clean${namePart}Website"
+            }
+
             t.doLast {
-                File outputDir = new File(websiteOutputDir)
+                File outputDir = new File(asciidocOutputDir)
                 if (!(outputDir.exists() || outputDir.mkdirs())) {
-                    throw new RuntimeException("Failed to create ${websiteOutputDir}")
+                    throw new RuntimeException("Failed to create ${asciidocOutputDir}")
                 }
                 def baseArgs = ["/c", "make-asciidoc.bat"]
                 def buildQuicklyArgs = options.quickly ? ['"-a source-highlighter=none"'] : []
                 def buildLocalArgs = options.local ? ['"-a localDoc=local"'] : []
                 def filenameArgs = [
                     "-v",
-                    "-o", "${websiteOutputSubdir}/${ascOutJustFileName}", "${asc.name}"
+                    "-o", "${asciidocOutputSubdir}/${ascOutJustFileName}", "${asc.name}"
                 ]
-                exec {
-                    workingDir WEBSITE_DIR
-                    executable "cmd.exe"
-                    args = baseArgs + buildQuicklyArgs + buildLocalArgs + filenameArgs
+                exec { ExecSpec e ->
+                    e.workingDir project.WEBSITE_DIR
+                    e.executable "cmd.exe"
+                    e.args = baseArgs + buildQuicklyArgs + buildLocalArgs + filenameArgs
                 }
             }
         }
@@ -62,45 +70,107 @@ void initializeBuildWebsiteTask(
     }
 }
 
-[false, true].each { local ->
-    String namePart = local ? "Local" : "Public"
-    String websiteOutputSubdir = local ? 'output-local' : 'output'
-    String websiteOutputDir = "${WEBSITE_DIR}/${websiteOutputSubdir}"
+for (local in [false, true]) {
+    final String namePart = local ? "Local" : "Public"
+    final String rawHtmlSubdir = local ? 'raw-html-local' : 'raw-html'
+    final String websiteOutputSubdir = local ? 'output-local' : 'output'
+    final String websiteOutputDir = "${project.WEBSITE_DIR}/${websiteOutputSubdir}"
+    final File quicklyFile = new File("${rawHtmlSubdir}/_quickly.txt")
 
-    task "clean${namePart}Website" { Task t ->
+    task("clean${namePart}Website") { Task t ->
         t.group = "Documentation"
         t.description = "Clean the ${namePart} website 'output' dir"
         t.doLast {
-            delete(fileTree("${WEBSITE_DIR}/${websiteOutputSubdir}") { ConfigurableFileTree tree ->
-                tree.include "**"
-                tree.exclude ".hg"
-            })
+            [rawHtmlSubdir, websiteOutputSubdir].each { String outDir ->
+                delete(
+                    fileTree("${project.WEBSITE_DIR}/${outDir}") { ConfigurableFileTree tree ->
+                        tree.include "**"
+                        tree.exclude ".hg"
+                    }
+                )
+            }
         }
     }
 
-    task "copy${namePart}WebsiteExtraFiles"(type: Copy) {
-        from WEBSITE_DIR
+    task("copy${namePart}WebsiteExtraFiles", type: Copy) {
+        from project.WEBSITE_DIR
         into websiteOutputDir
         include "asciidoc/**"
         if (local) {
-            include "local/asciidoc/**"
+            it.include "local/asciidoc/**"
         }
     }
 
-    task "build${namePart}Website" { Task t ->
+    task("build${namePart}RawHtml") { Task t ->
+        t.group = "Documentation"
+        t.description = "Build the ${namePart} website (more slowly, using nice code highlighting)"
+        initializeBuildWebsiteTask(t, rawHtmlSubdir, namePart, local: local)
+    }
+
+    task("build${namePart}RawHtmlQuickly") { Task t ->
+        t.group = "Documentation"
+        t.description = "Fill in link text in the ${namePart} website"
+        initializeBuildWebsiteTask(t, rawHtmlSubdir, namePart, quickly: true, local: local)
+        doLast {
+            quicklyFile.text = ""
+        }
+    }
+
+    task("fillLinks${namePart}") { Task t ->
+        final Task rawHtmlTask = project.tasks["build${namePart}RawHtml"]
+        final Set<Task> rawHtmlSubTasks = rawHtmlTask.taskDependencies.getDependencies(rawHtmlTask)
+        for (Task subTask : rawHtmlSubTasks) {
+            t.inputs.files(subTask.outputs.files)
+        }
+        t.inputs.files project.fileTree(new File(project.projectDir, "buildSrc/build/libs"))
+
+        BuildContext buildContext = new BuildContext(project)
+
+        t.doLast {
+            File outputDir = new File(websiteOutputDir)
+            if (!(outputDir.exists() || outputDir.mkdirs())) {
+                throw new RuntimeException("Failed to create ${websiteOutputDir}")
+            }
+        }
+
+        t.inputs.files.files.each { File htmlIn ->
+            // Only process the inputs which are HTML.
+            if (!htmlIn.name.endsWith(".html")) {
+                return
+            }
+            File htmlOut = new File("${websiteOutputDir}/${htmlIn.name}")
+            t.outputs.file htmlOut
+
+            t.doLast {
+                println "Filling links for ${htmlIn} -> ${htmlOut}"
+                XmlDocumentSource docSource = new XmlDocumentSource(buildContext)
+                LinkTextFiller filler = new LinkTextFiller(buildContext, docSource, htmlIn)
+                filler.fillAllLinkText()
+                filler.writeTo(htmlOut)
+            }
+        }
+
+        t.doLast {
+            if (buildContext.failed) {
+                throw new RuntimeException("There were errors filling in the HTML link text")
+            }
+        }
+    }
+
+    task("build${namePart}Website") { Task t ->
         t.group = "Documentation"
         t.description = "Build the ${namePart} website (more slowly, using nice code highlighting)"
         // Clean the website before we build it, so we can be sure files weren't build with buildWebsiteQuickly
-        t.dependsOn "clean${namePart}Website"
+        t.dependsOn "build${namePart}RawHtml"
+        t.dependsOn "fillLinks${namePart}"
         t.dependsOn "copy${namePart}WebsiteExtraFiles"
-        initializeBuildWebsiteTask(t, websiteOutputSubdir, namePart, local: local)
     }
 
-    task "build${namePart}WebsiteQuickly" { Task t ->
+    task("build${namePart}WebsiteQuickly") { Task t ->
         t.group = "Documentation"
         t.description = "Build the ${namePart} website (quickly, using no code highlighting)"
+        t.dependsOn "build${namePart}RawHtmlQuickly"
         t.dependsOn "copy${namePart}WebsiteExtraFiles"
-        initializeBuildWebsiteTask(t, websiteOutputSubdir, namePart, quickly: true, local: local)
     }
 
 }

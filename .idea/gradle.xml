@@ -10,6 +10,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/artifactory-manager-plugin" />
+            <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/credential-store" />
             <option value="$PROJECT_DIR$/custom-gradle" />
             <option value="$PROJECT_DIR$/custom-gradle-core-plugin" />
@@ -19,6 +20,16 @@
             <option value="$PROJECT_DIR$/my-credentials-plugin" />
             <option value="$PROJECT_DIR$/stamper-plugin" />
             <option value="$PROJECT_DIR$/unit-test-plugin" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+      <GradleProjectSettings>
+        <option name="distributionType" value="LOCAL" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/buildSrc" />
+        <option name="gradleHome" value="$GRADLE_USER_HOME$/wrapper/dists/gradle-1.4-bin/47n6g3pbi5plc7n8fn58nkinje/gradle-1.4" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/buildSrc" />
           </set>
         </option>
       </GradleProjectSettings>

@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/artifactory-manager-plugin/artifactory-manager-plugin.iml" filepath="$PROJECT_DIR$/artifactory-manager-plugin/artifactory-manager-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildSrc/buildSrc.iml" filepath="$PROJECT_DIR$/buildSrc/buildSrc.iml" />
       <module fileurl="file://$PROJECT_DIR$/credential-store/credential-store.iml" filepath="$PROJECT_DIR$/credential-store/credential-store.iml" />
       <module fileurl="file://$PROJECT_DIR$/custom-gradle/custom-gradle.iml" filepath="$PROJECT_DIR$/custom-gradle/custom-gradle.iml" />
       <module fileurl="file://$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" filepath="$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" />
