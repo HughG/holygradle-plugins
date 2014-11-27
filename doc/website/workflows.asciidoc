@@ -39,7 +39,7 @@ To say that a module is involved in dependency relationships is to say that it r
 all of some other modules for building, testing, release packaging, etc.  Modules thus form a
 directed acyclic graph, as in the following example.
 
-[graphviz]
+[graphviz,modules_1.svg,dot,svg]
 --
 digraph {
     rankdir=RL;
@@ -147,7 +147,7 @@ will be fetched.
 
 .Dependencies between configurations
 [caption="Figure {counter:figureindex}: "]
-[graphviz]
+[graphviz,config_deps_1.svg,dot,svg]
 --
 digraph {
     rankdir=RL;
@@ -208,7 +208,7 @@ The following diagram highlights these in blue.
 
 .Extending configurations
 [caption="Figure {counter:figureindex}: "]
-[graphviz]
+[graphviz,extending_deps_1.svg,dot,svg]
 --
 digraph {
     rankdir=RL;
@@ -220,36 +220,57 @@ digraph {
         util_headers [label="headers",color=blue];
     }
 
-    subgraph cluster_a {
-        label = "a";
+    subgraph {
 
-        a_headers [label="headers",color=blue];
-        a_compileWin32 [label="compileWin32"];
-        a_compileX64 [label="compileX64",color=blue];
-        a_runtime [label="runtime"];
+        subgraph cluster_a {
+            label = "a";
 
-        a_compileWin32 -> a_headers [arrowhead="onormal"];
-        a_compileX64 -> a_headers [arrowhead="onormal",color=blue];
+            cluster_a_source[shape=point,margin="0.0",style=invis]
+            cluster_a_sink[shape=point,margin="0.0",style=invis]
+            cluster_a_source -> {
+
+            a_headers [label="headers",color=blue];
+            a_compileWin32 [label="compileWin32"];
+            a_compileX64 [label="compileX64",color=blue];
+            a_runtime [label="runtime"];
+
+            a_compileWin32 -> a_headers [arrowhead="onormal"];
+            a_compileX64 -> a_headers [arrowhead="onormal",color=blue];
+
+            } -> cluster_a_sink [style=invis,minlen=0];
+
+        }
+
+        subgraph cluster_b {
+            label = "b";
+
+            cluster_b_source[shape=point,margin="0.0",style=invis]
+            cluster_b_sink[shape=point,margin="0.0",style=invis]
+            cluster_b_source -> {
+
+                b_headers [label="headers",color=blue];
+                b_compileWin32 [label="compileWin32"];
+                b_compileX64 [label="compileX64",color=blue];
+                b_runtime [label="runtime"];
+
+                b_compileWin32 -> b_headers [arrowhead="onormal"];
+                b_compileX64 -> b_headers [arrowhead="onormal",color=blue];
+
+            } -> cluster_b_sink [style=invis,minlen=0];
+
+        }
+
+        subgraph cluster_other {
+            label = "other";
+
+            other_compile[label="compile",color=blue];
+            other_runtime[label="runtime"];
+        }
+
+
     }
 
-    subgraph cluster_b {
-        label = "b";
-
-        b_headers [label="headers",color=blue];
-        b_compileWin32 [label="compileWin32"];
-        b_compileX64 [label="compileX64",color=blue];
-        b_runtime [label="runtime"];
-
-        b_compileWin32 -> b_headers [arrowhead="onormal"];
-        b_compileX64 -> b_headers [arrowhead="onormal",color=blue];
-    }
-
-    subgraph cluster_other {
-        label = "other";
-
-        other_compile[label="compile",color=blue];
-        other_runtime[label="runtime"];
-    }
+    cluster_a_sink -> cluster_b_source [style=invis];
 
     a_headers -> util_headers [color=blue];
 
@@ -299,7 +320,7 @@ configurations of the +other+ module are fetched.
 
 .Private configurations
 [caption="Figure {counter:figureindex}: "]
-[graphviz]
+[graphviz,private_configs_1.svg,dot,svg]
 --
 digraph {
     rankdir=RL;
@@ -450,7 +471,7 @@ the headers for module +a+, so there is no dependency between those two configur
 
 .Private configurations
 [caption="Figure {counter:figureindex}: "]
-[graphviz]
+[graphviz,private_configs_2.svg,dot,svg]
 --
 digraph {
     rankdir=RL;

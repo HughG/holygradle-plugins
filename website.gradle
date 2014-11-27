@@ -169,6 +169,7 @@ for (local in [false, true]) {
         t.description = "Build the ${namePart} website"
         t.dependsOn "fillLinks${namePart}"
         t.dependsOn "copy${namePart}WebsiteExtraFiles"
+        t.dependsOn "copy${namePart}RawHtmlExtraFiles"
     }
 
 }
