@@ -13,7 +13,7 @@ include::sitemap.ascinc[]
 
 == Introduction
 
-This documentation is a guide to using the gloss:holygradle[Holy Gradle] and gloss:artifactory[Artifactory] tools to use and publish non-Java software modules.
+This documentation is a guide to using the gloss:holygradle[] and gloss:artifactory[] tools to use and publish non-Java software modules.
 
 TIP: If you are not familiar with these tools, and you need to quickly do something with them, check the list of basic tasks on the "link:very_quick_start.html[]" page.
 

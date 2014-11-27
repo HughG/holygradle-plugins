@@ -6,24 +6,32 @@ and Artifactory
 </div>
 <ul>
     <li><a href="index.html">Home</a></li>
-    <li><a href="getting_started.html">Getting Started</a>
+    <li><!-- <a href="getting_started.html"></a> -->
         <ul>
-            <li><a href="very_quick_start.html">I just want to ...</a></li>
-            <li><a href="overview.html">Overview</a></li>
-            <li><a href="first_steps.html">First Steps</a></li>
+<!--
+            <li><a href="very_quick_start.html"></a></li>
+            <li><a href="overview.html"></a></li>
+-->
+            <li><a href="first_steps.html"></a></li>
         </ul>
     </li>
-    <li><a href="support.html">Support</a>
+    <li><a href="support.html"></a>
         <ul>
-            <li><a href="troubleshooting.html">Troubleshooting</a></li>
+<!--
+            <li><a href="troubleshooting.html"></a></li>
+-->
         </ul>
     </li>
-    <li><a href="terminology.html">Terminology</a></li>
+<!--
+    <li><a href="terminology.html"></a></li>
+-->
     <li><a href="workflows.html">Workflows</a></li>
-    <li><a href="reference.html">Reference</a>
+    <li><!-- <a href="reference.html"></a> -->
         <ul>
-            <li><a href="plugins.html">Holy Gradle Plugins</a></li>
-            <li><a href="glossary.html">Glossary</a></li>
+<!--
+            <li><a href="plugins.html"></a></li>
+-->
+            <li><a href="glossary.html"></a></li>
         </ul>
     </li>
     <li><hr /></li>

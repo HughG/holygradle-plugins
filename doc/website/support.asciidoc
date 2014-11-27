@@ -15,6 +15,6 @@ ifndef::localDoc[]
 No public support is available for the Holy Gradle.
 endif::localDoc[]
 
-For general information on gloss:gradle[Gradle] see <http://www.gradle.org/>.  The gloss:holygradle[Holy Gradle] is based on Gradle 1.4.  For general information on gloss:artifactory[Artifactory] see <http://www.jfrog.com/>.
+For general information on gloss:gradle[] see <http://www.gradle.org/>.  The gloss:holygradle[] is based on Gradle 1.4.  For general information on gloss:artifactory[] see <http://www.jfrog.com/>.
 
 include::{localDoc}/support.ascinc[]
