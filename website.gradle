@@ -131,7 +131,7 @@ for (local in [false, true]) {
         t.inputs.files project.fileTree(new File(project.projectDir, "buildSrc/build/libs"))
         t.dependsOn project.tasks["build${namePart}RawHtml"]
 
-        BuildContext buildContext = new BuildContext(project)
+        BuildContext buildContext = new BuildContext(project, new File(project.WEBSITE_DIR))
         XmlDocumentSource docSource = new XmlDocumentSource(buildContext)
 
         t.doLast {

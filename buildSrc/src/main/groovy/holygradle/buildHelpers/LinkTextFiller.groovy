@@ -142,16 +142,17 @@ public class LinkTextFiller {
     }
 
     private XmlDoc getTargetDoc(Link link) {
-        if (link.targetUri.path?.empty) {
+        final String linkTargetPath = link.targetUri.path
+        if (linkTargetPath == null || linkTargetPath.empty) {
             return doc
         } else {
-            final File targetFile = new File(file.parentFile, link.targetUri.path)
+            final File targetFile = new File(file.parentFile, linkTargetPath)
             if (!targetFile.exists()) {
                 buildContext.warn("Skipping non-existent link target file '${targetFile}'")
                 return null
             }
             XmlDoc targetDoc = documentSource.getXmlDocument(targetFile)
-            if (!targetDoc?.valid) {
+            if (targetDoc == null || !targetDoc.valid) {
                 return null
             }
             return targetDoc
