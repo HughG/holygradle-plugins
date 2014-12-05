@@ -1,4 +1,21 @@
 Using pluginsRepoOverride=[active]
+Gradle user home: [snipped]
+Holy Gradle init script [snipped]
+Holy Gradle init script [snipped]
+:buildSrc:compileJava
+:buildSrc:compileGroovy
+:buildSrc:processResources
+:buildSrc:classes
+:buildSrc:jar
+:buildSrc:assemble
+:buildSrc:compileTestJava
+:buildSrc:compileTestGroovy
+:buildSrc:processTestResources
+:buildSrc:testClasses
+:buildSrc:test
+:buildSrc:check
+:buildSrc:build
+Using pluginsRepoOverride=[active]
 :tasks
 
 ------------------------------------------------------------

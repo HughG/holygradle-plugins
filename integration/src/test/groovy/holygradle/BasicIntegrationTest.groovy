@@ -31,7 +31,11 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
             regression.replacePatterns(testFileName, [
                 (~/^Detected a changing module.*$/) : null,
                 (~/pluginsRepoOverride=.*/) : "pluginsRepoOverride=[active]",
-                (~/Total time:.*/) : "Total time: [snipped]"
+                (~/Total time:.*/) : "Total time: [snipped]",
+                (~/Gradle user home:.*/) : "Gradle user home: [snipped]",
+                (~/Holy Gradle init script .*/) : "Holy Gradle init script [snipped]",
+                (~/Using SNAPSHOT version\..*/) : null,
+                (~/ UP-TO-DATE$/) : "",
             ])
             regression.checkForRegression(testFileName)
         }
