@@ -10,7 +10,11 @@ public interface PackageArtifactBaseDSL {
     void includeTextFile(String path, Closure closure)
     
     void includeSettingsFile(Closure closure)
-    
+
+    boolean getCreateDefaultSettingsFile()
+
+    void setCreateDefaultSettingsFile(boolean create)
+
     void exclude(String... patterns)
 
     void from(String fromLocation)

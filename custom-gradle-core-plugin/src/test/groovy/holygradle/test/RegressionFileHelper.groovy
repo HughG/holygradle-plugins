@@ -29,9 +29,7 @@ class RegressionFileHelper {
                 testFile.eachLine { String line ->
                     boolean deleteLine = false
 
-                    //for (Map.Entry<Pattern, String> entry in patterns) {
                     for (Map.Entry<Pattern, String> entry in patterns) {
-                        println entry.class
                         Pattern pattern = entry.key
                         String replacement = entry.value
                         if (replacement == null) {

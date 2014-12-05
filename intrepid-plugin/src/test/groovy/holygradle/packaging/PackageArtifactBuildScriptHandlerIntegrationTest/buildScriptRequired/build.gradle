@@ -14,6 +14,7 @@ configurations {
     withPublishPackages
     text
     withRepublishing
+    noCreateDefaultSettingsFile
 }
 
 sourceDependencies {
@@ -92,6 +93,12 @@ packageArtifacts {
                 to "file://con"
             }
         } 
+    }
+    noCreateDefaultSettingsFile {
+        createDefaultSettingsFile = false
+        includeBuildScript {
+            add "// This is some sample text"
+        }
     }
 }
 packageArtifacts.each { it ->

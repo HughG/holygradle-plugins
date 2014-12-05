@@ -128,6 +128,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
             "withPublishPackages",
             "text",
             "withRepublishing",
+            "noCreateDefaultSettingsFile",
         ]
         regressionTestBuildScriptForMultiplePackages("buildScriptRequired", projectCPackagesDir, "tBSR", configurations)
     }
@@ -138,11 +139,12 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         String regressionFilePrefix,
         ArrayList<String> configurations
     ) {
-        return configurations.each {
+        return configurations.each { String confName ->
+            final File packageZipFile = new File(packagesDir, "${projectName}-${confName}.zip")
+            ZipFile packageZip = new ZipFile(packageZipFile)
             try {
-                ZipFile packageZip = new ZipFile(new File(packagesDir, "${projectName}-${it}.zip"))
-                ZipEntry packageBuildFile = packageZip.getEntry("${it}/build.gradle")
-                final String regressionFileName = "${regressionFilePrefix}_${it}"
+                ZipEntry packageBuildFile = packageZip.getEntry("${confName}/build.gradle")
+                final String regressionFileName = "${regressionFilePrefix}_${confName}"
                 File testFile = regression.getTestFile(regressionFileName)
                 if (packageBuildFile == null) {
                     testFile.text = ""
@@ -151,11 +153,24 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 }
                 regression.replacePatterns(
                     regressionFileName, [
-                    (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
-                    (~/hg "unknown@[]+"]/)     : "hg \"unknown@[snipped]\""
-                ]
+                        (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
+                        (~/hg "unknown@[]+"]/)     : "hg \"unknown@[snipped]\""
+                    ]
                 )
                 regression.checkForRegression(regressionFileName)
+            } catch (AssertionError e) {
+                // This allows us to catch any assertion failures from a single configuration, carry on testing the
+                // rest, and report all failures at the end.
+                collector.addError(e)
+            }
+
+            try {
+                ZipEntry packageSettingsFile = packageZip.getEntry("${confName}/settings.gradle")
+                if (confName == "noCreateDefaultSettingsFile") {
+                    assertNull("Settings file should NOT exist in ${packageZipFile}", packageSettingsFile)
+                } else {
+                    assertNotNull("Settings file should exist in ${packageZipFile}", packageSettingsFile)
+                }
             } catch (AssertionError e) {
                 // This allows us to catch any assertion failures from a single configuration, carry on testing the
                 // rest, and report all failures at the end.

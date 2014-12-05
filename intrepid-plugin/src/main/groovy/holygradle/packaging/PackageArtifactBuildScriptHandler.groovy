@@ -14,7 +14,7 @@ import holygradle.scm.SourceControlRepositories
 
 import java.util.regex.Matcher
 
-class PackageArtifactBuildScriptHandler {
+class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandler {
     private boolean atTop = true
     private Collection<String> textAtTop = []
     private Collection<String> pinnedSourceDependencies = new HashSet<String>()
@@ -28,8 +28,10 @@ class PackageArtifactBuildScriptHandler {
     public boolean generateSettingsFileForSubprojects = true
     public boolean unpackToCache = false
     public boolean createPackedDependenciesSettingsFile = false
-    
-    public PackageArtifactBuildScriptHandler() {
+    private final Project project
+
+    public PackageArtifactBuildScriptHandler(Project project) {
+        this.project = project
     }
     
     public void add(String text) {
@@ -176,7 +178,13 @@ class PackageArtifactBuildScriptHandler {
         allPackedDeps
     }
 
-    public void createBuildScript(Project project, File buildFile) {
+    @Override
+    String getName() {
+        return "build.gradle"
+    }
+
+    @Override
+    public void writeFile(File buildFile) {
         if (!buildFile.parentFile.exists() && !buildFile.parentFile.mkdirs()) {
             throw new RuntimeException("Failed to create output folder for build script ${buildFile}")
         }

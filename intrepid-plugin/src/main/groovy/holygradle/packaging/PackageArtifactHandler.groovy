@@ -15,13 +15,16 @@ import holygradle.scm.SourceControlRepositories
 import holygradle.custom_gradle.util.CamelCase
 
 class PackageArtifactHandler implements PackageArtifactDSL {
+    public final Project project
     public final String name
     private String configurationName
-    private final PackageArtifactDescriptor rootPackageDescriptor = new PackageArtifactDescriptor(".")
+    private final PackageArtifactDescriptor rootPackageDescriptor
     private Collection<Closure> lazyConfigurations = []
     
     public static Collection<PackageArtifactHandler> createContainer(Project project) {
-        project.extensions.packageArtifacts = project.container(PackageArtifactHandler)
+        project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { String name ->
+            new PackageArtifactHandler(project, name)
+        }
         // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.  We do this in a
         // projectsEvaluated block because otherwise the source dependency information won't be available, and some
         // tesks which we want to depend on won't have been created.
@@ -56,7 +59,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             Task createPublishNotesTask = defineCreatePublishNotesTask(project)
             packageArtifactHandlers.each { packArt ->
-                Task packageTask = packArt.definePackageTask(project, createPublishNotesTask)
+                Task packageTask = packArt.definePackageTask(createPublishNotesTask)
                 project.artifacts.add(packArt.getConfiguration(), packageTask)
                 packageEverythingTask.dependsOn(packageTask)
             }
@@ -200,9 +203,11 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         }
     }
 
-    public PackageArtifactHandler(String name) {
+    public PackageArtifactHandler(Project project, String name) {
+        this.project = project
         this.name = name
         this.configurationName = name
+        this.rootPackageDescriptor = new PackageArtifactDescriptor(project, ".")
     }
 
     public PackageArtifactIncludeHandler include(String... patterns) {
@@ -257,8 +262,18 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     public void includeSettingsFile(Closure closure) {
         rootPackageDescriptor.includeSettingsFile(closure)
     }
-    
-    private void doConfigureCopySpec(Project project, PackageArtifactDescriptor descriptor, CopySpec copySpec) {
+
+    @Override
+    boolean getCreateDefaultSettingsFile() {
+        return rootPackageDescriptor.getCreateDefaultSettingsFile()
+    }
+
+    @Override
+    void setCreateDefaultSettingsFile(boolean create) {
+        rootPackageDescriptor.setCreateDefaultSettingsFile(create)
+    }
+
+    private void doConfigureCopySpec(PackageArtifactDescriptor descriptor, CopySpec copySpec) {
         descriptor.includeHandlers.each { PackageArtifactIncludeHandler includeHandler ->
             File fromDir = project.projectDir
             if (descriptor.fromLocation != ".") {
@@ -270,15 +285,15 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
         }
         for (fromDescriptor in descriptor.fromDescriptors) {
-            doConfigureCopySpec(project, fromDescriptor, copySpec)
+            doConfigureCopySpec(fromDescriptor, copySpec)
         }
     }
     
-    public void configureCopySpec(Project project, CopySpec copySpec) {
-        doConfigureCopySpec(project, rootPackageDescriptor, copySpec)
+    public void configureCopySpec(CopySpec copySpec) {
+        doConfigureCopySpec(rootPackageDescriptor, copySpec)
     }
     
-    public Task definePackageTask(Project project, Task createPublishNotesTask) {
+    public Task definePackageTask(Task createPublishNotesTask) {
         String taskName = getPackageTaskName()
         Zip t = (Zip)project.task(taskName, type: Zip)
         t.description = "Creates a zip file for '${name}' in preparation for publishing project '${project.name}'."
@@ -319,11 +334,11 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 final PublishPackagesExtension packages = project.rootProject.publishPackages as PublishPackagesExtension
                 republishHandler = packages.republishHandler
                 it.doFirst {
-                    localRootPackageDescriptor.processPackageFiles(project, taskDir)
+                    localRootPackageDescriptor.processPackageFiles(taskDir)
                 }
             } else {
                 it.doFirst {
-                    localRootPackageDescriptor.createPackageFiles(project, taskDir)
+                    localRootPackageDescriptor.createPackageFiles(taskDir)
                 }
             }
             

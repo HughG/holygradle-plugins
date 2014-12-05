@@ -32,7 +32,9 @@ class SettingsFileHelper {
 }"""
 
         settingsFile.withPrintWriter { w ->
-            w.println(newIncludes)
+            if (!escapedPaths.empty) {
+                w.println(newIncludes)
+            }
             // We pull the lines out of the string and write them individually to be sure we get platform-specific
             // line endings right.
             settingsFileBody.readLines().each { w.println(it) }

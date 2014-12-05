@@ -7,19 +7,22 @@ import org.gradle.util.ConfigureUtil
 import holygradle.publishing.RepublishHandler
 
 class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
+    private final Project project
     private Collection<PackageArtifactIncludeHandler> includeHandlers = []
     private Collection<String> excludes = [".gradle", "build.gradle", "packages/**/*", "packages/*"]
     private String fromLocation
     private String toLocation
     private Collection<PackageArtifactDescriptor> fromDescriptors = []
-    private PackageArtifactBuildScriptHandler buildScriptHandler = null
-    private Collection<PackageArtifactTextFileHandler> textFileHandlers = []
-    
-    public PackageArtifactDescriptor(String projectRelativePath) {
-        fromLocation = projectRelativePath
-        toLocation = projectRelativePath
+    private PackageArtifactTextFileCollector textFileCollector
+
+    public PackageArtifactDescriptor(Project project, String projectRelativePath) {
+        this.project = project
+        this.fromLocation = projectRelativePath
+        this.toLocation = projectRelativePath
+        this.textFileCollector = new PackageArtifactTextFileCollector(project)
     }
-    
+
+    @Override
     public PackageArtifactIncludeHandler include(String... patterns) {
         PackageArtifactIncludeHandler includeHandler = new PackageArtifactIncludeHandler(patterns)
         includeHandlers.add(includeHandler)
@@ -32,48 +35,57 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
         
         includeHandler
     }
-    
+
+    @Override
     public void include(String pattern, Closure closure) {
         ConfigureUtil.configure(closure, include(pattern))
     }
-    
+
+    @Override
     public void includeBuildScript(Closure closure) {
-        if (buildScriptHandler == null) {
-            buildScriptHandler = new PackageArtifactBuildScriptHandler()
-            ConfigureUtil.configure(closure, buildScriptHandler)
-        } else {
-            throw new RuntimeException("Can only include one build script per package.")
-        }
+        textFileCollector.includeBuildScript(closure)
     }
-    
+
+    @Override
     public void includeTextFile(String path, Closure closure) {
-        PackageArtifactPlainTextFileHandler textFileHandler = new PackageArtifactPlainTextFileHandler(path)
-        ConfigureUtil.configure(closure, textFileHandler)
-        textFileHandlers.add(textFileHandler)
+        textFileCollector.includeTextFile(path, closure)
     }
-    
+
+    @Override
     public void includeSettingsFile(Closure closure) {
-        PackageArtifactSettingsFileHandler settingsFileHandler = new PackageArtifactSettingsFileHandler("settings.gradle")
-        ConfigureUtil.configure(closure, settingsFileHandler)
-        textFileHandlers.add(settingsFileHandler)
+        textFileCollector.includeSettingsFile(closure)
     }
-    
+
+    @Override
+    boolean getCreateDefaultSettingsFile() {
+        return textFileCollector.createDefaultSettingsFile
+    }
+
+    @Override
+    void setCreateDefaultSettingsFile(boolean create) {
+        textFileCollector.createDefaultSettingsFile = create
+    }
+
+    @Override
     public void exclude(String... patterns) {
         for (p in patterns) {
             excludes.add(p)
         }
     }
 
+    @Override
     public void from(String fromLocation) {
         this.fromLocation = fromLocation
     }
-    
+
+    @Override
     public void from(String fromLocation, Closure closure) {
-        PackageArtifactDescriptor from = new PackageArtifactDescriptor(this.fromLocation + "/" + fromLocation)
+        PackageArtifactDescriptor from = new PackageArtifactDescriptor(project, this.fromLocation + "/" + fromLocation)
         fromDescriptors.add(from)
         ConfigureUtil.configure(closure, from)
     }
-    
+
+    @Override
     public void to(String toLocation) {
         this.toLocation = toLocation
     }
@@ -109,16 +121,13 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
             }
         }
     }
-    
-    public void createPackageFiles(Project project, File parentDir) {
-        if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
-            buildScriptHandler.createBuildScript(project, getTargetFile(parentDir, "build.gradle"))
-        }
-        for (textFileHandler in textFileHandlers) {
+
+    public void createPackageFiles(File parentDir) {
+        for (textFileHandler in textFileCollector.getAllTextFileHandlers()) {
             textFileHandler.writeFile(getTargetFile(parentDir, textFileHandler.name))
         }
         for (fromDescriptor in fromDescriptors) {
-            fromDescriptor.createPackageFiles(project, parentDir)
+            fromDescriptor.createPackageFiles(parentDir)
         }
     }
     
@@ -136,30 +145,21 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
         targetFile.withWriter { Writer writer -> writer.write(targetText) }
     }
     
-    public void processPackageFiles(Project project, File parentDir) {
-        if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
-            processFileForPackage(
-                getTargetFile(project.projectDir, "build.gradle"),
-                getTargetFile(parentDir, "build.gradle")
-            )
-        }
-        for (textFileHandler in textFileHandlers) {
+    public void processPackageFiles(File parentDir) {
+        for (textFileHandler in textFileCollector.getAllTextFileHandlers()) {
             processFileForPackage(
                 getTargetFile(project.projectDir, textFileHandler.name),
                 getTargetFile(parentDir, textFileHandler.name)
             )
         }
         for (fromDescriptor in fromDescriptors) {
-            fromDescriptor.processPackageFiles(project, parentDir)
+            fromDescriptor.processPackageFiles(parentDir)
         }
     }
     
     private Collection<File> collectPackageFilePaths() {
         Collection<File> paths = []
-        if (buildScriptHandler != null && buildScriptHandler.buildScriptRequired()) {
-            paths.add(getTargetFile(null, "build.gradle"))
-        }
-        for (textFileHandler in textFileHandlers) {
+        for (textFileHandler in textFileCollector.getAllTextFileHandlers()) {
             paths.add(getTargetFile(null, textFileHandler.name))
         }
         paths
@@ -167,7 +167,8 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
     
     public void configureZipTask(Zip zipTask, File taskDir, RepublishHandler republish) {
         zipTask.from(taskDir.path) { CopySpec spec ->
-            spec.include collectPackageFilePaths()*.toString()
+            Collection<String> paths = collectPackageFilePaths()*.toString()
+            spec.include paths
             spec.excludes = []
             // If we're republishing then apply the search & replace rules to all of the auto-generated files. It's fair
             // to assume that they're text files and wouldn't mind having filtering applied to them.
