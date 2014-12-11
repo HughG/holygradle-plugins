@@ -25,10 +25,16 @@
 
     /* Tone down the colours for links. */
     a:link {
-        color: #0000C0;
+        color: #000080;
     }
     a:visited {
-        color: #6000C0;
+        color: #800080;
+    }
+
+    /* Links to glossary entries. */
+    a.glossary-link {
+        text-decoration: none;
+        border-bottom: 1px dashed;
     }
 
     /* Add in sitemap to the left of the toc */

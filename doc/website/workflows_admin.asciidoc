@@ -1,0 +1,21 @@
+:docinfo1:
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: master.css
+:toc2:
+:toclevels: 3
+:numbered:
+
+= Workflows for Admins
+
+include::sitemap.ascinc[]
+
+This page ... *TODO* 
+
+[TODO]
+* http://localwiki/Artifactory#Monitoring
+* http://localwiki/Artifactory#Backups
+* http://localwiki/Artifactory#Permissions
+* http://localwiki/Artifactory#Adding_a_new_Team
+* http://localwiki/Artifactory#Installation_Notes (plus point to local guide-as-Word-doc)

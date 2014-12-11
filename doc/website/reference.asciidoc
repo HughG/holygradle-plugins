@@ -1,0 +1,18 @@
+:docinfo1:
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: master.css
+:toc2:
+:toclevels: 3
+:numbered:
+
+= Reference
+
+include::sitemap.ascinc[]
+
+This page ... *TODO* 
+
+TODO: http://localwiki/Gradle#What_is_it.3F (link to release notes)
+
+TODO: http://localwiki/Artifactory#HTTPS_Access (details of explicit setup -- some bits local, some general)

@@ -10,8 +10,8 @@ and Artifactory
         <ul>
 <!--
             <li><a href="very_quick_start.html"></a></li>
-            <li><a href="overview.html"></a></li>
 -->
+            <li><a href="overview.html"></a></li>
             <li><a href="first_steps.html"></a></li>
         </ul>
     </li>
@@ -24,9 +24,11 @@ and Artifactory
     </li>
 <!--
     <li><a href="terminology.html"></a></li>
+    <li><a href="tutorial.html">Tutorial</a></li>
 -->
     <li><a href="workflows.html">Workflows</a></li>
-    <li><!-- <a href="reference.html"></a> -->
+    <li><a href="workflows_admin.html">Workflows for Admins</a></li>
+    <li><a href="reference.html"></a>
         <ul>
 <!--
             <li><a href="plugins.html"></a></li>

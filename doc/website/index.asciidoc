@@ -15,6 +15,8 @@ include::sitemap.ascinc[]
 
 This documentation is a guide to using the gloss:holygradle[] and gloss:artifactory[] tools to use and publish non-Java software modules.
 
+include::{localDoc}/index_out_of_scope.ascinc[]
+
 TIP: If you are not familiar with these tools, and you need to quickly do something with them, check the list of basic tasks on the "link:very_quick_start.html[]" page.
 
 For background information on these tools, the important concepts, and the requirements behind the design, read the link:overview.html[].  To set up your own project and/or development machine to use these tools, follow the link:first_steps.html[].  If you have problems at any time, see the link:support.html[] page, and in particular the link:troubleshooting.html[] section.

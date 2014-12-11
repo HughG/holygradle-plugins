@@ -74,39 +74,11 @@ to extend Gradle to the C++ world, where modules often consist of large numbers 
 
 == Concepts and Terminology
 
-Following is an introduction to some important terms.
+The following are some important terms from the link:glossary.html[] which you will need to understand to read this document.
 
+* gloss:project[]
+* gloss:module[]
 
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-=== Project
-
-Gradle uses the term _project_ to refer to a +build.gradle+ control file, which defines (among other
-things) the dependencies required to build the software module, and the information required to
-publish it.  (Artifactory does not use the term _project_.)
-
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-[[_module]]
-[[_modules]]
-=== Modules
-
-Gradle and Artifactory refer to a published piece of software as a _module_.  A module is identified
-by three string values:
-
-* the _group_ which publishes it;
-* the _name_ of the module itself; and
-* a specific _version_ of that module.
-
-In Artifactory, a module consists of
-
-* a metadata file (in Ivy XML format);
-* a number of other files (its artifacts).
-
-In Gradle, a module is either a dependency, or the output of the build process itself.  In fetching
-the dependencies defined for the module being built, Gradle will download the metadata for each
-module, then use that to identify which artifacts belong to which configurations, and download those
-files.
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -122,14 +94,14 @@ features, for tasks such as downloading all the transitive dependencies of a mod
 
 === Artifacts
 
-Gradle and Artifactory use the term _artifact_ to refer to files published as part of a <<_module>>.
+Gradle and Artifactory use the term _artifact_ to refer to files published as part of a gloss:module[].
 When using the +intrepid+ plugin, artifacts are mostly <<_packed_dependencies>>,
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 === Configurations
 
-The Ivy metadata stored in Artifactory for each <<_module>> lists a number of sets of
+The Ivy metadata stored in Artifactory for each gloss:module[] lists a number of sets of
 <<_artifacts>>, known as _configurations_.  An artifact may belong to more than one configuration.
 
 ==== Dependencies Between Configurations
@@ -287,7 +259,7 @@ digraph {
 
 === Dependencies
 
-The Ivy metadata stored in Artifactory for each <<_module>> lists a number of dependencies, which
+The Ivy metadata stored in Artifactory for each gloss:module[] lists a number of dependencies, which
 are expressed as dependencies between <<_configurations>> of that module, and those of other
 modules.
 
