@@ -14,6 +14,10 @@ import java.util.*;
  * License 2.0 under which Groovy 1.8.6 is distributed.
  */
 public class XhtmlNodePrinter extends XmlNodePrinter {
+    private static final QName XML_SPACE = new QName("http://www.w3.org/XML/1998/namespace", "space");
+
+    private Set<String> expandEmptyElementsSet = new HashSet<String>();
+
     public XhtmlNodePrinter(PrintWriter out) {
         super(out);
     }
@@ -39,20 +43,25 @@ public class XhtmlNodePrinter extends XmlNodePrinter {
 
     @Override
     protected void print(Node node, NamespaceContext ctx) {
+        // NOTE 2014-12-11 HughG: Hack: strip out "xml:space" attributes.
+        node.attributes().remove(XML_SPACE);
+
         /*
          * Handle empty elements like '<br/>', '<img/> or '<hr noshade="noshade"/>.
          */
         if (isEmptyElement(node)) {
             printLineBegin();
             out.print("<");
-            out.print(getName(node));
+            final String nodeName = getName(node);
+            out.print(nodeName);
             if (ctx != null) {
                 printNamespace(node, ctx);
             }
+
             printNameAttributes(node.attributes(), ctx);
-            if (isExpandEmptyElements()) {
+            if (isExpandEmptyElements() && expandEmptyElementsSet.contains(nodeName)) {
                 out.print("></");
-                out.print(getName(node));
+                out.print(nodeName);
                 out.print(">");
             } else {
                 out.print("/>");
@@ -148,5 +157,9 @@ public class XhtmlNodePrinter extends XmlNodePrinter {
         if (!isPreserveWhitespace()) out.incrementIndent();
         printSimpleItem(value);
         if (!isPreserveWhitespace()) out.decrementIndent();
+    }
+
+    public Set<String> getExpandEmptyElementsSet() {
+        return expandEmptyElementsSet;
     }
 }

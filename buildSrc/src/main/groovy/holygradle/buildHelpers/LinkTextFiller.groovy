@@ -9,11 +9,13 @@ import java.util.regex.Matcher
  * the link is to the same document or a neighbouring local document.
  */
 public class LinkTextFiller {
-    static class Link {
+    class Link {
         public final Node node
         public final String target
         public final String text
         public final URI targetUri
+        private boolean gotTargetDoc = false
+        private XmlDoc targetDoc
 
         private Link(Node node, String target, String text, URI targetUri) {
             this.node = node
@@ -22,21 +24,35 @@ public class LinkTextFiller {
             this.targetUri = targetUri
         }
 
-        public static Link fromNode(Node linkNode) {
-            String linkText = null
-            final List<Node> children = linkNode.children()
-            if (children.size() == 1) {
-                Object firstChild = children[0]
-                if (firstChild instanceof String) {
-                    linkText = (String)firstChild
+        public XmlDoc getTargetDoc() {
+            if (!gotTargetDoc) {
+                final String linkTargetPath = targetUri.path
+                if (linkTargetPath == null || linkTargetPath.empty) {
+                    targetDoc = doc
+                } else {
+                    final File targetFile = new File(file.parentFile, linkTargetPath)
+                    if (!targetFile.exists()) {
+                        buildContext.warn("Skipping non-existent link target file '${targetFile}'")
+                        targetDoc = null
+                    } else {
+                        targetDoc = documentSource.getXmlDocument(targetFile)
+                        if (targetDoc != null && !targetDoc.valid) {
+                            targetDoc = null
+                        }
+                    }
                 }
+                gotTargetDoc = true
             }
-            String linkTarget = linkNode.@href
-            URI linkTargetUri = null
-            if (linkTarget != null) {
-                linkTargetUri = new URI(linkTarget)
-            }
-            return new Link(linkNode, linkTarget, linkText, linkTargetUri)
+            return targetDoc
+        }
+
+        @Override
+        public String toString() {
+            return "Link{" +
+                "node=" + node +
+                ", -> target='" + target + '\'' +
+                ", text='" + text + '\'' +
+                '}';
         }
     }
 
@@ -82,7 +98,7 @@ public class LinkTextFiller {
                 fillLinkFromOtherDocument
          */
         // Get some info about the link to decide whether or not to fill it in.
-        Link link = Link.fromNode(linkNode)
+        Link link = makeLinkFromNode(linkNode)
         if (link.targetUri == null) {
             // It's a link with an empty href, so don't try to follow it.
             return
@@ -94,7 +110,28 @@ public class LinkTextFiller {
         fillLink(link)
     }
 
+    private Link makeLinkFromNode(Node linkNode) {
+        String linkText = null
+        final List<Node> children = linkNode.children()
+        if (children.size() == 1) {
+            Object firstChild = children[0]
+            if (firstChild instanceof String) {
+                linkText = (String)firstChild
+            }
+        }
+        String linkTarget = linkNode.@href
+        URI linkTargetUri = null
+        if (linkTarget != null) {
+            linkTargetUri = new URI(linkTarget)
+        }
+        return new Link(linkNode, linkTarget, linkText, linkTargetUri)
+    }
+
     private void fillLink(Link link) {
+        if (!shouldFill(link)) {
+            return
+        }
+
         String fillText = getFillText(link)
         if (fillText != null) {
             link.node.setValue(fillText.trim())
@@ -110,11 +147,11 @@ public class LinkTextFiller {
     }
 
     private String makeFillText(Link link) {
-        XmlDoc targetDoc = getTargetDoc(link)
-        if (!targetDoc?.valid) {
+        XmlDoc targetDoc = link.targetDoc
+        if (link.targetDoc == null) {
             return null
         }
-        if (!shouldFill(link, targetDoc)) {
+        if (!shouldFill(link)) {
             return null
         }
 
@@ -141,29 +178,12 @@ public class LinkTextFiller {
         }
     }
 
-    private XmlDoc getTargetDoc(Link link) {
-        final String linkTargetPath = link.targetUri.path
-        if (linkTargetPath == null || linkTargetPath.empty) {
-            return doc
-        } else {
-            final File targetFile = new File(file.parentFile, linkTargetPath)
-            if (!targetFile.exists()) {
-                buildContext.warn("Skipping non-existent link target file '${targetFile}'")
-                return null
-            }
-            XmlDoc targetDoc = documentSource.getXmlDocument(targetFile)
-            if (targetDoc == null || !targetDoc.valid) {
-                return null
-            }
-            return targetDoc
-        }
-    }
-
-    private boolean shouldFill(Link link, XmlDoc targetDoc) {
+    private boolean shouldFill(Link link) {
         // Fill empty links, or ones within the same document which have AsciiDoc default text.
         return (
             (link.text == null) ||
-            (targetDoc == doc && link.text == "[${link.targetUri.fragment}]")
+            (link.targetDoc == doc && link.text == "[${link.targetUri.fragment}]") ||
+            (link.targetDoc != doc && link.text == "${link.targetUri}")
         )
     }
 
@@ -173,6 +193,10 @@ public class LinkTextFiller {
         // I made a custom version.
         final XmlNodePrinter printer = new XhtmlNodePrinter(new PrintWriter(outputFile, "UTF-8"), "")
         printer.expandEmptyElements = true // for Firefox
+        printer.expandEmptyElementsSet.with {
+            add("a")
+            add("script")
+        }
         printer.preserveWhitespace = true // to avoid extra line breaks
         printer.print(doc.node)
     }
