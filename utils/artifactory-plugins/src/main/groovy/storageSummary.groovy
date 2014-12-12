@@ -109,6 +109,14 @@ class RepoStats {
         return String.format('%.2f', percentage)
     }
 
+    public long getSizeInMegabytes() {
+        return size / 1024
+    }
+
+    public long getSizeInGigabytes() {
+        return sizeInMegabytes / 1024
+    }
+
     public RepoStats plus(RepoStats other) {
         return new RepoStats(name, count + other.count, size + other.size)
     }
@@ -155,9 +163,9 @@ def void addStatsForUserVisibleRepos(
 private void outputIt360Table(StringWriter sw, Collection<RepoStats> repoStats, RepoStats total) {
     PrintWriter pw = new PrintWriter(sw)
     pw.println '"<--table repoStats starts-->"'
-    pw.println 'Repo_Name Artifacts_Count Artifacts_Size Artifacts_Percentage'
+    pw.println 'Repo_Name Artifacts_Count Artifacts_Size Artifacts_Size_in_MB Artifacts_Size_in_GB Artifacts_Percentage'
     repoStats.each {
-        pw.println "${it.name} ${it.count} ${it.size} ${it.percentageOfAsString(total)}"
+        pw.println "${it.name} ${it.count} ${it.size} ${it.sizeInMegabytes} ${it.sizeInGigabytes} ${it.percentageOfAsString(total)}"
     }
     pw.println '"<--table repoStats ends-->"'
 }
@@ -177,11 +185,21 @@ private void outputXhtml(StringWriter sw, Collection<RepoStats> repoStats, RepoS
         body {
             table {
                 tr {
-                    th 'Repo_Name'; th 'Artifacts_Count'; th 'Artifacts_Size'; th 'Artifacts_Percentage'
+                    th 'Repo_Name'
+                    th 'Artifacts_Count'
+                    th 'Artifacts_Size'
+                    th 'Artifacts_Size_in_MB'
+                    th 'Artifacts_Size_in_GB'
+                    th 'Artifacts_Percentage'
                 }
                 repoStats.each { RepoStats stats ->
                     tr {
-                        td stats.name; td stats.count; td stats.size; td stats.percentageOfAsString(total)
+                        td stats.name
+                        td stats.count
+                        td stats.size
+                        td stats.sizeInMegabytes
+                        td stats.sizeInGigabytes
+                        td stats.percentageOfAsString(total)
                     }
                 }
             }
