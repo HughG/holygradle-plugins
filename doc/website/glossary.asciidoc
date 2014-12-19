@@ -27,6 +27,8 @@ This page gives a short description of many terms related to the Holy Gradle and
     An open source tool for gloss:dependency-management[] and gloss:build-management[].  Here "dependency management" means getting and publishing versioned software modules, mostly binary: Gradle modules components which your gloss:project[] uses, modules which those modules use, and so on; and it automatically finds version conflicts.  The "build management" part is similar to systems like Unix +make+, Microsoft's MSBuild, or the Ant tool for Java: you describe tasks and connections between them, and Gradle works out which tasks to run, in which order.
 [[gloss-gradle-wrapper]] Gradle wrapper::
     A small set of files which lets you use a specific distribution of Gradle for building a gloss:project[], without installing Gradle globally on your machine.  It includes a batch file, a small Java JAR file, and some configuration files.  Normally it is checked in to your gloss:project[]'s source repository.  The gloss:holygradle[] uses a custom Gradle Wrapper which downloads a custom distribution of Gradle.
+[[gloss-hard-link]] hard link::
+    A hard link is a special file which contains a reference to another file object on disk.  It works like a reference-counting pointer in C++, or a reference in .NET or Java.  Deleting the file from its original location will not completely delete it, if one or more hard links still exist.  Unlink a gloss:symbolic-link[], deleting the link may delete the original file.  The target file must be on the same volume, and must exist when the link is created.  Windows supports symbolic links since Windows XP and Windows Server 2003.  See also gloss:symbolic-link[].
 [[gloss-holygradle]] Holy Gradle::
     A set of gloss:gradle[] plugins which extend it to cover: using passwords stored in the Windows Credential Manager; getting source code from Mercurial or Subversion; getting and publishing dependencies with many files (packed as ZIP files); and deleting temporary publications from Artifactory.  There are other features with minimal support: building with Visual Studio; running unit tests.
 [[gloss-ivy]] Ivy::
@@ -51,3 +53,10 @@ In Gradle, a module is either a dependency, or the output of the build process i
 
 [[gloss-project]] project::
     gloss:gradle[] uses the term _project_ to refer to a +build.gradle+ control file, which defines (among other things) the dependencies required to build the software module, and the information required to publish it.  (gloss:artifactory[] does not use the term _project_.)
+[[gloss-symbolic-link]] symbolic link::
+    A symbolic link is a special file which contains a reference to another file path.  Attempts to read or write the link will access the target file; deleting the link will only delete the link.  The target file may be on any disk, and may not exist, in which case attempts to access it will fail.  Windows supports symbolic links since Windows Vista and Windows Server 2008.  If a user is a local administrator, they must disable User Account Control to be able to create  symbolic links.  See also gloss:hard-link[].
+[[gloss-symlink]] symlink::
+    See gloss:symbolic-link[].
+
+
+include::{localDoc}/glossary.ascinc[]

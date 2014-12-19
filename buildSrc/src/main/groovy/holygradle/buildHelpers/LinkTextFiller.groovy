@@ -162,7 +162,7 @@ public class LinkTextFiller {
             Node targetElement = targetDoc.getElementById(fragment)
             if (targetElement == null) {
                 buildContext.warn("Failed to find target for ${fragment}")
-                return null
+                return "MISSING TARGET"
             } else {
                 if (targetElement.name().localPart ==~ /h[1-6]/) {
                     // Strip numbers from link target text which comes from a heading.

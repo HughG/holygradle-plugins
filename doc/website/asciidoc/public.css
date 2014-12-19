@@ -32,9 +32,12 @@
     }
 
     /* Links to glossary entries. */
-    a.glossary-link {
+    a.glossary-link:link , a.glossary-link:visited {
+        color: black;
+    }
+    a.glossary-link  {
         text-decoration: none;
-        border-bottom: 1px dashed;
+        border-bottom: 1px dashed grey;
     }
 
     /* Add in sitemap to the left of the toc */

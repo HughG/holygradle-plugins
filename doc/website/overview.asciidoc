@@ -11,7 +11,66 @@
 
 include::sitemap.ascinc[]
 
-This page ... *TODO* 
+The gloss:holygradle[] provides a way to publish and use pre-built and pre-packaged software modules
+for building libraries and applications.  It is designed for tools like C++, HTML, and JavaScript
+which do not provide their own module packaging system.  (For example, Java and .NET have their own
+systems).  The packaged modules may be libraries, web components, build tools, end-user
+applications, or any other collection of files which are useful in component-oriented software
+development.
+
+This system extends the gloss:gradle[] tool, a popular component re-use tool for Java, with several
+features which are described <<TODO:below>>.  The basic approach for developing with gloss:gradle[]
+is as follows.
+
+* Write a +build.gradle+ file for your modules (call it A) which lists
+** the dependency modules needed by A, each with its own version (for example, B:1.0 and C:1.5);
+** the locations for downloading those dependencies;
+** the files to publish for A;
+** the location to publish A.
+* Run gloss:gradle[] to download the dependencies.
+* Build and test A.
+* Run gloss:gradle[] to publish A.
+
+
+////
+[graphviz,overview_typical_gradle_usage.svg,dot,svg]
+////
+
+.Typical usage of gloss:gradle[]
+[caption="Figure {counter:figureindex}: "]
+[plantuml,overview_typical_gradle_usage.png,png]
+----
+User -> (Start)
+User --> (Use the application) : simple label
+
+:Main Admin: ---> (Use the application) : This is\nyet another\nlabel
+----
+
+For Java-based modules, gloss:gradle[] may also be used to build and test, and the "files to publish"
+for A may be a single JAR file.  The dependencies for A are provided to the Java compiler on the
+command line, normally one JAR file per dependency.
+
+For languages like C++, each module may provide many files -- header files, static and dynamic
+libraries, resources, and so on.  Also, some of these files may have variants such as for "release"
+and "debug" mode, or for 32-bit and 64-bit platforms.  The basic extension which the
+gloss:holygradle[] provides is to collect files into one or more ZIP files when publishing, and
+unzip those files when dependencies are downloaded.
+
+
+    Approach
+        General idea
+        Tools involved
+            deployment diagram
+    Concepts & Terms (intro)
+        General
+        Artifactory
+            types of repository
+        Gradle
+        Holy Gradle
+            list of plugins
+
+
+TODO: Link to requirements (and rejected solutions?)
 
 TODO: http://localwiki/Gradle#What_is_it.3F (intro to tools)
 
