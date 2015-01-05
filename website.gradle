@@ -21,6 +21,12 @@ void initializeBuildWebsiteTask(
         include "**/*.ascinc"
         include "docinfo.html"
     }
+    // Note that we can only build "*.asciidoc" files in the top-level folder, not in the "local" sub-folder, for a few
+    // reasons.
+    // * AsciiDoc resolves the path of the input doc behind symlinks, then tries to find other files relative to that,
+    //   so trying to get to "local/../asciidoc" ends up in the wrong place.
+    // * AsciiDoc won't load the top-level config file for input files in the "local" sub-folder, because it only looks
+    //   in the same folder as the input doc.
     fileTree(project.WEBSITE_DIR).include("*.asciidoc").each { File asc ->
         String ascBase = asc.name - ".asciidoc"
         String ascOutJustFileName = ascBase + ".html"
