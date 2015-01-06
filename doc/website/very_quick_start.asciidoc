@@ -1,0 +1,16 @@
+:docinfo1:
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: master.css
+:toc2:
+:toclevels: 3
+:numbered:
+
+= Troubleshooting
+
+include::sitemap.ascinc[]
+
+This page ... *TODO* 
+
+TODO: http://localwiki/Gradle#Initial_Setup ?

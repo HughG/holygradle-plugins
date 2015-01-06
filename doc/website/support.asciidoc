@@ -12,7 +12,7 @@
 include::sitemap.ascinc[]
 
 ifndef::localDoc[]
-No public support is available for the Holy Gradle.
+No public support is available for the gloss:holygradle[].
 endif::localDoc[]
 
 For general information on gloss:gradle[] see <http://www.gradle.org/>.  The gloss:holygradle[] is based on Gradle 1.4.  For general information on gloss:artifactory[] see <http://www.jfrog.com/>.

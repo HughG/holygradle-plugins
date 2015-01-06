@@ -196,6 +196,7 @@ public class LinkTextFiller {
         printer.expandEmptyElementsSet.with {
             add("a")
             add("script")
+            add("object")
         }
         printer.preserveWhitespace = true // to avoid extra line breaks
         printer.print(doc.node)

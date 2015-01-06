@@ -13,10 +13,27 @@ include::sitemap.ascinc[]
 
 == Introduction
 
-This documentation is a guide to using the gloss:holygradle[] and gloss:artifactory[] tools to publish and use non-Java software modules.
+This documentation is a guide to using the gloss:holygradle[] and gloss:artifactory[] tools for
+developing C++ and web applications in a modular way under Windows.  It assumes that you want to
+create modules for other projects to use, or use existing modules, but face the problem that there
+is currently no standard way to do this.  Together these tools help you use pre-packaged libraries,
+build tools, and other modules, and publish your own libraries and applications for other people to
+use.
 
-TIP: If you are not familiar with these tools, and you need to quickly do something with them, check the list of basic tasks on the "link:very_quick_start.html[]" page.
+TIP: If you are not familiar with these tools, and you need to quickly do something with them, check
+the list of basic tasks on the "link:very_quick_start.html[]" page.
 
-For background information on these tools, the important concepts, and the requirements behind the design, read the link:overview.html[].  To set up your own project and/or development machine to use these tools, follow the link:first_steps.html[].  If you have problems at any time, see the link:support.html[] page, and in particular the link:troubleshooting.html[] section.
+* For background information on these tools, the important concepts, and the requirements behind the
+design, read the link:overview.html[].
+* To set up your own project and/or development machine to use these tools, follow the
+link:first_steps.html[].
+* If you have problems at any time, see the link:support.html[] page, and in particular the
+link:troubleshooting.html[] section.
+
+This documentation does not describe the standard ways of using gloss:artifactory[] and
+gloss:gradle[] for handling modules developed with Java and other JVM languages, because those are
+well documented in other places.
 
 include::{localDoc}/index_out_of_scope.ascinc[]
+
+DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)

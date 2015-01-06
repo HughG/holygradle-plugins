@@ -14,7 +14,7 @@
     }
 
     /* Make emphasised text same colour as normal text. */
-    em {
+    em, strong {
         color: black;
     }
 
@@ -38,6 +38,9 @@
     a.glossary-link  {
         text-decoration: none;
         border-bottom: 1px dashed grey;
+    }
+    *.title a.glossary-link:link , h1 a.glossary-link:link , h2 a.glossary-link:link , h3 a.glossary-link:link , h4 a.glossary-link:link , h5 a.glossary-link:link , h6 a.glossary-link :link, *.title a.glossary-link:visited , h1 a.glossary-link:visited , h2 a.glossary-link:visited , h3 a.glossary-link:visited , h4 a.glossary-link:visited , h5 a.glossary-link:visited , h6 a.glossary-link :visited {
+        color: #527BBD;
     }
 
     /* Add in sitemap to the left of the toc */

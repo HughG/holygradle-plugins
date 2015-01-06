@@ -19,8 +19,13 @@ This page gives a short description of many terms related to the Holy Gradle and
 [glossary]
 [[gloss-artifactory]] Artifactory::
     A web service product which manages collections (repositories) of pre-built software gloss:module[]s.  It is a commercial product from <http://www.jfrog.com> which has both a free, open source version and a paid version with more features.  The gloss:holygradle[] can work with either version.
+[[gloss-credential-manager]] Windows Credential Manager::
+    This is a Windows program which stores a list of usernames and passwords, encrypted so that only the current user can access them.
 [[gloss-build-management]] build management::
     In this documentation, build management means controlling how input forms of software (like C++ source files) are converted to output forms (like DLLs or EXEs).  This usually means using a tool like Unix +make+, Microsoft's MSBuild, or the Ant tool for Java--or gloss:gradle[].  The gloss:holygradle[] does not use gloss:gradle[]'s build management to control the details of building a Visual Studio solution, because Visual Studio already does that.  It only uses it to connect the tasks involved in getting and publishing modules.
+[[gloss-dependency]] dependency::
+    Some software gloss:module[] B is said to be a dependency of module A if A needs ("depends on") B in some way.  Module B might be needed only when building A, or it might be needed to build other modules which depend on A, or it might be needed at runtime, and so on.
+[[gloss-dependencies]] dependencies:: See gloss:dependency[].
 [[gloss-dependency-management]] dependency management::
     Managing information and tasks related to software modules which depend on each other.  In the context of gloss:gradle[] and gloss:artifactory[], module metadata includes the name of the module and its publisher (group), the version of the module, and a list of dependencies on other modules.  The most basic tasks are: getting all dependencies for a module you want to build; and publishing that module with metadata, after it is built.
 [[gloss-gradle]] Gradle::
@@ -53,6 +58,23 @@ In Gradle, a module is either a dependency, or the output of the build process i
 
 [[gloss-project]] project::
     gloss:gradle[] uses the term _project_ to refer to a +build.gradle+ control file, which defines (among other things) the dependencies required to build the software module, and the information required to publish it.  (gloss:artifactory[] does not use the term _project_.)
+[[gloss-repositories]] repositories:: See gloss:repository.
+[[gloss-repository]] repository::
+    This term is often abbreviated as "repo".
++
+In gloss:gradle[] a repository is a URL where gloss:module[]s can be downloaded from (if they are dependencies) or uploaded to (when a module is published).  A build may refer to several different repositories.
++
+In gloss:artifactory[] a repository is a combined database and file store for modules, which has a name and URL unique within that server.  A repository can be
++
+--
+* local: the main store for the files is on that server;
+* remote: the main store is on another server, and this one only caches them; or
+* virtual: the repository does not store files, instead it searches a list of other repositories.
+--
++
+In version control systems such as gloss:subversion[] or gloss:mercurial[] a repository stores a
+history of a set of related files.
+
 [[gloss-symbolic-link]] symbolic link::
     A symbolic link is a special file which contains a reference to another file path.  Attempts to read or write the link will access the target file; deleting the link will only delete the link.  The target file may be on any disk, and may not exist, in which case attempts to access it will fail.  Windows supports symbolic links since Windows Vista and Windows Server 2008.  If a user is a local administrator, they must disable User Account Control to be able to create  symbolic links.  See also gloss:hard-link[].
 [[gloss-symlink]] symlink::

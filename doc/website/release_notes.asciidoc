@@ -1,0 +1,20 @@
+:docinfo1:
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: master.css
+:toc2:
+:toclevels: 3
+:numbered!:
+
+= Release Notes
+
+include::sitemap.ascinc[]
+
+ifndef::localDoc[]
+There are no public releases of the gloss:holygradle[].
+endif::localDoc[]
+
+include::{localDoc}/release_notes.ascinc[]
+
+

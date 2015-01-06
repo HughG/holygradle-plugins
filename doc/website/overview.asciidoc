@@ -11,19 +11,41 @@
 
 include::sitemap.ascinc[]
 
-The gloss:holygradle[] provides a way to publish and use pre-built and pre-packaged software modules
-for building libraries and applications.  It is designed for tools like C++, HTML, and JavaScript
-which do not provide their own module packaging system.  (For example, Java and .NET have their own
-systems).  The packaged modules may be libraries, web components, build tools, end-user
-applications, or any other collection of files which are useful in component-oriented software
-development.
+gloss:artifactory[] is a structured store for software modules and gloss:gradle[] is a tool which
+helps you package software gloss:module[]s and transfer them to and from such a store. 
+(gloss:gradle[] also has many other features which are not detailed in this guide.)  The
+gloss:holygradle[] is a set of plugins for gloss:gradle[] which extend it for developing modules
+which contain a large number of files when built (such as C++ libraries or web applications) and
+for working under Windows.  This section gives a short introduction to their main features.
 
-This system extends the gloss:gradle[] tool, a popular component re-use tool for Java, with several
-features which are described <<TODO:below>>.  The basic approach for developing with gloss:gradle[]
-is as follows.
+TODO: Link to pages with more detail.
 
-* Write a +build.gradle+ file for your modules (call it A) which lists
-** the dependency modules needed by A, each with its own version (for example, B:1.0 and C:1.5);
+== gloss:gradle[] Module Concepts
+
+
+
+* modules at all
+* module IDs
+* dependencies
+* configurations
+
+
+== gloss:gradle[] and the gloss:holygradle[]
+
+The gloss:holygradle[] provides a way to publish and use pre-built and pre-packaged software
+gloss:module[]s for building libraries and applications.  It is designed for tools like C++, HTML,
+and JavaScript which do not provide their own module packaging system and for which the built
+output can have a large number of files.  (In contrast, Java and .NET have their own packaging
+systems, and only a small number of output files per module).  A packaged gloss:module[] may be a
+library, web component, build tool, end-user application, test data set, or any other collection
+of files which are useful for developing software components.
+
+=== Basic Modular Development Process
+
+The basic approach for developing with gloss:gradle[] is as follows.
+
+* Write a +build.gradle+ file for your module (call it A) which lists
+** the modules needed by A (its _dependencies_), each with its own version (for example, B:1.0 and C:1.5);
 ** the locations for downloading those dependencies;
 ** the files to publish for A;
 ** the location to publish A.
@@ -31,24 +53,65 @@ is as follows.
 * Build and test A.
 * Run gloss:gradle[] to publish A.
 
+Modules may be published by groups in the same organisation, or by third parties.  For this reason,
+a gloss:module[] identifier actually has three parts: _group_ (also called _organisation_), _name_,
+and _version_.
 
-////
-[graphviz,overview_typical_gradle_usage.svg,dot,svg]
-////
+The downloading and publishing of modules in the above example could look like this, where an arrow
+means "file transfer".  The group parts of the module IDs are omitted for simplicity.
 
-.Typical usage of gloss:gradle[]
+.Basic view of using gloss:gradle[]
 [caption="Figure {counter:figureindex}: "]
-[plantuml,overview_typical_gradle_usage.png,png]
+[graphviz,overview_basic_gradle_use.svg,dot,svg]
 ----
-User -> (Start)
-User --> (Use the application) : simple label
+digraph {
+    subgraph servers {
+        servers_source[shape=point,margin="0.0",style=invis]
+        servers_sink[shape=point,margin="0.0",style=invis]
+        servers_source -> {
 
-:Main Admin: ---> (Use the application) : This is\nyet another\nlabel
+            subgraph cluster_server1 {
+                label=server_1
+                s1_repo1 [label="repo1"]
+            }
+            subgraph cluster_server2 {
+                label=server_2
+                s2_repo2a [label="repo2a"]
+                s2_repo2b [label="repo2b"]
+            }
+
+        } -> servers_sink [style=invis,minlen=0]
+    }
+    subgraph clients {
+        clients_source[shape=point,margin="0.0",style=invis]
+        clients_sink[shape=point,margin="0.0",style=invis]
+        clients_source -> {
+
+            subgraph cluster_pc1 {
+                label=team_A_dev_pc
+                workspace_A [label="workspace\nfor A", shape=folder]
+            }
+            subgraph cluster_pc2 {
+                label=team_C_dev_pc
+                workspace_C [label="workspace\nfor C", shape=folder]
+            }
+
+        } -> clients_sink [style=invis,minlen=0]
+    }
+    servers_sink -> clients_source [style=invis]
+
+    s1_repo1 -> workspace_A [label="B:1.0"]
+    s2_repo2a -> workspace_A [label="C:1.5"]
+    s2_repo2a -> workspace_C [label="C:1.5", dir=back]
+    s2_repo2b -> workspace_A [label="A:2.1", dir=back]
+}
 ----
 
-For Java-based modules, gloss:gradle[] may also be used to build and test, and the "files to publish"
-for A may be a single JAR file.  The dependencies for A are provided to the Java compiler on the
-command line, normally one JAR file per dependency.
+=== gloss:holygradle[] Modules
+
+For Java-based modules, gloss:gradle[] may also be used to build and test, and the "files to
+publish" for A may be a single JAR file.  The dependencies for A are provided to the Java compiler
+on the command line, normally one JAR file per dependency.
 
 For languages like C++, each module may provide many files -- header files, static and dynamic
 libraries, resources, and so on.  Also, some of these files may have variants such as for "release"
@@ -56,6 +119,92 @@ and "debug" mode, or for 32-bit and 64-bit platforms.  The basic extension which
 gloss:holygradle[] provides is to collect files into one or more ZIP files when publishing, and
 unzip those files when dependencies are downloaded.
 
+In the Java world, binary modules often have a matching source module, containing the same version
+of the source code, for example for debugging use.  Java IDEs are often built to automatically download source published in this way.  For C++ applications on Windows, the Visual Studio IDE
+instead downloads source from a Microsoft Symbol Server.  Neither the gloss:holygradle[] nor
+gloss:artifactory[] include special support for this.  However, the gloss:holygradle[] automatically
+adds a +build_info+ folder to each module, which has a reference to the source code location and
+revision.
+
+include::{localDoc}/overview_source_access.ascinc[]
+
+=== Module Dependencies
+
+Each module also contains metadata which describes its dependencies on other modules.  For the
+gloss:holygradle[] this is an +ivy.xml+ file (a format from a similar tool, gloss:ivy[]).  If
+another team writes a new module N which depends on A then, when gloss:gradle[] fetches A, it will
+also fetch the correct versions of B and C, the dependencies of A.  You can view this as follows,
+where an arrow means "depends on".
+
+.Basic view of module dependencies
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_modules_1.svg,dot,svg]
+--
+digraph {
+    rankdir=LR;
+    node [shape=box];
+
+    A [label="com.foo.teamA:A:2.1"]
+    B [label="org.other:B:1.0"]
+    C [label="com.foo.teamC:C:1.5"]
+    N [label="com.foo.teamA:N:0.1"]
+    A -> B
+    A -> C
+    N -> A
+}
+--
+
+== gloss:artifactory[]
+
+gloss:artifactory[] is a web service for storing modules which are published using tools such as
+gloss:gradle[].  The simplest view of it is "version control for binaries" or "FTP / file share with
+history".  However, it has more features and some standards to follow, described in this section.
+
+=== Repositories
+
+An gloss:artifactory[] server instance does not allow users to store files in any structure they
+choose.  It stores modules in named collections, called gloss:repositories[].  These can only be
+created by server administrators.  Within each repository (or "repo"), the files for each module are
+in a three-level folder structure: group, then name, then version.
+
+There are three kinds of repository on a server: local, remote, and virtual.
+
+Local:: Usually named +_something_-local+, these contain artifacts whose contents are managed by that server.  The word "local" does *not* mean "only visible within one organisation" -- visibility depends on permissions, and visibility to other organisations depends on network configuration.
+Remote:: Always named +_something_-cache+, each contains local copies of artifacts automatically cached from a repo on another server.  Cached files may be downloaded on demand or in advance, and may be automatically deleted, depending on server setup.
+Virtual:: Any other naming is a virtual repo.  These point to one or more other repos, using a list configured by admins.  Requests for artifacts from these repos will search the list in order.
+
+Usually a server admin will set up one or more virtual repos for a team which includes all the local and remote repos they need.  This is convenient for the team, because they only need to list one repo in their +build.gradle+ file.  It is also important for admins, if they need to change repository configuration in future, for example, to change permissions or backup processes.  When
+they make such changes they can also change the virtual repo lists, so that all requests to the virtual repo work as before.
+
+[IMPORTANT]
+--
+You can think of virtual repos like "interfaces", and local and remote repos like "implementation".
+You should always set up your +build.gradle+ scripts to
+
+* get dependencies from a virtual repo (so that admins can re-arrange the other repos); and
+* publish to a local repo (because you can't publish to the other two).
+--
+
+=== Access Control
+
+gloss:artifactory[] has access control, so different users may have different permissions to read
+or modify a repository.  The gloss:holygradle[] includes a feature to keep a developer's
+gloss:artifactory[] password securely in the gloss:credential-manager[], so that it can log in
+automatically without storing passwords in build scripts.
+
+=== Module Version Lifetimes
+
+An important question which gloss:artifactory[] cannot fully answer is, after a version of a 
+module is published, when can it be deleted?  Official release versions may need to be kept for
+many years but often teams also make temporary versions, and delete them to save disk space.
+
+A common approach is to put long-term and temporary releases in different repositories:
++_something_-release-local+ for "permanent" versions, and +_something_-integration-local+ for
+temporary ones.  The gloss:holygradle[] provides a plugin for deleting older versions of modules
+using date ranges and other rules, and it allows different rules for each repository.  Typically
+this plugin would be run periodically using a tool like gloss:Jenkins[].
+
+TODO: promotion
 
     Approach
         General idea
@@ -72,10 +221,12 @@ unzip those files when dependencies are downloaded.
 
 TODO: Link to requirements (and rejected solutions?)
 
-TODO: http://localwiki/Gradle#What_is_it.3F (intro to tools)
+DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)
+
+TODO: http://localwiki/Gradle#What_is_it.3F (GradleConfigurations.ppt, Gradle_High_Level_Map.pptx (brief plugin/package list))
 
 TODO: http://localwiki/Gradle#Getting_Started (pictorial overviews)
 
-TODO: http://localwiki/Artifactory#Repository_Types (repo types)
+DONE: http://localwiki/Artifactory#Repository_Types (repo types)
 
 include::{localDoc}/overview_artifactory.ascinc[]

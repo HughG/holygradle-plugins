@@ -13,6 +13,8 @@ include::sitemap.ascinc[]
 
 This page ... *TODO* 
 
-TODO: http://localwiki/Gradle#What_is_it.3F (link to release notes)
+TODO: http://localwiki/Gradle#What_is_it.3F (link to release notes, gradle_what_where_how.xlsx, Gradle_High_Level_Map.pptx (list of plugins))
 
 TODO: http://localwiki/Artifactory#HTTPS_Access (details of explicit setup -- some bits local, some general)
+
+TODO: http://localwiki/Gradle_Cookbook
