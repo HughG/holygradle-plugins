@@ -18,7 +18,7 @@ void initializeBuildWebsiteTask(
 
     ConfigurableFileTree otherInputs = fileTree(project.WEBSITE_DIR) {
         include "**/*.conf"
-        include "**/*.ascinc"
+        include "sitemap.ascinc"
         include "docinfo.html"
     }
     // Note that we can only build "*.asciidoc" files in the top-level folder, not in the "local" sub-folder, for a few
@@ -42,8 +42,12 @@ void initializeBuildWebsiteTask(
             (options.quickly ? 'Quickly' : '')
 
         Task ascTask = project.task(ascTaskName) { Task t ->
+            ConfigurableFileTree includeFiles = fileTree(project.WEBSITE_DIR) {
+                include "**/${ascBase}*.ascinc"
+            }
 
             t.inputs.files otherInputs
+            t.inputs.files includeFiles
             t.inputs.file asc
             t.outputs.file ascOut
 
@@ -60,14 +64,14 @@ void initializeBuildWebsiteTask(
                 def baseArgs = ["/c", "make-asciidoc.bat"]
                 def buildQuicklyArgs = options.quickly ? ['"-a source-highlighter=none"'] : []
                 def buildLocalArgs = options.local ? ['"-a localDoc=local"'] : []
+                def loggingArgs = (project.logger.isEnabled(LogLevel.INFO)) ? ['-v'] : []
                 def filenameArgs = [
-                    "-v",
                     "-o", "${asciidocOutputSubdir}/${ascOutJustFileName}", "${asc.name}"
                 ]
                 exec { ExecSpec e ->
                     e.workingDir project.WEBSITE_DIR
                     e.executable "cmd.exe"
-                    e.args = baseArgs + buildQuicklyArgs + buildLocalArgs + filenameArgs
+                    e.args = baseArgs + buildQuicklyArgs + buildLocalArgs + loggingArgs + filenameArgs
                 }
             }
         }
