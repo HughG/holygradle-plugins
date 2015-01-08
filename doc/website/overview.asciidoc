@@ -11,51 +11,91 @@
 
 include::sitemap.ascinc[]
 
-gloss:artifactory[] is a structured store for software modules and gloss:gradle[] is a tool which
-helps you package software gloss:module[]s and transfer them to and from such a store. 
-(gloss:gradle[] also has many other features which are not detailed in this guide.)  The
-gloss:holygradle[] is a set of plugins for gloss:gradle[] which extend it for developing modules
-which contain a large number of files when built (such as C++ libraries or web applications) and
-for working under Windows.  This section gives a short introduction to their main features.
+gloss:artifactory[] is a shared, structured store for software modules and gloss:gradle[] is a
+tool which helps you package software gloss:module[]s and transfer them to and from such a store. 
+(gloss:gradle[] also has many other features which are not detailed in this guide.)
+
+The gloss:holygradle[] is a set of plugins for gloss:gradle[] which extend it for 
+
+* developing modules which contain a large number of files when built (such as C++ libraries or
+web applications);
+* working with multiple source code repositories; and
+* working under Windows.
+
+This section gives a short introduction to the main concepts and features.
 
 TODO: Link to pages with more detail.
 
 == gloss:gradle[] Module Concepts
 
+In gloss:gradle[] terms, a published gloss:module[] is a collection of files (which gloss:gradle[]
+calls gloss:artifact[]s), plus metadata which identifies the module and describes how it depends
+on other modules.  Modules may be published by many groups in different organisations, so a
+module identifier has three parts: _group_ (also called _organisation_), _name_, and _version_.
+As an easy way to avoid conflicts, the group string often includes the reverse domain name of the
+organisation, in the Java style; for example, +com.mycorp.teamA+.
 
+Modules are stored in gloss:repositories[], which are usually on a shared server but can also be
+on the local file system.  When a developer uses gloss:gradle[] to download a module, the
+dependencies for that module are automatically also downloaded.  gloss:gradle[] will check that
+all versions are consistent, even if the same dependency is requested by several different
+libraries.
 
-* modules at all
-* module IDs
-* dependencies
-* configurations
+A module may contain several artifacts for different aspects of the same software component, if
+they are needed in different contexts.  For example, one part may be for normal runtime use and
+another for debugging; or it might be a communication library with separate client and server
+parts.  In a gloss:gradle[] module these parts are called gloss:configuration[]s.  One
+configuration in a module can extend (include) other configurations to share artifacts.  For
+example, the client and server parts of a communication library may need to share some definitions.
 
+Each part may need different sets of other modules; therefore, each configuration has its own
+collection of dependencies.  When we say "the dependencies of a module" we really mean "the
+dependencies of the configurations of a module".
+
+The relationships between these concepts can be viewed as follows.
+
+.gloss:gradle[] module concept relationships
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_module_concepts.svg,dot,svg]
+--
+digraph {
+    node [shape=box]
+    edge [labeldistance=1.5]
+
+    M [label="module"]
+    I [label="ID"]
+    C [label="configuration"]
+    A [label="artifact", shape=note]
+    M -> I [label="has", taillabel="1", headlabel="1"]
+    M -> C [label="has", taillabel="1", headlabel="*"]
+    C -> C [label="extends", taillabel="1", headlabel="*", tailport=sw, headport=nw]
+    C -> A [label="has", taillabel="1", headlabel="*"]
+    C -> M [label="depends on", taillabel="*", headlabel="*", tailport=ne, headport=se]
+}
+--
 
 == gloss:gradle[] and the gloss:holygradle[]
 
 The gloss:holygradle[] provides a way to publish and use pre-built and pre-packaged software
-gloss:module[]s for building libraries and applications.  It is designed for tools like C++, HTML,
-and JavaScript which do not provide their own module packaging system and for which the built
-output can have a large number of files.  (In contrast, Java and .NET have their own packaging
-systems, and only a small number of output files per module).  A packaged gloss:module[] may be a
-library, web component, build tool, end-user application, test data set, or any other collection
-of files which are useful for developing software components.
+gloss:module[]s produced with tools like C++, HTML, and JavaScript.  These tools do not provide
+their own module packaging system and their output form can have a large number of files.  (In
+contrast, Java and .NET have their own packaging systems, and only a small number of output files
+per module).  A packaged gloss:module[] may be a library, web component, build tool, end-user
+application, test data set, or any other collection of files which are useful for developing software components.
 
 === Basic Modular Development Process
 
 The basic approach for developing with gloss:gradle[] is as follows.
 
 * Write a +build.gradle+ file for your module (call it A) which lists
-** the modules needed by A (its _dependencies_), each with its own version (for example, B:1.0 and C:1.5);
+** the configurations of A;
+** the modules needed by each configuration (its _dependencies_), each with its own version (for example, B:1.0 and C:1.5);
 ** the locations for downloading those dependencies;
-** the files to publish for A;
+** the artifacts to publish for each configuration of A;
 ** the location to publish A.
 * Run gloss:gradle[] to download the dependencies.
 * Build and test A.
 * Run gloss:gradle[] to publish A.
-
-Modules may be published by groups in the same organisation, or by third parties.  For this reason,
-a gloss:module[] identifier actually has three parts: _group_ (also called _organisation_), _name_,
-and _version_.
 
 The downloading and publishing of modules in the above example could look like this, where an arrow
 means "file transfer".  The group parts of the module IDs are omitted for simplicity.
@@ -107,34 +147,11 @@ digraph {
 }
 ----
 
-=== gloss:holygradle[] Modules
+The transferred files also include a metadata file describing the module.  For the
+gloss:holygradle[] this is an +ivy.xml+ file (a format from a similar tool, gloss:ivy[]).  
 
-For Java-based modules, gloss:gradle[] may also be used to build and test, and the "files to
-publish" for A may be a single JAR file.  The dependencies for A are provided to the Java compiler
-on the command line, normally one JAR file per dependency.
-
-For languages like C++, each module may provide many files -- header files, static and dynamic
-libraries, resources, and so on.  Also, some of these files may have variants such as for "release"
-and "debug" mode, or for 32-bit and 64-bit platforms.  The basic extension which the
-gloss:holygradle[] provides is to collect files into one or more ZIP files when publishing, and
-unzip those files when dependencies are downloaded.
-
-In the Java world, binary modules often have a matching source module, containing the same version
-of the source code, for example for debugging use.  Java IDEs are often built to automatically download source published in this way.  For C++ applications on Windows, the Visual Studio IDE
-instead downloads source from a Microsoft Symbol Server.  Neither the gloss:holygradle[] nor
-gloss:artifactory[] include special support for this.  However, the gloss:holygradle[] automatically
-adds a +build_info+ folder to each module, which has a reference to the source code location and
-revision.
-
-include::{localDoc}/overview_source_access.ascinc[]
-
-=== Module Dependencies
-
-Each module also contains metadata which describes its dependencies on other modules.  For the
-gloss:holygradle[] this is an +ivy.xml+ file (a format from a similar tool, gloss:ivy[]).  If
-another team writes a new module N which depends on A then, when gloss:gradle[] fetches A, it will
-also fetch the correct versions of B and C, the dependencies of A.  You can view this as follows,
-where an arrow means "depends on".
+Ignoring the detail of configurations, the relationships between these modules is as follows,
+where an arrow means "depends on".  
 
 .Basic view of module dependencies
 [caption="Figure {counter:figureindex}: "]
@@ -147,12 +164,236 @@ digraph {
     A [label="com.foo.teamA:A:2.1"]
     B [label="org.other:B:1.0"]
     C [label="com.foo.teamC:C:1.5"]
+    A -> B
+    A -> C
+}
+--
+
+Suppose another team creates a new module N which uses A and C, giving the dependency graph
+below.  gloss:gradle[] will automatically download B as well, and will check that the version of
+C is consistent.
+
+.More complex module dependencies
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_modules_2.svg,dot,svg]
+--
+digraph {
+    rankdir=LR;
+    node [shape=box];
+
+    A [label="com.foo.teamA:A:2.1"]
+    B [label="org.other:B:1.0"]
+    C [label="com.foo.teamC:C:1.5"]
     N [label="com.foo.teamA:N:0.1"]
     A -> B
     A -> C
     N -> A
+    N -> C
 }
 --
+
+=== gloss:holygradle[] Modules
+
+The gloss:holygradle[] plugins add several features to processes of fetching and publishing modules.
+
+==== Packaged Artifacts
+
+The artifacts of Java-based modules are often only one or two JAR files.  To build a module, the
+file names of these JAR dependencies are simply passed to the Java compiler on the command line.
+
+For languages like C++, each module may provide many files -- header files, static and dynamic
+libraries, resources, and so on.  Also, some of these files may have variants such as for "release"
+and "debug" mode, or for 32-bit and 64-bit platforms.  To build such a module, the file names
+from its dependencies are often too many to pass on a command line, and compilers expect to get a
+list of folders to search for header files etc.
+
+The basic extension which the gloss:holygradle[] provides is to collect files into one or more
+ZIP files when publishing, and unzip those files when dependencies are downloaded.  It also changes
+the gloss:gradle[] syntax to specify a relative folder path for each dependency, and the unzipped
+files appear at that location in your gloss:workspace[].  The compiler can then be configured to
+look for the dependency files at those locations.
+
+==== Source Dependencies
+
+In gloss:subversion[] and some other source control systems, a very simple way to handle
+dependencies is to add them as "externals".  This has many disadvantages -- for example, there is
+no easy way use the same external at more than one place in the graph, as in the previous example
+where module C is used by both A and N.  However, it is useful for combining source code from
+multiple repositories, for cases where several components are always built together, which is not
+well supported by some other systems such as gloss:mercurial[].
+
+The gloss:holygradle[] adds the notion of "source dependencies" to gloss:gradle[].  "Downloading"
+a source dependency will check it out from source control.  When the original module is published,
+its source dependencies will also be published, as separate modules.  The metadata will be
+automatically filled in to describe the connections between these modules.
+
+==== Source Reference Information
+
+In the Java world, binary modules often have a matching source module, containing the same version
+of the source code, for example for debugging use.  Java IDEs are often built to automatically
+download source published in this way.  For C++ applications on Windows, the Visual Studio IDE
+instead downloads source from a Microsoft Symbol Server.  Neither the gloss:holygradle[] nor
+gloss:artifactory[] include special support for this.  However, the gloss:holygradle[] automatically
+adds a +build_info+ folder to each module, which has a reference to the source code location and
+revision.
+
+include::{localDoc}/overview_source_access.ascinc[]
+
+=== gloss:holygradle[] Plugins
+
+The gloss:holygradle[] is implemented as a set of gloss:gradle[] plugins, plus a custom distribution
+of gloss:gradle[] (for bootstrapping and debugging the plugins).
+
+TODO: Link to example of how you cause them to be used.
+
+DONE: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home
+
+The usage relationship between the plugins, the custom distribution, and some other related tools,
+is as follows.
+
+.gloss:holygradle[] component dependencies
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_holygradle_components.svg,dot,svg]
+--
+digraph {
+    ranksep=0.4
+    fontsize=12
+    node [shape=box, margin="0.04,0.04", height=0.3, fontsize=12]
+    edge [fontsize=12]
+    compound=true
+
+    subgraph cluster_project {
+        label="Your project"
+
+        build [label="build.gradle", shape=note]
+        wrapper [label="Gradle\nwrapper", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+    }
+
+    subgraph cluster_plugins {
+        label="Holy Gradle Plugins"
+
+        { rank=same
+            afym [label="artifactory-manager"]
+            stamper [color=grey, fontcolor=grey, style=dashed]
+        } -> { rank=same
+            intrepid
+            myc [label="my-credentials"]
+            devenv [color=grey, fontcolor=grey, style=dashed]
+            ut [label="unit-test", color=grey, fontcolor=grey, style=dashed]
+        } -> { rank=same
+            cgc [label="custom-gradle-core"]
+            cred_store [label="credential-store.exe"]
+        } [style=invis]
+
+        intrepid -> cgc [headport=n]
+        myc -> cgc [headport=n]
+        devenv -> cgc [headport=n]
+        ut -> cgc [headport=n]
+        intrepid -> cred_store
+        myc -> cred_store
+    }
+
+    build -> afym [lhead=cluster_plugins, label="specifies"]
+    build -> wrapper [label="input to", style=dashed]//, minlen=0]
+
+    custom_gradle [label="custom-gradle"]
+    wrapper -> custom_gradle [label="downloads\n& runs"]
+    custom_gradle -> devenv [lhead=cluster_plugins, label="downloads", constraint=false]
+
+    { rank=same
+        Java [label="Java 7", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+        Windows [label="Windows 7", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+        VS [label="Visual Studio", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+    }
+
+    custom_gradle -> Java
+    { cred_store intrepid } -> Windows
+    devenv -> VS
+
+    wrapper -> afym [ltail=cluster_project, lhead=cluster_plugins, style=invis] // just for layout
+}
+--
+
+==== Custom Gradle Core
+
+The link:plugin-custom-gradle-core.html[] is used by most of the other gloss:holygradle plugins.
+
+This plugin supports the following.
+
+* Some useful standard tasks.
+* +prerequisites+ syntax to help you specify prerequisites for difficult cases where a dependency
+can't be simply unzipped into a folder and must be manually installed, e.g., Microsoft Visual
+Studio.
+
+==== Intrepid
+
+The link:plugin-intrepid.html[] supports the following.
+
+* Source code dependencies
+  * Retrieving source code repositories from gloss:subversion[] or gloss:mercurial[].
+  * Caching gloss:subversion[] and gloss:mercurial[] credentials in the gloss:credential-manager[].
+  * Specifying dependency metadata when publishing a module with its source code dependencies.
+  * Overriding a source code dependency and using already-published versions of that
+module instead.
+* Packed dependencies
+  * Retrieving dependencies which are ZIP files and unpacking them into your workspace.
+  * Unzipping to a per-user cache and creating a symlink to there from your workspace, to save space
+when multiple workspaces have the same dependencies.
+  * Explicit creation of extra symlinks within workspace if required.
+  * Control of folder naming to allow multiple versions of the same component.
+* Publishing
+  * Creating "gloss:package[]d artifacts" (that is, ZIP files).
+  * Uploading to gloss:ivy[] format repository.
+
+==== My Credentials
+
+The link:plugin-my-credentials.html[] supports the following.
+
+* Securely storing credentials using the Windows Credential Manager, and using them in a
++build.gradle+ script.
+* Displaying a dialog box to request credentials from the user.
+  * Time-out to prevent the dialog box from causing an automated build to hang.
+
+==== Artifactory Manager
+
+The link:plugin-artifactory-manager.html[] supports the following.
+
+* Deleting artifacts from an Artifactory server according to rules such as:
+  * delete anything older than X days/weeks/months; or
+  * delete anything older than Y days/weeks/months but keep one version per day/week/month.
+
+==== DevEnv
+
+WARNING: This plugin is not actively maintained.  We recommend you do not use it.
+
+The link:plugin-devenv.html[] supports the following.
+
+* Invoking DevEnv to build and clean a Visual Studio solution.
+* Building each module only once, even if multiple other source modules depend on it.
+* Specifying a solution file.
+* Specifying which version of DevEnv to use.
+ 
+==== Unit-Test
+
+WARNING: This plugin is not actively maintained.  We recommend you do not use it.
+
+The link:plugin-unit-test.html[] supports the following.
+
+* Syntax for defining your unit test processes.
+* Automatically creating tasks to run your unit test processes.
+* In a multi-module build, running tests in order according module dependencies, or running them for
+one project independently.
+* Syntax to define unit test 'flavours', defaulting to `Debug' and `Release`.
+  * Automatically replacing strings `<flavour>` and `<f>` in test definitions.
+ 
+==== Stamper
+
+WARNING: This plugin is not actively maintained.  We recommend you do not use it.
+
+The link:plugin-stamper.html[] supports the following.
+
+* 'Stamping' information (such as version numbers) into text files.
+* Syntax for defining which files to stamp and how to stamp them (using regular expressions).
 
 == gloss:artifactory[]
 
@@ -204,17 +445,22 @@ temporary ones.  The gloss:holygradle[] provides a plugin for deleting older ver
 using date ranges and other rules, and it allows different rules for each repository.  Typically
 this plugin would be run periodically using a tool like gloss:Jenkins[].
 
-TODO: promotion
+=== Promotion
 
-    Approach
-        General idea
-        Tools involved
-            deployment diagram
-    Concepts & Terms (intro)
-        General
-        Artifactory
-            types of repository
-        Gradle
+A common development process called _continuous integration_ involves building and testing a module
+regularly, for example, any time a new source code change is committed.  When a build passes all
+tests, it can be used as a release candidate.
+
+When a repository server like gloss:artifactory[] is involved, it is a good idea to publish each
+build to a temporary repository.  This tests the publish process, and also allows the builds to
+be downloaded from gloss:artifactory[] for manual testing.  To release a successful build, you
+could re-run the publish process targeting a repository which will store the module permanently.
+However, gloss:artifactory[] provides a quick way to copy or move a module to another repository on
+the same server.
+
+TODO: Link to doc on how to do more complex cases with dependencies which also need to be promoted.
+
+
         Holy Gradle
             list of plugins
 
@@ -223,7 +469,7 @@ TODO: Link to requirements (and rejected solutions?)
 
 DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)
 
-TODO: http://localwiki/Gradle#What_is_it.3F (GradleConfigurations.ppt, Gradle_High_Level_Map.pptx (brief plugin/package list))
+DONE: http://localwiki/Gradle#What_is_it.3F (GradleConfigurations.ppt, Gradle_High_Level_Map.pptx (brief plugin/package list))
 
 TODO: http://localwiki/Gradle#Getting_Started (pictorial overviews)
 

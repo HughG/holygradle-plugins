@@ -14,6 +14,8 @@ Graphviz for Cygwin comes from <http://cygwinports.org/>.
 
 include::sitemap.ascinc[]
 
+TODO: http://localwiki/Gradle#What_is_it.3F (GradleConfigurations.ppt)
+
 ////
 NOTE: to self ... don't duplicate stuff from https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/,
 if possible.
