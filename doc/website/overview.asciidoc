@@ -74,6 +74,69 @@ digraph {
 }
 --
 
+== gloss:artifactory[]
+
+gloss:artifactory[] is a web service for storing modules which are published using tools such as
+gloss:gradle[].  The simplest view of it is "version control for binaries" or "FTP / file share with
+history".  However, it has more features and some standards to follow, described in this section.
+
+=== Repositories
+
+An gloss:artifactory[] server instance does not allow users to store files in any structure they
+choose.  It stores modules in named collections, called gloss:repositories[].  These can only be
+created by server administrators.  Within each repository (or "repo"), the files for each module are
+in a three-level folder structure: group, then name, then version.
+
+There are three kinds of repository on a server: local, remote, and virtual.
+
+Local:: Usually named +_something_-local+, these contain artifacts whose contents are managed by that server.  The word "local" does *not* mean "only visible within one organisation" -- visibility depends on permissions, and visibility to other organisations depends on network configuration.
+Remote:: Always named +_something_-cache+, each contains local copies of artifacts automatically cached from a repo on another server.  Cached files may be downloaded on demand or in advance, and may be automatically deleted, depending on server setup.
+Virtual:: Any other naming is a virtual repo.  These point to one or more other repos, using a list configured by admins.  Requests for artifacts from these repos will search the list in order.
+
+Usually a server admin will set up one or more virtual repos for a team which includes all the local and remote repos they need.  This is convenient for the team, because they only need to list one repo in their +build.gradle+ file.  It is also important for admins, if they need to change repository configuration in future, for example, to change permissions or backup processes.  When
+they make such changes they can also change the virtual repo lists, so that all requests to the virtual repo work as before.
+
+[IMPORTANT]
+--
+You can think of virtual repos like "interfaces", and local and remote repos like "implementation".
+You should always set up your +build.gradle+ scripts to
+
+* get dependencies from a virtual repo (so that admins can re-arrange the other repos); and
+* publish to a local repo (because you can't publish to the other two).
+--
+
+=== Access Control
+
+gloss:artifactory[] has access control, so different users may have different permissions to read
+or modify a repository.  The gloss:holygradle[] includes a feature to keep a developer's
+gloss:artifactory[] password securely in the gloss:credential-manager[], so that it can log in
+automatically without storing passwords in build scripts.
+
+=== Module Version Lifetimes
+
+An important question which gloss:artifactory[] cannot fully answer is, after a version of a 
+module is published, when can it be deleted?  Official release versions may need to be kept for
+many years but often teams also make temporary versions, and delete them to save disk space.
+
+A common approach is to put long-term and temporary releases in different repositories:
++_something_-release-local+ for "permanent" versions, and +_something_-integration-local+ for
+temporary ones.  The gloss:holygradle[] provides a plugin for deleting older versions of modules
+using date ranges and other rules, and it allows different rules for each repository.  Typically
+this plugin would be run periodically using a tool like gloss:Jenkins[].
+
+=== Promotion
+
+A common development process called _continuous integration_ involves building and testing a module
+regularly, for example, any time a new source code change is committed.  When a build passes all
+tests, it can be used as a release candidate.
+
+When a repository server like gloss:artifactory[] is involved, it is a good idea to publish each
+build to a temporary repository.  This tests the publish process, and also allows the builds to
+be downloaded from gloss:artifactory[] for manual testing.  To release a successful build, you
+could re-run the publish process targeting a repository which will store the module permanently.
+However, gloss:artifactory[] provides a quick way to copy or move a module to another repository on
+the same server.
+
 == gloss:gradle[] and the gloss:holygradle[]
 
 The gloss:holygradle[] provides a way to publish and use pre-built and pre-packaged software
@@ -404,69 +467,6 @@ The link:plugin-stamper.html[] supports the following.
 
 * 'Stamping' information (such as version numbers) into text files.
 * Syntax for defining which files to stamp and how to stamp them (using regular expressions).
-
-== gloss:artifactory[]
-
-gloss:artifactory[] is a web service for storing modules which are published using tools such as
-gloss:gradle[].  The simplest view of it is "version control for binaries" or "FTP / file share with
-history".  However, it has more features and some standards to follow, described in this section.
-
-=== Repositories
-
-An gloss:artifactory[] server instance does not allow users to store files in any structure they
-choose.  It stores modules in named collections, called gloss:repositories[].  These can only be
-created by server administrators.  Within each repository (or "repo"), the files for each module are
-in a three-level folder structure: group, then name, then version.
-
-There are three kinds of repository on a server: local, remote, and virtual.
-
-Local:: Usually named +_something_-local+, these contain artifacts whose contents are managed by that server.  The word "local" does *not* mean "only visible within one organisation" -- visibility depends on permissions, and visibility to other organisations depends on network configuration.
-Remote:: Always named +_something_-cache+, each contains local copies of artifacts automatically cached from a repo on another server.  Cached files may be downloaded on demand or in advance, and may be automatically deleted, depending on server setup.
-Virtual:: Any other naming is a virtual repo.  These point to one or more other repos, using a list configured by admins.  Requests for artifacts from these repos will search the list in order.
-
-Usually a server admin will set up one or more virtual repos for a team which includes all the local and remote repos they need.  This is convenient for the team, because they only need to list one repo in their +build.gradle+ file.  It is also important for admins, if they need to change repository configuration in future, for example, to change permissions or backup processes.  When
-they make such changes they can also change the virtual repo lists, so that all requests to the virtual repo work as before.
-
-[IMPORTANT]
---
-You can think of virtual repos like "interfaces", and local and remote repos like "implementation".
-You should always set up your +build.gradle+ scripts to
-
-* get dependencies from a virtual repo (so that admins can re-arrange the other repos); and
-* publish to a local repo (because you can't publish to the other two).
---
-
-=== Access Control
-
-gloss:artifactory[] has access control, so different users may have different permissions to read
-or modify a repository.  The gloss:holygradle[] includes a feature to keep a developer's
-gloss:artifactory[] password securely in the gloss:credential-manager[], so that it can log in
-automatically without storing passwords in build scripts.
-
-=== Module Version Lifetimes
-
-An important question which gloss:artifactory[] cannot fully answer is, after a version of a 
-module is published, when can it be deleted?  Official release versions may need to be kept for
-many years but often teams also make temporary versions, and delete them to save disk space.
-
-A common approach is to put long-term and temporary releases in different repositories:
-+_something_-release-local+ for "permanent" versions, and +_something_-integration-local+ for
-temporary ones.  The gloss:holygradle[] provides a plugin for deleting older versions of modules
-using date ranges and other rules, and it allows different rules for each repository.  Typically
-this plugin would be run periodically using a tool like gloss:Jenkins[].
-
-=== Promotion
-
-A common development process called _continuous integration_ involves building and testing a module
-regularly, for example, any time a new source code change is committed.  When a build passes all
-tests, it can be used as a release candidate.
-
-When a repository server like gloss:artifactory[] is involved, it is a good idea to publish each
-build to a temporary repository.  This tests the publish process, and also allows the builds to
-be downloaded from gloss:artifactory[] for manual testing.  To release a successful build, you
-could re-run the publish process targeting a repository which will store the module permanently.
-However, gloss:artifactory[] provides a quick way to copy or move a module to another repository on
-the same server.
 
 TODO: Link to doc on how to do more complex cases with dependencies which also need to be promoted.
 
