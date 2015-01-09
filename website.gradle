@@ -119,8 +119,10 @@ for (local in [false, true]) {
         from project.WEBSITE_DIR
         into websiteOutputDir
         include "asciidoc/**"
+        include "files/**"
         if (local) {
             it.include "local/asciidoc/**"
+            it.include "local/files/**"
         }
     }
 

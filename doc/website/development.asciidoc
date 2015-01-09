@@ -1,0 +1,17 @@
+:docinfo1:
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: master.css
+:toc2:
+:toclevels: 3
+:numbered:
+
+= Development
+
+include::sitemap.ascinc[]
+
+For basic instructions on how to develop the gloss:holygradle[] plugins and custom distribution,
+see the file link:https://bitbucket.org/nm2501/holy-gradle-plugins/src/tip/developer-readme.md[+developer-readme.md+] at the top level of the link:https://bitbucket.org/nm2501/holy-gradle-plugins/[Bitbucket repository].
+
+include::{localDoc}/development.ascinc[]

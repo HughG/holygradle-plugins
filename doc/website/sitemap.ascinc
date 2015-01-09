@@ -16,11 +16,11 @@ and Artifactory
         </ul>
     </li>
     <li><a href="support.html"></a>
-        <ul>
 <!--
+        <ul>
             <li><a href="troubleshooting.html"></a></li>
--->
         </ul>
+-->
     </li>
 <!--
     <li><a href="terminology.html"></a></li>
@@ -37,8 +37,11 @@ and Artifactory
         </ul>
     </li>
     <hr />
-    <li><a href="release_notes.html">Release Notes</a></li>
-    <li><a href="https://bitbucket.org/nm2501/holy-gradle-plugins/">Bitbucket Repo</a></li>
+    <li><a href="development.html"></a>
+        <ul>
+            <li><a href="release_notes.html">Release Notes</a></li>
+        </ul>
+    </li>
 </ul>
 </div>
 ++++

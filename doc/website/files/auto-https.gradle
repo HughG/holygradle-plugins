@@ -1,0 +1,44 @@
+/*
+    This script will upgrade some URLs in a Gradle build from "http:" to "https:" at runtime.
+
+    Add it to your build by passing it as an extra init script: "-I auto-https.gradle".
+*/
+
+import org.gradle.api.artifacts.repositories.*
+
+gradle.projectsLoaded { Gradle gradle ->
+
+    final String INIT_SCRIPT_NAME = buildscript.sourceFile.name
+
+    def replaceHttpInRepositoryUrls = { RepositoryHandler rh ->
+        // RepositoryHandler.all will call the closure on existing and later-added items.
+        rh.all { ArtifactRepository r ->
+            def urlRepo = r as IvyArtifactRepository ?: r as MavenArtifactRepository
+            if (urlRepo == null) {
+                return
+            }
+
+            URI url = urlRepo.url
+            if (url.scheme == "http") {
+                URI newUrl = new URI("https", url.schemeSpecificPart, url.fragment)
+                urlRepo.url = newUrl
+                logger.warn "${INIT_SCRIPT_NAME}: Replaced ${url} with ${newUrl}"
+            }
+        }
+    }
+
+    gradle.rootProject.allprojects { Project p ->
+        def repositoryHandlers = [p.repositories, p.buildscript.repositories]
+        repositoryHandlers.each { RepositoryHandler rh ->
+            replaceHttpInRepositoryUrls(rh)
+        }
+
+        // Also replace publishing URLs, if the intrepid plugin has added its publishing extension.
+        if (p.hasProperty("publishPackages")) {
+            p.publishPackages { RepositoryHandler rh ->
+                replaceHttpInRepositoryUrls(rh)
+            }
+        }
+    }
+
+}

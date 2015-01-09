@@ -13,17 +13,20 @@ include::sitemap.ascinc[]
 
 This page describes how to use gloss:artifactory[] and the gloss:holygradle[] for the first time.
 
-TODO: http://localwiki/Gradle#Getting_Started
+DONE: http://localwiki/Gradle#Getting_Started
 
-TODO: link to reference page info on explicit JVM HTTPS setup.
+DONE: http://localwiki/Artifactory#Explicit_Local_HTTPS_Setup
 
 == System Requirements
 
-Artifactory runs as a web service which can be accessed through any modern browser or with tools such as the Holy Gradle.  The easiest way to use it is through such tools.  The web interface is mainly useful for investigating problems.
+gloss:artifactory[] runs as a web service which can be accessed through any modern browser or
+with tools such as the gloss:holygradle[].  The easiest way to use it is through such tools.  The
+web interface is mainly useful for investigating problems.
 
-The Holy Gradle is a set of plugins for the gloss:gradle[] tool, which is a Java application.  They have only been tested on the following platform.
+The Holy Gradle is a set of plugins for the gloss:gradle[] tool, which is a Java application.
+They have only been tested on the following platform.
 
-* Windows 7
+* Windows 7 (and Windows Server 2008 R2)
 * Java 7 (JRE or JDK)
 
 
@@ -31,15 +34,23 @@ The Holy Gradle is a set of plugins for the gloss:gradle[] tool, which is a Java
 
 === Windows
 
-If you are an Administrator on your system, then you need to turn User Account Control off.  This is because the Holy Gradle plugins create symbolic links (gloss:symlink[]s), and Windows disables this by default for Administator accounts.
+If you are an Administrator on your system, then you need to turn User Account Control off.  This
+is because the gloss:holygradle[] plugins create gloss:symbolic-link[]s, and Windows disables
+this by default for Administrator accounts.
 
 === Java
 
-Install Java 7 on your system if it is not already installed--usually under +C:\Program Files\Java+.  Windows 7 comes with an older version of Java pre-installed, usually at +C:\Windows\System32\java.exe+.  To make sure that Gradle uses the correct version, do one of the following things.
+Install Java 7 on your system if it is not already installed--usually under +C:\Program
+Files\Java+.  Windows 7 comes with an older version of Java pre-installed, usually at
++C:\Windows\System32\java.exe+.  To make sure that Gradle uses the correct version, do one of the
+following things.
 
-. Set the +JAVA_HOME+ environment variable to the root folder of your Java 7 installation, for example, +C:\Program Files\Java\jre7+ or +C:\Program Files\Java\jdk1.7.0_55+.
+. Set the +JAVA_HOME+ environment variable to the root folder of your Java 7 installation, for
+example, +C:\Program Files\Java\jre7+ or +C:\Program Files\Java\jdk1.7.0_55+.
 
-. Make sure that the +bin+ folder in your Java install location is first on your +PATH+.  To check the versions of +java.exe+ on your path you can run +where java+, which lists them in order; for example:
+. Make sure that the +bin+ folder in your Java install location is first on your +PATH+.  To
+check the versions of +java.exe+ on your path you can run +where java+, which lists them in
+order; for example:
 +
 ----
 C:\Users\hughg>where java
@@ -47,10 +58,18 @@ C:\Program Files\Java\jre7\bin\java.exe
 C:\Windows\System32\java.exe
 ----
 
+NOTE: If you are setting up a continuous integration (or "autobuild") server, the version of Java
+used by the autobuild service (for example, gloss:jenkins[]) may not be the same as the one used
+when you log on as a normal user.  Also, if the service is written in Java and launches more Java
+processes, those may use a different Java installation.  To check or change the version in use,
+consult the autobuild software documentation.  A tool such as SysInternals Process Explorer can
+also be useful to check which Java executable a process is running.
 
 == Accessing Artifactory
 
-The first step is, of course, to find the web address of your local Artifactory server.  With a default Artifactory setup, the base URL will have the server name followed by +/artifactory/+. Browsing to this URL will show you any publically available modules, and allow you to log in.
+First find the web address of your local Artifactory server.  With a default Artifactory setup,
+the base URL will have the server name followed by +/artifactory/+. Browsing to this URL will
+show you any publicly available modules, and allow you to log in.
 
 ifndef::localDoc[]
 You must contact your site administrator to get login details and set up permissions.
@@ -59,30 +78,41 @@ endif::localDoc[]
 include::{localDoc}/first_steps_artifactory.ascinc[]
 
 
-== Running The Holy Gradle
+== Running the Holy Gradle
 
-=== Setting up a Gradle wrapper
+=== Setting up a Gradle Wrapper
 
-TODO: http://localwiki/Gradle#Gradle_Wrapper
+DONE: http://localwiki/Gradle#Gradle_Wrapper
 
-Although Gradle can be installed system-wide, usually you will add some "bootstrap" files to your project, known as a gloss:gradle-wrapper[].  The wrapper includes a batch file which will download a Gradle distribution if necessary, then run it using that download location, so you do not need to modify your path.  The wrapper files should be committed to the source control repository for each project which uses Gradle.  When you run the wrapper, it generates configuration files which should _not_ be added to source control, so you should
+Although Gradle can be installed system-wide, usually you will add some "bootstrap" files to your
+project, known as a gloss:gradle-wrapper[].  The wrapper includes a batch file which will
+download a Gradle distribution if necessary, then run it using that download location, so you do
+not need to modify your +PATH+.  The wrapper files should be committed to the source control
+repository for each project which uses Gradle.  When you run the wrapper, it generates
+configuration files which should _not_ be added to source control, so you should
 
 * download a wrapper,
 * unzip it in the root folder of your working copy,
 * add and commit the unzipped files to source control,
 * _then_ run the wrapper for the first time.
 
-The Gradle distribution, plus the dependencies for all your projects, are stored in a cache of downloaded and unpacked files in the Gradle User Home directory.  This defaults to `.gradle` in your home directory, but you can override the location by setting the +GRADLE_USER_HOME+ environment variable.  You may wish to move this if your home directory is on a small or slow drive.  Also, Gradle never clears out this cache: you must do so manually, from time to time.
+The Gradle distribution, plus the dependencies for all your projects, are stored in a cache of
+downloaded and unpacked files in the Gradle User Home directory.  This defaults to `.gradle` in
+your home directory, but you can override the location by setting the +GRADLE_USER_HOME+
+environment variable.  You may wish to move this if your home directory is on a small or slow
+drive.  Also, Gradle never clears out this cache: you must do so manually, from time to time.
 
 ifndef::localDoc[]
-There are no publicly available pre-built releases of the gloss:holygradle[], or custom gloss:gradle-wrapper[]s.  The source code contains a separate +wrapper-starter-kit+ project in a sub-folder, which can build such a custom Gradle wrapper.
+There are no publicly available pre-built releases of the gloss:holygradle[], or custom
+gloss:gradle-wrapper[]s.  The source code contains a separate +wrapper-starter-kit+ project in a
+sub-folder, which can build such a custom Gradle wrapper.
 endif::localDoc[]
 
 include::{localDoc}/first_steps_gradle_wrapper.ascinc[]
 
 === Running Gradle
 
-Once you have the wrapper unzipped in your project folder
+TODO: Once you have the wrapper unzipped in your project folder ...
 
 == Editing Gradle Files
 
