@@ -1,5 +1,23 @@
 import java.text.SimpleDateFormat
 
+
+project.ext.writeRepoInfo = { File repoDir, OutputStream os ->
+    exec {
+        executable = "hg"
+        args = ["paths", "default"]
+        standardOutput = os
+        workingDir = repoDir
+    }
+    (new PrintStream(os)).withStream { it.print(" ") }
+    exec {
+        executable = "hg"
+        args = ["id", "-ibt"]
+        standardOutput = os
+        workingDir = repoDir
+    }
+}
+
+
 /**
  * This task puts the Hg master repo URL and working directory version/branch/tags into a property and text file, which
  * feed into the packaging tasks for all sub-projects, so all build outputs are stamped with info on where they came
@@ -17,17 +35,7 @@ task setHgVersionInfo {
 
     doLast {
         new ByteArrayOutputStream().withStream { OutputStream os ->
-            exec {
-                executable = "hg"
-                args = ["paths", "default"]
-                standardOutput = os
-            }
-            (new PrintStream(os)).withStream { it.print(" ") }
-            exec {
-                executable = "hg"
-                args = ["id", "-ibt"]
-                standardOutput = os
-            }
+            writeRepoInfo(rootProject.projectDir, os)
 
             // Store both command outputs in one string with no line breaks.
             String infoWithoutDate = os.toString().replaceAll("[\\r\\n]", "")
@@ -50,6 +58,7 @@ task setHgVersionInfo {
                 }
             }
 
+            project.ext.hgVersion = rev
             project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
 
             Date dateFromInfo = rfc3339dateFormat.parse(project.hgVersionInfo.split().last())
@@ -66,6 +75,22 @@ task setHgVersionInfo {
             }
             project.hgVersionInfoFile.text = project.hgVersionInfo
         }
+
+        String hgLocalDocFullVersionInfo = project.releaseNoteInfo
+        final File localWebsiteDir = new File(project.WEBSITE_DIR, "local")
+        if (localWebsiteDir.exists()) {
+            new ByteArrayOutputStream().withStream { OutputStream os ->
+                final File localWebsiteRealDir = localWebsiteDir.toPath().toRealPath().toFile()
+                writeRepoInfo(localWebsiteRealDir, os)
+                // Store both command outputs in one string with no line breaks.
+                String infoWithoutDate = os.toString().replaceAll("[\\r\\n]", "")
+                String rev = infoWithoutDate.split()[1]
+                project.ext.hgLocalDocVersion = rev
+            }
+            hgLocalDocFullVersionInfo += " " + project.hgLocalDocVersion
+        }
+
+        project.ext.hgLocalDocFullVersionInfoURLEncoded = URLEncoder.encode(hgLocalDocFullVersionInfo, "UTF-8")
     }
 
     // Force setHgVersionInfo to always execute.  For tasks which depend on this, Gradle will

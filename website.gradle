@@ -55,15 +55,27 @@ void initializeBuildWebsiteTask(
                 // Clean the website before we build it, so we can be sure files weren't built with buildWebsiteQuickly
                 t.dependsOn "clean${namePart}Website"
             }
+            t.dependsOn "setHgVersionInfo"
 
             t.doLast {
                 File outputDir = new File(asciidocOutputDir)
                 if (!(outputDir.exists() || outputDir.mkdirs())) {
                     throw new RuntimeException("Failed to create ${asciidocOutputDir}")
                 }
-                def baseArgs = ["/c", "make-asciidoc.bat"]
+                // For some unknown reason, for the release info to appear in the footer, the attribute name must not
+                // contain '-' or uppercase, even though those are normally legal.  Sigh.
+                def baseArgs = [
+                    "/c", "make-asciidoc.bat",
+                    "\"-a hg_release_info='${project.releaseNoteInfo}'\""
+                ]
                 def buildQuicklyArgs = options.quickly ? ['"-a source-highlighter=none"'] : []
-                def buildLocalArgs = options.local ? ['"-a localDoc=local"'] : []
+                def buildLocalArgs = options.local ? [
+                    '"-a localDoc=local"',
+                    "\"-a local_hg_release_info='${project.hgLocalDocVersion}'\"",
+                    "\"-a local_hg_full_release_info_url_enc='${project.hgLocalDocFullVersionInfoURLEncoded}'\""
+                ] : [
+                    // Nothing
+                ]
                 def loggingArgs = (project.logger.isEnabled(LogLevel.INFO)) ? ['-v'] : []
                 def filenameArgs = [
                     "-o", "${asciidocOutputSubdir}/${ascOutJustFileName}", "${asc.name}"
