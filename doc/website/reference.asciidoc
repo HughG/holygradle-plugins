@@ -19,7 +19,7 @@ TODO: http://localwiki/Artifactory#HTTPS_Access (details of explicit setup -- so
 
 TODO: http://localwiki/Gradle_Cookbook
 
-Following is an expanded version of the diagram in the link:overview.html ...
+Following is an expanded version of the diagram in the link:overview.html[] ...
 
 .gloss:holygradle[] component dependencies
 [caption="Figure {counter:figureindex}: "]
@@ -28,9 +28,17 @@ Following is an expanded version of the diagram in the link:overview.html ...
 digraph {
     ranksep=0.4
     fontsize=12
-    node [shape=box, margin="0.04,0.04", height=0.3, fontsize=12]
+    node [shape=box, style=rounded, margin="0.04,0.04", height=0.3, fontsize=12]
     edge [fontsize=12]
     compound=true
+
+    subgraph key {
+        rank=same
+        key [label="Key:", shape=plaintext]
+        key_proj [label="Your source", color=navy, fontcolor=navy, style=""]
+        key_hg [label="Holy Gradle"]
+        key_ext [label="Third-party", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+    }
 
     subgraph cluster_project {
         label="Your project"
@@ -39,15 +47,15 @@ digraph {
         cluster_project_sink [shape=point,margin="0.0",style=invis]
         cluster_project_source -> {
 
-            //{ rank=same
-                build [label="build.gradle", shape=note]
-                gw [label="gw.bat", color=darkgreen, fontcolor=darkgreen, style=diagonals]
-            //}
+            build [label="build.gradle", shape=note, color=navy, fontcolor=navy]
+            gw [label="gw.bat", color=darkgreen, fontcolor=darkgreen, style=diagonals]
             wrapper [label="Gradle\nwrapper", color=darkgreen, fontcolor=darkgreen, style=diagonals]
 
         } -> cluster_project_sink [style=invis,minlen=0]
 
     }
+
+    key_proj -> build [style=invis]
 
     subgraph cluster_plugins {
         label="Holy Gradle Plugins"
@@ -58,12 +66,12 @@ digraph {
 
             { rank=same
                 afym [label="artifactory-manager"]
-                stamper [color=grey, fontcolor=grey, style=dashed]
+                stamper [color=grey, fontcolor=grey, style="dashed,rounded"]
             } -> { rank=same
                 intrepid
                 myc [label="my-credentials"]
-                devenv [color=grey, fontcolor=grey, style=dashed]
-                ut [label="unit-test", color=grey, fontcolor=grey, style=dashed]
+                devenv [color=grey, fontcolor=grey, style="dashed,rounded"]
+                ut [label="unit-test", color=grey, fontcolor=grey, style="dashed,rounded"]
             } -> { rank=same
                 cgc [label="custom-gradle-core"]
                 cred_store [label="credential-store.exe"]
