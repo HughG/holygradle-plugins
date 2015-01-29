@@ -17,8 +17,9 @@ This documentation is a guide to using the gloss:holygradle[] and gloss:artifact
 developing C++ and web applications in a modular way under Windows.  It assumes that you want to
 create modules for other projects to use, or use existing modules, but face the problem that there
 is currently no standard way to do this.  Together these tools help you use pre-packaged libraries,
-build tools, and other modules, and publish your own libraries and applications for other people to
-use.
+utilities for your build process, and other modules, and publish your own libraries and applications
+for other people to use.  They fit in with other development tools such as source control, compilers,
+and continuous integration servers.
 
 TIP: If you are not familiar with these tools, and you need to quickly do something with them, check
 the list of basic tasks on the "link:very_quick_start.html[]" page.
@@ -37,3 +38,5 @@ well documented in other places.
 include::{localDoc}/index_out_of_scope.ascinc[]
 
 DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)
+
+TODO: Update pluginHelp command.

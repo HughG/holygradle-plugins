@@ -17,9 +17,16 @@
     em, strong {
         color: black;
     }
+    /* Make emphasised "code" brighter. */
+    code em, code strong, pre em, pre strong, .monospaced em, .monospaced strong {
+        color: blue;
+    }
 
     /* Make code font a little smaller. */
-    p code, td code, div.listingblock pre, div.literalblock pre {
+    p code, td code,
+    div.listingblock pre, div.literalblock pre,
+    div.listingblock pre code, div.literalblock pre code,
+    {
         font-size: smaller;
     }
 

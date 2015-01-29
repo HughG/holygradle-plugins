@@ -11,7 +11,7 @@
 
 include::sitemap.ascinc[]
 
-gloss:artifactory[] is a shared, structured store for software modules and gloss:gradle[] is a
+gloss:artifactory[] is a shared, structured store for built software modules and gloss:gradle[] is a
 tool which helps you package software gloss:module[]s and transfer them to and from such a store. 
 (gloss:gradle[] also has many other features which are not detailed in this guide.)
 
@@ -19,10 +19,41 @@ The gloss:holygradle[] is a set of plugins for gloss:gradle[] which extend it fo
 
 * developing modules which contain a large number of files when built (such as C++ libraries or
 web applications);
-* working with multiple source code repositories; and
+* working with multiple source code repositories;
+* delivering modules plus dependencies to developers who do not have access to Artifactory; and
 * working under Windows.
 
-This section gives a short introduction to the main concepts and features.
+This section gives a short introduction to the main concepts and features.  The following diagram
+shows how they fit in with other development tools.
+
+.gloss:artifactory[] and gloss:gradle[] in context
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_artifactory_and_gradle_in_context.svg,dot,svg]
+----
+digraph {
+    edge [decorate=true]
+
+    vcs [label="Source Control Server", shape=box]
+    afy [label="Artifactory", shape=box]
+    ftp [label="FTP Server", shape=box]
+
+    subgraph cluster_dev {
+        label="Developer PC or\nContinuous Integration Server"
+        src [label="source", shape=note]
+        libs [label="input\nlibraries", shape=note]
+        bin [label="output", shape=note]
+        zip [label="ZIP release", shape=note]
+    }
+
+    vcs -> src [label="Mercurial/Subversion\n(optionally using\nHoly Gradle)", dir=both]
+    afy -> libs [label="Holy Gradle"]
+    src -> bin [label="compiler"]
+    libs -> bin [label="compiler"]
+    bin -> afy [label="Holy Gradle", headport=se]
+    afy -> zip [label="Holy Gradle"]
+    ftp-> zip [dir=back]
+}
+----
 
 TODO: Link to pages with more detail.
 
@@ -74,6 +105,106 @@ digraph {
 }
 --
 
+Ignoring the detail of configurations, the relationships between some modules could be viewed as
+follows, where an arrow means "depends on".  
+
+.Basic view of module dependencies
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_modules_1.svg,dot,svg]
+--
+digraph {
+    rankdir=LR;
+    node [shape=box];
+
+    A [label="com.foo.teamA:A:2.1"]
+    B [label="org.other:B:1.0"]
+    C [label="com.foo.teamC:C:1.5"]
+    A -> B
+    A -> C
+}
+--
+
+Suppose some team creates a new module N which uses A and C, giving the dependency graph below.
+gloss:gradle[] understands that B is also needed, and will check that the version of C is
+consistent.
+
+.More complex module dependencies
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_modules_2.svg,dot,svg]
+--
+digraph {
+    rankdir=LR;
+    node [shape=box];
+
+    A [label="com.foo.teamA:A:2.1"]
+    B [label="org.other:B:1.0"]
+    C [label="com.foo.teamC:C:1.5"]
+    N [label="com.foo.teamA:N:0.1"]
+    A -> B
+    A -> C
+    N -> A
+    N -> C
+}
+--
+
+Now, suppose these modules each have configurations +compile+ and +runtime+.  Then A would
+typically declare that its +compile+ configuration depends on +compile+ from B, and that its
++runtime+ configuration depends on B's +runtime+ configuration.  This means that another module such
+as N, which declares a dependency on the +runtime+ configuration of A, will get the +runtime+ files
+for B as well as A.
+
+Suppose N uses C as a static library, but uses A as a plugin so it only needs +runtime+ files
+for A and not header and linker files from the +compile+ configuration.  Then diagram below
+highlights in blue the configurations which will be fetched for the configurations of N.
+
+.Dependencies between configurations
+[caption="Figure {counter:figureindex}: "]
+[graphviz,overview_config_deps_1.svg,dot,svg]
+--
+digraph {
+    rankdir=LR;
+    node [shape=box];
+
+    subgraph cluster_a {
+        label = "com.foo.teamA:A:2.1";
+
+        a_compile [label="compile"];
+        a_runtime [label="runtime",color=blue];
+    }
+
+    subgraph cluster_b {
+        label = "org.other:B:1.0";
+
+        b_compile [label="compile"];
+        b_runtime [label="runtime",color=blue];
+    }
+
+    subgraph cluster_c {
+        label = "com.foo.teamC:C:1.5";
+
+        c_compile [label="compile",color=blue];
+        c_runtime [label="runtime",color=blue];
+    }
+
+    subgraph cluster_n {
+        label = "com.foo.teamA:N:0.1";
+
+        other_compile [label="compile",color=blue];
+        other_runtime [label="runtime",color=blue];
+    }
+
+    a_compile -> b_compile;
+    a_compile -> c_compile;
+    a_runtime -> b_runtime [color=blue];
+    a_runtime -> c_runtime [color=blue];
+
+    other_runtime -> a_runtime [color=blue];
+    other_compile -> c_compile [color=blue];
+}
+--
+
+TODO: Link to reference page on extending configurations.
+
 == gloss:artifactory[]
 
 gloss:artifactory[] is a web service for storing modules which are published using tools such as
@@ -87,14 +218,37 @@ choose.  It stores modules in named collections, called gloss:repositories[].  T
 created by server administrators.  Within each repository (or "repo"), the files for each module are
 in a three-level folder structure: group, then name, then version.
 
-There are three kinds of repository on a server: local, remote, and virtual.
+gloss:gradle[] accesses modules by URL, usually of the format +https://server.example-corp.com/artifactory/_repository_/_group_/_name_/_version_/...+.  Within the
+gloss:artifactory[] web UI, the contents can be seen on the "Artifacts" tab.  (Note that the web UI
+does not exactly match the view used by tools like gloss:gradle[], as described below.)
 
-Local:: Usually named +_something_-local+, these contain artifacts whose contents are managed by that server.  The word "local" does *not* mean "only visible within one organisation" -- visibility depends on permissions, and visibility to other organisations depends on network configuration.
-Remote:: Always named +_something_-cache+, each contains local copies of artifacts automatically cached from a repo on another server.  Cached files may be downloaded on demand or in advance, and may be automatically deleted, depending on server setup.
-Virtual:: Any other naming is a virtual repo.  These point to one or more other repos, using a list configured by admins.  Requests for artifacts from these repos will search the list in order.
+There are three kinds of repository on a server: local, remote, and virtual.  Normally only server
+administrators need to deal with remote repositories directly.
 
-Usually a server admin will set up one or more virtual repos for a team which includes all the local and remote repos they need.  This is convenient for the team, because they only need to list one repo in their +build.gradle+ file.  It is also important for admins, if they need to change repository configuration in future, for example, to change permissions or backup processes.  When
-they make such changes they can also change the virtual repo lists, so that all requests to the virtual repo work as before.
+Local:: These contain artifacts whose contents are managed by that server.  The word "local" does
+*not* mean "only visible within one organisation" -- visibility depends on permissions, and
+visibility to other organisations depends on network configuration.  They are usually named
++_myrepo_-local+, and both gloss:gradle[] and the web UI refer to them in this way.
+Remote:: These contains local copies of artifacts automatically cached from a repo on another
+server.  Cached files may be downloaded on demand or in advance, and may be automatically deleted,
+depending on server setup.  In the "Artifacts" tab of the web UI these appear as +_myrepo_-cache+ in
+the "Tree Browser" and show only the files which have already been cached.  When using
+gloss:gradle[] they are referenced as just +_myrepo_+, and any attempt to GET a file which is not
+already cached will cause it to be cached.  Both views can be found under the "Simple Browser"
+section of the web UI.  Normally you will not refer to a remote repository directly, but will use a
+virtual repo which includes that remote.
+Virtual:: These point to one or more other repos, using a list configured by admins.  Requests for
+artifacts from these repos will search the list in order.  Like remote repos, virtual repos are also
+named as just +_myrepo_+.  These are only shown in the "Simple Browser", not in the "Tree Browser".
+For a given folder or file in the "Tree Browser" you can find which virtual repos include it by
+looking in the "Virtual Repository Associations" section on the right.
+
+Usually a server admin will set up one or more virtual repos for a team which includes all the local
+and remote repos they need.  This is convenient for the team, because they only need to list one
+repo in their +build.gradle+ file.  It is also important for admins, if they need to change
+repository configuration in future, for example, to change permissions or backup processes.  When
+they make such changes they can also change the virtual repo lists, so that all requests to the
+virtual repo work as before.
 
 [IMPORTANT]
 --
@@ -137,6 +291,8 @@ could re-run the publish process targeting a repository which will store the mod
 However, gloss:artifactory[] provides a quick way to copy or move a module to another repository on
 the same server.
 
+include::{localDoc}/overview_artifactory.ascinc[]
+
 == gloss:gradle[] and the gloss:holygradle[]
 
 The gloss:holygradle[] provides a way to publish and use pre-built and pre-packaged software
@@ -152,7 +308,8 @@ The basic approach for developing with gloss:gradle[] is as follows.
 
 * Write a +build.gradle+ file for your module (call it A) which lists
 ** the configurations of A;
-** the modules needed by each configuration (its _dependencies_), each with its own version (for example, B:1.0 and C:1.5);
+** the modules needed by each configuration (its gloss:dependencies[]), each with its own version
+(for example, B:1.0 and C:1.5);
 ** the locations for downloading those dependencies;
 ** the artifacts to publish for each configuration of A;
 ** the location to publish A.
@@ -212,48 +369,6 @@ digraph {
 
 The transferred files also include a metadata file describing the module.  For the
 gloss:holygradle[] this is an gloss:ivy-xml[] file.
-
-Ignoring the detail of configurations, the relationships between these modules is as follows,
-where an arrow means "depends on".  
-
-.Basic view of module dependencies
-[caption="Figure {counter:figureindex}: "]
-[graphviz,overview_modules_1.svg,dot,svg]
---
-digraph {
-    rankdir=LR;
-    node [shape=box];
-
-    A [label="com.foo.teamA:A:2.1"]
-    B [label="org.other:B:1.0"]
-    C [label="com.foo.teamC:C:1.5"]
-    A -> B
-    A -> C
-}
---
-
-Suppose another team creates a new module N which uses A and C, giving the dependency graph
-below.  gloss:gradle[] will automatically download B as well, and will check that the version of
-C is consistent.
-
-.More complex module dependencies
-[caption="Figure {counter:figureindex}: "]
-[graphviz,overview_modules_2.svg,dot,svg]
---
-digraph {
-    rankdir=LR;
-    node [shape=box];
-
-    A [label="com.foo.teamA:A:2.1"]
-    B [label="org.other:B:1.0"]
-    C [label="com.foo.teamC:C:1.5"]
-    N [label="com.foo.teamA:N:0.1"]
-    A -> B
-    A -> C
-    N -> A
-    N -> C
-}
---
 
 === gloss:holygradle[] Modules
 
@@ -477,5 +592,3 @@ DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)
 DONE: http://localwiki/Gradle#Getting_Started (pictorial overviews, GradleConfigurations.ppt, Gradle_High_Level_Map.pptx (brief plugin/package list))
 
 DONE: http://localwiki/Artifactory#Repository_Types (repo types)
-
-include::{localDoc}/overview_artifactory.ascinc[]

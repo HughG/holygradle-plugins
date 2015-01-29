@@ -21,12 +21,13 @@ NOTE: to self ... don't duplicate stuff from https://bitbucket.org/nm2501/holy-g
 if possible.
 ////
 
-This document describes typical developer workflows for developing a C++-based software module
+This section describes typical developer workflows for developing a C++ or web software module
 which is involved in dependency relationships, and how Artifactory, Gradle, and the Holy Gradle
 plugins have been used in these workflows in practice.
 
 The main intended audience consists of developers and technical leads in your team or organisation,
-and in those who supply you or build on your software.
+and in those who supply you or build on your software.  This document assumes you have read the
+link:overview.html[].
 
 ////
 The text assumes that you have read link:Software_Configuration_Management_Tool_Summary.html[].
@@ -35,132 +36,21 @@ The text assumes that you have read link:Software_Configuration_Management_Tool_
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-== Background
-
-To say that a module is involved in dependency relationships is to say that it requires parts or
-all of some other modules for building, testing, release packaging, etc.  Modules thus form a
-directed acyclic graph, as in the following example.
-
-[graphviz,modules_1.svg,dot,svg]
---
-digraph {
-    rankdir=RL;
-    node [shape=box];
-
-    ImageLib -> IntelRuntime;
-    SamplePlugin -> ImageLib;
-    SamplePlugin -> PluginAPI;
-    Framework -> ImageLib;
-    Framework -> PluginAPI;
-    SampleApp -> Framework;
-    SampleApp -> SamplePlugin;
-}
---
-
-Artifactory is a server software product for storing a number of collections (_repositories_) of
-such modules, along with information on dependencies between them (in the Ivy XML format, among
-others).
-
-Gradle is a tool which, among other things, helps developers download and publishing such
-modules and dependency information, including detection of version conflicts in the full graph of
-all transitive dependencies of a given module.  It was created for use with Java and similar
-languages, so normally handles modules published as a small number of files (_artifacts_) such as
-"+.jar+" files.
-
-The Holy Gradle plugins are a set of Gradle plugins to make it easier to work with Artifactory, and
-to extend Gradle to the C++ world, where modules often consist of large numbers of files.
-
-
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 == Concepts and Terminology
 
-The following are some important terms from the link:glossary.html[] which you will need to understand to read this document.
+The following are some important terms from the link:glossary.html[] which you will need to
+understand to read this document.
 
 * gloss:project[]
 * gloss:module[]
-
-
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-=== Meta-Packages
-
-The term "meta-package" is a term invented for the Holy Gradle plugins.  It describes a module (or
-"package") which is intended to perform operations on other packages/modules.  Typically the
-meta-package contains a +build.gradle+ file which uses the Holy Gradle plugins, plus other Gradle
-features, for tasks such as downloading all the transitive dependencies of a module and creating a
-"+.zip+" file containing the module and all its dependencies.
-
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-=== Artifacts
-
-Gradle and Artifactory use the term _artifact_ to refer to files published as part of a gloss:module[].
-When using the +intrepid+ plugin, artifacts are mostly <<_packed_dependencies>>,
+* gloss:configuration[]
+* gloss:metapackage[]
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 === Configurations
 
-The Ivy metadata stored in Artifactory for each gloss:module[] lists a number of sets of
-<<_artifacts>>, known as _configurations_.  An artifact may belong to more than one configuration.
-
-==== Dependencies Between Configurations
-
-Dependencies between modules are in fact expressed as dependencies between configurations of
-modules.
-
-For example, two modules +a+ and +b+ might each have configurations, +compile+ and
-+runtime+; then +a+ would typically declare that its +compile+ configuration depends on +compile+
-from +b+, and likewise its +runtime+ configuration depends on +b+'s +runtime+ configuration.  This
-means that another module which declares a dependency on the +runtime+ configuration of +a+ will,
-when fetching its dependencies, also fetch the +runtime+ files for +b+, even if it does not directly
-declare any dependency on +b+.  The following diagram highlights in blue the configurations which
-will be fetched.
-
-.Dependencies between configurations
-[caption="Figure {counter:figureindex}: "]
-[graphviz,config_deps_1.svg,dot,svg]
---
-digraph {
-    rankdir=RL;
-    node [shape=box];
-
-    subgraph cluster_a {
-        label = "a";
-
-        a_compile [label="compile"];
-        a_runtime [label="runtime",color=blue];
-    }
-
-    subgraph cluster_b {
-        label = "b";
-
-        b_compile [label="compile"];
-        b_runtime [label="runtime",color=blue];
-    }
-
-    subgraph cluster_other {
-        label = "other";
-
-        other_compile [label="compile"];
-        other_runtime [label="runtime",color=blue];
-    }
-
-    a_compile -> b_compile;
-    a_runtime -> b_runtime [color=blue];
-
-    other_runtime -> a_runtime [color=blue];
-}
---
-
-In this example there is no dependency on the +compile+ configuration of +a+, so the other module
-will not fetch the +compile+ configuration of either.  In practice this might be because +a+
-implements some common interface, e.g., COM +IUnknown+, so the other module doesn't need any
-compile-time information to be able to produce a module which can make use of +a+'s runtime
-outputs.  Alternatively, +a+ might be producing an executable which is launched by the +other+
-module.
+TODO: Move to reference page on extending configurations.
 
 ==== Extending Configurations
 
@@ -185,7 +75,7 @@ The following diagram highlights these in blue.
 [graphviz,extending_deps_1.svg,dot,svg]
 --
 digraph {
-    rankdir=RL;
+    rankdir=LR;
     node [shape=box];
 
     subgraph cluster_util {
@@ -262,10 +152,10 @@ digraph {
 === Dependencies
 
 The Ivy metadata stored in Artifactory for each gloss:module[] lists a number of dependencies, which
-are expressed as dependencies between <<_configurations>> of that module, and those of other
+are expressed as dependencies between gloss:configuration[]s of that module, and those of other
 modules.
 
-When Gradle downloads <<_artifacts>> for a module defined as a dependency of a given project, it
+When Gradle downloads gloss:artifact[]s for a module defined as a dependency of a given project, it
 stores them in a per-user cache folder hierarchy.
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -297,7 +187,7 @@ configurations of the +other+ module are fetched.
 [graphviz,private_configs_1.svg,dot,svg]
 --
 digraph {
-    rankdir=RL;
+    rankdir=LR;
     node [shape=box];
 
     subgraph cluster_doxygen {
@@ -448,7 +338,7 @@ the headers for module +a+, so there is no dependency between those two configur
 [graphviz,private_configs_2.svg,dot,svg]
 --
 digraph {
-    rankdir=RL;
+    rankdir=LR;
     node [shape=box];
 
     subgraph cluster_doxygen {

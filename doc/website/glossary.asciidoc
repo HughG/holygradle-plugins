@@ -58,13 +58,21 @@ This page gives a short description of many terms related to the Holy Gradle and
     modules use, and so on; and it automatically finds version conflicts.  The "build management" 
     part is similar to systems like Unix +make+, Microsoft's MSBuild, or the Ant tool for Java: 
     you describe tasks and connections between them, and Gradle works out which tasks to run, in 
-    which order.
+    which order.  Currently the Holy Gradle is based on gloss:gradle[] 1.4, which is based on Groovy
+    1.8.8.
 [[gloss-gradle-wrapper]] Gradle wrapper::
     A small set of files which lets you use a specific distribution of Gradle for building a 
     gloss:project[], without installing Gradle globally on your machine.  It includes a batch 
     file, a small Java JAR file, and some configuration files.  Normally it is checked in to your 
     gloss:project[]'s source repository.  The gloss:holygradle[] uses a custom Gradle Wrapper 
     which downloads a custom distribution of Gradle.
+[[gloss-groovy]] Groovy::
+    Groovy is a scripting language based on the Java Virtual Machine (JVM).  It is used as the basis
+    for Gradle because it is easy to add new syntax to the language, for specific purposes.
+    gloss:gradle[] adds syntax related to building code by running tasks.  The gloss:holygradle[]
+    extends the gloss:gradle[] syntax.  See http://www.groovy-lang.org/ for more information on
+    Groovy, but note that it only documents the latest version.  Currently the Holy Gradle is based
+    on gloss:gradle[] 1.4, which is based on Groovy 1.8.8 (an older version).
 [[gloss-hard-link]] hard link::
     A hard link is a special file which contains a reference to another file object on disk.  It 
     works like a reference-counting pointer in C++, or a reference in .NET or Java.  Deleting the 
@@ -78,14 +86,18 @@ This page gives a short description of many terms related to the Holy Gradle and
     Windows Credential Manager; getting source code from Mercurial or Subversion; getting and 
     publishing dependencies with many files (packed as ZIP files); and deleting temporary 
     publications from Artifactory.  There are other features with minimal support: building with 
-    Visual Studio; running unit tests.
+    Visual Studio; running unit tests.  Currently the Holy Gradle is based on gloss:gradle[] 1.4.
 [[gloss-ivy]] Ivy::
     A gloss:dependency-management[] tool written in Java, which works stand-alone or with link: 
     https://ant.apache.org/[Apache Ant].  gloss:gradle[] shares many concepts with Ivy, and 
     produces the same gloss:ivy-xml[] files to describe the gloss:module[]s it publishes.
-[[gloss-ivy-xml]] +ivy.xml+::
+[[gloss-ivy-xml]] ivy.xml::
     The standard filename for the metadata file used by the gloss:ivy[] tool, which gloss:gradle[]
     can also use.  This term is also used to refer to the gloss:ivy[] XML file format.
+[[gloss-jenkins]] Jenkins::
+    Software to run a continuous integration (or "auto-build") service on a server.  These services
+    run tasks periodically, mainly to check that source code can be built and passes tests.  See
+    http://jenkins-ci.org/ for more information.
 [[gloss-mercurial]] Mercurial::
     A distributed version control system: see http://mercurial.selenic.com/.  The gloss:holygradle[]
     has support for cloning repositories from a Mercurial repository, including it in your
@@ -97,7 +109,11 @@ This page gives a short description of many terms related to the Holy Gradle and
     gloss:artifact[]s, and gloss:dependencies[].  The gloss:holygradle[] uses gloss:ivy-xml[]
     files, though other file formats exist, and sometimes the metadata can be implicit.
 [[gloss-metapackage]] metapackage::
-    TODO: define this!
+    This is a gloss:holygradle[] term for a gloss:package[] which is intended to perform operations
+    on other packages/modules.  Typically the metapackage contains a +build.gradle+ file which uses
+    the gloss:holygradle[] plugins, plus other gloss:gradle[] features, for tasks such as
+    downloading all the transitive dependencies of a module and creating a "+.zip+" file containing
+    the module plus its dependencies.
 [[gloss-module]] module::
     In the context of the gloss:gradle[], gloss:ivy[] and gloss:artifactory[] tools, a module is 
     a piece of software identified and packaged in a specific way.  A module is identified by 
@@ -148,6 +164,12 @@ a name and URL unique within that server.  A repository can be
 In version control systems such as gloss:subversion[] or gloss:mercurial[] a repository stores a
 history of a set of related files.
 
+[[gloss-root-cert]] root certificate::
+    A root certificate is part of a cryptographic signed certificate system such as that used by
+    HTTPS.  It is an unsigned or self-signed certificate which identifies an authority which you can
+    choose to trust.  Certificates can be used to sign other certificates, creating a chain of
+    trust.  Operating systems and browsers usually have a built-in list of trusted authorities.
+    See https://en.wikipedia.org/wiki/Root_certificate[] for more information.
 [[gloss-subversion]] Subversion::
     A centralised version control system: see https://subversion.apache.org/.  The
     gloss:holygradle[] has support for cloning repositories from a Subversion repository,

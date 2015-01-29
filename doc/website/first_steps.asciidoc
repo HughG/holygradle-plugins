@@ -77,6 +77,12 @@ endif::localDoc[]
 
 include::{localDoc}/first_steps_artifactory.ascinc[]
 
+Since version 7.0.0, the gloss:holygradle[] custom wrapper requires that the environment variable
++HOLY_GRADLE_REPOSITORY_BASE_URL+ is set to this same, site-specific URL (for example,
++http://artifact-server.example-corp.com/artifactory/+).  You should set this in
+your user environment settings.  You should not need to change it unless your server name changes,
+or you are working at a different site.
+
 
 == Running the Holy Gradle
 
@@ -110,12 +116,97 @@ endif::localDoc[]
 
 include::{localDoc}/first_steps_gradle_wrapper.ascinc[]
 
-=== Running Gradle
+If you want to experiment with Gradle without adding it to an existing project, you can just unzip
+the wrapper and run +gw.bat+ from inside it.
 
-TODO: Once you have the wrapper unzipped in your project folder ...
+[NOTE]
+====
+If you access the Internet through a proxy then you will need to pass the
++-Dhttp.proxyHost=_server_ -Dhttp.proxyPort=_port_+ arguments the first time you run +gw.bat+ on your
+machine, so it can download the standard gloss:gradle[] distribution.  If you do not, you may see an
+error such as the following.
 
-== Editing Gradle Files
+----
+Exception in thread "main" java.net.ConnectException:
+Connection refused: connect
+----
 
-TODO: http://localwiki/Gradle#What_is_it.3F (editing Gradle)
+You will also need to do this if you ever delete the folder +%GRADLE_USER_HOME%\wrapper\dists+,
+which holds the downloaded distributions of gloss:gradle[].
+====
 
-TODO: http://localwiki/Editing_Gradle_Files
+=== Running gloss:gradle[]
+
+Once you have the wrapper unzipped in your project folder, you can run the following to see the
+command-line options for gloss:gradle[].
+
+----
+gw --help
+----
+
+Or run this to see the default list of tasks for gloss:gradle[].
+
+----
+gw tasks
+----
+
+You will not be able to use gloss:holygradle[] features until you have a +build.gradle+ file which
+applies the plugins.
+
+DONE: http://ediwiki/mediawiki/index.php/Gradle#Initial_Setup
+
+=== A Minimal gloss:holygradle[] Build File
+
+In the folder where you unzipped the wrapper, create a +build.gradle+ file with the following
+content.  (Of course, you can use a different plugin version number if you want.)
+
+[source,groovy]
+----
+buildscript {
+    def ver = "7.2.4"
+    gplugins.use "intrepid:${ver}"
+    gplugins.use "my-credentials:${ver}"
+}
+gplugins.apply()
+----
+
+Now when you run +gw tasks+ you should see additional tasks listed.
+
+== Editing gloss:gradle[] Files
+
+Gradle is controlled by several text files in the folder where you run it.
+
+* +build.gradle+ contains the main configuration for your gloss:project[].  Many projects only need
+this file.
+* +settings.gradle+ is used when you have multiple projects, to tell gloss:gradle[] where to find
+them, relative to the root project.  The gloss:holygradle[] will generate this for you based on
+(TODO: link) +sourceDependencies+ in your +build.gradle+.
+* +gradle.properties+ is a file in the
+link:http://docs.oracle.com/javase/6/docs/api/java/util/Properties.html#load%28java.io.Reader%29[Java properties format]
+which is useful if you need to share simple values across multiple projects.
+
+You can edit these files with any text editor.  If your editor supports syntax highlighting for the
+gloss:groovy[] language, you can also apply that to +.gradle+ files.
+
+[NOTE]
+====
+For Notepad++ you can use the following steps to install syntax highlighting.
+
+. Download and unzip link:files/userDefineLang_Groovy_HUGR.xml[this user-defined language file].
+. In Notepad++ go to "Language -> Define your language..." and "Import..." the XML file.
+. Re-open any Gradle files and you should see them highlighted.  If not choose "Groovy" from the
+bottom of the "Language" menu.
+====
+
+Future versions of this page will include instructions for editing gloss:gradle[] files using
+link:https://www.jetbrains.com/idea/[IntelliJ IDEA], to get pop-up help and type-checking.
+DONE: http://localwiki/Gradle#What_is_it.3F (editing Gradle)
+
+DONE: http://localwiki/Editing_Gradle_Files
+
+
+== Next Steps
+
+Once you have this working, you may want to read the link:overview.html[], link:tutorial.html[],
+and/or the page on link:workflows.html[].
+
