@@ -13,6 +13,10 @@ This repository contains:
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
+ - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  It will tell you about this in the "Event Log"
+   window.  Set it to the value you normally use in your Windows environment variable (or the default,
+   "%USERPROFILE%\.gradle").  After a short wait, IntelliJ will refresh.
+ - You may also need to configure IntelliJ to point to your installed JDK, in the "Project Structure" dialog.
  - An Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
    - a remote repo pointing to Maven Central 
@@ -32,6 +36,9 @@ artifactoryPluginPublishRepo=<name of the (non-remote, non-virtual) repository f
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
+
+Run 'gw tasks'.  You may need to supply proxy arguments if it's the first time you've run this version of Gradle
+(e.g., 'gw -Dhttp.proxyHost=proxyserver -Dhttp.proxyPort=8080').
 
 Note that IntelliJ IDEA will fail to open the project until you've created this file (because it parses the
 "build.gradle" files, and some of them depend on these properties).

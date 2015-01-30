@@ -8,8 +8,9 @@ import static groovyx.net.http.Method.GET
 import static groovyx.net.http.ContentType.TEXT
 
 class ArtifactoryHelper {
-    private final HTTPBuilder http 
+    private final String url
     private final String repository
+    private final Map<String, String> headers
 
     private static List<String> parseRepositoryUrl(String repositoryUrl) {
         Matcher urlMatch = repositoryUrl =~ /(http\w*[:\/]+[\w\.]+)\/.*\/([\w\-]+)/
@@ -22,7 +23,7 @@ class ArtifactoryHelper {
 
     public ArtifactoryHelper(String repositoryUrl) {
         List<String> parts = parseRepositoryUrl(repositoryUrl)
-        http = new HTTPBuilder(parts[1] + "/")
+        url = parts[1] + "/"
         repository = parts[2]
     }
 
@@ -34,10 +35,14 @@ class ArtifactoryHelper {
         // we have to manually include the authorization header.
         String auth = "${username}:${password}".toString()
         String authEncoded = auth.bytes.encodeBase64().toString()
-        http.setHeaders( ['Authorization' : 'Basic ' + authEncoded ] )    
+        headers = ['Authorization' : 'Basic ' + authEncoded]
     }
     
     public boolean artifactExists(String artifactPath) {
+        HTTPBuilder http = new HTTPBuilder(url)
+        if (headers != null) {
+            http.setHeaders(headers)
+        }
         boolean exists = false
         http.request( GET, TEXT ) { req ->
             uri.path = "artifactory/${repository}/${artifactPath}"
