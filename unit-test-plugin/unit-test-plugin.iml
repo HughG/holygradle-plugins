@@ -141,6 +141,7 @@
     <orderEntry type="library" scope="TEST" name="Gradle: E__Projects_Gradle_holy_gradle_plugins_custom_gradle_core_plugin_build_resources_test" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: hamcrest-library-1.3" level="project" />
     <orderEntry type="library" scope="TEST" name="Gradle: hamcrest-core-1.3" level="project" />
+    <orderEntry type="module" module-name="intrepid-plugin" />
   </component>
 </module>
 

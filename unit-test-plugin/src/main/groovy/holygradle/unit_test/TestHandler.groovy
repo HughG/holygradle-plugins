@@ -1,8 +1,10 @@
 package holygradle.unit_test
 
 import holygradle.custom_gradle.BuildDependency
-import holygradle.custom_gradle.TaskDependenciesExtension
+
+import holygradle.source_dependencies.SourceDependenciesStateHandler
 import org.gradle.api.*
+import org.gradle.api.artifacts.Configuration
 import org.gradle.process.ExecSpec
 
 
@@ -97,7 +99,7 @@ class TestHandler {
             unitTestThisProject.group = "Unit Test"
             unitTestThisProject.description = "Run the ${flavour} unit tests for '${project.name}'."
                 
-            project.extensions.tests.each {
+            project.extensions.tests.each { TestHandler it ->
                 it.configureTask(project, flavour, unitTestThisProject)
             }
             
@@ -107,9 +109,17 @@ class TestHandler {
                 task.description = "Run the ${flavour} unit tests for '${project.name}' and all dependent projects."
                 task.dependsOn unitTestThisProject
 
-                TaskDependenciesExtension taskDependencies =
-                    project.extensions.findByName("taskDependencies") as TaskDependenciesExtension
-                taskDependencies.configureNow("unitTest${flavour}")
+                Collection<SourceDependenciesStateHandler> sourceDependenciesState =
+                    project.extensions.findByName("sourceDependenciesState") as
+                        Collection<SourceDependenciesStateHandler>
+                if (sourceDependenciesState == null) {
+                    return
+                }
+                // For each configurations in this project which point into a source dependency, make this
+                // project's task depend on the same task in the other project (if it exists).
+                sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
+                    task.dependsOn conf.getTaskDependencyFromProjectDependency(true, task.name)
+                }
             }
         }
         if (allFlavours.size() > 1) {

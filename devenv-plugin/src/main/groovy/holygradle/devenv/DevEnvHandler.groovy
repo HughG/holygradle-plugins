@@ -137,15 +137,15 @@ class DevEnvHandler {
     
     // Returns two tasks - one for building this project as well as dependent projects, and
     // another task for building this project independently.
-    public List<DevEnvTask> defineBuildTasks(Project project, String taskName, String configuration) {
-        [defineBuildTask(project, taskName, configuration, true),
-        defineBuildTask(project, taskName, configuration, false)]
+    public List<DevEnvTask> defineBuildTasks(Project project, String platform, String configuration) {
+        [defineBuildTask(project, platform, configuration, true),
+        defineBuildTask(project, platform, configuration, false)]
     }
     
-    public DevEnvTask defineBuildTask(Project project, String taskName, String configuration, boolean independently) {
-        if (independently) taskName = "${taskName}Independently"
+    public DevEnvTask defineBuildTask(Project project, String platform, String configuration, boolean independently) {
+        String taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.BUILD, platform, configuration, independently)
         (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
-            it.init(independently, "build", configuration)
+            it.init(independently, DevEnvTask.Operation.BUILD, configuration)
             if (independently) {
                 description = "This task only makes sense for individual projects e.g. gw subproj:b${configuration[0]}I"
             } else {
@@ -156,15 +156,15 @@ class DevEnvHandler {
     
     // Returns two tasks - one for cleaning this project as well as dependent projects, and
     // another task for cleaning this project independently.
-    public List<DevEnvTask> defineCleanTasks(Project project, String taskName, String configuration) {
-        [defineCleanTask(project, taskName, configuration, true),
-        defineCleanTask(project, taskName, configuration, false)]
+    public List<DevEnvTask> defineCleanTasks(Project project, String platform, String configuration) {
+        [defineCleanTask(project, platform, configuration, true),
+        defineCleanTask(project, platform, configuration, false)]
     }
     
-    public DevEnvTask defineCleanTask(Project project, String taskName, String configuration, boolean independently) {
-        if (independently) taskName = "${taskName}Independently"
+    public DevEnvTask defineCleanTask(Project project, String platform, String configuration, boolean independently) {
+        String taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.CLEAN, platform, configuration, independently)
         (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
-            it.init(independently, "clean", configuration)
+            it.init(independently, DevEnvTask.Operation.CLEAN, configuration)
             if (independently) {
                 description = "This task only makes sense for individual projects e.g. gw subproj:c${configuration[0]}I"
             } else {

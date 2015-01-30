@@ -310,6 +310,8 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // NOTE 2013-11-07 HughG: Possible performance improvement: I think we only need to do this for the root
                 // project, since we're visiting things transitively.
 
+                // Need to do this in projectsEvaluated so that all source dependencies and configurations are ready.
+
                 // Define the tasks for source-dependency projects
                 Iterable<SourceDependencyHandler> sourceDeps = Helper.getTransitiveSourceDependencies(project)
                 sourceDeps.each { sourceDep ->
@@ -324,21 +326,6 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // Define any tasks for this project.
                 sourceDependencyTasks.each { command ->
                     command.defineTask(project)
-                }
-
-                // Define the tasks dependencies for source-dependency projects
-                sourceDeps.each { sourceDep ->
-                    Project sourceDepProj = sourceDep.getSourceDependencyProject(project)
-                    if (sourceDepProj != null) {
-                        sourceDependencyTasks.each { command ->
-                            command.configureTaskDependencies(sourceDepProj)
-                        }
-                    }
-                }
-
-                // Define task dependencies for this project.
-                sourceDependencyTasks.each { command ->
-                    command.configureTaskDependencies(project)
                 }
             }
         }
@@ -380,19 +367,6 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // Need to do this in projectsEvaluated so we can be sure that all packed dependencies have been set up.
                 deleteSymlinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
                 rebuildSymlinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
-            }
-
-            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for cross-project symlink task dependencies") {
-                // Make the symlink creation in this project depend on that in its source dependencies.  This makes it
-                // possible to create symlinks (using the "symlinks" DSL) which point to symlinks in other projects.
-                // Without this dependency, the target symlinks might not have been created when this project tries to
-                // create symlinks to them.
-                //
-                // Need to do this in projectsEvaluated so we can be sure that all source dependencies have been set up.
-                sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
-                    rebuildSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, rebuildSymlinksTask.name)
-                    deleteSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, deleteSymlinksTask.name)
-                }
             }
 
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for populating pathsForPackedDependencies") {
@@ -440,6 +414,23 @@ public class IntrepidPlugin implements Plugin<Project> {
                 collectDependenciesTask.initialize(project)
             }
         }
+
+        project.afterEvaluate {
+            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for cross-project symlink task dependencies") {
+                // Make the symlink creation in this project depend on that in its source dependencies.  This makes it
+                // possible to create symlinks (using the "symlinks" DSL) which point to symlinks in other projects.
+                // Without this dependency, the target symlinks might not have been created when this project tries to
+                // create symlinks to them.
+                //
+                // Need to do this in project.afterEvaluate so we can be sure that all configurations and source
+                // dependencies have been set up but we don't need to know about subprojects' source dependencies).
+                sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
+                    rebuildSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, rebuildSymlinksTask.name)
+                    deleteSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, deleteSymlinksTask.name)
+                }
+            }
+        }
+
 
         timer.endBlock()
     }

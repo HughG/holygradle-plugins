@@ -1,4 +1,6 @@
 dependencies {
-    compile project(':custom-gradle-core-plugin')
-    testCompile project(':custom-gradle-core-plugin').sourceSets.test.output
+    ["custom-gradle-core", "intrepid"].each { pluginProjectName ->
+        compile project(":${pluginProjectName}-plugin")
+        testCompile project(":${pluginProjectName}-plugin").sourceSets.test.output
+    }
 }

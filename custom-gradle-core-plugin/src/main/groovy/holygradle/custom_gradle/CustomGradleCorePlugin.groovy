@@ -31,10 +31,6 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         // DSL extension to specify build dependencies
         project.extensions.buildDependencies = project.container(BuildDependency)
 
-        // DSL extension 'taskDependencies' to allow build script to configure task dependencies
-        // according to inter-project dependencies defined using 'buildDependencies'.
-        project.extensions.create("taskDependencies", TaskDependenciesExtension, project)
-        
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
         PrerequisitesExtension prerequisites = PrerequisitesExtension.defineExtension(project)
                

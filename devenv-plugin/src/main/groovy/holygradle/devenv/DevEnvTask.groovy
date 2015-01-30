@@ -1,10 +1,10 @@
 package holygradle.devenv
 
-import holygradle.custom_gradle.BuildDependency
 import holygradle.custom_gradle.plugin_apis.StampingProvider
+import holygradle.source_dependencies.SourceDependenciesStateHandler
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.logging.StyledTextOutput
 import org.gradle.logging.StyledTextOutputFactory
 import org.gradle.process.ExecResult
@@ -15,22 +15,44 @@ class DevEnvTask extends DefaultTask {
     public boolean independently = false 
     
     // What operation (e.g. build/clean) are we running?
-    public String operation = null
+    public Operation operation = null
     
     // What configuration (e.g. Debug/Release) are we operating on?
     public String configuration = null
     
-    // What platform (e.g. Win32/x64) are we operating on?
-    public String platform = "any"
+    // What platform (e.g. Win32/x64) are we operating on?  Any empty string means "any/all platform(s)".
+    public static final String EVERY_PLATFORM = ""
+    public String platform = EVERY_PLATFORM
     
     private StyledTextOutput output = null
-    
-    DevEnvTask() {
+
+    public enum Operation {
+        BUILD ("build"),
+        CLEAN ("clean");
+
+        private final String name
+        Operation (String name) { this.name = name }
+        @Override public String toString() { return name }
+    }
+
+    /**
+     * Returns the appropriate name for a {@link DevEnvTask}.
+     * @param operation The kind of operation which the task performs.
+     * @param platform The platform (x86, Win32), using {@link #EVERY_PLATFORM} for "any/all platform(s)".
+     * @param configuration The Visual Studio configuration; must be "Debug" or "Release".
+     * @param independently If the task runs independently, it will
+     */
+    public static getNameForTask(Operation operation, String platform, String configuration, boolean independently) {
+        String independentlyPart = independently ? "Independently" : ""
+        "${operation}${platform.capitalize()}${configuration}${independentlyPart}"
+    }
+
+    public DevEnvTask() {
         group = "DevEnv"
         output = services.get(StyledTextOutputFactory).create(DevEnvTask)
     }
     
-    public void init(boolean independently, String operation, String configuration) {
+    public void init(boolean independently, Operation operation, String configuration) {
         this.independently = independently
         this.operation = operation
         this.configuration = configuration
@@ -42,9 +64,12 @@ class DevEnvTask extends DefaultTask {
             dependsOn project.tasks.findByName(stampingExtension.taskName)
         }
     }
-    
+
+    /**
+     * WARNING: Only call this inside a gradle.projectsEvaluated block.
+     */
     public void configureBuildTask(DevEnvHandler devEnvHandler, String platform) {
-        if (operation != "build") {
+        if (this.operation != Operation.BUILD) {
             throw new RuntimeException("Expected task to have been initialised with 'build' operation.")
         }
         this.platform = platform
@@ -61,49 +86,38 @@ class DevEnvTask extends DefaultTask {
                 devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
             )
         }
-        
-        configureTaskDependencies()
     }
-    
-    public void configureTaskDependencies() {
+
+    private void configureTaskDependencies() {
         if (independently) {
             return
         }
-        // Add dependencies to tasks with the same configuration and operation in
-        // dependent projects.
-        Collection<BuildDependency> buildDependencies =
-            project.extensions.findByName("buildDependencies") as Collection<BuildDependency>
-        if (buildDependencies == null) {
+
+        // Add dependencies to tasks with the same "devenv task configuration" (rather than "Gradle configuration") and
+        // operation in dependent projects.
+        Collection<SourceDependenciesStateHandler> sourceDependenciesState =
+            project.extensions.findByName("sourceDependenciesState") as Collection<SourceDependenciesStateHandler>
+        if (sourceDependenciesState == null) {
             return
         }
-        buildDependencies.each { BuildDependency buildDep ->
-            Project depProj = buildDep.getProject(project)
-            if (depProj == null) {
-                return
-            }
-
-            depProj.tasks.each { t ->
-                if (t instanceof DevEnvTask &&
-                    !t.independently &&
-                    t.operation == operation &&
-                    t.configuration == configuration &&
-                    (t.platform == platform || t.platform == "any")
-                ) {
-                    this.dependsOn t
-                }
-            }
+        // For each configurations in this project which point into a source dependency, make this project's task
+        // depend on the same task in the other project, and on the platform-independent task (if they exist).
+        sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration config ->
+            this.dependsOn config.getTaskDependencyFromProjectDependency(true, this.name)
+            String anyPlatformTaskName =
+                getNameForTask(this.operation, EVERY_PLATFORM, this.configuration, this.independently)
+            this.dependsOn config.getTaskDependencyFromProjectDependency(true, anyPlatformTaskName)
         }
     }
-    
+
     public void configureCleanTask(DevEnvHandler devEnvHandler, String platform) {
-        if (operation != "clean") {
+        if (this.operation != Operation.CLEAN) {
             throw new RuntimeException("Expected task to have been initialised with 'clean' operation.")
         }
         this.platform = platform
         
         if (devEnvHandler.getVsSolutionFile() != null) {
-            configureTaskDependencies()
-            doConfigureCleanTask(
+             doConfigureCleanTask(
                 project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), 
                 devEnvHandler.useIncredibuild(), platform, configuration, 
                 devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
@@ -173,5 +187,6 @@ class DevEnvTask extends DefaultTask {
                 throw new RuntimeException("${buildToolPath.name} exited with code $exit.")
             }
         }
+        configureTaskDependencies()
     }
 }

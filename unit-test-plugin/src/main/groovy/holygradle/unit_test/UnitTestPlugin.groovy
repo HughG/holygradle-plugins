@@ -1,5 +1,6 @@
 package holygradle.unit_test
 
+import holygradle.IntrepidPlugin
 import holygradle.custom_gradle.util.ProfilingHelper
 import org.gradle.api.*
 
@@ -7,6 +8,11 @@ class UnitTestPlugin implements Plugin<Project> {
     void apply(Project project) {
         ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
         def timer = profilingHelper.startBlock("UnitTestPlugin#apply(${project})")
+
+        /**************************************
+         * Apply other plugins
+         **************************************/
+        project.apply plugin: IntrepidPlugin.class
 
         /**************************************
          * DSL extensions

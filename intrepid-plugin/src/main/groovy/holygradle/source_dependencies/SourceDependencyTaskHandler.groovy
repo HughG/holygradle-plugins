@@ -1,8 +1,9 @@
 package holygradle.source_dependencies
 
-import holygradle.custom_gradle.TaskDependenciesExtension
+
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 
 class SourceDependencyTaskHandler {
     public final String name
@@ -53,38 +54,40 @@ class SourceDependencyTaskHandler {
             commandTask.group = "Source Dependencies"
             String cmdLineDescription = invocations.collect { "'" + it.cmdLine.join(" ") + "'" }.join(", ")
             commandTask.description = "Invoke ${cmdLineDescription} on '${project.name}' and dependencies."
+
+            configureTaskDependencies(commandTask)
         }
         
         commandTask
     }
-    
-    public void configureTaskDependencies(Project project) {
-        SourceDependencyTask commandTask = defineTask(project)
-        TaskDependenciesExtension taskDependencies =
-            project.extensions.findByName("taskDependencies") as TaskDependenciesExtension
-        
-        // Add a dependency from the top-level task to tasks of the same name belonging to
-        // source-dependency projects.
-        if (taskDependencies != null) {
-            taskDependencies.get(commandTask.name).each { SourceDependencyTask dep ->
-                commandTask.addDependentTask(dep)
+
+    private void configureTaskDependencies(SourceDependencyTask commandTask) {
+        final Project project = commandTask.project
+        final Collection<SourceDependenciesStateHandler> sourceDependenciesState =
+            project.extensions.findByName("sourceDependenciesState") as Collection<SourceDependenciesStateHandler>
+
+        if (sourceDependenciesState != null) {
+            // Add a dependency from the top-level task to tasks of the same name belonging to
+            // source-dependency projects.
+            sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
+                commandTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, commandTask.name)
             }
         }
-        
+
         if (invocations.size() > 1) {
             // For each individual invocation task, add dependencies to tasks of the same name
             // belonging to source-dependency projects.
-            if (taskDependencies != null) {
+            if (sourceDependenciesState != null) {
                 for (int i = 0; i < invocations.size(); i++) {
                     SourceDependencyTask thisTask = project.tasks.getByName("${name}_${i}") as SourceDependencyTask
-                    taskDependencies.get(thisTask.name).each { SourceDependencyTask dep ->
-                        thisTask.addDependentTask dep
+                    sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
+                        thisTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, thisTask.name)
                     }
                 }
             }
-            
+
             // Each individual invocation task (beyond the first) should depend upon *all* previous
-            // invocation tasks belonging to all projects. ???
+            // invocation tasks belonging to all projects.
             for (int i = 1; i < invocations.size(); i++) {
                 Task thisTask = project.tasks.getByName("${name}_${i}")
                 Set<Task> prevTasks = project.rootProject.getTasksByName("${name}_${i-1}", true)
