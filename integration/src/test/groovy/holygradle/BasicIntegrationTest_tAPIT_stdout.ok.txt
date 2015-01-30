@@ -55,13 +55,13 @@ DevEnv tasks
 beforeBuild - This task is a dependency of all build tasks, so will run before any of them
 beforeClean - This task is a dependency of all clean tasks, so will run before any of them
 buildDebug - Builds all dependent projects in Debug mode.
-buildDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:bDI
+buildDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:bDI. Deprecated; use 'gw -a buildDebug' instead.
 buildRelease - Builds all dependent projects in Release mode.
-buildReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:bRI
+buildReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:bRI. Deprecated; use 'gw -a buildRelease' instead.
 cleanDebug - Cleans all dependent projects in Debug mode.
-cleanDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:cDI
+cleanDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:cDI. Deprecated; use 'gw -a cleanDebug' instead.
 cleanRelease - Cleans all dependent projects in Release mode.
-cleanReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:cRI
+cleanReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:cRI. Deprecated; use 'gw -a cleanRelease' instead.
 
 Help tasks
 ----------

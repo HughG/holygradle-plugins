@@ -2,13 +2,12 @@ package holygradle.source_dependencies
 
 import holygradle.Helper
 import holygradle.buildscript.BuildScriptDependencies
-import holygradle.custom_gradle.BuildDependency
+import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
 import holygradle.scm.HgCommandLine
 import holygradle.scm.HgDependency
 import holygradle.scm.HgRepository
 import holygradle.scm.SvnDependency
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
@@ -16,7 +15,6 @@ import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import holygradle.custom_gradle.util.CamelCase
 
 class SourceDependencyPublishingHandler {
     private final String dependencyName
@@ -125,13 +123,6 @@ class SourceDependencyHandler extends DependencyHandler {
                 sourceDep.targetName,
                 project
             )
-            // Create a corresponding buildDependencies for the project, so custom-gradle-core can
-            // offer useful functionality for it, to build scripts and other plugins.
-            NamedDomainObjectContainer<BuildDependency> buildDependencies =
-                project.extensions.findByName("buildDependencies") as Collection<BuildDependency>
-            if (buildDependencies != null) {
-                buildDependencies.create(sourceDep.targetName)
-            }
             sourceDep.initialize(sourceDepPublishing)
             sourceDep  
         }

@@ -164,6 +164,15 @@ class DevEnvTask extends DefaultTask {
         Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
         StyledTextOutput styledOutput = this.output
+        if (independently) {
+            def normalTaskName = getNameForTask(operation, platform, configuration, false)
+            description += " Deprecated; use 'gw -a ${normalTaskName}' instead."
+            doFirst {
+                throw new RuntimeException(
+                    "${name} is deprecated; use 'gw -a ${normalTaskName}' instead"
+                )
+            }
+        }
         doLast {
             ErrorHighlightingOutputStream devEnvOutput = new ErrorHighlightingOutputStream(
                 title, styledOutput, warningRegexes, errorRegexes

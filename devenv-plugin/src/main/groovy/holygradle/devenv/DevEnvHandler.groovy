@@ -147,7 +147,9 @@ class DevEnvHandler {
         (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
             it.init(independently, DevEnvTask.Operation.BUILD, configuration)
             if (independently) {
-                description = "This task only makes sense for individual projects e.g. gw subproj:b${configuration[0]}I"
+                def normalTaskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.BUILD, platform, configuration, false)
+                description = "This task only makes sense for individual projects e.g. gw subproj:b${configuration[0]}I. " +
+                    "Deprecated; use 'gw -a ${normalTaskName}' instead."
             } else {
                 description = "Builds all dependent projects in $configuration mode."
             }
@@ -166,7 +168,9 @@ class DevEnvHandler {
         (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
             it.init(independently, DevEnvTask.Operation.CLEAN, configuration)
             if (independently) {
-                description = "This task only makes sense for individual projects e.g. gw subproj:c${configuration[0]}I"
+                def normalTaskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.CLEAN, platform, configuration, false)
+                description = "This task only makes sense for individual projects e.g. gw subproj:c${configuration[0]}I. " +
+                    "Deprecated; use 'gw -a ${normalTaskName}' instead."
             } else {
                 description = "Cleans all dependent projects in $configuration mode."
             }

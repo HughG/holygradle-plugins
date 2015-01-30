@@ -1,7 +1,5 @@
 package holygradle.unit_test
 
-import holygradle.custom_gradle.BuildDependency
-
 import holygradle.source_dependencies.SourceDependenciesStateHandler
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
@@ -86,39 +84,43 @@ class TestHandler {
     public static void defineTasks(Project project) {
         Collection<String> allFlavours = TestFlavourHandler.getAllFlavours(project)
         for (flavour in allFlavours) {
-            Collection<BuildDependency> buildDependencies =
-                project.extensions.findByName("buildDependencies") as Collection<BuildDependency>
-            boolean anyBuildDependencies = buildDependencies.size() > 0
-            
-            Task unitTestThisProject
+            Collection<SourceDependenciesStateHandler> sourceDependenciesState =
+                project.extensions.findByName("sourceDependenciesState") as
+                    Collection<SourceDependenciesStateHandler>
+            boolean anyBuildDependencies =
+                (sourceDependenciesState != null) &&
+                    !sourceDependenciesState.allConfigurationsPublishingSourceDependencies.empty
+
+
             if (anyBuildDependencies) {
-                unitTestThisProject = project.task("unitTest${flavour}Independently", type: DefaultTask)
-            } else {
-                unitTestThisProject = project.task("unitTest${flavour}", type: DefaultTask)
+                // Dummy task which just exists to give deprecation information to users.
+                // TODO 2015-01-30 HughG: Remove this at next major revision change.
+                Task dummyTask = project.task("unitTest${flavour}Independently", type: DefaultTask)
+                dummyTask.group = "Unit Test"
+                dummyTask.description = "Run the ${flavour} unit tests for '${project.name}'. " +
+                    "Deprecated; use 'gw -a unitTest${flavour}' instead."
+                dummyTask.doFirst {
+                    throw new RuntimeException(
+                        "unitTest${flavour}Independently is deprecated; use 'gw -a unitTest${flavour}' instead"
+                    )
+                }
             }
-            unitTestThisProject.group = "Unit Test"
-            unitTestThisProject.description = "Run the ${flavour} unit tests for '${project.name}'."
+            Task task = project.task("unitTest${flavour}", type: DefaultTask)
+            task.group = "Unit Test"
+            task.description = "Run the ${flavour} unit tests for '${project.name}'."
                 
             project.extensions.tests.each { TestHandler it ->
-                it.configureTask(project, flavour, unitTestThisProject)
+                it.configureTask(project, flavour, task)
             }
             
             if (anyBuildDependencies) {
-                Task task = project.task("unitTest${flavour}", type: DefaultTask)
-                task.group = "Unit Test"
                 task.description = "Run the ${flavour} unit tests for '${project.name}' and all dependent projects."
-                task.dependsOn unitTestThisProject
-
-                Collection<SourceDependenciesStateHandler> sourceDependenciesState =
-                    project.extensions.findByName("sourceDependenciesState") as
-                        Collection<SourceDependenciesStateHandler>
-                if (sourceDependenciesState == null) {
-                    return
-                }
-                // For each configurations in this project which point into a source dependency, make this
-                // project's task depend on the same task in the other project (if it exists).
-                sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
-                    task.dependsOn conf.getTaskDependencyFromProjectDependency(true, task.name)
+                if (sourceDependenciesState != null) {
+                    // For each configurations in this project which point into a source dependency, make this
+                    // project's task depend on the same task in the other project (if it exists).
+                    sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
+                        task.dependsOn conf.getTaskDependencyFromProjectDependency(true, task.name)
+                    }
                 }
             }
         }

@@ -27,9 +27,6 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         def timer = profilingHelper.startBlock("CustomGradleCorePlugin#apply(${project})")
 
         File gradlePropsFile = new File(project.gradle.gradleUserHomeDir, "gradle.properties")
-        
-        // DSL extension to specify build dependencies
-        project.extensions.buildDependencies = project.container(BuildDependency)
 
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
         PrerequisitesExtension prerequisites = PrerequisitesExtension.defineExtension(project)
