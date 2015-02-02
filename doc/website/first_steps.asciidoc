@@ -110,7 +110,7 @@ drive.  Also, Gradle never clears out this cache: you must do so manually, from 
 
 ifndef::localDoc[]
 There are no publicly available pre-built releases of the gloss:holygradle[], or custom
-gloss:gradle-wrapper[]s.  The source code contains a separate +wrapper-starter-kit+ project in a
+Gradle wrappers.  The source code contains a separate +wrapper-starter-kit+ project in a
 sub-folder, which can build such a custom Gradle wrapper.
 endif::localDoc[]
 
@@ -123,7 +123,7 @@ the wrapper and run +gw.bat+ from inside it.
 ====
 If you access the Internet through a proxy then you will need to pass the
 +-Dhttp.proxyHost=_server_ -Dhttp.proxyPort=_port_+ arguments the first time you run +gw.bat+ on your
-machine, so it can download the standard gloss:gradle[] distribution.  If you do not, you may see an
+machine, so it can download the standard Gradle distribution.  If you do not, you may see an
 error such as the following.
 
 ----
@@ -132,10 +132,10 @@ Connection refused: connect
 ----
 
 You will also need to do this if you ever delete the folder +%GRADLE_USER_HOME%\wrapper\dists+,
-which holds the downloaded distributions of gloss:gradle[].
+which holds the downloaded distributions of Gradle.
 ====
 
-=== Running gloss:gradle[]
+=== Running Gradle
 
 Once you have the wrapper unzipped in your project folder, you can run the following to see the
 command-line options for gloss:gradle[].
@@ -144,7 +144,7 @@ command-line options for gloss:gradle[].
 gw --help
 ----
 
-Or run this to see the default list of tasks for gloss:gradle[].
+Or run this to see the default list of tasks for Gradle.
 
 ----
 gw tasks
@@ -155,7 +155,7 @@ applies the plugins.
 
 DONE: http://ediwiki/mediawiki/index.php/Gradle#Initial_Setup
 
-=== A Minimal gloss:holygradle[] Build File
+=== A Minimal Holy Gradle Build File
 
 In the folder where you unzipped the wrapper, create a +build.gradle+ file with the following
 content.  (Of course, you can use a different plugin version number if you want.)
@@ -172,7 +172,7 @@ gplugins.apply()
 
 Now when you run +gw tasks+ you should see additional tasks listed.
 
-== Editing gloss:gradle[] Files
+== Editing Gradle Files
 
 Gradle is controlled by several text files in the folder where you run it.
 
@@ -198,8 +198,9 @@ For Notepad++ you can use the following steps to install syntax highlighting.
 bottom of the "Language" menu.
 ====
 
-Future versions of this page will include instructions for editing gloss:gradle[] files using
+Future versions of this page will include instructions for editing Gradle files using
 link:https://www.jetbrains.com/idea/[IntelliJ IDEA], to get pop-up help and type-checking.
+
 DONE: http://localwiki/Gradle#What_is_it.3F (editing Gradle)
 
 DONE: http://localwiki/Editing_Gradle_Files

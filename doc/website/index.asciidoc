@@ -31,7 +31,7 @@ link:first_steps.html[].
 * If you have problems at any time, see the link:support.html[] page, and in particular the
 link:troubleshooting.html[] section.
 
-This documentation does not describe the standard ways of using gloss:artifactory[] and
+This documentation does not describe the standard ways of using Artifactory and
 gloss:gradle[] for handling modules developed with Java and other JVM languages, because those are
 well documented in other places.
 
