@@ -1,0 +1,251 @@
+:docinfo1:
+:linkcss:
+:stylesdir: asciidoc
+:scriptsdir: asciidoc
+:stylesheet: master.css
+:toc2:
+:toclevels: 3
+:numbered:
+
+= +custom-gradle-core-plugin+
+
+include::sitemap.ascinc[]
+
+
+== Overview
+
+=== What is it?
+
+The +custom-gradle-core-plugin+ is a plugin which is automatically applied whenever you use the
+link:custom-gradle-distribution.html[] and apply any other gloss:holygradle[] plugin.
+
+This plugin provides the following.
+
+* Some useful standard tasks.
+* A +prerequisites+ gloss:dsl[] for dependencies which have to be installed on a machine, instead of
+just unpacked into a folder.  This allows you to check that something is installed and warn the user
+if not.  A tool such as Visual Studio would be one example of this.
+
+=== Example build script
+
+TODO: Use callout list.
+
+[source,groovy]
+----
+prerequisites {
+    specify("Java", "1.7").check()
+    specify("Windows", "Windows 7", "Windows Server 2008 R2")
+    specify("EnvironmentOk", { checker ->
+        checker.assertEnvironmentVariableExists("Foo")
+    })
+}
+tasks.matching { it.name == "bar" }.each {
+    it.dependsOn prerequisites.getTask("EnvironmentOk")
+}
+----
+
+The above script does the following.
+
+* It specifies a built-in prerequisite for Java, requiring version 1.7 or higher.  The +.check()+ at
+the end means that this check runs when the build script is evaluated -- that is, before any Gradle
+task is run.
+* It specifies a built-in prerequisite for the Windows operating system, requiring either Windows 7
+or Windows Server 2008 R2. Because there is no +.check()+ call, this check will only be performed when
+the user runs the +checkPrerequisites+ task.
+* It specifies a custom prerequisite called +EnvironmentOk+ which makes sure that a +Foo+
+environment variable exists.
+* It adds a task dependency from any task named +bar+ to a task that checks the "EnvironmentOk"
+prerequisite.  So, when the user runs +gw bar+, the prerequisite is checked before the +bar+ task
+runs.
+
+== Build script blocks
+
+This plugin adds only one build script block, +prerequisites+.
+
+=== +prerequisites+
+
+Most dependencies can be automatically fetched, unzipped, and used from that unzip location, so that
+the user doesn't need to manually install anything.  However, some things required to build your
+project may have to be manually installed by the user, rather than fetched by the gloss:holygradle[]
+-- for example, Visual Studio, or some third-party SDKs.  Instead, this DSL allows you to specify
+prerequisites -- that is, some checks to make sure that the necessary dependencies are already
+installed on the target machine. No attempt is made to satisfy the dependency for the user -- this
+is just an error reporting mechanism.
+
+There are several built-in kinds of prerequisite and other plugins may register new kinds. Also,
+build scripts can specify custom prerequisites via the +prerequisites { }+ build script block. The
+standard prerequisite types are:
+
+TODO: Explain what the "Windows" prereq actually checks against.
+
++Windows+::
+    Takes any number of string parameters, each one corresponding to the name of a Windows operating
+    system version, such as +"Windows 7"+, or +"Windows Server 2008 R2"+. If you supply more than
+    one parameter then the check succeeds if the OS matches _any one_ of the values.
++Java+::
+    Takes a single string parameter indicating the minimum version number -- for example, +"1.7"+.
++VisualStudio+::
+    Takes any number of string parameters corresponding to Visual Studio versions, for example,
+    +"9.0"+ or +"10.0"+.  If you supply more than one parameter then the check only succeeds if _all_
+    versions are installed.
+
+==== +specify+
+
+TODO: Move method details to groovydoc, and specify types in these examples.
+
+This method allows you to supply parameters for the prerequisite. Simply calling +specify+ doesn't
+perform the check immediately because you will probably will want to control the timing of the
+check -- for example, to run it only before certain other tasks.
+
+There are two overloads of this method. Both return an object on which there is a +check+ method
+which you can call immediately if you want. However there are other ways to control when the check
+will be performed, as follow.
+
+* You can have the user invoke the +checkPrerequisites+ task to check all prerequisites.
+* You can use the +prerequisites.check+ method to do the check at a later point in the build script.
+* You can retrieve a task for an individual prerequisite and add it as a dependency of some other
+* task.  For example, you could have DevEnv build tasks [TODO: link to devenv plugin] depend on a
+task corresponding to a prerequisite for Visual Studio 10.
+
+===== Predefined prerequisite type
+
+[source,groovy]
+----
+prerequisite.specify("Windows", "Windows 7", "Windows Server 2008 R2")
+----
+
+The first parameter of this overload of +specify+ is name of one kind of built-in prerequisite. This
+is defined in a plugin and will be documented in this guide. The remaining parameters are all
+strings and are the arguments to the actual checking function. For the above example "Windows 7" and
+"Windows Server 2008 R2" are passed to a function which will report a failure if the operating
+system is not one of the two specified.
+
+===== Custom prerequisite type
+
+[source,groovy]
+----
+prerequisite.specify("Foo", { checker -> checker.assertEnvironmentVariableExists("bar") })
+----
+
+The first parameter is a unique name for this prerequisite within the entire multi-project
+workspace. The second parameter is a gloss:closure[] you write, which will be called with a
++checker+ object. There are several helper methods on this object including a +fail+ method. The
+fundamental purpose of the closure is to call +fail+ if and only if the prerequisite is not met.
+
+The methods on the +checker+ object are as follow.
+
+* String readRegistry(String key, String value) - Try to read the given key/value from the Windows
+registry, returning null if it wasn't possible. This method knows nothing about 'Wow6432Node' so you
+can include that in the key if you choose.
+
+* String readEnvironment(String variable) - Try to read the given environment variable, returning
+null if it wasn't possible.
+
+* String readProperty(String property) - Try to read the given Java property, returning null if it
+wasn't possible. 
+
+* String readFile(String path) - Try to read the entire contents of the given file, returning null
+if it wasn't possible.
+
+* void assertEnvironmentVariableExists(String envVar, String failureMessage = null) - Call +fail+ if
+the given environment variable does not exist.
+
+* void assertEnvironmentVariableRefersToDirectory(String envVar, String failureMessage = null) -
+Call +fail+ if the given environment variable doesn't exist or doesn't refer to a directory that
+exists. 
+
+* void fail(String... messages) - Prints out a failure message to the console and throws an
+exception. If this check is being run due to +checkPrerequisites+ then the exception will only be
+thrown after all the prerequisite checks have run.
+
+==== check
+
+This method takes a single parameter which must correspond to a string that has previously been
+passed to +specify+. If +specify+ has previously been called multiple times with different
+parameters for a given prerequisite type, then this +check+ method will perform _all_ checks.
+
+==== getTask
+
+This method takes a single parameter which must correspond to a string that has previously been
+passed to +specify+. If +specify+ has previously been called multiple times with different
+parameters for a given prerequisite type, then this method will return a task that performs _all_
+checks.
+
+=== taskDependencies
+
+TODO: Replace with explanation of normal Gradle mechanism.
+
+This gloss:dsl[] extension allows you to configure the dependencies of your own custom tasks using
+the known build dependencies between projects. Say you have a project +foo+ which has a [TODO: link
+to intrepid's sourceDependencies section] on +bar+ defined as follows.
+
+[source,groovy]
+----
+sourceDependencies {
+    bar { hg "http://path/to/bar" }
+}
+----
+
+Suppose you also have some tasks (for example for running unit tests) in both modules.
+
+[source,groovy]
+----
+task myTest << {
+    println "Running tests..."
+}
+----
+
+Now you could explicitly define a dependency from +:foo:myTest+ to +:bar:myTest+ as follows:
+
+[source,groovy]
+----
+myTest.dependsOn project(":bar").myTest
+----
+
+but this isn't ideal because:
+* you may dependencies from 'foo' on many other projects
+* this is essentially a repetition of dependencies that are already stated using +sourceDependencies+
+Instead call this method after the definition of your task:
+
+[source,groovy]
+----
+taskDependencies.configure("myTest")
+----
+
+which will find the 'myTest' task in the current project, then find any tasks with the same name in the dependent projects and set up the task dependencies.
+
+== Tasks
+
+TODO: Remove a few of these tasks?
+
+=== createWrapper
+
+Creates a Gradle wrapper in the current directory using this instance of Gradle.
+
+=== pluginHelp
+
+Opens a help page in your favourite browser.
+
+=== doskey
+
+Helps you configure doskey to allow 'gw' to be used from any directory.
+
+=== versionInfo
+
+Outputs version information about this instance of Gradle.
+
+=== openAllBuildscripts
+
+Opens all build-scripts in this workspace using the default program for '.gradle' files.
+
+=== openInitScript
+
+Opens the init script using the default program for '.gradle' files.
+
+=== openGradleProperties
+
+Opens the user's system-wide gradle.properties file.
+
+=== checkPrerequisites
+
+Runs all prerequisite checks. 
