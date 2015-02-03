@@ -102,13 +102,33 @@ TODO: ...  See also the link:workflows.html[] page.  [TODO: Link to section with
 
 TODO: The name of the project is controlled by the folder it's in.
 
+== ... build an existing project
+
+To build a project from source when it already exists, you need to do the following things.
+
+* Make sure your machine is link:first_steps.html[set up for Gradle].
+* Make sure you have permissions to access the source code repository _and_ the gloss:artifactory[]
+glowss:repositories[] which contain the project's dependencies.  The team which owns the project
+should have this information.
+* Check out the source code using the appropriate tool -- usually gloss:subversion[] or
+gloss:mercurial[].
+* Open a Command Prompt in the project's folder, and follow the link:workflows.html#_typical_workflow[].
+
+Note that, if this is the first time you have accessed the project's Artifactory repository/-ies,
+the Holy Gradle will pop up a dialog to prompt you for the username and password.  This will also
+happen if the project has gloss:source-dependencies[] you may be prompted separately for those.  It
+stores them in the gloss:credential-manager[] so you will not need to supply them again until you
+change your password.
+
+TODO: Link to some reference page on password updates.
+
 == ... make a release of my project
 
 Making a release can be a complex process, so this section will only give a high-level view, with
 links to other sections.  It only talks about how to package up files and store them for you and
 other teams to use.  It assumes that your project is already using the gloss:holygradle[] and you
 are able to get all the project's dependencies and build it.  If not, please see previous sections
-such as "<<start_a_new_project>>".
+such as "<<_start_a_new_project>>".
 
 The main things to consider are
 

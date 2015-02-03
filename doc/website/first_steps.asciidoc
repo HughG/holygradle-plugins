@@ -153,6 +153,9 @@ gw tasks
 You will not be able to use gloss:holygradle[] features until you have a +build.gradle+ file which
 applies the plugins.
 
+NOTE: The Holy Gradle only supports running from within the usual Windows Command Prompt.  Using
+other shells such as PowerShell, or Unix-style shells from Cygwin etc., is not supported.
+
 DONE: http://ediwiki/mediawiki/index.php/Gradle#Initial_Setup
 
 === A Minimal Holy Gradle Build File

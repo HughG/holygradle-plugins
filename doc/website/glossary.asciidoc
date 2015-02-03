@@ -11,7 +11,8 @@
 
 include::sitemap.ascinc[]
 
-This page gives a short description of many terms related to the Holy Gradle and its use with Artifactory.  Glossary entries may link to other pages for more information.
+This page gives a short description of many terms related to the Holy Gradle and its use with
+Artifactory.  Glossary entries may link to other pages for more information.
 
 [glossary]
 == Glossary
@@ -44,7 +45,8 @@ This page gives a short description of many terms related to the Holy Gradle and
     Some software gloss:module[] B is said to be a dependency of module A if A needs ("depends 
     on") B in some way.  Module B might be needed only when building A, or it might be needed to 
     build other modules which depend on A, or it might be needed at runtime, and so on.
-[[gloss-dependencies]] dependencies:: See gloss:dependency[].
+[[gloss-dependencies]] dependencies::
+    See gloss:dependency[].
 [[gloss-dependency-management]] dependency management::
     Managing information and tasks related to software modules which depend on each other.  In 
     the context of gloss:gradle[] and gloss:artifactory[], module metadata includes the name of 
@@ -144,7 +146,8 @@ download those files.
     gloss:gradle[] uses the term _project_ to refer to a +build.gradle+ control file, which 
     defines (among other things) the dependencies required to build the software module, and the 
     information required to publish it.  (gloss:artifactory[] does not use the term _project_.)
-[[gloss-repositories]] repositories:: See gloss:repository.
+[[gloss-repositories]] repositories::
+    See gloss:repository[].
 [[gloss-repository]] repository::
     This term is often abbreviated as "repo".
 +
@@ -170,6 +173,14 @@ history of a set of related files.
     choose to trust.  Certificates can be used to sign other certificates, creating a chain of
     trust.  Operating systems and browsers usually have a built-in list of trusted authorities.
     See https://en.wikipedia.org/wiki/Root_certificate[] for more information.
+[[gloss-source-dependency]] Subversion::
+    The gloss:holygradle[] allows projects to have dependencies which are built from source in other
+    repositories, using the standard gloss:gradle[] multi-project build approach.  The source code
+    is fetched along with gloss:packed-dependencies[], and those dependency projects are published
+    when the depending project is published, with dependency information automatically inserted into
+    the +ivy.xml+.
+[[gloss-source-dependencies]] source dependencies::
+    See gloss:source-dependency[].
 [[gloss-subversion]] Subversion::
     A centralised version control system: see https://subversion.apache.org/.  The
     gloss:holygradle[] has support for cloning repositories from a Subversion repository,
@@ -189,7 +200,8 @@ history of a set of related files.
     Usually some of the files in a workspace will be checked in to source control, and the rest will
     be produced by building and running the module.  In gloss:gradle[] terms it is "(the file
     tree under) the project directory of the root project".
-[[gloss-wrapper]] wrapper:: See gloss:gradle-wrapper[].
+[[gloss-wrapper]] wrapper::
+    See gloss:gradle-wrapper[].
 
 
 include::{localDoc}/glossary.ascinc[]
