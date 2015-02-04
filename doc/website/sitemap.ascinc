@@ -6,11 +6,9 @@ and Artifactory
 </div>
 <ul>
     <li><a href="index.html">Home</a></li>
-    <li><!-- <a href="getting_started.html"></a> -->
+    <li><p>Getting Started<!-- <a href="getting_started.html"></a> --></p>
         <ul>
-<!--
             <li><a href="very_quick_start.html"></a></li>
--->
             <li><a href="overview.html"></a></li>
             <li><a href="first_steps.html"></a></li>
         </ul>

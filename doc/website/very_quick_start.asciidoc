@@ -7,10 +7,85 @@
 :toclevels: 3
 :numbered:
 
-= Troubleshooting
+= I just want to ...
 
 include::sitemap.ascinc[]
 
-This page ... *TODO* 
+== ... get something from Artifactory
 
-TODO: http://localwiki/Gradle#Initial_Setup ?
+To get something from gloss:artifactory[] you need to know the gloss:module[] version ID (group,
+name, and version), and the gloss:repository[] to get it from.  The group which publishes the module
+can tell you this information, or give you a URL which links directly to it.  You also need to make
+sure you have permissions in Artifactory which allow you to download it -- ask your local
+administrators (see the link:support.html[] page) and/or the group lead.
+
+=== -- just one file
+
+It is possible to download individual ZIP files and other files directly from the Artifactory web
+UI.  Log in, then click on the "Artifacts" tab, and use the "Tree Browser" or "Simple Browser" to
+find the files you need.  The file structure is +/_repository_/_group_/_module_/_version_/_files_+.
+For more details, see http://www.jfrog.com/confluence/display/RTF/Browsing+Artifactory.
+
+TIP: The "Tree Browser" only shows you files that have been published at your site, or already
+downloaded from another site.  If you need a file from a _remote_ repository (which caches files
+from other servers on your server) but it has not been downloaded yet, you must use the "Simple
+Browser".
+
+=== -- a whole software module
+
+In most cases, if you need one file from a module in gloss:artifactory[], you will also need other
+files from that module and from its gloss:dependencies[].  A tool like the gloss:holygradle[] makes
+this much easier.  In this case you need to do the following things.
+
+* Find out the name of a _virtual_ repository which you can use to access the module.
+* Find out the module version ID _and_ the gloss:configuration[](s) you need -- ask the publishing
+group if you are not sure.
+* Make sure you have link:first_steps.html[set up your machine] for gloss:gradle[], and create a
+minimal project if you don't have one already.
+* Add at least one configuration to your +build.gradle+, if you don't have any already.
++
+[source,groovy]
+----
+configurations {
+    privateBuild
+}
+----
+* Add a reference to the repository, if it is not already in your +build.gradle+.
++
+[source,groovy]
+----
+repositories.ivy {
+    credentials {
+        username my.username("Artifactory")
+        password my.password("Artifactory")
+    }    
+    url "https://artifact-server.example-corp.com/libs-release/"
+}
+----
+* Add a reference to the module in your +build.gradle+, with a mapping from your project's
+configurations to the other project's configurations.
++
+[source,groovy]
+----
+packedDependencies {
+    "somelib" {
+        dependency "com.example-corp.teamA:somelib:1.3.2"
+        configuration "privateBuild->compileVc10Debug,compileVc10Release"
+        configuration "privateBuild->debuggingVc10Debug,debuggingVc10Release"
+    }
+}
+----
+* Run +gw fAD+ in a Windows Command Prompt in your project's directory.  If you have any problems,
+contact your local support staff (see link:support.html[]) or the group which publishes the module.
+
+TODO: Authentication
+
+TIP: Before publishing your module, you should review the list of configurations in your
++build.gradle+, and the configuration mapping for each dependency.  If you do not, it may be more
+difficult for other teams to use your module.  See the page on link:workflows.html[] for more
+information.
+
+== ... build an existing project
+
+
+== ... start a new project

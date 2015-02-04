@@ -3,6 +3,8 @@
         /* Set colours. */
         background-color: white;
         color: black;
+        /* Base sizes. */
+        font-size: 16px;
         /* Bigger left margin, for sitemap and toc. */
         margin-left: 29em;
         width: 48em;
@@ -23,11 +25,9 @@
     }
 
     /* Make code font a little smaller. */
-    p code, td code,
-    div.listingblock pre, div.literalblock pre,
-    div.listingblock pre code, div.literalblock pre code,
+    div.listingblock pre, div.literalblock pre
     {
-        font-size: smaller;
+        font-size: 14px;
     }
 
     /* Tone down the colours for links. */

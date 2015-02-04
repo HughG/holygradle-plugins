@@ -21,6 +21,8 @@ TODO: http://localwiki/Artifactory#Backward_Compatibility_with_HTTP
 
 TODO: http://localwiki/Artifactory#Typical_Log_Warnings
 
+== Error Messages
+
 TODO: Error message about "abort: could not find web.cacerts: C:\temp\Mercurial251\cacert.pem".  May
 mean that you're trying to access a Mercurial repo over HTTPS, and the server's certificate is not
 ultimately signed by a public authority.  One way to solve this for Mercurial is to put a root
@@ -28,3 +30,11 @@ certificate in your Mercurial install folder; but the gloss:holygradle[] uses it
 of Mercurial, which won't find that certificate.  Instead, use hostfingerprints, or get a proper
 cert for your server.  [TODO: add task to use local "hg.exe" from path, instead of internal one,
 as a per-user.]
+
+== FAQs
+
+* How do I find version X of module M, to get it into my project?
+
+* How to I get module version M:X, which is on a remote server, to be cached on my site's server?
+
+* Password change
