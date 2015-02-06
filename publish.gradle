@@ -4,9 +4,20 @@ def propertyOrNull(Object o, String propertyName) {
     o.hasProperty(propertyName) ? o.property(propertyName) : null
 }
 
-void setPublishTaskDescription(Task t, String publishingGroup, String targetUri) {
+void setPublishTaskDescription(
+    Task t,
+    String publishingGroup,
+    String snapshotTargetUri,
+    String releaseTargetUri
+) {
     t.group = "Publishing"
-    t.description = "Publish snapshot or (using 'publishVersion' property) release of ${publishingGroup} to ${targetUri}"
+    String targetDescription
+    if (snapshotTargetUri == releaseTargetUri) {
+        targetDescription = releaseTargetUri
+    } else {
+        targetDescription = "${snapshotTargetUri} for snapshots, or ${releaseTargetUri} for releases"
+    }
+    t.description = "Publish snapshot or (using 'publishVersion' property) release of ${publishingGroup} to ${targetDescription}"
 }
 
 // Set up publish tasks for root project.
@@ -14,13 +25,13 @@ project.ext.publishTasks = []
 project.ext.publishReallyTasks = []
 ["Plugins", "CustomGradle"].each { String publishingGroup ->
     Task publishReally = project.task("publish${publishingGroup}Really") { Task t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
     }
     project.publishTasks << publishReally
     project.publishReallyTasks << publishReally
 
     project.publishTasks << project.task("publish${publishingGroup}Locally") { Task t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI, PUBLISH_LOCAL_TARGET_URI)
     }
 }
 project.publishTasks.each { Task t ->
@@ -113,7 +124,7 @@ project.subprojects {
     // Set up publish tasks for each subproject.
     project.ext.publishTasks = []
     project.publishTasks << project.task("publish${publishingGroup}Really", type: Upload) { Upload t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_TARGET_URI)
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
         t.configuration = configurations.default
         t.uploadDescriptor = true
         t.descriptorDestination = new File(project.buildDir, "ivy.xml")
@@ -122,17 +133,22 @@ project.subprojects {
         // existence of that task in the task graph, and because it brings in a dependency on integration testing.
         t.dependsOn rootProject.tasks[t.name]
 
+        if (project.version.toString().endsWith('-SNAPSHOT')) {
+            t.ext.targetUri = PUBLISH_SNAPSHOT_TARGET_URI
+        } else {
+            t.ext.targetUri = PUBLISH_RELEASE_TARGET_URI
+        }
         t.repositories.ivy {
             credentials {
                 username artifactoryUsername
                 password artifactoryPassword
             }
-            url PUBLISH_TARGET_URI
+            url t.targetUri
         }
     }
     project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
         t.configuration = configurations.default
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI)
+        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI, PUBLISH_LOCAL_TARGET_URI)
         t.uploadDescriptor = true
         t.descriptorDestination = new File(project.buildDir as File, "ivy.xml")
         t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
@@ -140,8 +156,9 @@ project.subprojects {
         // existence of that task in the task graph.
         t.dependsOn rootProject.tasks[t.name]
 
+        t.ext.targetUri = PUBLISH_LOCAL_TARGET_URI
         t.repositories.ivy {
-            url PUBLISH_LOCAL_TARGET_URI
+            url t.targetUri
         }
 
         // The credential-store project build file has to set up its own, slightly different input dependencies.
@@ -151,12 +168,12 @@ project.subprojects {
                 "/build/libs/${project.name}-${project.version}.jar"
             )
         }
-        t.outputs.dir PUBLISH_LOCAL_TARGET_URI.toString() + "${project.group}/${project.name}/${project.version}"
+        t.outputs.dir t.targetUri.toString() + "${project.group}/${project.name}/${project.version}"
     }
     project.publishTasks.each { Task t ->
         t.doLast {
             println "Published ${project.name} ${project.version} " +
-                "to ${PUBLISH_TARGET_URI} at ${new Date()} from ${project.releaseNoteInfo}"
+                "to ${t.targetUri} at ${new Date()} from ${project.releaseNoteInfo}"
         }
     }
 }

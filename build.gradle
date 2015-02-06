@@ -72,7 +72,8 @@ subprojects {
  * PUBLISH_LOCAL_TARGET_URI is needed by both test.gradle and publish.gradle, so it's defined here,
  * keeping other related URIs with it for ease of understanding.
  */
-project.ext.PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
+project.ext.PUBLISH_RELEASE_TARGET_URI = artifactoryServer + artifactoryPluginReleasePublishRepo + "/"
+project.ext.PUBLISH_SNAPSHOT_TARGET_URI = artifactoryServer + artifactoryPluginSnapshotPublishRepo + "/"
 project.ext.PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI().toString() + "/"
 /*
  * LOCAL_GRADLE_USER_HOME is passed to integration tests for the Gradle daemon (launched by the WrapperBuildLauncher in
