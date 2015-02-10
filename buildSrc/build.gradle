@@ -1,0 +1,31 @@
+apply plugin: 'groovy'
+
+repositories {
+    maven {
+        url artifactoryServer + 'remote-repos/'
+        // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
+        // Artifactory.  If you update dependencies to require a new version of something (such as svnkit) which
+        // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
+        // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
+        // server, that may require credentials.
+        credentials {
+            username artifactoryUsername
+            password artifactoryPassword
+        }
+    }
+}
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+    compile 'org.apache.maven.wagon:wagon-provider-api:2.3'
+    // compile 'org.apache.maven.wagon:wagon-file:2.3'
+    // compile 'org.apache.maven.wagon:wagon-ftp:2.3'
+    compile 'org.apache.maven.wagon:wagon-http:2.3'
+    // compile 'org.apache.maven.wagon:wagon-ssh:2.3'
+    // compile 'org.apache.maven.wagon:wagon-ssh-external:2.3'
+    compile 'org.apache.maven.wagon:wagon-webdav-jackrabbit:2.3'
+    compile('org.codehaus.plexus:plexus-container-default:1.5.5') {
+        exclude group: 'junit'
+    }
+}
