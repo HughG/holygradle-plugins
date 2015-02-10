@@ -98,6 +98,7 @@ for (local in [false, true]) {
     final String rawHtmlDir = "${project.WEBSITE_DIR}/${rawHtmlSubdir}"
     final String websiteOutputSubdir = local ? 'output-local' : 'output'
     final String websiteOutputDir = "${project.WEBSITE_DIR}/${websiteOutputSubdir}"
+    final String publishUrl = local ? project.localWebsitePublishUrl : project.publicWebsitePublishUrl
     final File quicklyFile = new File("${rawHtmlDir}/_quickly.txt")
 
     task("clean${namePart}Website") { Task t ->
@@ -196,22 +197,26 @@ for (local in [false, true]) {
         t.dependsOn "copy${namePart}RawHtmlExtraFiles"
     }
 
-}
-
-task testPublishWebsite << {
-    final String username = System.getProperty("user.name").toLowerCase()
-    final File credStoreExe =
-        new File(rootProject.projectDir, "/credential-store/Release/credential-store.exe")
-    OutputStream credentialStoreOutput = new ByteArrayOutputStream()
-    project.exec { ExecSpec spec ->
-        spec.setIgnoreExitValue true
-        spec.commandLine credStoreExe, "Intrepid - Domain Credentials"
-        spec.setStandardOutput credentialStoreOutput
+    task("publish${namePart}Website") { Task t ->
+        t.group = "Documentation"
+        t.description = "Publish the ${namePart} website"
+        //t.dependsOn "build${namePart}Website"
+        t.doLast {
+            final String username = System.getProperty("user.name").toLowerCase()
+            final File credStoreExe =
+                new File(rootProject.projectDir, "/credential-store/Release/credential-store.exe")
+            OutputStream credentialStoreOutput = new ByteArrayOutputStream()
+            project.exec { ExecSpec spec ->
+                spec.setIgnoreExitValue true
+                spec.commandLine credStoreExe, "Intrepid - Domain Credentials"
+                spec.setStandardOutput credentialStoreOutput
+            }
+            final String password = credentialStoreOutput.toString().split("&&&")[1]
+            println "Publishing to ${publishUrl}"
+            final WagonPublisher publisher = new WagonPublisher(project.logger, publishUrl, username, password)
+            final File dirToPublish = new File(websiteOutputDir)
+            ConfigurableFileTree filesToPublish = project.fileTree(dirToPublish)
+            publisher.publish(filesToPublish, dirToPublish)
+        }
     }
-    final String password = credentialStoreOutput.toString().split("&&&")[1]
-    final WagonPublisher publisher = 
-        new WagonPublisher(project.logger, project.localWebsitePublishUrl, username, password)
-    final File dirToPublish = new File("${project.WEBSITE_DIR}/output-local")
-    ConfigurableFileTree filesToPublish = project.fileTree(dirToPublish)
-    publisher.publish(filesToPublish, dirToPublish)
 }
