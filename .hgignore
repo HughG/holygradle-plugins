@@ -53,3 +53,5 @@ syntax: regexp
 # Local publishing / downloading
 ^local_repo/
 ^local_gradle_user_home/
+# Other local source
+^local/

@@ -25,6 +25,10 @@ This repository contains:
  
 # Getting started with a clean checkout
 
+## Banned words list
+
+For confidentiality reasons, the 'build.gradle' will automatically add a pretxncommit hook to your clone of this repo, which checks that commits don't contain any words in a "banned" list, which should exist at 'local\holy-gradle-plugins-banned-words.txt'.  You must create a symlink from 'local' to a folder of your choice, containing a file with that name.
+
 ## Creating gradle.properties
 Create 'gradle.properties' in the root of your workspace add define these properties:
 ```

@@ -2,6 +2,22 @@ import org.gradle.api.initialization.dsl.ScriptHandler
 
 apply plugin: 'groovy'
 
+final File HGRC = new File('.hg/hgrc')
+if (!HGRC.readLines().any { it.contains('pretxncommit.sanitise') }) {
+    HGRC.withWriterAppend { BufferedWriter bw ->
+        bw.withPrintWriter { PrintWriter pw ->
+            pw.println()
+            pw.println('[hooks]')
+            pw.println(
+                'pretxncommit.sanitise = ' +
+                'hg export tip | ' +
+                'findstr /i /g:local\\holy-gradle-plugins-banned-words.txt & ' +
+                'if errorlevel 1 (exit /b 0) else (exit /b 1)'
+            )
+        }
+    }
+}
+
 buildscript { ScriptHandler script ->
     // Make sure we don't publish something which is based on conflicting versions of dependencies.
     script.configurations["classpath"].resolutionStrategy { ResolutionStrategy rs ->  rs.failOnVersionConflict() }
