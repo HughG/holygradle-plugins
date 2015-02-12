@@ -200,7 +200,8 @@ for (local in [false, true]) {
     task("publish${namePart}Website") { Task t ->
         t.group = "Documentation"
         t.description = "Publish the ${namePart} website"
-        //t.dependsOn "build${namePart}Website"
+        t.dependsOn "build${namePart}Website"
+        t.dependsOn ":credential-store:build"
         t.doLast {
             final String username = System.getProperty("user.name").toLowerCase()
             final File credStoreExe =
@@ -212,11 +213,12 @@ for (local in [false, true]) {
                 spec.setStandardOutput credentialStoreOutput
             }
             final String password = credentialStoreOutput.toString().split("&&&")[1]
-            println "Publishing to ${publishUrl}"
+            println "Publishing to ${publishUrl} ..."
             final WagonPublisher publisher = new WagonPublisher(project.logger, publishUrl, username, password)
             final File dirToPublish = new File(websiteOutputDir)
             ConfigurableFileTree filesToPublish = project.fileTree(dirToPublish)
             publisher.publish(filesToPublish, dirToPublish)
+            println "Published to ${publishUrl}"
         }
     }
 }

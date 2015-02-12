@@ -23,6 +23,9 @@ void setPublishTaskDescription(
 // Set up publish tasks for root project.
 project.ext.publishTasks = []
 project.ext.publishReallyTasks = []
+project.ext.getIsPublishing = {
+    project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }
+}
 ["Plugins", "CustomGradle"].each { String publishingGroup ->
     Task publishReally = project.task("publish${publishingGroup}Really") { Task t ->
         setPublishTaskDescription(t, publishingGroup, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
@@ -72,8 +75,7 @@ task setPublishVersion {
 
 // Print a message, if we're actually publishing.
 project.gradle.taskGraph.whenReady {
-    if (project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }) {
-
+    if (project.getIsPublishing()) {
         project.tasks['setHgVersionInfo'].doLast {
             // Fail early if any release publishing preconditions are not met.
             if (!project.version.toString().endsWith('-SNAPSHOT')) {

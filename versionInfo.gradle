@@ -39,12 +39,12 @@ task setHgVersionInfo {
 
             // Store both command outputs in one string with no line breaks.
             String infoWithoutDate = os.toString().replaceAll("[\\r\\n]", "")
-        
+            project.ext.hgVersion = infoWithoutDate.split()[1]
+
             // Add the date/time.
             (new PrintStream(os)).withStream { it.print(" ") }
             SimpleDateFormat rfc3339dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX")
-            String rev = infoWithoutDate.split()[1]
-            if (rev.endsWith('+')) {
+            if (project.hgVersion.endsWith('+')) {
                 // There are local changes, so just use the current date/time.
                 (new PrintStream(os)).withStream {
                     it.print(rfc3339dateFormat.format(new Date()))
@@ -53,20 +53,26 @@ task setHgVersionInfo {
                 // Pull from the Hg log.
                 exec {
                     executable = "hg"
-                    args = ["log", "-r", rev, "-T", '"{date|rfc3339date}"']
+                    args = ["log", "-r", project.hgVersion, "-T", '"{date|rfc3339date}"']
                     standardOutput = os
                 }
             }
+            String infoWithDate = os.toString().replaceAll("[\\r\\n]", "")
 
-            project.ext.hgVersion = rev
-            project.ext.hgVersionInfo = os.toString().replaceAll("[\\r\\n]", "")
+            // Only include the date/time if we're actually publishing.  It will change any time you
+            // edit a file in the working copy, even if it's not an input to what you're building,
+            // so if we include it, various things always get rebuilt (e.g., credential-store.exe).
+            if (project.getIsPublishing()) {
+                project.ext.hgVersionInfo = infoWithDate
+            } else {
+                project.ext.hgVersionInfo = infoWithoutDate
+            }
 
-            Date dateFromInfo = rfc3339dateFormat.parse(project.hgVersionInfo.split().last())
-            
+            Date dateFromInfo = rfc3339dateFormat.parse(infoWithDate.split().last())
             SimpleDateFormat releaseNotesDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z")
             releaseNotesDateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
             String releaseNotesDate = releaseNotesDateFormat.format(dateFromInfo)
-            project.ext.releaseNoteInfo = "${rev} at ${releaseNotesDate}"
+            project.ext.releaseNoteInfo = "${project.hgVersion} at ${releaseNotesDate}"
 
             // Write the version to a file, so that the file can be seen as changed (or not) by
             // other tasks, to force them to re-run.

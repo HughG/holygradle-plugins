@@ -43,7 +43,8 @@ task createProjectVersionFile {
 final File CREDENTIAL_STORE_EXE = project.file("Release/credential-store.exe")
 
 task("build", type: Exec) { Exec t ->
-    t.dependsOn createReleaseVersionFile, createProjectVersionFile
+    t.inputs.files createReleaseVersionFile.outputs.files
+    t.inputs.files createProjectVersionFile.outputs.files
 
     t.inputs.files(project.fileTree(projectDir) {
         include "credential-store.*"
