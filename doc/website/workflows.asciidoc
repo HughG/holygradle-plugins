@@ -1,10 +1,4 @@
-:linkcss:
-:stylesdir: asciidoc
-:scriptsdir: asciidoc
-:stylesheet: master.css
-:toc2:
-:toclevels: 3
-:numbered:
+include::stdattr.ascinc[]
 
 ////
 Graphviz for Cygwin comes from <http://cygwinports.org/>.

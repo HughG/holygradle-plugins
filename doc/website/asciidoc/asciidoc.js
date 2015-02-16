@@ -164,26 +164,28 @@ footnotes: function () {
   }
 },
 
+/*
+ * NOTE 2015-02-16 HughG: The original "install" used a 500ms timer, but that isn't recommended 
+ * nowadays, and doesn't work in my case because I'm doing too many things on page load.  I can use
+ * jQuery because I'm putting it in my pages anyway; but I can't use it at the point AsciiDoc wants
+ * to install() because I'm not loading it till later.  So I made install() record the toclevel
+ * number, and added another function which I can call in my own hooks script, after jQuery is
+ * loaded.  I could have done this in other ways, but I wanted to change this code as little as
+ * possible.
+ */
+
+_installedTocLevels: undefined,
+
 install: function(toclevels) {
-  var timerId;
+  _installedTocLevels = toclevels;
+},
 
-  function reinstall() {
-    asciidoc.footnotes();
-    if (toclevels) {
-      asciidoc.toc(toclevels);
-    }
+activate: function() {
+  asciidoc.footnotes();
+  if (_installedTocLevels) {
+    asciidoc.toc(_installedTocLevels);
   }
 
-  function reinstallAndRemoveTimer() {
-    clearInterval(timerId);
-    reinstall();
-  }
-
-  timerId = setInterval(reinstall, 500);
-  if (document.addEventListener)
-    document.addEventListener("DOMContentLoaded", reinstallAndRemoveTimer, false);
-  else
-    window.onload = reinstallAndRemoveTimer;
 }
 
 }

@@ -27,7 +27,13 @@
     /* Make code font a little smaller. */
     div.listingblock pre, div.literalblock pre
     {
-        font-size: 14px;
+        font-size: 12px;
+    }
+
+    /* Horizontal scroll on overflowing code and images. */
+    div.imageblock > div.content, div.listingblock > div.content {
+        overflow: auto;
+        overflow-y: hidden;
     }
 
     /* Tone down the colours for links. */
@@ -97,17 +103,17 @@
 
     /* Adjust indents, for numbered headings */
     #toc .toclevel1 {
-        margin-left: 0;
-        text-indent: 0;
+        margin-left: 2em;
+        text-indent: -2em;
     }
     #toc .toclevel2 {
-        margin-left: 4em;
-        text-indent: -3em;
+        margin-left: 3em;
+        text-indent: -2em;
         display: block;
     }
     #toc .toclevel3 {
-        margin-left: 7em;
-        text-indent: -4em;
+        margin-left: 4em;
+        text-indent: -2em;
     }
 
     /* Make sitemap/toc links underlined only on hover. */

@@ -1,11 +1,4 @@
-:docinfo1:
-:linkcss:
-:stylesdir: asciidoc
-:scriptsdir: asciidoc
-:stylesheet: master.css
-:toc2:
-:toclevels: 3
-:numbered:
+include::stdattr.ascinc[]
 
 = Reference
 
@@ -27,9 +20,7 @@ Following is an expanded version of the diagram in the link:overview.html[] ...
 --
 digraph {
     ranksep=0.4
-    fontsize=12
-    node [shape=box, style=rounded, margin="0.04,0.04", height=0.3, fontsize=12]
-    edge [fontsize=12]
+    node [shape=box, style=rounded, margin="0.04,0.04", height=0.4]
     compound=true
 
     subgraph key {

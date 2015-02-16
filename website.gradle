@@ -121,9 +121,11 @@ for (local in [false, true]) {
         into websiteOutputDir
         include "asciidoc/**"
         include "files/**"
+        include "images/**"
         if (local) {
             it.include "local/asciidoc/**"
             it.include "local/files/**"
+            it.include "local/images/**"
         }
     }
 
