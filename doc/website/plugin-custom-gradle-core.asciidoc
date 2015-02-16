@@ -1,6 +1,6 @@
 include::stdattr.ascinc[]
 
-= +custom-gradle-core-plugin+
+= custom-gradle-core-plugin
 
 include::sitemap.ascinc[]
 

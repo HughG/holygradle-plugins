@@ -55,6 +55,10 @@ Artifactory.  Glossary entries may link to other pages for more information.
     you describe tasks and connections between them, and Gradle works out which tasks to run, in 
     which order.  Currently the Holy Gradle is based on gloss:gradle[] 1.4, which is based on Groovy
     1.8.8.
+[[gloss-gradle-distribution]] Gradle distribution::
+    gloss:gradle[] can be downloaded from http://www.gradle.org/ but also allows organisations to
+    use their own local, customised distributions which can include configuration specific to the
+    organisation, for example, special gloss:ini-script[]s.
 [[gloss-gradle-wrapper]] Gradle wrapper::
     A small set of files which lets you use a specific distribution of Gradle for building a 
     gloss:project[], without installing Gradle globally on your machine.  It includes a batch 
@@ -82,6 +86,10 @@ Artifactory.  Glossary entries may link to other pages for more information.
     publishing dependencies with many files (packed as ZIP files); and deleting temporary 
     publications from Artifactory.  There are other features with minimal support: building with 
     Visual Studio; running unit tests.  Currently the Holy Gradle is based on gloss:gradle[] 1.4.
+[[gloss-init-script]] init script::
+    A gloss:gradle[] init script is a +.gradle+ script which is run before your build.  Such a
+    script can be passed on the command line but usually is packed up as part of a
+    gloss:gradle-distribution[].  See http://www.gradle.org/docs/1.4/userguide/userguide_single.html#init_scripts for more detail.
 [[gloss-ivy]] Ivy::
     A gloss:dependency-management[] tool written in Java, which works stand-alone or with link: 
     https://ant.apache.org/[Apache Ant].  gloss:gradle[] shares many concepts with Ivy, and 
@@ -166,6 +174,10 @@ history of a set of related files.
     choose to trust.  Certificates can be used to sign other certificates, creating a chain of
     trust.  Operating systems and browsers usually have a built-in list of trusted authorities.
     See https://en.wikipedia.org/wiki/Root_certificate[] for more information.
+[[gloss-settings-file]] settings file::
+    A gloss:gradle[] file called +settings.gradle+ which read before your build script.  This
+    script is normally in the same folder as your build script.  See http://www.gradle.org/docs/1.4/userguide/userguide_single.html#sec:settings_file for more
+    detail.  When using the link:plugin-intrepid.html, this file is generated for you.
 [[gloss-source-dependency]] Subversion::
     The gloss:holygradle[] allows projects to have dependencies which are built from source in other
     repositories, using the standard gloss:gradle[] multi-project build approach.  The source code

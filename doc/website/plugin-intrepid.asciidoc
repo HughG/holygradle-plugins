@@ -1,0 +1,1084 @@
+include::stdattr.ascinc[]
+
+= intrepid-plugin
+
+include::sitemap.ascinc[]
+
+
+== Overview
+
+=== What is it?
+
+This is a custom plugin for Gradle for retrieving source-code dependencies and other dependencies consisting of multiple zip files. It also supports publishing artifacts as collections of zip files. 
+
+* Default dependency settings
+** Fail on version conflict by default (configurable)
+* Source code dependencies
+** Retrieving source code repositories from SVN and Mercurial
+** Caching credentials for SVN and Mercurial
+** Configurable options when publishing a module that has a source code dependency
+** Support for overriding a source code dependency and using pre-built artifacts instead
+* Packed dependencies
+** Retrieving dependencies consisting of many files into your workspace
+** Central cache for unpacked dependencies & symlink from workspace to central cache
+** Configurable symlinks from consumer module to multiple locations in unpacked dependency
+** Support for multiple versions of the same component (i.e. version conflicts)
+* Publishing
+** Support for creating multiple packages (i.e. zip files)
+** Uploading to Ivy format repository
+
+=== Example build script
+
+Here is an example build script:
+
+[source,groovy]
+----
+buildscript {
+    gplugins.use "intrepid:7.2.5"
+}
+gplugins.apply()
+
+repositories.ivy {
+    url "http://artifactory-server/artifactory/libs-release"
+}
+
+// dependencySettings.defaultFailOnVersionConflict = false
+
+configurations {
+    headers
+    source.extendsFrom headers
+    compileVc10Debug.extendsFrom headers
+    compileVc10Release.extendsFrom headers
+}
+
+sourceDependencies {
+    framework {
+        svn "http://svn-server/path/to/framework"
+        publishing {
+            group "com.company.team"
+            configuration "compileVc10Debug->compileDebug", "compileVc10Release->compileRelease"
+            version "1.0.3.+"
+        }
+    }
+    "another-lib" {
+        hg "http://hg-server/scm/path/to/another-lib"
+    }
+}
+
+packedDependencies {
+    RenderingLib {
+        dependency "com.company.rendering:RenderingLib:2012a2"
+        configuration "compileVc10Debug->compileVc10X64Debug", "compileVc10Release->compileVc10X64Release"
+    }
+    "NUnit <version>" {
+        dependency "org:NUnit:2.5.10"
+        configuration "compileVc10Debug,compileVc10Release->bin"
+        unpackToCache = false
+    }
+}
+
+packageArtifacts {
+    headers.include "src/**/*.h"
+    source {
+        include "src/**/*.cpp", "extra/**/src/**/*.cpp"
+        include "build/*.vcxproj"
+    }
+    ["Debug", "Release"].each { conf ->
+        "libVc10${conf}" {
+            configuration = configurations."compileVc10${conf}"
+            include "lib/${conf}/*.lib"
+        }
+    }
+}
+
+publishPackages {
+    group "org"
+    nextVersionNumberAutoIncrementFile "next_version.txt"
+    repositories.ivy {
+        credentials {
+            username "user"
+            password "password"
+        }
+        url "http://artifactory-server/artifactory/my-integration-repo/"
+    }
+}
+----
+
+
+This script does the following:
+
+* Makes use of the latest version of the intrepid plugin with a version number starting with "1.0.1".
+* Describes which repository to use for satisfying dependencies.
+* Defines link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#configurations[configurations] for this module.
+* Defines 'framework' as a source code dependency:
+** When dependencies are fetched, an SVN checkout operation will fetch the 'framework' source code to '<workspace>/framework'.
+** When 'this' module is published, the source-code dependency will be converted to a published artifact dependency e.g. +org:framework:1.0.3.987+ 
+* Defines 'another-lib' as a source code dependency:
+** When dependencies are fetched, an Hg clone operation will fetch the source code to '<workspace>/another-lib'.
+** When 'this' module is published, the source-code dependency will not be mentioned.
+* Defines 'RenderingLib' as a dependency:
+** When dependencies are fetched, all packages belonging to the specified configurations will be fetched from the repository.
+** The packages will be unpacked to a central cache. (The cache settings can be configured.)
+** A symlink will be created from the workspace to the unpacked copy of 'RenderingLib'.
+* Defines 'NUnit' as a dependency:
+** When dependencies are fetched, all packages belonging to the 'bin' configuration will be fetched from the repository and unpacked directly into '<workspace>/NUnit 2.5.10'. 
+** When 'this' module is published it will not mention 'NUnit' as a dependency.
+* Packages are defined for 'this' module:
+** These will be created when the +publish+ task is invoked.
+** Each package belongs to exactly one configuration (although configurations can extend one another).
+** The 'headers' and 'source' packages have the same name as their corresponding configurations so the configuration isn't explicitly set.
+** Some Groovy logic helps to define the packages 'libVc10Debug' and 'libVc10Release'.
+* Publishing settings are configured, including:
+** which repository to publish to;
+** the credentials for the repository; (In this example the credentials are hard-coded, but it is recommended that you use the link:plugin-my-credentials.html[].
+** the group name for the published artifacts;
+** the version number for the published artifacts, which will be fetched from the file 'next_version.txt'. (There are other ways to specify the version number.)
+* After publishing the version number in 'next_version.txt' will be incremented automatically. 
+
+For the above script the intrepid plugin makes the following tasks available:
+
+....
+Dependencies tasks
+------------------
+fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks.
+rebuildSymlinks - Rebuild all symlinks.
+
+Publishing tasks
+----------------
+packageEverything - Creates all zip packages for project 'example1'.
+publish - Publishes all publications to all repositories.
+publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'.
+....
+
+
+When published, the Ivy module description for this example module will look like this:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="org" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <configurations>
+    <conf name="headers" visibility="public"/>
+    <conf name="source" visibility="public" extends="headers"/>
+    <conf name="runtime" visibility="public" extends="headers"/>
+    <conf name="compileVc10Debug" visibility="public" extends="headers"/>
+    <conf name="compileVc10Release" visibility="public" extends="headers"/>
+  </configurations>
+  <publications>
+    <artifact name="example-headers" type="zip" ext="zip" conf="headers"/>
+    <artifact name="example-source" type="zip" ext="zip" conf="source"/>
+    <artifact name="example-libVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>
+    <artifact name="example-libVc10Release" type="zip" ext="zip" conf="compileVc10Release"/>
+  </publications>
+  <dependencies>
+    <dependency org="com.company.team" name="framework" rev="1.0.3.987" conf="compileVc10Debug->compileDebug"/>
+    <dependency org="com.company.team" name="framework" rev="1.0.3.987" conf="compileVc10Release->compileRelease"/>
+    <dependency org="com.company.rendering" name="RenderingLib" rev="2012a2" conf="compileVc10Debug->compileVc10X64Debug"/>
+    <dependency org="com.company.rendering" name="RenderingLib" rev="2012a2" conf="compileVc10Release->compileVc10X64Release"/>
+  </dependencies>
+</ivy-module>
+----
+
+
+== DSL Guide
+
+The intrepid plugin adds several domain-specific-language (DSL) elements.
+
+=== dependencySettings
+
+This object has settings which apply to all dependencies.
+
+
+[source,groovy]
+----
+dependencySettings {
+    defaultFailOnVersionConflict = false // defaults to true
+}
+----
+
+
+==== defaultFailOnVersionConflict
+
+If this flag is true, Intrepid will call +configuration.resolutionStrategy.failOnVersionConflict()+ for each configuration which is created.  This is in contrast to the default Gradle behaviour, which allows conflicts and resolves them according to configurable strategies.  To turn off this default behaviour, set the property to +false+.  This behaviour is implemented in this way because there is no Gradle mechanism to revert to allowing resolution of version conflicts after +failOnVersionConflict()+ has been called.
+
+This value can be set in each project in a multi-project build.  If it's not set in a sub-project, that project will use the value from the root project; failing that, it defaults to +true+.
+
+[[sourceDependencies]]
+=== sourceDependencies
+This is a container for source-dependency objects. The first level below +sourceDependencies+ defines the names of the individual source code dependencies e.g.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo.hg "http://path/to/hg/repo"
+    bar {
+        svn "http://path/to/svn/repo"
+    }
+}
+----
+
+declares that there are two source-code dependencies and they should be retrieved to the directories '<workspace>/foo' and '<workspace>/bar' respectively.
+
+==== Relative Paths
+
+Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate subdirectories of the workspace. See <<relative-paths>>.
+
+==== Credentials
+
+By default, intrepid can only fetch source from repositories which do not require authentication.  If the project also has the link:plugin-my-credentials.html[] applied, it will use passwords cached in Windows Credential Manager to access Mercurial and Subversion repositories.  If cloning, checking out, or exporting a repository for which no password is already cached, the plugin will initialise the cached password for that repository using the value stored under +"Intrepid - Domain Credentials"+ (the default username and password managed by link:plugin-my-credentials.html[]).
+
+==== hg
+
+This method takes one parameter - the URL of the Mercurial repository to clone.
+
+You can optionally specify a particular Mercurial revision after an '@' character e.g.
+
+[source,groovy]
+----
+foo.hg "http://path/to/foo@384039b6ec8b44cec59dc48b264056882f60b7a7"
+----
+
+This will result in a clone that has been updated to the specific Mercurial revision.
+
+After the source dependency has been retrieved you may make local modifications or update to a different revision and rerunning +fetchAllDependencies+ will have no effect on your local copy.
+
+-> Call this method at most once.
+
+-> You must call one of +hg+ or +svn+.
+
+==== svn
+
+This method takes one parameter - the URL of the Subversion repository to checkout from.
+
+You can optionally specify a particular SVN revision after an '@' character e.g.
+
+[source,groovy]
+----
+bar.svn "http://path/to/bar@143"
+----
+
+This will result in a checkout of the repository, pinned to a specific version.
+
+After the source dependency has been retrieved you may make local modifications or update to a different revision and rerunning +fetchAllDependencies+ will have no effect on your local copy.
+
+-> Call this method at most once.
+
+-> You must call one of +hg+ or +svn+.
+
+==== branch
+
+This is an optional property that defines which named branch of the repository to use. This is only valid for 'hg' repositories, and the default value is 'null' which equates to retrieving the default branch. This is equivalent to +hg clone http://path/to/foo --branch special foo+.
+
+Usage:
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        branch = "special"
+    }
+}
+----
+
+[[publishing]]
+==== publishing
+
+This is like a struct which groups together a few different configuration options relating to how the source-code dependency will be referenced (in the Ivy module descriptor XML) when the consumer module is published.  The consumer module can be published as depending on the published output of a source-code dependency.
+
+If the +publishing+ configuration is omitted then the source-code dependency will not be mentioned in the module descriptor.
+
+This is an example of a fully-specified +publishing+ element:
+
+[source,groovy]
+----
+sourceDependencies {
+    dependency_module {
+        svn "http://path/to/svn/repo"
+        publishing {
+            group "com.company.team"
+            configuration "compileDebug->compileVc10Debug", "compileRelease->compileVc10Release"
+            version "1.0.+"
+        }
+    }
+}
+----
+
+NOTE: In order for dynamic version numbers to be resolved you will need to configure the <<repositories>> element.
+
+When the module containing this build script is published it would produce an Ivy module descriptor like this:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="com.company.team" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <configurations>
+    ...
+  </configurations>
+  <publications>
+    ...
+  </publications>
+  <dependencies>
+    <dependency org="com.company.team" name="dependency_module" rev="1.0.3.987" conf="compileDebug->compileVc10Debug"/>
+    <dependency org="com.company.team" name="dependency_module" rev="1.0.3.987" conf="compileRelease->compileVc10Release"/>
+  </dependencies>
+</ivy-module>
+----
+
+
+===== group
+
+This method configures the group name for the dependency - see the `dependency->org` attribute in the above module descriptor.
+
+If this method is not called then the group will default to the group specified in <<publishPackages>>.
+
+-> Call this method at most once.
+
+===== configuration
+
+This method defines which configurations will appear in the dependencies - see the `dependency->conf` attribute in the above module descriptor.
+
+You can pass any number of string parameters to this method, or call the method multiple times.
+
+The number of +dependency+ elements in the module descriptor will correspond to the number of distinct configurations you specify.
+
+-> Call this method at least once.
+
+===== version
+
+This method defines the version number that will be used in the +dependency+ elements in the module descriptor.
+
+You can specify an exact version number (e.g. +1.2.3.4+) or a dynamic version number (e.g. +1.2.++). The dynamic version number will be resolved to a concrete version number based on what artifacts exist in the target repository **at the time that the module is published.**
+
+By default, if you do not specify a version, then the version used for publishing the module will also be used for the version number in the +dependency+ element in the module descriptors for source dependencies.
+
+-> Call this method at most once.
+
+===== usePublishedVersion
+
+If you have configured the <<publishing>> section of your source-code dependency (explained above) then you can set the +usePublishedVersion+ property as follows:
+
+[source,groovy]
+----
+sourceDependencies {
+    dependency_module {
+        svn "http://path/to/svn/repo"
+        publishing {
+            group "com.company.team"
+            configuration "compileDebug->compileVc10Debug", "compileRelease->compileVc10Release"
+            version "1.0.+"
+        }
+        usePublishedVersion = true
+    }
+}
+----
+
+If you already have a source-code checkout located at +<workspace>/dependency_module+ then you will need to delete it or move it out of the way. The use of +usePublishedVersion = true+ will cause the source-code dependency to behave similar to +packedDependencies+ i.e. the dynamic version number will be resolved, the appropriate artifacts will be retrieved, unpacked to the central cache and a symlink defined.
+
+It is expected that developers will normally only use this property temporarily in their local check-out, and not commit it to shared version-controlled source.
+
+=== sourceDependencyTasks
+
+This container allows you to define commands to be invoked on all +sourceDependencies+.
+
+For example:
+
+[source,groovy]
+----
+sourceDependencyTasks {
+    theTask {
+        invoke("command", "could", "fail").failAtEnd()
+        invoke("fails", "but", "dont", "care").ignoreFailures()
+        invoke("failure", "is", "important").failImmediately()
+        invoke("failure", "is", "important") // behaves as failImmediately
+    }
+}
+----
+
+The above script will define a task +theTask+ to be invoked on the current project AND all of the source dependencies that it depends on. This means that you can define a set of useful commands in your root build script and make use of them in all subprojects.
+
+Each invocation can be configured to behave appropriately with respect to the return codes.
+
+* +failImmediately()+ - terminate as soon as possible when any invocation's exit code is non-zero. This is the default behaviour.
+* +failAtEnd()+ - after all projects have made the invocation, check for non-zero exit codes and summarise. If there were any failures then terminate here.
+* +ignoreFailures()+ - ignore the exit codes.
+
+NOTE: If your source-dependency command does something which modifies the Gradle scripts (for example, +svn update+ or +hg update+) then the new versions of the Gradle scripts will not be applied until the next time you invoke Gradle. So for example 'gw hgUpdate buildRelease' would do the Hg update but the build task would run according to the Gradle scripts prior to the update. So it would be better to run these two tasks separately: 'gw hgUpdate' followed by 'gw buildRelease'.
+
+=== sourceControl
+
+This DSL gives you read-only access to various properties of the source control repository for the current project e.g. protocol (hg or svn), url, revision, and whether there are any local modifications.
+
+==== protocol
+
+This read-only property returns a string "hg" or "svn" depending on whether this project directory is an hg clone or an svn checkout. If it is neither then "n/a" will be returned.
+
+==== url
+
+This read-only property returns the url for the source control repository/checkout in the project directory. Null is returned if the project directory is not under source control.
+
+==== revision
+
+This read-only property returns the revision for the source control repository/checkout in the project directory. Null is returned if the project directory is not under source control.
+
+==== hasLocalChanges
+
+This method returns a boolean indicating whether the source control repository/checkout in the project directory has any uncommitted modifications. False is returned if the project directory is not under source control.
+
+[[packedDependencies]]
+=== packedDependencies
+
+This is a container for packed-dependency objects. The first level below +packedDependencies+ defines the names of the individual dependencies e.g.
+
+
+[source,groovy]
+----
+packedDependencies {
+    "my-rendering-lib" {
+        dependency "com.company.rendering:RenderingLib:2012a2"
+        configuration "compileVc10Debug->compileVc10X64Debug", "compileVc10Release->compileVc10X64Release"
+    }
+    "NUnit <version>" {
+        dependency "org:NUnit:2.5.+"
+        configuration "privateBuild->bin"
+        unpackToCache = false
+    }
+}
+----
+
+declares two dependencies:
+
+* +RenderingLib+ packages belonging to the configurations +compileVc10X64Debug+ and +compileVc10X64Release+ should be unpacked to the central cache, and a symlink should be created at +<workspace>/my-rendering-lib+. When this module is published, the +RenderingLib+ dependency will be included in the module descriptor.
+* +NUnit+ packages belonging to the configuration +bin+ should be unpacked directly to the workspace in folder called +<workspace>/NUnit 2.5.10+ (assuming that 2.5.10 is the most recent version with the prefix "2.5"). When this module is published, the +NUnit+ dependency should not be mentioned in the module descriptor (due to the +privateBuild+ configuration).
+
+==== Relative Paths
+
+Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate subdirectories of the workspace. See <<relative-paths>>.
+
+==== Unpack cache
+
+The default location for the unpacked dependency cache is +<Gradle User Home dir>/unpackCache+.
+You can change the location of your link:first_steps.html#gradle_user_home[Gradle User Home]
+directory.  If you want more specific control then that can be achieved with the project-level
++unpackedDependenciesCache+ property; that means, a property that you define outside of any other
+DSL elements such as <<packedDependencies>>. For example:
+
+[source,groovy]
+----
+unpackedDependenciesCache = "d:/dep_cache"
+packedDependencies {
+    foo {
+        ...
+    }
+}
+----
+
+Since this specifies a machine-specific location you should probably avoid including the path in a build script that will be shared with other developers. You may wish to use a link:custom-gradle#user_gradle[user.gradle] file or link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the path.
+
+==== Using +<version>+
+
+You can specify +<version>+ anywhere within the name of a packed dependency e.g. +"my_component-<version> blah"+. Once the version number has been resolved, the +<version>+ will be replaced with the actual version of the packed dependency that has been retrieved.
+
+The name of the packed dependency affects:
+
+* the path to which the dependency will be unpacked within your workspace (if +unpackToCache+ is false)
+* the name of the symlink in your workspace (if +unpackToCache+ is true, which is the default)
+
+For the example above, the workspace would look like this:
+
+----
+<workspace>
+|   build.gradle
+|   ...
++---my-rendering-lib   (symlink ---> <unpack cache>/com.company.rendering/RenderingLib-2012a2)
+|   ...
++---NUnit 2.5.10
+    ...
+----
+
+
+==== dependency
+
+This method configures the coordinates of the dependency. The single parameter must follow the pattern "<groupId>:<artifactId>:<version>" where:
+
+* +groupId+ is an identifier (such as the name of the organisation) to disambiguate the +artifactId+. The +groupId+ can contain full-stops e.g. +org.common.util+.
+* +artifactId+ is an identifier for the artifact.
+* +version+ is a version number. 
+
+WARNING: Floating version numbers (e.g. +1.2.++) are supported. (See link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#sec:dependency_resolution[how dependency resolution works].)  However, use of floating version numbers is not recommended because they are ordered lexicographically rather than numerically: that means +1.10+ comes before +1.2+, for example.
+
+-> Call this method exactly once.
+
+==== configuration
+
+This method defines the mappings **from** configurations in this module **to** configurations in the dependency module. These mappings will be included in the module descriptor when this module is published. The **to** configurations also determine which packages from the dependency artifact will be fetched and unpacked.
+
+You can pass any number of string parameters to this method, or call the method multiple times.
+
+Here are some examples of string parameters passed to the +configuration+ method and the resulting mappings:
+
+===== +"my-config"+
+
+* configuration mapping from "my-config" to "my-config"
+
+===== `"foo->bar"`
+
+* configuration mapping from "foo" to "bar"
+
+===== `"foo->bar,far"`
+
+* configuration mapping from "foo" to "bar"
+* configuration mapping from "foo" to "far"
+
+===== `"aa,bb->cc"`
+
+* configuration mapping from "aa" to "cc"
+* configuration mapping from "bb" to "cc"
+
+===== `"aa,bb->cc,dd"`
+
+* configuration mapping from "aa" to "cc"
+* configuration mapping from "aa" to "dd"
+* configuration mapping from "bb" to "cc"
+* configuration mapping from "bb" to "dd"
+
+-> Call this method at least once.
+
+===== Private dependencies
+
+If your module depends on artifacts that you do not want to be mentioned in your module descriptor then you can use configurations starting with the word +private+. All such configurations and associated dependencies will be automatically omitted from the module descriptor e.g. the +NUnit+ dependency shown in the above example uses the configuration +privateBuild+ so the dependency will automatically be stripped from the module descriptor, as will the configuration with that name.
+
+==== unpackToCache
+
+This property defines whether the dependency should be unpacked to the central cache for unpacked dependencies, or unpacked directly to the workspace.
+
+-> Default value: **true**
+
+==== noCreateSymlinkToCache()
+
+Calling this method on a packed dependency causes the +rebuildSymlinks+ and +deleteSymlinks+ task to ignore it.  This allows you to create your own folder or symlink in the appropriate location, to replace a packed dependency with, for example, a locally-built version.  It is the complement of the +usePublishedVersion+ property for source dependencies.
+
+It is expected that developers will normally only use this method temporarily in their local check-out, and not commit it to shared version-controlled source.  If this method is called on a packed dependency, then attempting to publish the containing project will throw an exception, because Gradle cannot know the real version of the dependency.
+
+==== readonly
+
+This property determines whether the unpacked dependency directory (and all subdirectories and files) should be set to read-only. This can help to prevent the unpacked dependency files being unintentionally modified.
+
+Note: this will only be done if +applyUpToDateChecks+ is false.
+
+-> Default value: **true**
+
+==== applyUpToDateChecks
+
+This property determine whether +fetchAllDependencies+ should perform full up-to-date checks to compare the dependency zip files with the target directory. This will take much longer to execute, but avoids any possibility that the unpacked dependencies have been modified.
+
+-> Default value: **false**
+
+=== symlinks
+
+This extension allows you to define symlinks for +packedDependencies+ or +sourceDependencies+ e.g. this extract of build-script for a module named +consumer_module+
+
+[source,groovy]
+----
+symlinks {
+    to "dependency_module", "dependency_module/common"
+}
+----
+
+will result in symlinks as follows:
+
+----
+<workspace>
+|   build.gradle
+|
++---consumer_module
+|   |   build.gradle
+|   |   common            (symlink --------|
+|   |   dependency_module (symlink ---|    |
+|   +---src                           |    |
+|   |   ...                           |    |
+|   +---lib                           |    |
+|       ...                           |    |
+|                                     |    |
++---dependency_module   <-------------|    |
+    |   build.gradle                       |
+    +---src                                |
+    |   ...                                |
+    +---common  <--------------------------|
+----
+
+
+==== to
+
+This method takes one or more parameters. Each parameter defines a location in the retrieved source-code dependency folder. The name of the resulting symlink will always correspond to the last component of the path argument.
+
+-> Call this method any number of times with any number of arguments.
+
+[[packageArtifacts]]
+=== packageArtifacts
+
+This is a container for packages. The first level below +packageArtifacts+ defines the names of the individual packages e.g.
+
+[source,groovy]
+----
+packageArtifacts {   
+    source.include "src/**/*.h", "src/**/*.cpp"
+    ["Debug", "Release"].each { conf ->
+        "${conf}Exe" {
+            configuration = "compile$conf"
+            include "bin/$conf/*.exe"
+            exclude "**/helper.exe"
+        }
+        "${conf}Pdb" {
+            configuration = "compile$conf"
+            include "bin/$conf/*.pdb"
+        }
+    }
+    docs {
+        from "docs/output"
+        to "api"
+        include "aaa/a.txt", "bbb/b.txt"
+    }
+}
+----
+
+defines 6 packages: +source+, +docs+, +DebugExe+, +DebugPdb+, +ReleaseExe+ and +ReleasePdb+.
+
+Each package:
+* is a zip-file which will be created at publish-time;
+* defines, implicitly or explicitly, which configuration it belongs to;
+* will be referenced in the module descriptor (Ivy XML).
+
+==== configuration
+
+This property defines the configuration that the package belongs to. For example look at the +conf+ attribute below:
+
+[source,groovy]
+----
+<publications>
+    <artifact name="example-libVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>
+    ...
+</publications>
+----
+
+
+You do not have to explicitly set the configuration if the name of the package already matches the name of the configuration.
+
+-> Default value: **package name**
+
+==== include
+
+This method defines file-path patterns to **include** in the package, subject to those files not being excluded by the +exclude+ patterns.
+
+You can pass any number of string parameters to this method, or call the method multiple times.
+
+-> Call this method at least once.
+
+==== exclude
+
+This method defines file-path patterns to **exclude** from the package. This will take priority over any +include+ patterns.
+
+Some patterns will be excluded by default: +.gradle+, +packages/ivy.xml+, +packages/*.zip+
+
+You can pass any number of string parameters to this method, or call the method multiple times.
+
+-> Call this method any number of times.
+
+==== from and to
+
+These methods allow you to change the path to files that you include in a package. By default the packaging process behaves as if both +from+ and +to+ had been set to +"."+.
+
+In the example above the files +docs/output/aaa/a.txt+ and +docs/output/bbb/b.txt+ will be included in the +docs+ package, but their path will be +api/aaa/a.txt+ and +api/bbb/b.txt+.
+
+You can use multiple +from/to+ combinations in the same package e.g.
+
+[source,groovy]
+----
+packageArtifacts {   
+    docs {
+        from ("component1/docs/output") {
+            to "api"
+            include "*.chm"
+        }
+        from ("component2/docs/output") {
+            to "api"
+            include "*.chm"
+        }
+    }
+}
+----
+
+
+-> Call +from+ any number of times. Call +to+ at most once in each context.
+
+==== includeTextFile
+
+This method allows you to dynamically create a text file to be included in the package. e.g.
+
+[source,groovy]
+----
+packageArtifacts {
+    preBuiltArtifacts {
+        includeTextFile("readme.txt") {
+            add "the first line with a ${variable}"
+            add "as many lines as you want"
+        }
+    }
+}
+----
+
+
+===== add
+
+This method adds a line of text to the text file. 
+
+-> Call this method any number of times.
+
+==== includeBuildScript
+
+This extension allows you to dynamically create a build-script to be included in the package. There is support for taking the +sourceDependencies+ already defined and converting them to pinned source dependencies or to +packedDependencies+. This facilitates the creation of source and binary 'meta-packages' for releases.
+
+
+[source,groovy]
+----
+packageArtifacts {
+    pinnedSource {
+        include "gradle/**", "gw.bat", "gradle.properties"
+        includeBuildScript {
+            add "// This text goes at the top."
+            addPinnedSourceDependency "*"
+            add "// This text goes at the bottom."
+        }
+    }
+    preBuiltArtifacts {
+        include "gradle/**", "gw.bat"
+        includeBuildScript {
+            addIvyRepository "http://path/to/repo"
+            addPackedDependency "foo", "fromConf1->toConf1", "fromConf2->toConf2"
+        }
+    }
+}
+----
+
+
+===== createDefaultSettingsFile
+
+If this property is true, and +includeBuildScript+ is called, but +includeSettingsFile+ is not, then the plugin will add a default +settings.gradle+ file to the package.  If the property is false then, in that case, the package will have no settings file.  That may lead to unexpected behaviour when the package is used, if it is unzipped in a location where some ancestor folder has a settings file.
+
+This property is true by default.
+
+===== add
+
+This method allows you to include arbitrary text in the generated build script. If you call this before any call to +addPinnedSourceDependency+ or +addPackedDependency+ then the text will appear at the top of the buildscript. Otherwise it will appear at the bottom.
+
+-> Call this method any number of times.
+
+===== addPinnedSourceDependency
+
+This method allows you to select source dependencies to be included in the generated build script, pinned to the current source-control revision.
+
+This method takes any number of parameters which refer to source dependencies in the current project, or any sub-project in a multi-project workspace. Each parameter is the name of the source dependency to include.
+
+-> Call this method any number of times.
+
+Note: This method used to support a wildcard syntax but no longer does.  To add all source dependencies from all projects, you can use the following code.
+
+[source,groovy]
+----
+gradle.projectsEvaluated {
+    allprojects { sourceDependencies.each { addPinnedSourceDependency it }
+}
+----
+
+
+===== addPackedDependency
+
+This method allows you to specify dependencies to be included in the generated build script as +packedDependencies+ i.e. to retrieve pre-built artifacts instead of the source code repository.
+
+The first parameter of this method can represent several different things. It can be:
+
+* the name of the source dependency (without any path) in the current project, or any sub-project in a multi-project workspace.
+* the name of the packed dependency (without any path) in the current project, or any sub-project in a multi-project workspace.
+* a fully qualified dependency coordinate e.g. "org:my-module:1.0.2"
+
+All subsequent parameters are configurations which indicate which parts of the packed dependency should be retrieved. These parameters follow the same format as is used in +packedDependencies+ e.g. "fromConf->toConf"
+
+-> Call this method any number of times.
+
+===== addIvyRepository
+
+This method allows you to specify an ivy repository url which will be included in the build script like this:
+
+[source,groovy]
+----
+repositories.ivy {
+    credentials {
+        username my.username()
+        password my.password()
+    }
+    url <the url>
+}
+----
+
+
+This is useful if you call +addPackedDependency+ because in order to retrieve the published artifacts you will need to specify the repository to retrieve them from.
+
+You can also pass a second parameter to this method, which gets used as follows: +my.username(<param>)+ and +my.password(<param>)+.
+
+-> Call this method any number of times.
+
+===== generateSettingsFileForSubprojects
+
+This property allows you to define whether a settings file should be generated by the build script.
+
+-> Default value: **true**
+
+[[publishPackages]]
+=== publishPackages
+
+This structure contains a few elements for configuring the publish settings for the module. For example:
+
+[source,groovy]
+----
+publishPackages {
+    group "com.company.team"
+    nextVersionNumberAutoIncrementFile "next_version.txt"    
+    repositories.ivy {
+        credentials {
+            username "user"
+            password "password"
+        }
+        url "http://artifactory-server/artifactory/my-repo/"
+    }
+}
+----
+
+defines that when this module is published then:
+
+* the group name will be "com.company.team" 
+* the version number will be read from the text file +next_version.txt+ 
+* the repository to publish to and the necessary credentials are as stated
+
+You may want the group value to identify your entire organisation, or you may want to add sub-levels for separate departments or teams.  The latter makes it easier to tell who is responsible for a published module, and allows you to set up permissions in a repository server to allow only the relevant team to publish modules with that group value to shared repositories.
+
+When published, the module descriptor would look something like this:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="com.company.team" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <configurations>...</configurations>
+  <publications>...</publications>
+  <dependencies>...</dependencies>
+</ivy-module>
+----
+
+
+==== group
+
+This method defines the group name for the published artifacts. It will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->organisation` attribute in the module descriptor above. The group is often based on the name of the organisation, and helps to disambiguate modules with the same name from different organisations.
+
+Calling this method has the same effect as setting the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html#org.gradle.api.Project:group[group] property on the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html[Project].
+
+-> Call this method exactly once.
+
+[[nextVersionNumber]]
+==== nextVersionNumber
+
+This method defines the version number for the published artifacts. This will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->revision` attribute in the module descriptor above.
+
+There are two variant of this method: one taking a single string parameter, and another taking a closure which should return a string value.
+ 
+Calling this method has the same effect as setting the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html#org.gradle.api.Project:version[version] property on the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html[Project].
+
+-> Call one of +nextVersionNumber+, +nextVersionNumberAutoIncrementFile+ and +nextVersionNumberEnvironmentVariable+
+
+[[nextVersionNumberAutoIncrementFile]]
+==== nextVersionNumberAutoIncrementFile
+
+This method has the same effect as <<nextVersionNumber>> with a few important differences:
+
+* the single string parameter defines a relative path to a file containing the next version number
+* once the module has been successfully published the last component of the version number in the file will automatically be incremented
+
+-> Call one of +nextVersionNumber+, +nextVersionNumberAutoIncrementFile+ and +nextVersionNumberEnvironmentVariable+
+
+[[nextVersionNumberEnvironmentVariable]]
+==== nextVersionNumberEnvironmentVariable
+
+This method has the same effect as <<nextVersionNumber>> except that the single string parameter defines the name of an environment variable which contains the version number. This may be useful if, for example, your autobuild already has a notion of version number and is invoking the +publish+ task.
+
+-> Call one of +nextVersionNumber+, +nextVersionNumberAutoIncrementFile+ and +nextVersionNumberEnvironmentVariable+
+
+==== repositories
+
+This method has the same type as the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html#org.gradle.api.Project:repositories(groovy.lang.Closure)[repositories] method on the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html[Project]. However, only publishing to **Ivy repositories** is supported. This is because Ivy supports publishing multiple artifacts, which is not currently supported by the Maven publishing functionality provided by Gradle.
+
+-> Minimal usage:
+
+[source,groovy]
+----
+repositories.ivy {
+    credentials {
+        username "user"
+        password "password"
+    }
+    url "http://artifactory-server/artifactory/my-repo/"
+}
+----
+
+If your repository supports anonymous publishing (which is not recommended) then you could omit the +credentials+ section. Note that it is recommended that you use the link:plugin-my-credentials.html[] rather than hard-coding credentials.
+
+[[repositories]]
+=== repositories
+
+This DSL element isn't actually part of the +intrepid+ plugin, but will likely need to be configured in your build script (see link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#N10607[repositories].) This element should be placed in the root of your build-script (i.e. outside of any other DSL elements such as <<sourceDependencies>>). For example:
+
+[source,groovy]
+----
+repositories.ivy {
+    url "http://artifactory-server/artifactory/my-repo"
+}
+----
+
+This +repositories+ block will configure <<sourceDependencies>> and <<packedDependencies>>. You can configure it using any of the methods in methods in the [link:http://gradle.org/docs/1.4/javadoc/org/gradle/api/artifacts/dsl/RepositoryHandler.html[RepositoryHandler] (e.g. Maven, Ivy or file-system) but the publishing of packages using +intrepid+ only supports Ivy so you'll probably only have artifacts available in an Ivy repository.
+
+== Tasks
+
+See link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#tutorial_gradle_command_line[using the Gradle command line] for general information on invoking tasks.
+
+=== fetchAllDependencies
+
+This task retrieves all <<packedDependencies>> and <<sourceDependencies>> and sets up the necessary symlinks. Symlinks are always deleted and rebuilt.
+
+If a source-code dependency is retrieved then +settings.gradle+ will be updated to include the new module. Afterwards, the plugin will attempt to automatically relaunch the task in order to allow the new module to be taken into account and for further dependencies to be resolved. The gradle process is terminated with a special exit code and as a result a slightly customised Gradle Wrapper re-launches the gradle process. This slightly hacky approach has a few implications:
+
+* make sure that any Gradle Wrapper you create comes from the 'custom-gradle-core' plugin's +createWrapper+ task.
+* it is advisable to run the +fetchAllDependencies+ by itself, without any other tasks on the same invocation
+* usage of the daemon is automatically disabled by the customised Gradle Wrapper
+
+==== Transitive dependencies
+
+This task also fetches transitive dependencies. For example, assume a module's build script declares a packed dependency on +foo+:
+
+[source,groovy]
+----
+packedDependencies {
+    foo {
+        dependency "com.company.team:foo:1.2.3.4"
+        configuration "compileDebug->compileX64Debug", "compileRelease->compileX64Release" 
+    }
+}
+----
+
+and the module descriptor for +foo+ declares a transitive dependency on +bar+ as follows:
+
+[source,xml]
+----
+<ivy-module version="2.0">
+  <info organisation="com.company.team" module="foo" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <configurations>
+    ...
+    <conf name="compileX64Debug" visibility="public" />
+    <conf name="compileX64Release" visibility="public" />
+  </configurations>
+  <publications>...</publications>
+  <dependencies>
+    <dependency org="com.company.team" name="bar" rev="9.8.7" conf="compileX64Debug->runtimeDebug"/>
+    <dependency org="com.company.team" name="bar" rev="9.8.7" conf="compileX64Release->runtimeRelease"/>
+  </dependencies>
+</ivy-module>
+----
+
+and the module descriptor for +bar+ declares artifacts as follows:
+
+[source,xml]
+----
+<ivy-module version="2.0">
+  <info organisation="com.company.team" module="bar" revision="9.8.7" status="release" publication="20121115134228"/>
+  <configurations>
+    <conf name="runtimeDebug" visibility="public" />
+    <conf name="runtimeRelease" visibility="public" />
+    <conf name="pdbDebug" visibility="public" extends="runtimeDebug"/>
+    <conf name="pdbRelease" visibility="public" extends="runtimeRelease"/>
+  </configurations>
+  <publications>
+    <artifact name="bar-dlls-debug" type="zip" ext="zip" conf="runtimeDebug"/>
+    <artifact name="bar-dlls-release" type="zip" ext="zip" conf="runtimeRelease"/>
+    <artifact name="bar-pdbs-debug" type="zip" ext="zip" conf="pdbDebug"/>
+    <artifact name="bar-pdbs-release" type="zip" ext="zip" conf="pdbRelease"/>
+  </publications>
+  <dependencies>...</dependencies>
+</ivy-module>
+----
+
+
+In this example the top-level module is dependent on the +compileX64Debug+ and +compileX64Release+ configurations of +foo+ which are in turn dependent on the +runtimeDebug+ and +runtimeRelease+ configurations of +bar+. Although +bar+ defines four artifacts, only +bar-dlls-debug+ and +bar-dlls-release+ belong to the configurations of interest, so these will be fetched. Finally, since both of these artifacts have the file-extension "zip" (see the `artifact->ext` attribute in the module descriptor for +bar+) then the +intrepid+ plugin assumes that they should be unpacked to your unpacked dependency cache, and creates a symlink from your workspace.
+
+=== fetchFirstLevelSourceDependencies
+
+This is like +fetchAllDependencies+ except that it is **not** recursive and **only** fetches source dependencies. This task will:
+
+* retrieve all first-level (non-transitive) source-code module dependencies
+* create/modify the +settings.gradle+ file to refer to the fetched source-code modules
+
+Along with +collectDependencies+, this task can be useful in pre-fetching dependencies so that you can package them up and give them to a customer who doesn't have access to your network.
+
+=== collectDependencies
+
+This task will navigate through all of the project's non-source dependencies. This includes +packedDependencies+ and their transitive dependencies, Gradle plugins and all of their dependencies. A folder named +local_artifacts+ will be created. Ivy and Maven style dependencies will be placed in their respective subfolders. Finally, +custom-gradle+ will be placed in its own subfolder. 
+
+The result is a directory which contains all non-source dependencies. This is useful for pre-fetching dependencies so that you can package them up and give them to a customer who doesn't have access to your network.
+
+=== rebuildSymlinks
+
+This task performs a subset of the functionality of the +fetchAllDependencies+ task - it simply rebuilds all the symlinks for all dependencies.
+
+=== deleteSymlinks
+
+This task deletes any symlinks created by +rebuildSymlinks+ or +fetchAllDependencies+. This is not a blanket deletion of all symlinks; only symlinks which **would** be created by the other tasks are deleted.
+
+=== packageEverything
+
+This task will create all zip-file packages that you have defined in the <<packageArtifacts>> section. You do not have to invoke this task prior to publishing because the package creation is already a dependency. However you might wish to invoke this task in order to inspect the resulting zip files prior to their being published. The zips will be placed in a +packages+ subdirectory of the module.
+
+=== publish
+
+This task publishes the artifacts of your module:
+
+* creates all zip file packages
+* prepares an Ivy module descriptor
+* uploads the packages to the specified repository
+* increments the version number in the text file (if using <<nextVersionNumberAutoIncrementFile>>)
+
+You may notice a task called +publishIvyPublicationToIvyRepository+ or similar. This exists because the +intrepid+ plugin uses the +ivy-publish+ plugin.
+
+[[relative-paths]]
+== Relative paths
+
+Both +sourceDependencies+ and +packedDependencies+ support project-relative paths and workspace-relative paths. This means that you can nest projects inside each other and put projects completely outside the workspace root, on a relative path. For example, in the example below the root Gradle project is called 'Root' and it is able to pull in source and/or packed dependencies to form the following directory hierarchy. The contents of the square brackets shows the dependencies from one module to others. If the dependency starts with a slash then it's relative to the Root workspace, otherwise it's relative to the module which is defining the dependency.
+
+....
+C:
++---Projects
+    +---PJ42
+        +---Root                   [MyApp, MyLib]
+        |   +---Boost
+        |   +---MyLib              [../../Stuff/UtilityLib, SubLib, /Boost]
+        |   |   +---SubLib         [/Boost]
+        |   +---MyApp              [../../Stuff/Framework, ../MyLib]
+        +---Stuff
+            +---Framework          [../UtilityLib, ../RenderingLib]
+            +---UtilityLib         [../RenderingLib]
+            +---RenderingLib
+....
+
+
+==== Ivy files
+
+Whenever you publish a module which specifies source dependencies or packed dependencies the Ivy XML will have the relative path baked in. So, for example, if you published +MyLib+ you could examine the XML and notice the relative path +../../Stuff/+ specified for the +UtilityLib+ dependency, and if you published +SubLib+ you would see the relative path +../+ for the +Boost+ dependency.
+
+Relative paths chain together as you would expect. For example +Root+ depends on +MyLib+, which depends on +SubLib+ and all the relative paths are empty. This means that the directories are nested. After +MyLib+ and +SubLib+ are published and subsequently fetched on someone's machine, the directory structure is still nested, even when these modules are unpacked to the central cache. This approach does mean that it would be rather difficult to allow versions of transitive dependencies to be overridden -- therefore overriding transitive dependencies this isn't currently supported.

@@ -79,6 +79,15 @@ or you are working at a different site.
 
 == Running the Holy Gradle
 
+=== Gradle Setup
+
+[[gradle_user_home]]
+Gradle automatically downloads files for you and stores them in a cache in the Gradle User Home
+directory.  This defaults to `.gradle` in your home directory, but you can override the location
+by setting the +GRADLE_USER_HOME+ environment variable.  You may wish to move this if your home
+directory is on a small or slow drive.  Also, Gradle never clears out this cache: you must do so
+manually, from time to time.
+
 === Setting up a Gradle Wrapper
 
 DONE: http://localwiki/Gradle#Gradle_Wrapper
@@ -95,11 +104,7 @@ configuration files which should _not_ be added to source control, so you should
 * add and commit the unzipped files to source control,
 * _then_ run the wrapper for the first time.
 
-The Gradle distribution, plus the dependencies for all your projects, are stored in a cache of
-downloaded and unpacked files in the Gradle User Home directory.  This defaults to `.gradle` in
-your home directory, but you can override the location by setting the +GRADLE_USER_HOME+
-environment variable.  You may wish to move this if your home directory is on a small or slow
-drive.  Also, Gradle never clears out this cache: you must do so manually, from time to time.
+The Gradle distribution, plus the dependencies for all your projects, are stored in the Gradle User Home directory.
 
 ifndef::localDoc[]
 There are no publicly available pre-built releases of the gloss:holygradle[], or custom

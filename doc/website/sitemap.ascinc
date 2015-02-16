@@ -28,9 +28,7 @@ and Artifactory
     <li><a href="workflows_admin.html">Workflows for Admins</a></li>
     <li><a href="reference.html"></a>
         <ul>
-<!--
             <li><a href="plugins.html"></a></li>
--->
             <li><a href="glossary.html"></a></li>
         </ul>
     </li>
