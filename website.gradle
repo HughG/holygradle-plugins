@@ -99,6 +99,7 @@ for (local in [false, true]) {
     final String websiteOutputSubdir = local ? 'output-local' : 'output'
     final String websiteOutputDir = "${project.WEBSITE_DIR}/${websiteOutputSubdir}"
     final String publishUrl = local ? project.localWebsitePublishUrl : project.publicWebsitePublishUrl
+    final String publishUsernameProperty = "${local ? 'local' : 'public'}WebsitePublishUsername"
     final File quicklyFile = new File("${rawHtmlDir}/_quickly.txt")
 
     task("clean${namePart}Website") { Task t ->
@@ -205,7 +206,11 @@ for (local in [false, true]) {
         t.dependsOn "build${namePart}Website"
         t.dependsOn ":credential-store:build"
         t.doLast {
-            final String username = System.getProperty("user.name").toLowerCase()
+            final String username = (
+                project.hasProperty(publishUsernameProperty)
+                ? project.property(publishUsernameProperty)
+                : System.getProperty("user.name").toLowerCase()
+            )
             final File credStoreExe =
                 new File(rootProject.projectDir, "/credential-store/Release/credential-store.exe")
             OutputStream credentialStoreOutput = new ByteArrayOutputStream()
