@@ -1,0 +1,125 @@
+include::stdattr.ascinc[]
+
+= unit-test-plugin
+
+include::sitemap.ascinc[]
+
+== Overview
+
+WARNING: This plugin is under minimal maintenance and no new features are planned for it.
+
+=== What is it?
+
+This is a custom plugin for gloss:gradle[] to support defining and invoking unit tests.  It provides
+the following features.
+
+* A DSL for defining your unit test processes, including variations called 'flavours', defaulting to
+`Debug` and `Release`.
+* Automatic definition of tasks for invoking your unit test processes.
+* Ability to run tests according to build dependencies, or independently per-project.
+* Automatic replacement of `<flavour>` and `<f>` in test definitions.
+
+=== Example build script
+
+Here is an example build script:
+
+[source,groovy]
+----
+buildscript {
+    gplugins.use "unit-test:7.2.5"
+}
+gplugins.apply()
+
+def extraArgs = "--stuff"
+tests {
+    foo {
+        commandLine "foo/build/<flavour>/foo_test.exe"
+        commandLine "--output_format=XML", extraArgs
+        redirectOutputToFile "foo/test_results/foo_vc10_u<f>64.xml"
+    }
+    bar {
+        commandLine "bar/build/<flavour>/bar_test.exe", extraArgs
+    }
+}
+----
+
+If this build script elsewhere defines a dependency on another source control module then this will
+result in:
+
+* a task `unitTestDebugIndependently` which invokes `foo/build/Debug/foo_test.exe` with the arguments `--output_format=XML --stuff` which redirects standard output to a file `foo/test_results/foo_vc10_ud64.xml`
+* a similar task named `unitTestReleaseIndependently`
+* a task `unitTestDebug`, which depends on `unitTestDebugIndependently` and all `unitTestDebug`
+tasks on dependent modules
+* a similar task named `unitTestRelease`
+
+== DSL Guide
+
+=== tests
+
+This is a container for test definitions. The first level below `tests` defines the names of the
+tests. By default each test definition applies to _all_ flavours (e.g. Debug and Release).
+
+==== commandLine
+
+This method defines the command line for the unit test process. You can call this method any number
+of times to append extra parts to the command-line, and the method accepts any number of arguments.
+
+Wherever `<flavour>` appears in the command line, it will be replaced with the corresponding
+flavour, for example, `Debug` or `Release`.
+
+Wherever `<f>` appears in the command line, it will be replaced with a single character, the first
+letter of the flavour in lower case, for example, `d` or `r`.
+
+-> Call this method at least once.
+
+==== redirectOutputToFile
+
+This method allows you to have the output of the unit test process redirected to a file of your
+choice.
+
+As above you can use `<flavour>` and `<f>`.
+
+-> Call this method at most once.
+
+==== flavour
+
+This method allows you to restrict this unit test to a subset of flavours.  This method takes any
+number of arguments, each one specifying the name of a flavour for which this unit test process will
+be run.
+
+[source,groovy]
+----
+tests {
+    blah {
+        commandLine "blah /build/<flavour>/blah.exe"
+        flavour "Debug"
+    }
+}
+----
+
+The above code allows you to filter out flavours for individual unit tests, as opposed to
+`testFlavours` which defines the flavours globally for the build script.
+
+-> Call this method any number of times.
+
+=== testFlavours
+
+This is a container to allow you to specify the unit test flavours explicitly. By default, if you do
+_not_ use this DSL the plugin will behave as if you had specified the following.
+
+[source,groovy]
+----
+testFlavours {
+    Debug
+    Release
+}
+----
+
+== Tasks 
+
+=== unitTest<flavour>
+
+If for example you are using the default 'flavours' you will have tasks named `unitTestDebug` and `unitTestRelease`. Each task will cause the unit test processes for this module and all
+dependent modules to be run.
+
+To run the tests for this module, but not those for other modules, use the `-a` argument to Gradle.

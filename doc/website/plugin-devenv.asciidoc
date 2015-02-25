@@ -1,0 +1,165 @@
+include::stdattr.ascinc[]
+
+= devenv-plugin
+
+include::sitemap.ascinc[]
+
+
+== Overview
+
+WARNING: This plugin is under minimal maintenance and no new features are planned for it.
+
+=== What is it?
+
+This is a custom plugin for gloss:gradle[] which provides the following. 
+
+* Tasks for invoking +devenv.com+ to build and clean a Visual Studio solution.
+* Auto-detecting a solution file in your module.
+* Automatic task dependencies between modules in a multi-module workspace.  This means that a
+module which is a dependency of multiple modules will only be built once.
+* Integration with link:plugin-intrepid.html[] so that source code dependencies automatically
+configure build task dependencies.
+* Additional configuration for
+** specifying a solution file; 
+** specifying which platforms to build; and
+** specifying which version of +devenv.com+ to use.
+
+=== Example build script
+
+Here is a minimal build script involving this plugin.
+
+[source,groovy]
+----
+buildscript {
+    gplugins.use "devenv:7.2.5"
+}
+gplugins.apply()
+
+DevEnv.solutionFile "foo.sln"
+----
+
+When executed, it causes the following to happen.
+
+* Version 7.2.5 of the +devenv+ plugin is fetched and used in the script.
+* The plugin is configured to use the solution file "foo.sln".
+* Build tasks including +buildDebug+, +buildRelease+, +cleanDebug+, and +cleanRelease+ are defined
+to operate on the solution file.
+
+== DSL Guide
+
+=== DevEnv
+
+=== solutionFile
+
+Currently, this is the only essential piece of configuration for this plugin. You have to tell the
+plugin which solution file to use, as in the following example.
+
+[source,groovy]
+----
+DevEnv {
+    solutionFile "my_module/build/my_solution.sln"
+}
+----
+
+This tells the +devenv+ plugin to use the +my_solution.sln+ solution file in a +my_module/build+
+subdirectory of the build script directory.
+
+==== version
+
+This method defines the version of +devenv.com+ that the tasks should when building or cleaning.
+
+[source,groovy]
+----
+DevEnv {
+    version "VS90"
+}
+----
+
+The +version+ is used to construct a path to +devenv.com+ as follows: 
+
+- Get the value of the +<version>COMNTOOLS+ environment variable e.g. +VS100COMNTOOLS+
+- The resulting path will be appended with +../IDE/devenv.com+
+
+-> Default value: **"VS100"**
+
+==== platform
+
+This method defines the platform parameter which will be passed on the command line to +devenv.com+
+when initiating a build or clean operation. 
+
+[source,groovy]
+----
+DevEnv {
+    platform "Win32"
+}
+----
+
+
+-> Default value: **"x64"**
+
+==== incredibuild
+
+For build tasks you have the option to replace the invocation of DevEnv with link:https://www.incredibuild.com/[IncrediBuild]. To do
+this, simply supply the full path to the IncrediBuild +BuildConsole.exe+ e.g.
+
+[source,groovy]
+----
+DevEnv {
+    incredibuild "c:/Xoreax/IncrediBuild/BuildConsole.exe"
+}
+----
+
+TIP: You may want to put this configuration in a link:custom-gradle.html#user-gradle[] file in order
+to keep it out of build scripts that are committed to source control.
+
+==== defineErrorRegex
+
+This method allows you to define additional regular expressions to catch errors in the output of
++devenv.com+, or any tools that are invoked by +devenv.com+. Errors are colour-coded as red and
+summarised at the bottom of the build output.
+
+Here is an example of an error regex which is applied by default -- you don't need to define
+this yourself.
+
+[source,groovy]
+----
+defineErrorRegex(/.* [error|fatal error]+ \w+\d{2,5}:.*/)
+----
+
+A tool such as http://www.regextester.com can help you develop your regex.
+
+==== defineWarningRegex
+
+This method allows you to define additional regular expressions to catch warnings in the output of
++devenv.com+, or any tools that are invoked by +devenv.com+. Warnings are colour-coded as yellow
+and summarised at the bottom of the build output.
+
+Here is an example of an warning regex which is applied by default -- you don't need to define this
+yourself.
+
+[source,groovy]
+----
+defineWarningRegex(/.* warning \w+\d{2,5}:.*/)
+----
+
+A tool such as http://www.regextester.com can help you develop your regex.
+
+===== Multi-project workspaces
+
+In a multi-project workspace, you have the option of putting some of the above configuration in the
+root build-script instead of repeating it in the build-scripts for the individual projects.  If you
+put a +DevEnv+ block in your root 'build.gradle' its configuration will automatically apply to all
+sub-projects, for example the following.
+
+[source,groovy]
+----
+DevEnv {
+    version "VS90"
+    platform "Win32"
+    incredibuild "c:/Xoreax/Incredibuild/BuildConsole.exe"
+}
+----
+
+Sub-projects can also specify some or all of these values, which supersedes the configuration in
+the root project.  The +solutionFile+ method does not make sense in the root project, because
+sub-projects will have different solution file names.

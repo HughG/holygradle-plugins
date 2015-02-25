@@ -1,0 +1,184 @@
+include::stdattr.ascinc[]
+
+= artifactory-manager-plugin
+
+include::sitemap.ascinc[]
+
+== Overview
+
+=== What is it?
+
+This is a custom plugin for gloss:gradle[] to support managing an gloss:artifactory[] server.  It
+provides the following features.
+
+* Deletion of gloss:module[] versions (typically from an "integration" or "snapshot"
+gloss:repository[]).
+** Deleting module versions from multiple different repositories with different credentials.
+** Deletion rules according to the age of the module versions age.
+** Clear logging of what was deleted.
+** Option to show what would be deleted, without really deleting.
+
+=== Example build script
+
+Here is an example build script.
+
+[source,groovy]
+----
+buildscript {
+    gplugins.use "artifactory-manager:7.2.5"
+}
+gplugins.apply()
+
+artifactoryManager {
+    server "https://artifactory-server.example-corp.com/artifactory/"
+
+    repository("first-repo") {
+        username "user1"
+        password "password1"
+        delete {
+            olderThan 3, "months"
+        }
+    }
+    
+    repository("second-repo") {
+        username "user2"
+        password "password2"
+        delete("org:foo") {
+            olderThan 14, "days"
+        }
+    }
+
+    repository("third-repo") {
+        username "user3"
+        password "password3"
+        delete("org:moduleA,org:moduleB,org:moduleC") {
+            olderThan 2, "weeks"
+            keepOneBuildPer 1, "week"
+        }
+    }
+}
+----
+
+The above script does not show it but you can use the link:plugin-my-credentials.html[] to get the
+username and password for each repo from the gloss:credential-store[], instead of putting them in
+the script, which is not secure.
+
+This build-script will define a task called `cleanupArtifactory`. When invoked it will:
+
+* identify all artifacts in `first-repo` which are at least 3 months old;
+* identify all artifacts in `second-repo` for the `org:foo` module which are at least 14 days old;
+* identify all artifacts in `third-repo` for the three specified module which are at least 2 weeks old;
+* for each 'module' (i.e. collection of versioned artifacts) it will avoid deleting the most recent of these artifacts if deletion would have resulted in no artifacts remaining;
+* for the modules `org:moduleA`, `org:moduleB` and `org:moduleC` it will keep one build per week (keeping the same version number in all three modules);
+* delete all necessary artifacts, using the specified credentials;
+* print log output describing what is deleted and why.
+
+== DSL Guide
+
+=== artifactoryManager
+
+This is the top-level script block to contain all configuration.
+
+=== server
+
+This method configures the plugin with the URL for the Artifactory server.
+
+-> Call this method exactly once.
+
+=== username
+
+This method sets the default username for accessing all repositories.  Each `repository` block can
+override it for a specific repository if necessary.
+
+-> Call this method at most once.
+
+=== password
+
+This method sets the default password for accessing all repositories.  Each `repository` block can
+override.
+
+-> Call this method at most once.
+
+TODO:
+
+=== repository
+
+This block defines deletion rules for a specific repository.  The block method takes one argument,
+a string which is the name of the repository where module versions should be deleted.
+
+-> You can define any number of these blocks.
+
+==== username
+
+This method sets the username for accessing this specific repository.
+
+-> Call this method at most once.
+
+==== password
+
+This method sets the password for accessing this specific repository.
+
+-> Call this method at most once.
+
+==== delete
+
+This block defines a deletion rule for the repository.  Each deletion rule is applied separately.
+For example, suppose you have two rules, one saying "delete all versions older than 1 week", and
+another saying "delete all versions older than 3 months".  In this case, all versions older than
+one week will be deleted by the first rule, even though the second rule would keep versions newer
+than 3 months ago.
+
+-> You can define any number of these blocks.  If you do not define at least one, nothing will be
+deleted from the repository by your script.
+
+===== olderThan
+
+This method specifies a "cut-off" period for deletion.  It takes two arguments, a number and a unit.
+The unit can be `day`/`days`, `week`/`weeks`, `month`/`months`, or `year`/`years`.
+
+The block will delete some or all versions older than this amount of time, and keep all versions
+which were published at or after that point.  For example, if the date is 28th February, then
+`olderThan 2, "weeks"` means "delete versions published on or before 14th February".
+
+-> Call this method exactly once.  If you do not call this method, no module versions will be
+deleted by this `delete` block.
+
+===== keepOneBuildPer
+
+This method also specifies a number and a unit.  It means that the rule should keep some versions
+from before the cut-off period.
+
+-> Call this method at most once.
+
+===== versionsMatching
+
+This method takes a regular expression as an argument.  Versions are only deleted if they match the
+time-period rules _and_ the version string matches this regular expression.
+
+-> Call this method at most once.
+
+===== dontDelete
+
+This method takes a version string.  That version will _not_ be deleted, even if it matches the
+other rules.
+
+-> Call this method any number of times.
+
+WARNING: If you have more than one `delete` block, you need to call this method with the same
+arguments in each block.  Otherwise, one block may keep the version, but another may delete it.
+
+== Tasks
+
+=== cleanupArtifactory
+
+This task will:
+
+* for all `repository` sections: 
+** identify all artifacts which are older than the specified;
+** for each 'module' (i.e. collection of versioned artifacts) it will avoid deleting the most recent of these artifacts if deletion would have resulted in no artifacts remaining for that module;
+** delete all necessary artifacts, using the specified credentials;
+* print log output describing what is deleted and why.
+
+=== cleanupArtifactoryDryRun
+
+This task will do the same as `cleanupArtifactory` except that no delete command will be sent to the server.

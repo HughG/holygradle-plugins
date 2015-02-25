@@ -4,7 +4,8 @@ include::stdattr.ascinc[]
 
 include::sitemap.ascinc[]
 
-This page lists the components of the gloss:holygradle[] software, with links to more details on each part.
+This page lists the components of the gloss:holygradle[] software, with links to more details on
+each part.
 
 == Custom Gradle Distribution
 
@@ -12,17 +13,20 @@ This page lists the components of the gloss:holygradle[] software, with links to
 
 == Custom Plugins
 
+=== Actively Maintained
+
 * link:plugin-custom-gradle-core.html[]
 * link:plugin-my-credentials.html[]
 * link:plugin-intrepid.html[]
+* link:plugin-artifactory-manager.html[]
 
-////
+=== Minimal Maintenance
+
 * link:plugin-devenv.html[]
 * link:plugin-unit-test.html[]
+////
 * link:plugin-stamper.html[]
 ////
-
-* link:plugin-artifactory-manager.html[]
 
 TODO: http://localwiki/Gradle#LOCAL_Gradle_Software_Details
 
