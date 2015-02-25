@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: wagon-webdav-jackrabbit-2.3">
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.apache.maven.wagon/wagon-webdav-jackrabbit/2.3/jar/b6f5d7f1574448031371486b2a3523a7b545ef72/wagon-webdav-jackrabbit-2.3.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.apache.maven.wagon/wagon-webdav-jackrabbit/2.3/source/f7e8a539bf5165ab776a3e4f69c4daaa65227053/wagon-webdav-jackrabbit-2.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

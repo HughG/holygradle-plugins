@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: wagon-http-shared-2.3">
+    <CLASSES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.apache.maven.wagon/wagon-http-shared/2.3/jar/f5e240a4709d9a0b263593dc02e681371030debe/wagon-http-shared-2.3.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$GRADLE_USER_HOME$/caches/artifacts-23/filestore/org.apache.maven.wagon/wagon-http-shared/2.3/source/cefc17b3f6382d5201bbdb81dfad42a0b8c1bd1/wagon-http-shared-2.3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
