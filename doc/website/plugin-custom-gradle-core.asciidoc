@@ -10,7 +10,7 @@ include::sitemap.ascinc[]
 === What is it?
 
 The +custom-gradle-core-plugin+ is a plugin which is automatically applied whenever you use the
-link:custom-gradle-distribution.html[] and apply any other gloss:holygradle[] plugin.
+link:custom-gradle.html[] and apply any other gloss:holygradle[] plugin.
 
 This plugin provides the following.
 

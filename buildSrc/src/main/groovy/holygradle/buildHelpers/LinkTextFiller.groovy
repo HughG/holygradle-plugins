@@ -32,7 +32,7 @@ public class LinkTextFiller {
                 } else {
                     final File targetFile = new File(file.parentFile, linkTargetPath)
                     if (!targetFile.exists()) {
-                        buildContext.warn("Skipping non-existent link target file '${targetFile}'")
+                        buildContext.warn("${file}: Skipping non-existent link target file '${targetFile}'")
                         targetDoc = null
                     } else {
                         targetDoc = documentSource.getXmlDocument(targetFile)
@@ -71,12 +71,6 @@ public class LinkTextFiller {
     // This is an entry point, so suppress "unused".
     @SuppressWarnings("GroovyUnusedDeclaration")
     public void fillAllLinkText() {
-        /*
-            getXmlDocument from documentSource
-            for each link
-                if it has empty text
-                    fillLinkText
-         */
         if (!doc) {
             doc = documentSource.getXmlDocument(file)
         }
@@ -90,13 +84,6 @@ public class LinkTextFiller {
     }
 
     private void fillLinkText(Node linkNode) {
-        /*
-            get path and fragment parts of link target
-            if path is empty
-                fillLinkFromCurrentDocument
-            ekse
-                fillLinkFromOtherDocument
-         */
         // Get some info about the link to decide whether or not to fill it in.
         Link link = makeLinkFromNode(linkNode)
         if (link.targetUri == null) {
@@ -161,7 +148,7 @@ public class LinkTextFiller {
         } else {
             Node targetElement = targetDoc.getElementById(fragment)
             if (targetElement == null) {
-                buildContext.warn("Failed to find target for ${fragment}")
+                buildContext.warn("${file}: Failed to find target for ${fragment}")
                 return "MISSING TARGET"
             } else {
                 if (targetElement.name().localPart ==~ /h[1-6]/) {

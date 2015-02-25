@@ -475,7 +475,7 @@ packedDependencies {
 }
 ----
 
-Since this specifies a machine-specific location you should probably avoid including the path in a build script that will be shared with other developers. You may wish to use a link:custom-gradle#user_gradle[user.gradle] file or link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the path.
+Since this specifies a machine-specific location you should probably avoid including the path in a build script that will be shared with other developers. You may wish to use a link:custom-gradle.html#user_gradle[user.gradle] file or link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the path.
 
 ==== Using +<version>+
 

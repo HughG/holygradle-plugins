@@ -269,7 +269,7 @@ A common approach is to put long-term and temporary releases in different reposi
 +_something_-release-local+ for "permanent" versions, and +_something_-integration-local+ for
 temporary ones.  The gloss:holygradle[] provides a plugin for deleting older versions of modules
 using date ranges and other rules, and it allows different rules for each repository.  Typically
-this plugin would be run periodically using a tool like gloss:Jenkins[].
+this plugin would be run periodically using a tool like gloss:jenkins[].
 
 === Promotion
 

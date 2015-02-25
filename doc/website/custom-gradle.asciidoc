@@ -22,7 +22,7 @@ The reasons for using a custom distribution of Gradle as opposed to using the or
 
 You need a gloss:gradle-wrapper[] whose properties file refers to a URL corresponding to a
 published version of +custom-gradle+. This would normally be published to an Artifactory server.
-See the link:first-steps.html[] page for an example of how to set this up.
+See the link:first_steps.html[] page for an example of how to set this up.
 
 Once you're using a Gradle Wrapper that refers to +custom-gradle+ then an init-script will automatically be applied. This adds a little bit of extra functionality to the standard Gradle distribution, described below.
 
@@ -42,6 +42,7 @@ gplugins.apply()
 Note that the link:plugin-custom-gradle-core.html[] will automatically be applied whenever you
 use the +gplugins+ DSL.
 
+[[user-gradle]]
 === user.gradle
 
 One of features of the init script is to automatically load +user.gradle+ files that are in the

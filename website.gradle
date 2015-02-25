@@ -177,7 +177,7 @@ for (local in [false, true]) {
             t.outputs.file htmlOut
 
             t.doLast {
-                println "Filling links for ${htmlIn} -> ${htmlOut}"
+                logger.info "Filling links for ${htmlIn} -> ${htmlOut}"
                 LinkTextFiller filler = new LinkTextFiller(buildContext, docSource, htmlIn)
                 filler.fillAllLinkText()
                 filler.writeTo(htmlOut)
