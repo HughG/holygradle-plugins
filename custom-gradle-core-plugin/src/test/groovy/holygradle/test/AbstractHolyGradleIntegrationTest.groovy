@@ -89,7 +89,7 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
             WrapperBuildLauncher launcher = new WrapperBuildLauncher(connection.newBuild())
             maybeAddHttpProxyArguments(launcher)
             // Access plugins from a local repo.
-            launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}")
+            launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}", "-u")
             maybeAddExtraArguments(launcher)
 
             ConfigureUtil.configure(closure, launcher)
