@@ -87,14 +87,7 @@ public class IntrepidPlugin implements Plugin<Project> {
             buildScriptDependencies.add("sevenZip", true)
 
             // Mercurial
-            buildScriptDependencies.add("Mercurial", true)
             buildScriptDependencies.add("credential-store")
-            if (buildScriptDependencies.getPath("Mercurial") != null) {
-                Task hgUnpackTask = buildScriptDependencies.getUnpackTask("Mercurial")
-                hgUnpackTask.doLast {
-                    Helper.addMercurialKeyringToIniFile(buildScriptDependencies.getPath("Mercurial"))
-                }
-            }
         }
 
         // Define the 'packedDependency' DSL for the project.
@@ -262,8 +255,6 @@ public class IntrepidPlugin implements Plugin<Project> {
                     beforeFetchSourceDependenciesTask.doFirst {
                         prerequisites.check("HgAuth")
                     }
-                    Task hgUnpackTask = buildScriptDependencies.getUnpackTask("Mercurial")
-                    beforeFetchSourceDependenciesTask.dependsOn hgUnpackTask
                 }
 
                 Map<String, Task> buildTasks = Helper.getProjectBuildTasks(project)

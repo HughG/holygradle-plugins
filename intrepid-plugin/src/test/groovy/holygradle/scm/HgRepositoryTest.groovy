@@ -17,9 +17,9 @@ class HgRepositoryTest extends AbstractHolyGradleTest {
         final List<String> expectedArgs  = ["log", "-r", "12345abcdefg", "-l", "1", "--template", "\"{node}\""]
         final ExecSpec stubSpec = ExecUtil.makeStubExecSpec()
 
-        final HgCommand hgCommand = [ execute : { Closure configure -> configure(stubSpec); "12345abcdefg"} ] as HgCommand
+        final Command hgCommand = [ execute : { Closure configure -> configure(stubSpec); "12345abcdefg"} ] as Command
         final File workingDir = getTestDir()
-        final HgRepository repo = new HgRepository(hgCommand, null, workingDir)
+        final HgRepository repo = new HgRepository(hgCommand, workingDir)
         final String actualRevision = repo.getRevision()
 
         assertEquals("Working dir", workingDir, stubSpec.workingDir)
@@ -32,15 +32,15 @@ class HgRepositoryTest extends AbstractHolyGradleTest {
         final List<String> expectedArgs = ["status", "-amrdC"]
         Object[] changedFileList = null
         final ExecSpec stubSpec = ExecUtil.makeStubExecSpec()
-        final HgCommand hgCommand = [
+        final Command hgCommand = [
             execute : { Closure configure ->
                 configure(stubSpec)
                 changedFileList.join("\n")
             }
-        ] as HgCommand
+        ] as Command
 
         final File workingDir = getTestDir()
-        final HgRepository repo = new HgRepository(hgCommand, null, workingDir)
+        final HgRepository repo = new HgRepository(hgCommand, workingDir)
 
         changedFileList = ["M some_modified_file.txt","A some_added_file.foo"]
         assertTrue(repo.hasLocalChanges())

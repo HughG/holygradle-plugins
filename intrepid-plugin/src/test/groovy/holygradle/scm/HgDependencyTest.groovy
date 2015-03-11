@@ -31,14 +31,14 @@ class HgDependencyTest extends AbstractHolyGradleTest {
 
         // Set up a stub HgCommand which just records what calls were made.
         List<ExecSpec> stubSpecs = []
-        final HgCommand hgCommand = [
+        final Command hgCommand = [
             execute : { Closure configure ->
                 ExecSpec stubSpec = ExecUtil.makeStubExecSpec()
                 stubSpecs.add(stubSpec)
                 configure(stubSpec)
                 return ""
             }
-        ] as HgCommand
+        ] as Command
 
         HgDependency dependency = new HgDependency(
             project,

@@ -4,9 +4,8 @@ import holygradle.Helper
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
-import holygradle.scm.HgCommandLine
+import holygradle.scm.CommandLine
 import holygradle.scm.HgDependency
-import holygradle.scm.HgRepository
 import holygradle.scm.SvnDependency
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -175,13 +174,18 @@ class SourceDependencyHandler extends DependencyHandler {
     public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {
         SourceDependency sourceDependency
         if (protocol == "svn") {
-            sourceDependency = new SvnDependency(project, this)
+            def hgCommand = new CommandLine(
+                "svn.exe",
+                project.&exec
+            )
+            sourceDependency = new SvnDependency(
+                project,
+                this,
+                hgCommand
+            )
         } else {
-            def hgPath = new File(buildScriptDependencies.getPath("Mercurial"), "hg.exe").path
-            Task hgUnpackTask = HgRepository.findOrCreateToolSetupTask(project)
-            def hgCommand = new HgCommandLine(
-                hgUnpackTask,
-                hgPath,
+            def hgCommand = new CommandLine(
+                "hg.exe",
                 project.&exec
             )
             sourceDependency = new HgDependency(

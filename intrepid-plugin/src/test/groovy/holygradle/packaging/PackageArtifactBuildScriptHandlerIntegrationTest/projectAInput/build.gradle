@@ -10,11 +10,8 @@ println "Repo setup script projectDir is ${project.projectDir}"
 
 void hgExec(Project project, Object ... args) {
     project.exec { ExecSpec spec ->
-        BuildScriptDependencies deps =
-            project.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
-        String hgPath = new File(deps.getPath("Mercurial"), "hg.exe").path
         spec.workingDir = project.projectDir
-        spec.executable = hgPath
+        spec.executable = "hg.exe"
         spec.args = args.toList()
     }
 }
@@ -37,5 +34,4 @@ task setupRepo << {
     )
 }
 
-setupRepo.dependsOn rootProject.tasks["extractMercurial"]
 

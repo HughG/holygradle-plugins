@@ -174,7 +174,6 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             sourceRepoDir
         )
         if (sourceRepo != null) {
-            createPublishNotesTask.dependsOn sourceRepo.toolSetupTask
             createPublishNotesTask.doLast {
                 File sourceDepInfoDir
                 if (handler == null) {
@@ -301,9 +300,6 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         if (createPublishNotesTask != null) {
             t.dependsOn createPublishNotesTask
         }
-        // Writing the "package files" below may involve gathering information for source control repositories, so we
-        // need to make sure any necessary tools are set up.
-        t.dependsOn SourceControlRepositories.getToolSetupTask(project)
         t.baseName = project.name + "-" + name
         t.destinationDir = new File(project.projectDir, "packages")
         t.includeEmptyDirs = false

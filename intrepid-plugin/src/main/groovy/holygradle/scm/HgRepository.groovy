@@ -1,33 +1,16 @@
 package holygradle.scm
 
-import holygradle.buildscript.BuildScriptDependencies
-import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.process.ExecSpec
 
 import java.util.regex.Matcher
 
 class HgRepository implements SourceControlRepository {
     private final File workingCopyDir
-    private final Task toolSetupTask
-    private final HgCommand hgCommand
+    private final Command hgCommand
 
-    public HgRepository(HgCommand hgCommand, Task toolSetupTask, File workingCopyDir) {
+    public HgRepository(Command hgCommand, File workingCopyDir) {
         this.hgCommand = hgCommand
-        this.toolSetupTask = toolSetupTask
         this.workingCopyDir = workingCopyDir
-    }
-
-    public static Task findOrCreateToolSetupTask(Project project) {
-        Project rootProject = project.rootProject
-        BuildScriptDependencies deps =
-            rootProject.extensions.findByName("buildScriptDependencies") as BuildScriptDependencies
-        return deps.getUnpackTask("Mercurial")
-    }
-
-    @Override
-    Task getToolSetupTask() {
-        return toolSetupTask
     }
 
     public File getLocalDir() {

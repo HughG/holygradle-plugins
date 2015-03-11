@@ -2,18 +2,18 @@ package holygradle.scm
 
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import org.gradle.api.*
-import org.tmatesoft.svn.core.*
-import org.tmatesoft.svn.core.wc.*
-import org.tmatesoft.svn.core.internal.wc.*
+import org.gradle.process.ExecSpec
 import holygradle.source_dependencies.SourceDependency
 import holygradle.source_dependencies.SourceDependencyHandler
 
 class SvnDependency extends SourceDependency {
+    private final Command svnCommand
     public boolean export = false
     public boolean ignoreExternals = false
     
-    public SvnDependency(Project project, SourceDependencyHandler sourceDependency) {
+    public SvnDependency(Project project, SourceDependencyHandler sourceDependency, Command svnCommand) {
         super(project, sourceDependency)
+        this.svnCommand = svnCommand
     }
     
     @Override
@@ -26,54 +26,40 @@ class SvnDependency extends SourceDependency {
         String repoUrl,
         String repoRevision,
         File svnConfigDir,
-        SVNDepth depth,
         String username,
         String password
     ) {
-        try {
-            boolean storeCredentials = false
-            if (username != null && password != null) {
-                storeCredentials = true
-            }
-            
-            SVNRevision svnRevision = SVNRevision.HEAD
-            if (repoRevision != null) {
-                svnRevision = SVNRevision.create(Long.parseLong(repoRevision))
-            }
-            
-            SVNURL svnUrl = SVNURL.parseURIEncoded(repoUrl)
-            DefaultSVNAuthenticationManager authManager = new DefaultSVNAuthenticationManager(
-                svnConfigDir,
-                storeCredentials,
-                username,
-                password
-            )
-            DefaultSVNOptions options = SVNWCUtil.createDefaultOptions(true)
-            SVNClientManager clientManager = SVNClientManager.newInstance(options, authManager)
-            SVNUpdateClient updateClient = clientManager.getUpdateClient()
-            updateClient.setIgnoreExternals(ignoreExternals)
+        String result = svnCommand.execute { ExecSpec spec ->
             if (sourceDependency.export) {
-                updateClient.doExport(svnUrl, destinationFile, svnRevision, svnRevision, "\n", false, depth)
+                spec.args "export", "--native-eol", "LF"
             } else {
-                updateClient.doCheckout(svnUrl, destinationFile, svnRevision, svnRevision, depth, false)
+                spec.args "checkout"
             }
-            clientManager.dispose()
-            
-            boolean writeVersion = sourceDependency.export
-            if (sourceDependency.writeVersionInfoFile != null) {
-                writeVersion = sourceDependency.writeVersionInfoFile
+            if (repoRevision != null) {
+                spec.args "@{repoUrl}@@{repoRevision}"
+            } else {
+                spec.args repoUrl
             }
-            if (writeVersion) {
-                writeVersionInfoFile()
+            spec.args destinationFile.path, "--config-dir", svnConfigDir.path, "--ignore-externals"
+            if (username != null) {
+                spec.args "--username", username
             }
-            return true
-        } catch (SVNAuthenticationException ignored) {
-            return false
+            if (username != null) {
+                spec.args "--password", password
+            }
         }
+        boolean writeVersion = sourceDependency.export
+        if (sourceDependency.writeVersionInfoFile != null) {
+            writeVersion = sourceDependency.writeVersionInfoFile
+        }
+        if (writeVersion) {
+            writeVersionInfoFile()
+        }
+        return true
     }
     
     private boolean TryCheckout(File destinationDir, String repoUrl, String repoRevision, File svnConfigDir) {
-        TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir, SVNDepth.INFINITY, null, null)
+        TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir, null, null)
     }
 
     private File getSvnConfigDir() {
@@ -109,7 +95,6 @@ class SvnDependency extends SourceDependency {
                     repoUrl,
                     repoRevision,
                     svnConfigDir,
-                    SVNDepth.INFINITY,
                     myCredentialsExtension.username,
                     myCredentialsExtension.password
                 )

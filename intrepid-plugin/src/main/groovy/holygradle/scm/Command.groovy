@@ -1,5 +1,5 @@
 package holygradle.scm
 
-public interface HgCommand {
+public interface Command {
    String execute(Closure configureExecSpec);
 }

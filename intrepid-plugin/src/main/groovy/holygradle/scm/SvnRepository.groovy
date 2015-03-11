@@ -1,36 +1,16 @@
 package holygradle.scm
 
-import org.gradle.api.DefaultTask
-import org.gradle.api.Project
-import org.gradle.api.Task
-import org.tmatesoft.svn.core.wc.SVNClientManager
+import org.gradle.process.ExecSpec
+
+import java.util.regex.Matcher
 
 class SvnRepository implements SourceControlRepository {
-    private static final String TOOL_SETUP_TASK_NAME = "setUpSubversion"
-
-    private final Task dummyToolSetupTask
     private final File workingCopyDir
+    private final Command svnCommand
 
-    public static findOrCreateToolSetupTask(Project project) {
-        Project rootProject = project.rootProject
-        Task dummyToolSetupTask = rootProject.tasks.findByName(TOOL_SETUP_TASK_NAME)
-        if (dummyToolSetupTask == null) {
-            dummyToolSetupTask = rootProject.task(TOOL_SETUP_TASK_NAME, type: DefaultTask) { Task it ->
-                it.description = "Dummy task for setting up SVN support."
-                it.enabled = false
-            }
-        }
-        return dummyToolSetupTask
-    }
-
-    public SvnRepository(Project project, File localPath) {
-        dummyToolSetupTask = findOrCreateToolSetupTask(project)
+    public SvnRepository(Command hgCommand, File localPath) {
+        this.svnCommand = hgCommand
         workingCopyDir = localPath
-    }
-
-    @Override
-    Task getToolSetupTask() {
-        return dummyToolSetupTask
     }
 
     public File getLocalDir() {
@@ -42,17 +22,38 @@ class SvnRepository implements SourceControlRepository {
     }
     
     public String getUrl() {
-        SVNClientManager clientManager = SVNClientManager.newInstance();
-        clientManager.getStatusClient().doStatus(workingCopyDir, false).getURL().toString()
+        String url = "unknown"
+        String info = svnCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
+            spec.args "info"
+        }
+        Matcher match = info =~ /URL: (\S+)/
+        if (match.size() != 0) {
+            final List<String> matches = match[0] as List<String>
+            url = matches[1]
+        }
+        url
     }
     
     public String getRevision() {
-        SVNClientManager clientManager = SVNClientManager.newInstance();
-        clientManager.getStatusClient().doStatus(workingCopyDir, false).getRevision().getNumber()
+        String revision = "unknown"
+        String info = svnCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
+            spec.args "info"
+        }
+        Matcher match = info =~ /Revision: (\d+)/
+        if (match.size() != 0) {
+            final List<String> matches = match[0] as List<String>
+            revision = matches[1]
+        }
+        revision
     }
     
     public boolean hasLocalChanges() {
-        // TODO
-        return false
+        String changes = svnCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
+            spec.args "status", "--quiet", "--ignore-externals"
+        }
+        changes.trim().length() > 0
     }
 }

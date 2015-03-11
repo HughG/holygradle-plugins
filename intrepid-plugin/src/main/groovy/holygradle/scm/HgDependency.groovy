@@ -10,13 +10,13 @@ import org.gradle.process.ExecSpec
 
 class HgDependency extends SourceDependency {
     private final BuildScriptDependencies buildScriptDependencies
-    private final HgCommand hgCommand
+    private final Command hgCommand
     
     public HgDependency(
         Project project,
         SourceDependencyHandler sourceDependency,
         BuildScriptDependencies buildScriptDependencies,
-        HgCommand hgCommand
+        Command hgCommand
     ) {
         super(project, sourceDependency)
         this.buildScriptDependencies = buildScriptDependencies

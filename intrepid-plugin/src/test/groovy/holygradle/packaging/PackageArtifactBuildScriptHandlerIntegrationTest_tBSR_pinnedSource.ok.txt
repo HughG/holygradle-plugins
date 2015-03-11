@@ -7,7 +7,7 @@ gplugins.apply()
 
 sourceDependencies {
     "..\projectA" {
-        hg "unknown@d7496a8c5c14e5ea8afb554dd42ca03f7d13b630"
+        hg "unknown@1dc48895bb9576572743db64aad4dcdbb1d0ebee"
     }
 }
 packedDependenciesDefault {

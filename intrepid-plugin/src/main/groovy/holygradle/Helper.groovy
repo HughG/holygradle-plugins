@@ -190,26 +190,4 @@ Please run the task 'fixMercurialIni'."""
             println "Your mercurial.ini (in ${mercurialIniFile.parent}) has been modified."
         }
     } 
-    
-    public static void addMercurialKeyringToIniFile(File hgPath) {
-        File iniFile = new File(hgPath, "Mercurial.ini")
-        File keyring = new File(hgPath, "mercurial_keyring.py")
-        
-        // Create a default mercurial.ini file.
-        String hgInitFileText = ""
-        if (iniFile.exists()) {
-            hgInitFileText = iniFile.text
-        }
-        
-        boolean shouldWrite = false
-        if (!hgInitFileText.contains("hgext.mercurial_keyring")) {
-            shouldWrite = true
-            hgInitFileText += "\r\n\r\n" +
-                "[extensions]\r\n" +
-                "hgext.mercurial_keyring = ${keyring.path}\r\n\r\n"
-        }
-        if (shouldWrite) {
-            iniFile.write(hgInitFileText)
-        }
-    } 
 }
