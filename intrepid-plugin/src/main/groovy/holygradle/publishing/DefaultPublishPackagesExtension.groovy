@@ -62,7 +62,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             if (ivyPublishTask != null) {
 
                 this.freezeDynamicDependencyVersions(project)
-                this.fixUpConflictConfigurations()
                 this.putConfigurationsInOriginalOrder()
                 this.collapseMultipleConfigurationDependencies()
                 this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
@@ -363,26 +362,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 if (depNode.@rev.endsWith("+")) {
                     depNode.@rev = getDependencyVersion(project, depNode.@org as String, depNode.@name as String)
                 }
-            }
-        }
-    }
-
-    // See cookbook example: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/HolyGradleCookbook#!i-need-to-use-multiple-versions-of-the-same-component
-    public void fixUpConflictConfigurations() {
-        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
-        //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
-            xml.asNode().dependencies.dependency.each { depNode ->
-                String conf = depNode.@conf as String
-                String[] confSplit = conf.split("->")
-                if (confSplit.size() == 1) {
-                    confSplit = conf.split("-&gt;")
-                }
-                Collection<String> newConf = []
-                confSplit.each { String c ->
-                    newConf.add(c.replaceAll("(.*)_conflict.*", { it[1] }))
-                }
-                depNode.@conf = newConf.join("->")
             }
         }
     }
