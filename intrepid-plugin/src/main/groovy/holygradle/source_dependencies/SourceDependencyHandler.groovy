@@ -118,8 +118,7 @@ class SourceDependencyHandler extends DependencyHandler {
     public SourceDependencyPublishingHandler publishingHandler
     public boolean usePublishedVersion = false
     private File destinationDir
-    private Collection<String> overrideWarningMessages = []
-    
+
     public static Collection<SourceDependencyHandler> createContainer(Project project) {
         project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { String sourceDepName ->
             // Explicitly create the SourceDependencyHandler so we can add SourceDependencyPublishingHandler.
@@ -153,10 +152,8 @@ class SourceDependencyHandler extends DependencyHandler {
     }
     
     public void hg(String hgUrl) {
-        if (url != null) {
-            if (hgUrl != url) {
-                overrideWarningMessages.add("'hg' - '${hgUrl}'")
-            }
+        if (protocol != null || url != null) {
+            throw new RuntimeException("Cannot call 'hg' when protocol and/or url has already been set")
         } else {
             protocol = "hg"
             url = hgUrl
@@ -164,10 +161,8 @@ class SourceDependencyHandler extends DependencyHandler {
     }
     
     public void svn(String svnUrl) {
-        if (url != null) {
-            if (svnUrl != url) {
-                overrideWarningMessages.add("'svn' - '${svnUrl}'")
-            }
+        if (protocol != null || url != null) {
+            throw new RuntimeException("Cannot call 'svn' when protocol and/or url has already been set")
         } else {
             protocol = "svn"
             url = svnUrl
@@ -206,21 +201,6 @@ class SourceDependencyHandler extends DependencyHandler {
         FetchSourceDependencyTask fetchTask =
             (FetchSourceDependencyTask)project.task(fetchTaskName, type: FetchSourceDependencyTask)
         fetchTask.description = sourceDependency.fetchTaskDescription
-        if (overrideWarningMessages.size() > 0) {
-            Collection<String> messages = []
-            messages.add "-"*80
-            messages.add "Warning: source dependency '${name}' was configured with multiple urls."
-            messages.add  "The first url (which is what will be used) is: '${protocol}' - '${url}'."
-            messages.add  "The other urls (which are ignored) are: "
-            overrideWarningMessages.each {
-                messages.add "  ${it}"
-            }
-            messages.add "-"*80
-            fetchTask.doFirst { 
-                messages.each { println it }
-            }
-        }
-        
         fetchTask.initialize(sourceDependency)
         return fetchTask
     }
