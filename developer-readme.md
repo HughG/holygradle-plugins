@@ -49,8 +49,10 @@ Run 'gw tasks'.  You may need to supply proxy arguments if it's the first time y
 Note that IntelliJ IDEA will fail to open the project until you've created this file (because it parses the
 "build.gradle" files, and some of them depend on these properties).
 
-Also copy this file to the 'wrapper-starter-kit' subdirectory.  It needs to be a separate Gradle
-project because it _uses_ the published plugins.
+Note that the projects in the 'wrapper-starter-kit' and 'https_setup_kit' subdirectories will create a hard
+link in their own folders to the root gradle.properties file when run, to make sure all projects stay in sync.
+They need to be separate Gradle projects because they _use_ the published plugins.  A hard link is used
+because symlinks / soft links in Windows require special permissions in some cases.
 
 ## IntelliJ IDEA
 

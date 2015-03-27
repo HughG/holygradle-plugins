@@ -1,1 +1,10 @@
+import java.nio.file.*
+
 include 'plainWrapper'
+
+File propertiesFile = new File(rootProject.projectDir, "gradle.properties")
+if (!propertiesFile.exists()) {
+    Path link = propertiesFile.toPath()
+    Path target = Paths.get("..", "gradle.properties")
+    Files.createLink(link, target)
+}
