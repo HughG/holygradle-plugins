@@ -5,32 +5,32 @@ import org.gradle.api.Project
 /**
  * Extension to hold project-wide settings which affect how dependencies are handled.
  */
-class DependencySettingsExtension {
+class DependencySettingsHandler {
     private static boolean DEFAULT_FAIL_ON_VERSION_CONFLICT_DEFAULT = true
 
     private Boolean failOnVersionConflict = null
     private final Project project
 
-    public static DependencySettingsExtension findDependencySettings(Project project) {
-        return project.extensions.findByName("dependencySettings") as DependencySettingsExtension
+    public static DependencySettingsHandler findDependencySettings(Project project) {
+        return project.extensions.findByName("dependencySettings") as DependencySettingsHandler
     }
 
-    public static DependencySettingsExtension findOrCreateDependencySettings(Project project) {
+    public static DependencySettingsHandler findOrCreateDependencySettings(Project project) {
         return findDependencySettings(project) ?:
-            (project.extensions.create("dependencySettings", DependencySettingsExtension, project)
-                as DependencySettingsExtension)
+            (project.extensions.create("dependencySettings", DependencySettingsHandler, project)
+                as DependencySettingsHandler)
     }
 
-    public static DependencySettingsExtension getDependencySettings(Project project) {
-        DependencySettingsExtension ext =
-            project.extensions.findByName("dependencySettings") as DependencySettingsExtension
+    public static DependencySettingsHandler getDependencySettings(Project project) {
+        DependencySettingsHandler ext =
+            project.extensions.findByName("dependencySettings") as DependencySettingsHandler
         if (ext == null) {
             throw new RuntimeException("Failed to find dependencySettings extension on " + project)
         }
         return ext
     }
 
-    DependencySettingsExtension(Project project) {
+    DependencySettingsHandler(Project project) {
         this.project = project
     }
 
@@ -38,7 +38,7 @@ class DependencySettingsExtension {
      * Returns the root project's extension (if it's been added), or null (if not added, or if this extension is on the
      * root project.
      */
-    private DependencySettingsExtension getFallback() {
+    private DependencySettingsHandler getFallback() {
         if (project == project.rootProject) {
             return null
         } else {
@@ -64,7 +64,7 @@ class DependencySettingsExtension {
         if (failOnVersionConflict != null) {
             return failOnVersionConflict
         }
-        DependencySettingsExtension fallback = getFallback()
+        DependencySettingsHandler fallback = getFallback()
         if (fallback != null) {
             return fallback.getDefaultFailOnVersionConflict()
         }

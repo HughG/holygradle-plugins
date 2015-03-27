@@ -49,7 +49,7 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
 
     private static Project getProject() {
         Project project = ProjectBuilder.builder().build()
-        project.ext.unpackedDependenciesCache = new File("theUnpackCache")
+        project.packedDependencySettings.unpackedDependenciesCacheDir = new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
     }

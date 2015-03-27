@@ -93,10 +93,10 @@ class UnpackModuleVersion {
         if (dependencyRelativePaths.containsKey(coordinate)) {
             return dependencyRelativePaths[coordinate]
         } else {
-            // If we don't know what the relative path is from this module to the dependency
-            // (i.e. it's not specified in the Ivy), then fall-back to the old behaviour which
-            // was to put the dependency immediately under the workspace root.
-            return "/"
+            // If the relative path from this module to the dependency is not specified in the Ivy, return an empty
+            // string, which means that the dependency should be put next to this module, in a folder named after the
+            // dependency.
+            return ""
         }
     }
     
@@ -173,10 +173,13 @@ class UnpackModuleVersion {
         } else {
             // If we don't return above then this must be a transitive dependency.
 
-            String relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
+            String relativePathForDependency = ""
+            if (project.packedDependenciesSettings.useRelativePathFromIvyXml) {
+                relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
+            }
             if (relativePathForDependency == "") {
                 // If the relative path is empty we need to supply the name of the target directory ourselves.
-                relativePathForDependency = getTargetDirName()
+                relativePathForDependency = "../" + getTargetDirName()
             }
             
             if (relativePathForDependency.startsWith("/") || 

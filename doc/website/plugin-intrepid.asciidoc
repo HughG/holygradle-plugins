@@ -464,26 +464,6 @@ declares two dependencies:
 
 Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate subdirectories of the workspace. See <<_relative_paths>>.
 
-==== Unpack cache
-
-The default location for the unpacked dependency cache is +<Gradle User Home dir>/unpackCache+.
-You can change the location of your link:first_steps.html#_gradle_user_home[Gradle User Home]
-directory.  If you want more specific control then that can be achieved with the project-level
-+unpackedDependenciesCache+ property; that means, a property that you define outside of any other
-DSL elements such as <<_packedDependencies>>. For example:
-
-[source,groovy]
-----
-unpackedDependenciesCache = "d:/dep_cache"
-packedDependencies {
-    foo {
-        ...
-    }
-}
-----
-
-Since this specifies a machine-specific location you should probably avoid including the path in a build script that will be shared with other developers. You may wish to use a link:custom-gradle.html#_user_gradle[user.gradle] file or link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the path.
-
 ==== Using +<version>+
 
 You can specify +<version>+ anywhere within the name of a packed dependency e.g. +"my_component-<version> blah"+. Once the version number has been resolved, the +<version>+ will be replaced with the actual version of the packed dependency that has been retrieved.
@@ -582,6 +562,61 @@ Note: this will only be done if +applyUpToDateChecks+ is false.
 This property determine whether +fetchAllDependencies+ should perform full up-to-date checks to compare the dependency zip files with the target directory. This will take much longer to execute, but avoids any possibility that the unpacked dependencies have been modified.
 
 -> Default value: **false**
+
+=== packedDependencySettings
+
+This DSL block contains settings which control how packed dependencies are unpacked.
+
+==== Unpack cache
+
+The default location for the unpacked dependency cache is +<Gradle User Home dir>/unpackCache+.
+You can change the location of your link:first_steps.html#gradle_user_home[Gradle User Home]
+directory.  If you want more specific control then that can be achieved with the following piece
+of DSL.
+
+[source,groovy]
+----
+packedDependencySettings {
+    unpackedDependenciesCacheDir = "d:/dep_cache"
+}
+----
+
+If this value is set in the root project, it will affect all sub-projects unless they override it.
+
+Since this specifies a machine-specific location you should probably avoid including the path in a build script that
+will be shared with other developers. You may wish to use a link:custom-gradle.html#user_gradle[user.gradle] file or
+link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the
+path.
+
+[[useRelativePathFromIvyXml]]
+==== Relative paths for transitive dependencies
+
+By default, when a packed dependency has further transitive dependencies, the unpacked directories/symlinks for those
+will appear next to the packed dependency.
+
+Previous versions of the Holy Gradle allowed published modules to specify the relative location where each transitive
+packed dependency should appear.  This design caused various problems, as follows.
+
+* If a packed dependency is used in multiple places in the dependency graph, it would require extra effort to create a
+symlink at each location, and waste space if +unpackToCache = false+ is used.
+* If relative paths points to child folders of dependencies, arbitrarily long paths may be created, causing problems
+with Windows' maximum path length of 260 characters.
+* If relative paths points to child folders of dependencies, and the same dependencies are used in separate projects,
+and at least one of those projects forces a dependency to resolve to a different version, there is no way to create a
+correct set of symlinks (in the default case where +unpackToCache = true+).
+
+In practice, all uses had a relative path of +"../_module_name_"+, so this is now the default, and the previous
+behaviour will be removed in a future version, provided no problems are found with this approach.  For now, the previous
+behaviour can be re-activated with the following bit of DSL.
+
+[source,groovy]
+----
+packedDependencySettings {
+    useRelativePathFromIvyXml = true
+}
+----
+
+If this value is set in the root project, it will affect all sub-projects unless they override it.
 
 === symlinks
 
@@ -1070,25 +1105,47 @@ You may notice a task called +publishIvyPublicationToIvyRepository+ or similar. 
 [[_relative_paths]]
 == Relative paths
 
-Both +sourceDependencies+ and +packedDependencies+ support project-relative paths and workspace-relative paths. This means that you can nest projects inside each other and put projects completely outside the workspace root, on a relative path. For example, in the example below the root Gradle project is called 'Root' and it is able to pull in source and/or packed dependencies to form the following directory hierarchy. The contents of the square brackets shows the dependencies from one module to others. If the dependency starts with a slash then it's relative to the Root workspace, otherwise it's relative to the module which is defining the dependency.
+Both +sourceDependencies+ and +packedDependencies+ support project-relative paths and workspace-relative paths. This
+means that you can nest projects inside each other and put projects completely outside the workspace root, on a
+relative path. For example, in the example below the root Gradle project is called 'Root' and it is able to pull in
+source and/or packed dependencies to form the following directory hierarchy. The contents of the square brackets shows
+the dependencies from one module to others. If the dependency starts with a slash then it's relative to the Root
+workspace, otherwise it's relative to the module which is defining the dependency.
 
 ....
 C:
 +---Projects
     +---PJ42
-        +---Root                   [MyApp, MyLib]
-        |   +---Boost
-        |   +---MyLib              [../../Stuff/UtilityLib, SubLib, /Boost]
-        |   |   +---SubLib         [/Boost]
-        |   +---MyApp              [../../Stuff/Framework, ../MyLib]
+        +---Root                    source  [MyApp, MyLib]
+        |   +---Boost               packed
+        |   +---MyLib               source  [../../Stuff/UtilityLib, SubLib, /Boost]
+        |   |   +---SubLib          source  [/Boost]
+        |   +---MyApp               source  [../../Stuff/Framework, ../MyLib]
         +---Stuff
-            +---Framework          [../UtilityLib, ../RenderingLib]
-            +---UtilityLib         [../RenderingLib]
-            +---RenderingLib
+            +---Framework           packed  [../UtilityLib, ../RenderingLib]
+            +---UtilityLib          packed  [../RenderingLib]
+            +---RenderingLib        packed
 ....
 
-=== Ivy files
+Transitive dependencies of +packedDependencies+ will appear next to those dependencies.  In the above example, none of
+the source projects directly depends on +RenderingLib+.  However, it will still be unpacked and appear in the +Stuff+
+folder, next to +UtilityLib+, because +UtilityLib+ depends on +RenderingLib+.
 
-Whenever you publish a module which specifies source dependencies or packed dependencies the Ivy XML will have the relative path baked in. So, for example, if you published +MyLib+ you could examine the XML and notice the relative path +../../Stuff/+ specified for the +UtilityLib+ dependency, and if you published +SubLib+ you would see the relative path +../+ for the +Boost+ dependency.
+WARNING: Previous versions of the gloss:holygradle[] allowed published packed dependencies to specify that their
+transitive dependencies should appear at some other relative location.  This feature is deprecated and will be removed
+in future.  See <<useRelativePathFromIvyXml>>.
 
-Relative paths chain together as you would expect. For example +Root+ depends on +MyLib+, which depends on +SubLib+ and all the relative paths are empty. This means that the directories are nested. After +MyLib+ and +SubLib+ are published and subsequently fetched on someone's machine, the directory structure is still nested, even when these modules are unpacked to the central cache. This approach does mean that it would be rather difficult to allow versions of transitive dependencies to be overridden -- therefore overriding transitive dependencies this isn't currently supported.
+==== Ivy files
+
+WARNING: This feature is deprecated and will be removed in future.  See <<useRelativePathFromIvyXml>>.
+
+Whenever you publish a module which specifies source dependencies or packed dependencies the Ivy XML will have the
+relative path baked in. So, for example, if you published +MyLib+ you could examine the XML and notice the relative
+path +../../Stuff/+ specified for the +UtilityLib+ dependency, and if you published +SubLib+ you would see the relative
+path +../+ for the +Boost+ dependency.
+
+Relative paths chain together as you would expect. For example +Root+ depends on +MyLib+, which depends on +SubLib+ and
+all the relative paths are empty. This means that the directories are nested. After +MyLib+ and +SubLib+ are published
+and subsequently fetched on someone's machine, the directory structure is still nested, even when these modules are
+unpacked to the central cache. This approach does mean that it would be rather difficult to allow versions of transitive
+dependencies to be overridden -- therefore overriding transitive dependencies this isn't currently supported.

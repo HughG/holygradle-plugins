@@ -8,8 +8,9 @@ import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.Symlink
 import holygradle.dependencies.CollectDependenciesTask
 import holygradle.dependencies.DependenciesStateHandler
-import holygradle.dependencies.DependencySettingsExtension
+import holygradle.dependencies.DependencySettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.PackedDependencySettingsHandler
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
@@ -50,8 +51,10 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * Configurations
          **************************************/
-        DependencySettingsExtension dependencySettings =
-            DependencySettingsExtension.findOrCreateDependencySettings(project)
+        // Set the default version conflict behaviour to failure, unless explicitly overridden in the script, or unless
+        // we're running one of the standard tasks used to resolve version conflicts.
+        DependencySettingsHandler dependencySettings =
+            DependencySettingsHandler.findOrCreateDependencySettings(project)
         final ConfigurationContainer configurations = project.configurations
         final List<String> baseTaskNames = project.gradle.startParameter.taskNames.collect { it.split(":").last() }
         final boolean runningDependencyTask = ["dependencies", "dependencyInsight"].any { baseTaskNames.contains(it) }
@@ -74,7 +77,6 @@ public class IntrepidPlugin implements Plugin<Project> {
          **************************************/
         // The first properties are common to all projects, but the unpackModules collection is per-project.
         project.rootProject.ext.svnConfigPath = System.getenv("APPDATA") + "/Subversion"
-        project.rootProject.ext.unpackedDependenciesCache = new File(project.gradle.gradleUserHomeDir, "unpackCache")
 
         /**************************************
          * DSL extensions
@@ -98,6 +100,10 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         // Define the 'dependenciesState' DSL for the project's build script.
         /*DependenciesStateHandler buildscriptDependenciesState =*/ DependenciesStateHandler.createExtension(project, true)
+
+        // Define the 'packedDependencySettingsHandler' DSL for the project.
+        /*PackedDependencySettingsHandler packedDependenciesSettings =*/
+        PackedDependencySettingsHandler.findOrCreatePackedDependencySettings(project)
 
         // Define the 'packedDependenciesState' DSL for the project.
         PackedDependenciesStateHandler packedDependenciesState = PackedDependenciesStateHandler.createExtension(project)
