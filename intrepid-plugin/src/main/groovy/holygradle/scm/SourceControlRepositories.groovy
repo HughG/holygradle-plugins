@@ -14,6 +14,13 @@ public class SourceControlRepositories {
     ) {
         File svnFile = new File(location, ".svn")
         File hgFile = new File(location, ".hg")
+        if ([svnFile, hgFile].every { it.exists() }) {
+            throw new RuntimeException(
+                "${location} contains both a Subversion '.svn' and a Mercurial '.hg' folder, which is not supported, " +
+                "because it is impossible to tell which to use for source version information."
+            )
+        }
+
         if (svnFile.exists()) {
             new SvnRepository(new CommandLine("svn.exe", rootProject.&exec), location)
         } else if (hgFile.exists()) {
