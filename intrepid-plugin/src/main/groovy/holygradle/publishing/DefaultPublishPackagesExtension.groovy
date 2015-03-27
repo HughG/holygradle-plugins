@@ -61,10 +61,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
             if (ivyPublishTask != null) {
 
-                this.removeUnwantedDependencies()
                 this.freezeDynamicDependencyVersions(project)
                 this.fixUpConflictConfigurations()
-                this.removePrivateConfigurations()
                 this.putConfigurationsInOriginalOrder()
                 this.collapseMultipleConfigurationDependencies()
                 this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
@@ -315,33 +313,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 "Cannot publish ${project.name} because some packed dependencies are using noCreateSymlinkToCache(), " +
                 "which means Gradle cannot know the real version of those dependencies: [${dependenciesDescription}]"
             )
-        }
-    }
-
-    // Remove dependencies whose configuration name starts with "private".
-    public void removeUnwantedDependencies() {
-        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
-        //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
-            xml.asNode().dependencies.dependency.each { depNode ->
-                if (depNode.@conf.startsWith("private")) {
-                    depNode.parent().remove(depNode)
-                }
-            }
-        }
-    }
-
-    // Remove whole configurations, whose names start with "private".
-    public void removePrivateConfigurations() {
-        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
-        //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
-            xml.asNode().configurations.conf.each { confNode ->
-                if (confNode.@name.startsWith("private")) {
-                    def parent = confNode.parent()
-                    parent.remove(confNode)
-                }
-            }
         }
     }
 

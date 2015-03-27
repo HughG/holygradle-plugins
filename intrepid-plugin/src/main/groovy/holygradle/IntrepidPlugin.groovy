@@ -51,6 +51,13 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * Configurations
          **************************************/
+        // Mark configurations whose name begins with "private" as private in Ivy terms.
+        project.configurations.whenObjectAdded((Closure){ Configuration conf ->
+            if (conf.name.startsWith("private")) {
+                conf.visible = false
+            }
+        })
+
         // Set the default version conflict behaviour to failure, unless explicitly overridden in the script, or unless
         // we're running one of the standard tasks used to resolve version conflicts.
         DependenciesSettingsHandler dependenciesSettings =
@@ -246,7 +253,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         Configuration everythingConf = configurations.findByName("everything") ?: configurations.add("everything")
         project.gradle.projectsEvaluated {
             configurations.each((Closure){ Configuration conf ->
-                if (conf.name != "everything" && !conf.name.startsWith("private")) {
+                if (conf.name != "everything" && conf.visible) {
                     everythingConf.extendsFrom conf
                 }
             })
