@@ -25,7 +25,6 @@ class VersionInfo {
     VersionInfo(Project project) {
         this.project = project
         
-        specifyPowerShell("Windows", "[System.Environment]::OSVersion.VersionString.Trim()")
         specify("gradle", project.gradle.gradleVersion)
         specify("custom-gradle", project.gradle.gradleHomeDir.parentFile.parentFile.name.split("-")[-1])
         if (project.hasProperty("holyGradleInitScriptVersion")) {
@@ -97,6 +96,10 @@ class VersionInfo {
     }
     
     public void writeFile(File file) {
+        // We avoid calling specifyPowerShell in the constructor because that will run on every build where this plugin
+        // is used, adding a few seconds to startup time.  Calling it here only runs it when it's needed.
+        specifyPowerShell("Windows", "[System.Environment]::OSVersion.VersionString.Trim()")
+
         StringBuilder str = new StringBuilder()
         
         str.append "Versions\n"
