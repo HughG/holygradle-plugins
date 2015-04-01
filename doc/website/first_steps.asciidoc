@@ -22,7 +22,6 @@ They have only been tested on the following platform.
 * Windows 7 (and Windows Server 2008 R2)
 * Java 7 (JRE or JDK)
 
-
 == Preparation
 
 === Windows
@@ -34,7 +33,12 @@ this by default for Administrator accounts.
 === Java
 
 Install Java 7 on your system if it is not already installed--usually under +C:\Program
-Files\Java+.  Windows 7 comes with an older version of Java pre-installed, usually at
+Files\Java+.  This can be downloaded from 
+link:http://www.oracle.com/technetwork/java/javase/downloads/java-archive-downloads-javase7-521261.html[].
+Most projects will only need the JRE; you only need the JDK if your project uses custom pre-buikt
+code in a +buildSrc+ folder, as described at
+link:http://gradle.org/docs/1.4/userguide/organizing_build_logic.html#sec:build_sources[].
+Windows 7 comes with an older version of Java pre-installed, usually at 
 +C:\Windows\System32\java.exe+.  To make sure that Gradle uses the correct version, do one of the
 following things.
 
@@ -64,17 +68,17 @@ First find the web address of your local Artifactory server.  With a default Art
 the base URL will have the server name followed by +/artifactory/+. Browsing to this URL will
 show you any publicly available modules, and allow you to log in.
 
+Since version 7.0.0, the gloss:holygradle[] custom wrapper requires that the environment variable
++HOLY_GRADLE_REPOSITORY_BASE_URL+ is set to this same, site-specific URL (for example,
++https://artifact-server.example-corp.com/artifactory/+).  You should set this in
+your user environment settings.  You should not need to change it unless your server name changes,
+or you are working at a different site.
+
 ifndef::localDoc[]
 You must contact your site administrator to get login details and set up permissions.
 endif::localDoc[]
 
 include::{localDoc}/first_steps_artifactory.ascinc[]
-
-Since version 7.0.0, the gloss:holygradle[] custom wrapper requires that the environment variable
-+HOLY_GRADLE_REPOSITORY_BASE_URL+ is set to this same, site-specific URL (for example,
-+http://artifact-server.example-corp.com/artifactory/+).  You should set this in
-your user environment settings.  You should not need to change it unless your server name changes,
-or you are working at a different site.
 
 
 == Running the Holy Gradle

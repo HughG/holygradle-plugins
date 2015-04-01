@@ -36,12 +36,12 @@ In most cases, if you need one file from a module in gloss:artifactory[], you wi
 files from that module and from its gloss:dependencies[].  A tool like the gloss:holygradle[] makes
 this much easier.  In this case you need to do the following things.
 
-* Find out the name of a _virtual_ repository which you can use to access the module.
-* Find out the module version ID _and_ the gloss:configuration[](s) you need -- ask the publishing
-group if you are not sure.
+* Find out the name of a _virtual_ gloss:repository[] which you can use to access the module.
+* Find out the module version ID _and_ the gloss:configuration[](s) you need -- ask the group which
+publishes the module if you are not sure.
 * Make sure you have link:first_steps.html[set up your machine] for gloss:gradle[], and create a
 minimal project if you don't have one already.
-* Add at least one configuration to your +build.gradle+, if you don't have any already.
+* Add at least one gloss:configuration[] to your +build.gradle+, if you don't have any already.
 +
 [source,groovy]
 ----
@@ -61,6 +61,10 @@ repositories.ivy {
     url "https://artifact-server.example-corp.com/libs-release/"
 }
 ----
++
+The credentials block is required if your server needs you to log in to access the module you need.
+See link:plugin-my-credentials.html[] for details.
+
 * Add a reference to the module in your +build.gradle+, with a mapping from your project's
 configurations to the other project's configurations.
 +
@@ -74,10 +78,11 @@ packedDependencies {
     }
 }
 ----
-* Run +gw fAD+ in a Windows Command Prompt in your project's directory.  If you have any problems,
-contact your local support staff (see link:support.html[]) or the group which publishes the module.
++
+See link:plugin-intrepid.html#packedDependencies[] for details.
 
-TODO: Authentication
+* Run +gw fAD+ in a Windows Command Prompt in your project's directory.  If you have any problems,
+contact your local link:support.html[] staff or the group which publishes the module.
 
 TIP: Before publishing your module, you should review the list of configurations in your
 +build.gradle+, and the configuration mapping for each dependency.  If you do not, it may be more
