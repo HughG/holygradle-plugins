@@ -26,10 +26,12 @@ find the files you need.  The file structure is +/_repository_/_group_/_module_/
 For more details, see http://www.jfrog.com/confluence/display/RTF/Browsing+Artifactory.
 
 TIP: The "Tree Browser" only shows you files that have been published at your site, or already
-downloaded from another site.  If you need a file from a _remote_ repository (which caches files
-from other servers on your server) but it has not been downloaded yet, you must use the "Simple
-Browser".
+downloaded from another site.  If you need a file from another site but it has not been downloaded
+yet, you should use the "Simple Browser", and look in the appropriate virtual repository.  If you
+are not sure which repository to look in, please contact the team which published it, and/or your
+local link:support.html[] contacts.
 
+[[get_a_whole_software_module]]
 === -- a whole software module
 
 In most cases, if you need one file from a module in gloss:artifactory[], you will also need other
@@ -40,7 +42,7 @@ this much easier.  In this case you need to do the following things.
 * Find out the module version ID _and_ the gloss:configuration[](s) you need -- ask the group which
 publishes the module if you are not sure.
 * Make sure you have link:first_steps.html[set up your machine] for gloss:gradle[], and create a
-minimal project if you don't have one already.
+minimal project (see link:first_steps.html#running_the_holy_gradle[]) if you don't have one already.
 * Add at least one gloss:configuration[] to your +build.gradle+, if you don't have any already.
 +
 [source,groovy]
@@ -49,7 +51,8 @@ configurations {
     privateBuild
 }
 ----
-* Add a reference to the repository, if it is not already in your +build.gradle+.
+* Add a reference to the repository, if it is not already in your +build.gradle+.  (For more
+information on authentication, see the link:plugin-my-credentials.html[] page.)
 +
 [source,groovy]
 ----
@@ -83,22 +86,19 @@ See link:plugin-intrepid.html#packedDependencies[] for details.
 
 * Run +gw fAD+ in a Windows Command Prompt in your project's directory.  If you have any problems,
 contact your local link:support.html[] staff or the group which publishes the module.
-
 TIP: Before publishing your module, you should review the list of configurations in your
 +build.gradle+, and the configuration mapping for each dependency.  If you do not, it may be more
-difficult for other teams to use your module.  See the page on link:workflows.html[] for more
-information.
-
-== ... build an existing project
-
-TODO: ...  See also the link:workflows.html[] page.  [TODO: Link to section within?]
+difficult for other teams to use your module.  See the <<make_a_release>> section below, and the
+page on link:workflows.html[] for more information.
 
 [[start_a_new_project]]
 == ... start a new project
 
-TODO: ...  See also the link:workflows.html[] page.  [TODO: Link to section within?]
+Follow the instructions above to get "<<get_a_whole_software_module>>", and you will have a minimal
+project with one packed dependency.  You can then add the other dependencies needed for your project,
+fetch them all, and build it.
 
-TODO: The name of the project is controlled by the folder it's in.
+For more information, see the link:workflows.html#_initial_set_up[] workflow section.
 
 == ... build an existing project
 
@@ -106,20 +106,20 @@ To build a project from source when it already exists, you need to do the follow
 
 * Make sure your machine is link:first_steps.html[set up for Gradle].
 * Make sure you have permissions to access the source code repository _and_ the gloss:artifactory[]
-glowss:repositories[] which contain the project's dependencies.  The team which owns the project
+gloss:repositories[] which contain the project's dependencies.  The team which owns the project
 should have this information.
-* Check out the source code using the appropriate tool -- usually gloss:subversion[] or
+* Check out the source code using the appropriate tool--usually gloss:subversion[] or
 gloss:mercurial[].
 * Open a Command Prompt in the project's folder, and follow the link:workflows.html#_typical_workflow[].
 
 Note that, if this is the first time you have accessed the project's Artifactory repository/-ies,
-the Holy Gradle will pop up a dialog to prompt you for the username and password.  This will also
-happen if the project has gloss:source-dependencies[] you may be prompted separately for those.  It
-stores them in the gloss:credential-manager[] so you will not need to supply them again until you
-change your password.
+the Holy Gradle will pop up a dialog to prompt you for the username and password.  If the project
+has gloss:source-dependencies[] you may be prompted separately for those.  It stores them in the
+gloss:credential-manager[] so you will not need to supply them again until you change your password.
+When your password changes, see link:plugin-my-credentials.html#updating-credentials[] for how to
+update the password stored by the Holy Gradle.
 
-TODO: Link to some reference page on password updates.
-
+[[make_a_release]]
 == ... make a release of my project
 
 Making a release can be a complex process, so this section will only give a high-level view, with

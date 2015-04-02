@@ -10,11 +10,6 @@ include::sitemap.ascinc[]
 
 TODO: http://localwiki/Gradle#What_is_it.3F (GradleConfigurations.ppt)
 
-////
-NOTE: to self ... don't duplicate stuff from https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/,
-if possible.
-////
-
 This section describes typical developer workflows for developing a C++ or web software module
 which is involved in dependency relationships, and how Artifactory, Gradle, and the Holy Gradle
 plugins have been used in these workflows in practice.
@@ -37,14 +32,16 @@ understand to read this document.
 
 * gloss:project[]
 * gloss:module[]
+* gloss:version[]
 * gloss:configuration[]
+* gloss:dependency[]
 * gloss:metapackage[]
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 === Configurations
 
-TODO: Move to reference page on extending configurations.
+TODO: Move to reference page on configurations.
 
 ==== Extending Configurations
 
@@ -143,30 +140,7 @@ digraph {
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-=== Dependencies
-
-The Ivy metadata stored in Artifactory for each gloss:module[] lists a number of dependencies, which
-are expressed as dependencies between gloss:configuration[]s of that module, and those of other
-modules.
-
-When Gradle downloads gloss:artifact[]s for a module defined as a dependency of a given project, it
-stores them in a per-user cache folder hierarchy.
-
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-=== Packed Dependencies
-
-The +intrepid+ plugin, from the +holygradle+ set of Gradle plugins, adds a mechanism of _packed
-dependencies_.  A dependency declared in this way will have artifacts downloaded as normal, but the
-artifacts are assumed to be ZIP files.  +intrepid+ unpacks them into a sub-folder of Gradle's
-per-user cache, then creates symlinks in the project's folder hierarchy, pointing to the unpacked
-artifacts.  (This is in contrast to the Java world, where a single JAR file may fulfil several of
-these roles, and doesn't need to be unzipped.)
-
-For each dependency module +d+, Gradle will download all artifacts included in all configurations
-which are referenced as a dependency for any configuration in the current project.  All artifacts
-are unpacked into the same folder, so that folder will contain the union of all those files.
-Private configurations are not included in transitive dependencies.
+==== Private configurations
 
 NOTE: Private configurations are normally declared in the +ivy.xml+ file and marked as
 +visibility="private"+.  However, Gradle 1.4 ignores this and allows access to private
@@ -238,13 +212,6 @@ digraph {
 --
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-=== Versions
-
-Over time a module may be published in a number of versions, each of which may add or remove
-dependencies, or change which versions of other modules that module depends on.
-
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 == Workflows
@@ -256,10 +223,10 @@ dependencies, or change which versions of other modules that module depends on.
 
 ==== Fetch Source
 
-First you must check out the source for the module you want to publish.  In Gradle 1.4, the +name+
-part of the module is fixed to be the name of the Gradle project, which itself is fixed to be the
-name of the folder containing the +build.gradle+ file.  So, if you intend to really publish the
-module (as opposed to just test publishing), you must check out the source into an
+First you must create or check out a working copy of the source for the module you want to publish.
+The Gradle +name+ part of the module is fixed to be the name of the Gradle project, which itself is
+fixed to be the name of the folder containing the +build.gradle+ file.  So, if you intend to really
+publish the module (as opposed to just test publishing), you must put the source in an
 appropriately-named folder.
 
 
@@ -468,23 +435,23 @@ repositories.ivy {
         username my.username("Artifactory")
         password my.password("Artifactory")
     }
-    url teamDependenciesRepo
+    url project.holyGradleRepositoryBase + teamDependenciesRepo
 }
 ----
 
-Here the "Artifactory" string identifies a set of credentials cached in the Windows Credential
-Manager using the +my-credentials+ plugin.  This avoids the need to store passwords in build files.
-See <<_managing_passwords>> for more information.
+Here the "Artifactory" string identifies a set of credentials cached in the
+gloss:credential-manager[] using the link:plugin-my-credentials.html[].  This avoids the need to
+store passwords in build files.  For more information, see the page for that plugin.
 
-The identifier +teamDependenciesRepo+ is resolved to a Gradle "project property", which is
-defined in a +gradle.properties+ file in the same folder.
+The property +project.holyGradleRepositoryBase+ is added by the gloss:holygradle[] and gives the
+base URL of the gloss:artifactory[] service from which the plugins were fetched.  Using this in your
+build file means it can be used at any site which has an Artifactory server with the same
+repositories defined.  The identifier +teamDependenciesRepo+ is resolved to a Gradle "project
+property", which is defined in a +gradle.properties+ file in the same folder.
 
 ----
-teamDependenciesRepo=http://artifactory.internal.example-corp.com/artifactory/team-integration/
+teamDependenciesRepo=team-integration
 ----
-
-You may or may not find it useful to factor out the literal value of the repository location in
-this way.
 
 
 ===== Determine Module Dependencies
@@ -593,73 +560,25 @@ packedDependencies {
 At this point, you should be able to have Gradle fetch, unpack, and symlink all your packed
 (pre-built) dependencies.  To do this, run the following at the Windows Command Prompt.
 
-WARNING: If this is the first time you have fetched dependencies from a particular Artifactory
-server, or you have deleted your password from the Windows Credential Manager, add the +--no-daemon+
-option to the command line, immediately after +gw+.  See <<_managing_passwords>> for more
-information.
-
 ----
-gw fetchAllDependencies rebuildSymlinks
+gw fetchAllDependencies
 ----
 
 or
 
 ----
-gw fAD reSym
+gw fAD
 ----
+
+NOTE: If this is the first time you have fetched dependencies from a particular Artifactory
+server, or you have deleted your password from the gloss:credential-manager[], add the +--no-daemon+
+option to the command line, immediately after +gw+.  For more information, see the documentation for
+the link:plugin-my-credentials.html[].
 
 If your project's direct dependencies have further dependencies of their own, they will be fetched,
 unpacked, and symlinked as well.  The location of the symlinks for these indirect dependencies is
 determined by the modules which depend on them, using a +relativePath+ attribute in their +ivy.xml+
 file, added by +intrepid+.
-
-NOTE: If you are using the +devenv+ plugin as described in <<_check_build>>, you don't have to
-run +gw rebuildSymlinks+, because the +buildFoo+ tasks will run that first.  However, there's no
-harm in running it at this point.
-
-===== Managing Passwords
-
-The +my-credentials+ plugin caches passwords securely using the "Windows Credential Manager".  (You
-can find that the Control Panel, or by searching in the Start menu, and use it to force removal of
-cached passwords.)  The plugin is used when a repository definition in a +build.gradle+ file
-contains a +credentials+ block like the following.
-
-[source, groovy]
-----
-credentials {
-    username my.username("Artifactory")
-    password my.password("Artifactory")
-}
-----
-
-This opens a GUI to prompt the user for a password the first time, and stores it in the Credential
-Manager using the string value as part of the key, e.g., "Intrepid - Artifactory".  The GUI can't be
-shown if Gradle is using its daemon process, which is the default when using the Holy Gradle
-Custom Gradle distribution.  When running for the first time, or when you change your password, run
-+gw+ with the +--no-daemon+ argument, otherwise authentication may fail.  Depending on your
-organisation's IT policies, this may eventually lead to your account being locked.
-
-When the GUI is shown, it displays text defined in your build script using the following syntax.
-
-[source, groovy]
-----
-my.instructions {
-    "Artifactory" {
-        add "An encrypted password is used for Artifactory."
-        add "Log on with a web-browser using your normal username and password."
-        add "Click on your username at the top right to visit your user profile."
-        add "Enter your password again in the Current Password box, then click Unlock."
-        add "Copy the Encrypted Password out of the box."
-    }
-    "Domain Credentials" {
-        add "Enter your usual Windows Domain credentials."
-        add "Your username should not be prefixed with the domain name."
-    }
-}
-----
-
-NOTE: TODO: Add links to troubleshooting.
-
 
 ===== Determine Installed Prerequisites
 
@@ -716,14 +635,17 @@ At this point you should be able to build your Visual Studio solution, provided 
 Library Paths it uses match the symlinks for the dependencies.  You may find Visual Studio's
 Property Sheets useful for this, as they allow common settings to be included in multiple projects.
 
-Note that Gradle itself creates directories called +build+ and +packages+ for its own use.  If you
-want to override the former, use the following at the top level of your +build.gradle+ file.  (It's
-not clear how to override the latter.)
+Note that Gradle creates a directory called +build+ for its own use, and the gloss:holygradle[]
+creates one called +packages+ as a temporary storage area when creating gloss:package[]s.  If you
+want to override the +build+ folder name, put the following at the top level of your +build.gradle+
+file.
 
 [source, groovy]
 ----
-project.buildDir = "someOtherDirName"
+project.buildDir = "someOtherBuildDir"
 ----
+
+It is not currently possible to override the +packages+ folder location.
 
 You don't have to use Gradle to build your solution, but the +devenv+ plugin can help with this,
 though it supports only
@@ -733,8 +655,9 @@ though it supports only
 values); and
 * one solution per Gradle project.
 
-NOTE: The +devenv+ plugin is more useful for a <<_multi_project_build_workflow>>, but has some bugs
-which will require significant refactoring to fix.
+////
+NOTE: The +devenv+ plugin is more useful for a <<_multi_project_build_workflow>>.
+////
 
 The following snippet will create tasks +buildRelease+ and +buildDebug+, which both build the
 default platform, +x64+.
@@ -819,7 +742,7 @@ publishPackages {
             username my.username("Artifactory")
             password my.password("Artifactory")
         }
-        url teamPublishRepo
+        url project.holyGradleRepositoryBase + teamPublishRepo
     }
 }
 ----
@@ -835,10 +758,9 @@ The +name+, as described under <<_fetch_source>>, is the name of the folder cont
 the +build.gradle+ file.
 
 The +version+ can be set in several ways, as described in the documentation for the
-+https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/IntrepidPlugin#!publishpackages[publishPackages]+
-block.  Note that it can be any string, not necessarily a number, though it's a good idea to avoid
-the hyphen ('+-+') character, as it is used as a separator in regexp-based parsing by some related
-tools.
+link:plugin-intrepid.html#publishPackages[] block.  Note that it can be any string, not necessarily
+a number, though it's a good idea to avoid the hyphen ('+-+') character, as it is used as a
+separator in regexp-based parsing by some related tools.
 
 The URL for publishing may not be the same as the one for retrieving dependencies, as used in the
 +repositories.ivy+ block at the top level of the file (see <<_declare_dependency_repositories>>).
@@ -847,8 +769,8 @@ Artifactory server) but may be fetching dependencies from a "virtual" repository
 combines artifacts from any number of local or remote repositories).
 
 NOTE: A common arrangement is to initially publish auto-builds to an team-private "integration"
-repository, then move them to a more public repository for release.  See <<_promotion_republishing>>
-and <<_repository_clean_up>> for more details.
+repository, then move them to a more public repository for release.  See
+<<promotion_and_republishing>> and <<_repository_clean_up>> for more details.
 
 Once you are happy with the contents of this block, run the following command to publish.
 
@@ -867,8 +789,8 @@ normally you only need to run this one command after your solution is built.
 ===== Republishing
 
 The +intrepid+ plugin also has (currently undocumented) features to support promoting multiple
-related modules between repositories, as described in <<_promotion_republishing>>.  You may want to
-add a +republish+ section to your +build.gradle+ now, so that you can use those features later.
+related modules between repositories, as described in <<promotion_and_republishing>>.  You may want
+to add a +republish+ section to your +build.gradle+ now, so that you can use those features later.
 See that section for more information.
 
 
@@ -919,14 +841,14 @@ preupdate.deleteSymlinks = if exist gw.bat gw deleteSymlinks
 [[_fetch_dependencies_in_typical_workflow]]
 ==== Fetch Dependencies
 
-To update dependencies, run +gw fAD reSym+, as when fetching them for the first time (see
+To update dependencies, run +gw fAD+, as when fetching them for the first time (see
 <<_fetch_dependencies>>).
 
 You can automate the this under Mercurial with a post-update hook, as follows.
 
 ----
 [hooks]
-update.fetchDepsAndReSymLink = if exist gw.bat gw fetchAllDependencies rebuildSymlinks
+update.fetchDeps = if exist gw.bat gw fetchAllDependencies
 ----
 
 However, this may not be suitable for a <<_multi_project_build_workflow>>, because in that case
@@ -984,12 +906,10 @@ You can edit the +packedDependencies+ block to do any of the following:
 [[_fetch_dependencies_after_changing_them]]
 ==== Fetch Dependencies
 
-Run +gw fAD reSym+ again.  This will download and unpack any new dependencies, and create symlinks
-for them.  This will not remove symlinks for dependencies which were removed, nor will it remove
-them from your Gradle cache.
-
-The former issue was covered above in the previous section, <<_update_dependencies>>; to address
-the latter, see the section on <<_gradle_cache_clean_up>>.
+Run +gw fAD+ again.  This will download and unpack any new dependencies, and create symlinks
+for them.  This will not remove symlinks for dependencies which were removed -- see above for how to
+do that.  Also it will not remove the ZIP files and their unpacked files from your Gradle cache --
+for that, see the section on <<_gradle_cache_clean_up>>.
 
 
 [[_check_build_after_changing_dependencies]]
@@ -1018,9 +938,9 @@ authentication details have changed, there should be no need to do this.
 === New Check-Out Of Existing Workspace
 
 If you want to check out and build second or further copies of a repo on the same PC, Gradle and
-the Holy Gradle plugins will save you some time.  Check out the source and run +gw fAD reSym+ as
-usual.  You should find that dependencies don't need to be downloaded or unpacked, and the only time
-spent is to check versions and create symlinks.
+the Holy Gradle plugins will save you some time.  Check out the source and run +gw fAD+ as usual.
+You should find that dependencies don't need to be downloaded or unpacked, and the only time spent
+is to check versions and create symlinks.
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -1265,14 +1185,26 @@ publishPackages {
             username my.username("Artifactory")
             password my.password("Artifactory")
         }
-        url "http://artifactory.example-corp.com/artifactory/externals-release-local/"
+        url (project.hasProperty('publishUrl')
+            ? project.property('publishUrl')
+            : 'http://PLEASE_SUPPLY_publishUrl_PROPERTY')
     }
 }
 ----
 
+It is helpful to publish first to your own team's integration repository, so that you can run a
+build using this new module, to check that the packaging works correctly for you.  You can do this
+by running it with the command-line argument
+"+-PpublishUrl=http://artifactory.example-corp.com/artifactory/teamA-intergation-local/+".  Once you
+are happy with the packaging, you can either promote it to a more public repository from within
+gloss:artifactory[] (see <<promotion_and_republishing>>), or run the script again with another repo
+URL, for example,
+"+-PpublishUrl=http://artifactory.example-corp.com/artifactory/externals-release-local/+".
+
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+[[promotion_and_republishing]]
 === Promotion / Republishing
 
 A common arrangement is to publish auto-builds to an "integration" repository, which has limited
@@ -1311,7 +1243,7 @@ packageArtifacts {
 
 republish {
     to (project.hasProperty('republishTo')
-        ? project.republishTo
+        ? project.property('republishTo')
         : 'http://artifactory.example-corp.com/artifactory/libs-release-local/')
 }
 ----
@@ -1350,8 +1282,8 @@ Module versions in integration (auto-build) repositories may be deleted over tim
 releases are generally kept "forever", since other projects may depend on them, and it may be
 necessary in future to reproduce old builds of those projects.  It is a good idea to set up some
 kind of automated process to delete old versions of modules in integration repos.  The
-+https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/ArtifactoryManagerPlugin[artifactory-manager]+
-plugin can be used to automate this, including adding exceptions to keep specific builds.
+link:plugin-artifactory-manager.html[] can be used to automate this, including adding exceptions to
+keep specific builds.
 
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

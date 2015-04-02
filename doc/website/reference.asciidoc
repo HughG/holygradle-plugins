@@ -39,8 +39,8 @@ digraph {
         cluster_project_source -> {
 
             build [label="build.gradle", shape=note, color=navy, fontcolor=navy]
-            gw [label="gw.bat", color=darkgreen, fontcolor=darkgreen, style=diagonals]
-            wrapper [label="Gradle\nwrapper", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+            gw [label="gw.bat"]
+            wrapper [label="Gradle\nwrapper"]
 
         } -> cluster_project_sink [style=invis,minlen=0]
 

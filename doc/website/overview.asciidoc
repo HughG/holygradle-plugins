@@ -367,7 +367,7 @@ gloss:holygradle[] this is an gloss:ivy-xml[] file.
 
 The gloss:holygradle[] plugins add several features to processes of fetching and publishing modules.
 
-==== Packaged Artifacts
+==== Packed Dependencies
 
 The artifacts of Java-based modules are often only one or two JAR files.  To build a module, the
 file names of these JAR dependencies are simply passed to the Java compiler on the command line.
@@ -378,11 +378,13 @@ and "debug" mode, or for 32-bit and 64-bit platforms.  To build such a module, t
 from its dependencies are often too many to pass on a command line, and compilers expect to get a
 list of folders to search for header files etc.
 
-The basic extension which the gloss:holygradle[] provides is to collect files into one or more
-ZIP files when publishing, and unzip those files when dependencies are downloaded.  It also changes
-the gloss:gradle[] syntax to specify a relative folder path for each dependency, and the unzipped
-files appear at that location in your gloss:workspace[].  The compiler can then be configured to
-look for the dependency files at those locations.
+The basic extension which the gloss:holygradle[]'s link:plugin-intrepid.html[] provides is to
+collect files into one or more ZIP files (gloss:package[]s) when publishing, and unzip those files
+(into your gloss:gradle-user-home[]) when dependencies are downloaded.  All packages are unpacked
+into the same folder, so that folder will contain the union of all those files.  It also extends the
+gloss:gradle[] dependency syntax to specify a relative folder path for each dependency, and the
+unzipped files appear at that location in your gloss:workspace[] using gloss:symlink[]s.  The
+compiler can then be configured to look for the dependency files at those locations.
 
 ==== Source Dependencies
 
@@ -413,9 +415,8 @@ include::{localDoc}/overview_source_access.ascinc[]
 === Holy Gradle Plugins
 
 The gloss:holygradle[] is implemented as a set of gloss:gradle[] plugins, plus a custom distribution
-of Gradle (for bootstrapping and debugging the plugins).
-
-TODO: Link to example of how you cause them to be used.
+of Gradle (for bootstrapping and debugging the plugins).  The section
+link:first_steps.html#minimal_build_file[] shows how you include these plugins in your build file.
 
 DONE: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home
 
@@ -443,7 +444,7 @@ digraph {
         label="Your project"
 
         build [label="build.gradle", shape=note, color=navy, fontcolor=navy]
-        wrapper [label="Gradle\nwrapper", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+        wrapper [label="Gradle\nwrapper"]
     }
 
     key_proj -> build [style=invis]
@@ -493,86 +494,9 @@ digraph {
 }
 --
 
-==== Custom Gradle Core
+More detail on each plugin can be found on the link:plugins.html[] page.
 
-The link:plugin-custom-gradle-core.html[] is used by most of the other gloss:holygradle plugins.
-
-This plugin supports the following.
-
-* Some useful standard tasks.
-* +prerequisites+ syntax to help you specify prerequisites for difficult cases where a dependency
-can't be simply unzipped into a folder and must be manually installed, e.g., Microsoft Visual
-Studio.
-
-==== Intrepid
-
-The link:plugin-intrepid.html[] supports the following.
-
-* Source code dependencies
-  * Retrieving source code repositories from gloss:subversion[] or gloss:mercurial[].
-  * Caching gloss:subversion[] and gloss:mercurial[] credentials in the gloss:credential-manager[].
-  * Specifying dependency metadata when publishing a module with its source code dependencies.
-  * Overriding a source code dependency and using already-published versions of that
-module instead.
-* Packed dependencies
-  * Retrieving dependencies which are ZIP files and unpacking them into your workspace.
-  * Unzipping to a per-user cache and creating a symlink to there from your workspace, to save space
-when multiple workspaces have the same dependencies.
-  * Explicit creation of extra symlinks within workspace if required.
-  * Control of folder naming to allow multiple versions of the same component.
-* Publishing
-  * Creating "gloss:package[]d artifacts" (that is, ZIP files).
-  * Uploading to gloss:ivy[] format repository.
-
-==== My Credentials
-
-The link:plugin-my-credentials.html[] supports the following.
-
-* Securely storing credentials using the Windows Credential Manager, and using them in a
-+build.gradle+ script.
-* Displaying a dialog box to request credentials from the user.
-  * Time-out to prevent the dialog box from causing an automated build to hang.
-
-==== Artifactory Manager
-
-The link:plugin-artifactory-manager.html[] supports the following.
-
-* Deleting artifacts from an Artifactory server according to rules such as:
-  * delete anything older than X days/weeks/months; or
-  * delete anything older than Y days/weeks/months but keep one version per day/week/month.
-
-==== DevEnv
-
-WARNING: This plugin is not actively maintained.  We recommend you do not use it.
-
-The link:plugin-devenv.html[] supports the following.
-
-* Invoking DevEnv to build and clean a Visual Studio solution.
-* Building each module only once, even if multiple other source modules depend on it.
-* Specifying a solution file.
-* Specifying which version of DevEnv to use.
- 
-==== Unit-Test
-
-WARNING: This plugin is not actively maintained.  We recommend you do not use it.
-
-The link:plugin-unit-test.html[] supports the following.
-
-* Syntax for defining your unit test processes.
-* Automatically creating tasks to run your unit test processes.
-* In a multi-module build, running tests in order according module dependencies, or running them for
-one project independently.
-* Syntax to define unit test 'flavours', defaulting to `Debug' and `Release`.
-  * Automatically replacing strings `<flavour>` and `<f>` in test definitions.
- 
-==== Stamper
-
-WARNING: This plugin is not actively maintained.  We recommend you do not use it.
-
-The link:plugin-stamper.html[] supports the following.
-
-* 'Stamping' information (such as version numbers) into text files.
-* Syntax for defining which files to stamp and how to stamp them (using regular expressions).
+''''
 
 TODO: Link to doc on how to do more complex cases with dependencies which also need to be promoted.
 

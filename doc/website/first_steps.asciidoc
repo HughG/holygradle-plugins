@@ -80,7 +80,7 @@ endif::localDoc[]
 
 include::{localDoc}/first_steps_artifactory.ascinc[]
 
-
+[[running_the_holy_gradle]]
 == Running the Holy Gradle
 
 === Gradle Setup
@@ -160,6 +160,7 @@ other shells such as PowerShell, or Unix-style shells from Cygwin etc., is not s
 
 DONE: http://ediwiki/mediawiki/index.php/Gradle#Initial_Setup
 
+[[minimal_build_file]]
 === A Minimal Holy Gradle Build File
 
 In the folder where you unzipped the wrapper, create a +build.gradle+ file with the following

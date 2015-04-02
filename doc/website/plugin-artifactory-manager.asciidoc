@@ -60,7 +60,7 @@ artifactoryManager {
 ----
 
 The above script does not show it but you can use the link:plugin-my-credentials.html[] to get the
-username and password for each repo from the gloss:credential-store[], instead of putting them in
+username and password for each repo from the gloss:credential-manager[], instead of putting them in
 the script, which is not secure.
 
 This build-script will define a task called `cleanupArtifactory`. When invoked it will:

@@ -1,4 +1,5 @@
 include::stdattr.ascinc[]
+include::stdattr.ascinc[]
 
 = Glossary
 
@@ -30,14 +31,24 @@ Artifactory.  Glossary entries may link to other pages for more information.
     gloss:gradle[].  The gloss:holygradle[] does not use gloss:gradle[]'s build management to 
     control the details of building a Visual Studio solution, because Visual Studio already does 
     that.  It only uses it to connect the tasks involved in getting and publishing modules.
+[[gloss-closure]] closure::
+    A type of object found in many programming languages.  It is an anonymous function which
+    contains ("is closed over") references to values and variables from outside its definition.
+    gloss:groovy[] programmers use closures in creating gloss:dsl[]s.  Closures also exist in C++11,
+    Java, Python, and many other languages.
 [[gloss-configuration]] configuration::
     A configuration is a "part" or "slice" of a gloss:module[] which can be used separately from
-    other parts.  Each configuration in a model has its own gloss:dependencies[], and its own
+    other parts.  Each configuration in a module has its own gloss:dependencies[], and its own
     collection of gloss:artifact[]s.
 [[gloss-dependency]] dependency::
     Some software gloss:module[] B is said to be a dependency of module A if A needs ("depends 
     on") B in some way.  Module B might be needed only when building A, or it might be needed to 
-    build other modules which depend on A, or it might be needed at runtime, and so on.
+    build other modules which depend on A, or it might be needed at runtime, and so on.  In
+    gloss:gradle[], dependencies are not directly between modules, but between
+    gloss:configuration[]s of a module.  When fetching dependencies, Gradle will download the
+    gloss:metadata[] for each module, then use that to identify which gloss:artifact[]s belong to
+    which configurations, and download those files.  In the gloss:holygradle[], gloss:package[]
+    artifacts are also automatically unzipped into the gloss:gradle-user-home[] area.
 [[gloss-dependencies]] dependencies::
     See gloss:dependency[].
 [[gloss-dependency-management]] dependency management::
@@ -46,6 +57,33 @@ Artifactory.  Glossary entries may link to other pages for more information.
     the module and its publisher (group), the version of the module, and a list of dependencies 
     on other modules.  The most basic tasks are: getting all dependencies for a module you want 
     to build; and publishing that module with metadata, after it is built.
+[[gloss-domain-specific-language]] domain-specific language::
+    A programming language designed for a specific, focused topic (domain).  The flexible syntax of
+    gloss:groovy[] makes it easy to add domain-specific syntax to the language, so that code for a
+    narrow topic can also use the full programming language, plus any Java libraries.  The most
+    common kinds of syntax extension in Groovy are (a) a new type of block, which looks like a
+    built-in block structure (like +if { \... }+) but is really a function call taking a
+    gloss:closure[] as an argument; and (b) implicit properties, where an identifier is treated as a
+    reference to an object property, and that property is created dynamically.  For example,
++
+[source,groovy]
+----
+configurations {
+    privateBuild
+}
+----
++
+is understood as
++
+[source,groovy]
+----
+configurations({ ConfigurationHandler c ->
+    c.privateBuild; // creates new Configuration and assigns it to new property "privateBuild"
+});
+----
+
+[[gloss-dsl]] DSL::
+    See gloss:domain-specific-language[].
 [[gloss-gradle]] Gradle::
     An open source tool for gloss:dependency-management[] and gloss:build-management[].  Here 
     "dependency management" means getting and publishing versioned software modules, mostly 
@@ -55,10 +93,22 @@ Artifactory.  Glossary entries may link to other pages for more information.
     you describe tasks and connections between them, and Gradle works out which tasks to run, in 
     which order.  Currently the Holy Gradle is based on gloss:gradle[] 1.4, which is based on Groovy
     1.8.8.
+[[gloss-gradle-daemon]] Gradle daemon::
+    To reduce start-up time, gloss:gradle[] can be run in a mode where a background process
+    (daemon) stays running and each build you run is passed to that process.  The gloss:holygradle[]
+    turns this option on by default, but you can turn it off.  See
+    link:http://gradle.org/docs/1.4/userguide/gradle_daemon.html[The Gradle Daemon] for more
+    information.
 [[gloss-gradle-distribution]] Gradle distribution::
     gloss:gradle[] can be downloaded from http://www.gradle.org/ but also allows organisations to
     use their own local, customised distributions which can include configuration specific to the
-    organisation, for example, special gloss:ini-script[]s.
+    organisation, for example, special gloss:init-script[]s.
+[[gloss-gradle-user-home]] Gradle user home::
+    A folder where gloss:gradle[] caches downloaded files.  This is defined by the
+    +GRADLE_USER_HOME+ environment variable or, if that is undefined, it defaults to
+    +%USERPROFILE%\\.gradle+.  The gloss:holygradle[] also caches unpacked files from
+    gloss:package[]s in this area.  Files are not automatically deleted from this area, so you must
+    clean it out yourself occasionally.
 [[gloss-gradle-wrapper]] Gradle wrapper::
     A small set of files which lets you use a specific distribution of Gradle for building a 
     gloss:project[], without installing Gradle globally on your machine.  It includes a batch 
@@ -131,18 +181,22 @@ Artifactory.  Glossary entries may link to other pages for more information.
 In Artifactory, a module consists of
 +
 --
-* a metadata file (in Ivy XML format);
-* a number of other files (its artifacts).
+* a metadata file (in gloss:ivy-xml[] format);
+* a number of other files (its gloss:package[] gloss:artifact[]s).
 --
 +
-In Gradle, a module is either a dependency, or the output of the build process itself.  In
-fetching the dependencies defined for the module being built, Gradle will download the metadata
-for each module, then use that to identify which artifacts belong to which configurations, and
-download those files.
+In Gradle, a module is either a dependency, or the output of the build process itself.
 
 [[gloss-package]] package::
     A gloss:holygradle[] term which means "an gloss:artifact[] which is a ZIP file, to be unpacked
     after it is downloaded".
+[[gloss-packed-dependency]] packed dependency::
+    The gloss:holygradle[] uses this term to describe gloss:module[]s in which the gloss:artifact[]s
+    are all gloss:package[]s.  When such a module is fetched, its artifacts are all automatically
+    unzipped into a common folder, and a gloss:symlink[] to that folder is created in the
+    gloss:workspace[].    
+[[gloss-packed-dependencies]] packed dependencies::
+    See gloss:packed-dependency[].
 [[gloss-project]] project::
     gloss:gradle[] uses the term _project_ to refer to a +build.gradle+ control file, which 
     defines (among other things) the dependencies required to build the software module, and the 
@@ -178,7 +232,7 @@ history of a set of related files.
     A gloss:gradle[] file called +settings.gradle+ which read before your build script.  This
     script is normally in the same folder as your build script.  See http://www.gradle.org/docs/1.4/userguide/userguide_single.html#sec:settings_file for more
     detail.  When using the link:plugin-intrepid.html, this file is generated for you.
-[[gloss-source-dependency]] Subversion::
+[[gloss-source-dependency]] source dependency::
     The gloss:holygradle[] allows projects to have dependencies which are built from source in other
     repositories, using the standard gloss:gradle[] multi-project build approach.  The source code
     is fetched along with gloss:packed-dependencies[], and those dependency projects are published
@@ -200,6 +254,17 @@ history of a set of related files.
     to create  symbolic links.  See also gloss:hard-link[].
 [[gloss-symlink]] symlink::
     See gloss:symbolic-link[].
+[[gloss-version]] version::
+    Because software often changes over time, there may be many versions of each gloss:module[].
+    Therefore a reference to a gloss:dependency[] module must include the version.  Each version may
+    add or remove dependencies of its own, or change their versions.  If the same module is used in
+    more than one place in the dependency graph with different versions, gloss:gradle[] normally
+    picks the "newest" one.  For safety, the gloss:holygradle[] by default raises an error if there
+    is any conflict, because it is intended for use with C++ libraries, and it is not as easy to
+    replace versions of a library in C++ as in Java.  Note that, although the version may look like
+    "+1.2.3+" it is just treated as a string, to determine which is newer -- so, for example,
+    "+1.2.11+" is less/older than "+1.2.3+".  Therefore we recommend always specifying exact
+    versions.
 [[gloss-workspace]] workspace::
     An informal term meaning the folder hierarchy where a gloss:module[] is built from source.  
     Usually some of the files in a workspace will be checked in to source control, and the rest will

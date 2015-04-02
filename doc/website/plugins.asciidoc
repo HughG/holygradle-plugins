@@ -9,25 +9,94 @@ each part.
 
 == Custom Gradle Distribution
 
-* link:custom-gradle.html[]
+See the link:custom-gradle.html[] for details of the Holy Gradle custom distribution.
 
 == Custom Plugins
 
 === Actively Maintained
 
-* link:plugin-custom-gradle-core.html[]
-* link:plugin-my-credentials.html[]
-* link:plugin-intrepid.html[]
-* link:plugin-artifactory-manager.html[]
+==== Custom Gradle Core
+
+The link:plugin-custom-gradle-core.html[] is used by most of the other gloss:holygradle plugins.
+
+This plugin supports the following.
+
+* Some useful standard tasks.
+* +prerequisites+ syntax to help you specify prerequisites for difficult cases where a dependency
+can't be simply unzipped into a folder and must be manually installed, e.g., Microsoft Visual
+Studio.
+
+==== My Credentials
+
+The link:plugin-my-credentials.html[] supports the following.
+
+* Securely storing credentials using the Windows Credential Manager, and using them in a
++build.gradle+ script.
+* Displaying a dialog box to request credentials from the user.
+** Time-out to prevent the dialog box from causing an automated build to hang.
+
+==== Intrepid
+
+The link:plugin-intrepid.html[] supports the following.
+
+* Source code dependencies
+** Retrieving source code repositories from gloss:subversion[] or gloss:mercurial[].
+** Caching gloss:subversion[] and gloss:mercurial[] credentials in the gloss:credential-manager[].
+** Specifying dependency metadata when publishing a module with its source code dependencies.
+** Overriding a source code dependency and using already-published versions of that
+module instead.
+* Packed dependencies
+** Retrieving dependencies which are ZIP files and unpacking them into your workspace.
+** Unzipping to a per-user cache and creating a symlink to there from your workspace, to save space
+when multiple workspaces have the same dependencies.
+** Explicit creation of extra symlinks within workspace if required.
+** Control of folder naming to allow multiple versions of the same component.
+* Publishing
+** Creating "gloss:package[]d artifacts" (that is, ZIP files).
+** Uploading to gloss:ivy[] format repository.
+
+==== Artifactory Manager
+
+The link:plugin-artifactory-manager.html[] supports the following.
+
+* Deleting artifacts from an Artifactory server according to rules such as:
+** delete anything older than X days/weeks/months; or
+** delete anything older than Y days/weeks/months but keep one version per day/week/month.
 
 === Minimal Maintenance
 
-* link:plugin-devenv.html[]
-* link:plugin-unit-test.html[]
-////
-* link:plugin-stamper.html[]
-////
+==== DevEnv
+
+NOTE: This plugin is not actively maintained.
+
+The link:plugin-devenv.html[] supports the following.
+
+* Invoking DevEnv to build and clean a Visual Studio solution.
+* Building each module only once, even if multiple other source modules depend on it.
+* Specifying a solution file.
+* Specifying which version of DevEnv to use.
+ 
+==== Unit-Test
+
+NOTE: This plugin is not actively maintained.
+
+The link:plugin-unit-test.html[] supports the following.
+
+* Syntax for defining your unit test processes.
+* Automatically creating tasks to run your unit test processes.
+* In a multi-module build, running tests in order according module dependencies, or running them for
+one project independently.
+* Syntax to define unit test 'flavours', defaulting to `Debug` and `Release`.
+** Automatically replacing strings `<flavour>` and `<f>` in test definitions.
+ 
+==== Stamper
+
+WARNING: This plugin is not actively maintained and is unlikely to be supported.  We recommend you
+do not use it.
+
+The link:plugin-stamper.html[] supports the following.
+
+* 'Stamping' information (such as version numbers) into text files.
+* Syntax for defining which files to stamp and how to stamp them (using regular expressions).
 
 TODO: http://localwiki/Gradle#LOCAL_Gradle_Software_Details
-
-
