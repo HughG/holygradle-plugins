@@ -31,7 +31,9 @@ public class LinkTextFiller {
                     targetDoc = doc
                 } else {
                     final File targetFile = new File(file.parentFile, linkTargetPath)
-                    if (!targetFile.exists()) {
+                    if (!targetFile.name.endsWith('.html')) {
+                        targetDoc = null
+                    } else if (!targetFile.exists()) {
                         buildContext.warn("${file}: Skipping non-existent link target file '${targetFile}'")
                         targetDoc = null
                     } else {

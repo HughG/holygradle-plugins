@@ -68,11 +68,8 @@ First find the web address of your local Artifactory server.  With a default Art
 the base URL will have the server name followed by +/artifactory/+. Browsing to this URL will
 show you any publicly available modules, and allow you to log in.
 
-Since version 7.0.0, the gloss:holygradle[] custom wrapper requires that the environment variable
-+HOLY_GRADLE_REPOSITORY_BASE_URL+ is set to this same, site-specific URL (for example,
-+https://artifact-server.example-corp.com/artifactory/+).  You should set this in
-your user environment settings.  You should not need to change it unless your server name changes,
-or you are working at a different site.
+You should then set the environment variable +HOLY_GRADLE_REPOSITORY_BASE_URL+ to this same,
+site-specific URL, as described at link:custom-gradle.html#_plugin_base_url[].
 
 ifndef::localDoc[]
 You must contact your site administrator to get login details and set up permissions.

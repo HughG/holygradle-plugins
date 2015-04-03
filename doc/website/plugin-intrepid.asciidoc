@@ -40,6 +40,10 @@ gplugins.apply()
 
 repositories.ivy {
     url "http://artifactory-server/artifactory/libs-release"
+    credentials {
+        username my.username("Artifactory")
+        password my.password("Artifactory")
+    }
 }
 
 // dependencySettings.defaultFailOnVersionConflict = false
@@ -96,8 +100,8 @@ publishPackages {
     nextVersionNumberAutoIncrementFile "next_version.txt"
     repositories.ivy {
         credentials {
-            username "user"
-            password "password"
+            username my.username("Artifactory")
+            password my.password("Artifactory")
         }
         url "http://artifactory-server/artifactory/my-integration-repo/"
     }
@@ -108,7 +112,7 @@ publishPackages {
 This script does the following:
 
 * Makes use of the latest version of the intrepid plugin with a version number starting with "1.0.1".
-* Describes which repository to use for satisfying dependencies.
+* Describes which repository to use for satisfying dependencies, including credentials.
 * Defines link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#configurations[configurations] for this module.
 * Defines 'framework' as a source code dependency:
 ** When dependencies are fetched, an SVN checkout operation will fetch the 'framework' source code to '<workspace>/framework'.
@@ -130,7 +134,7 @@ This script does the following:
 ** Some Groovy logic helps to define the packages 'libVc10Debug' and 'libVc10Release'.
 * Publishing settings are configured, including:
 ** which repository to publish to;
-** the credentials for the repository; (In this example the credentials are hard-coded, but it is recommended that you use the link:plugin-my-credentials.html[].
+** the credentials for the repository;
 ** the group name for the published artifacts;
 ** the version number for the published artifacts, which will be fetched from the file 'next_version.txt'. (There are other ways to specify the version number.)
 * After publishing the version number in 'next_version.txt' will be incremented automatically. 
@@ -246,6 +250,9 @@ After the source dependency has been retrieved you may make local modifications 
 -> Call this method at most once.
 
 -> You must call one of +hg+ or +svn+.
+
+NOTE: If the Mercurial repository has an +https:+ URL, some setup may be required.  See
+link:troubleshooting.html#_mercurial_https_access[].
 
 ==== svn
 
@@ -922,11 +929,11 @@ This method has the same type as the link:http://gradle.org/docs/1.4/dsl/org.gra
 [source,groovy]
 ----
 repositories.ivy {
+    url "http://artifactory-server/artifactory/my-repo/"
     credentials {
         username "user"
         password "password"
     }
-    url "http://artifactory-server/artifactory/my-repo/"
 }
 ----
 
@@ -941,6 +948,10 @@ This DSL element isn't actually part of the +intrepid+ plugin, but will likely n
 ----
 repositories.ivy {
     url "http://artifactory-server/artifactory/my-repo"
+    credentials {
+        username "user"
+        password "password"
+    }
 }
 ----
 
@@ -1076,8 +1087,7 @@ C:
             +---RenderingLib
 ....
 
-
-==== Ivy files
+=== Ivy files
 
 Whenever you publish a module which specifies source dependencies or packed dependencies the Ivy XML will have the relative path baked in. So, for example, if you published +MyLib+ you could examine the XML and notice the relative path +../../Stuff/+ specified for the +UtilityLib+ dependency, and if you published +SubLib+ you would see the relative path +../+ for the +Boost+ dependency.
 

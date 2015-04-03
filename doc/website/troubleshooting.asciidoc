@@ -4,30 +4,202 @@ include::stdattr.ascinc[]
 
 include::sitemap.ascinc[]
 
-This page ... *TODO* 
+This page contains suggestions for how to recognise and fix common problems using gloss:gradle[],
+the gloss:holygradle[], and gloss:artifactory[].
 
-TODO: http://localwiki/Gradle#Passwords_.2F_Authentication
+== Gradle Command-Line Options
 
-TODO: http://localwiki/Gradle#Useful_Options
+Gradle has many command-line options, some of which are useful for diagnosing or working around
+problems.
 
-TODO: http://localwiki/Artifactory#Backward_Compatibility_with_HTTP
++--help+ (+-h+, +-?+)::
+    Shows all the options.
++--system-prop+ (+-D+)::
+    Defines a Java system property.
++--project-prop+ (+-P+)::
+    Defines a Gradle project property.
++--info+ (+-i+) or +--debug+ (+-d+)::
+    Output extra logging.  These can generate _a lot_ of output, so it may be helpful to redirect
+the output to a file.  In order to capture "standard error" as well as "standard output", use
++2>&1+, as described on the link:support.html[] page.
++
+WARNING: These log messages may contain passwords sent to Artifactory.
 
-TODO: http://localwiki/Artifactory#Typical_Log_Warnings
++--stacktrace+ (+-s+) or +--full-stacktrace+ (+-S+)::
+    Outputs a Java stack dump when an exception is thrown, which can help plugin developers
+understand problems.  The default behaviour is to output only the exception message.
++--dry-run+ (+-m+)::
+    Shows the tasks which would be run in response to a given command line, without actually running
+them.  This can also be useful to check the order in which commands would run.
++--offline+::
+    Forces Gradle not to make any network connections, and only use its local cache.  This may be
+necessary if you're working off-line, and may help performance if you're working over a slow
+connection, such as a VPN.  If your local cache does not already contain all the modules you need,
+this option may cause problems.
++--no-color+::
+    Removes the colour-coding of the output.
++
+To change the colour of the console output, see
+link:http://gradle.1045684.n5.nabble.com/Colourizing-console-output-td3073839.html[this post].
+For example, set +GRADLE_OPTS+ to something like the following.  You can't specify exact RGB values;
+you have to use one of the predefined colors.
++
+----
+-Dorg.gradle.color.description=MAGENTA
+----
 
-== Error Messages
+You can add any of these options to the +GRADLE_OPTS+ environment variable if you want them
+permanently set.  For example, this may be useful for +--no-color+.
 
-TODO: Error message about "abort: could not find web.cacerts: C:\temp\Mercurial251\cacert.pem".  May
-mean that you're trying to access a Mercurial repo over HTTPS, and the server's certificate is not
-ultimately signed by a public authority.  One way to solve this for Mercurial is to put a root
-certificate in your Mercurial install folder; but the gloss:holygradle[] uses its own private copy
-of Mercurial, which won't find that certificate.  Instead, use hostfingerprints, or get a proper
-cert for your server.  [TODO: add task to use local "hg.exe" from path, instead of internal one,
-as a per-user.]
+== Accessing Artifactory
 
-== FAQs
+=== Artifactory URL
 
-* How do I find version X of module M, to get it into my project?
+URLs are used to access gloss:artifactory[] in three ways.  If URLs are wrong in any of these places
+you may get the following errors.
 
-* How to I get module version M:X, which is on a remote server, to be cached on my site's server?
+----
+java.net.ConnectException
+----
 
-* Password change
+or
+
+----
+404 Not Found
+----
+
+. The link:first_steps.html#_setting_up_a_gradle_wrapper[custom Gradle wrapper] uses a URL to
+download the gloss:holygradle[] plugins.  From version link:release_notes.html#Plugins_7.0.0[] the
+wrapper gets this URL from the environment variable (+HOLY_GRADLE_REPOSITORY_BASE_URL+), which
+should be set to a site-specific value.  See link:first_steps.html#_accessing_artifactory[] for
+details.
+. Your +build.gradle+ script will use a URL in the link:plugin-intrepid.html#repositories[] section
+to point to the gloss:repositories[] where your gloss:project[]'s gloss:dependencies[] can be found.
+. Your +build.gradle+ script may also use a URL in the link:plugin-intrepid.html#publishPackages[]
+section to say where to publish your gloss:module[].
+
+
+include::{localDoc}/troubleshooting_local_https_http.ascinc[]
+
+
+=== Passwords and Permissions
+
+The gloss:holygradle[] sends passwords to gloss:artifactory[] and to source control repositories to
+get the dependencies for your project.  If these passwords are wrong, or you do not have the
+permissions to access them, you may get errors including the following.
+
+----
+401 Unauthorized
+----
+
+==== Incorrect Password
+
+Your password may be sent incorrectly to Artifactory for any of these reasons.
+
+. Your password is not stored in the gloss:credential-manager[].  You may need to run +gw.bat+ with
+the +--no-daemon+ argument to allow the password prompt dialog to be shown.  See the
+link:plugin-my-credentials.html[] page for more information.
+. Your password is stored in the gloss:credential-manager[] but is out of date.  See the
+link:plugin-my-credentials.html[] page for information on how to update it.
+. Your Artifactory server is configured only to accept encrypted passwords but you have stored your
+password unencrypted, or the other way round.  Normally encrypted passwords are used if your server
+has an +http:+ URL, otherwise your normal, unencrypted password is used.  Please contact your
+support person to check.
+
+==== Incorrect Artifactory Permissions
+
+If you know which repositories you need access to, please email the appropriate person from the
+link:support.html[] page to request access.  It is good practice also to "+CC:+" the person who runs
+the team which owns that repository.
+
+If you are not sure which repositories are causing the problem, please send the complete output of
+your command, plus your +build.gradle+ and +gradle.properties+, to the appropriate support contact.
+
+DONE: http://localwiki/Gradle#Passwords_.2F_Authentication
+
+DONE: http://localwiki/Gradle#Useful_Options
+
+
+== Accessing Mercurial
+
+=== Mercurial Passwords
+
+The username and password used to access Mercurial link:plugin-intrepid.html#sourceDependencies[]
+comes from the +mercurial-keyring+ Mercurial extension.  However, if no password has already been
+saved, the link:plugin-intrepid.html[] will pre-load it with the +"Domain Credentials"+ from the
+link:plugin-my-credentials.html[].  If the password used by that plugin is out of date, you may get
+a error saying that you are unauthorized.  See the link:plugin-my-credentials.html[] for how to
+update your password.
+
+=== Mercurial HTTPS Access
+
+Some Mercurial repositories within organisations use +https:+ URLs but have SSL certificates which
+are not signed by a public certificate authority.  This means that Mercurial will not trust them by
+default.  If you have link:plugin-intrepid.html#sourceDependencies[] pointing to such servers, you
+will get errors like the following.
+
+----
+certificate not verified
+----
+
+or
+
+----
+abort: error: _ssl.c:490: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed
+----
+
+One way to fix this in Mercurial is to add the certificate to a +web.cacerts+ file, as described at
+link:http://mercurial.selenic.com/wiki/CACertificates[].  However, the gloss:holygradle[] uses its
+own bundled version of Merurial which will ignore the +web.cacerts+ file set up in that way.  If
+you try to use this method, you will get an error like the following.
+
+----
+abort: could not find web.cacerts: C:\temp\Mercurial251\cacert.pem
+----
+
+Instead you should use
+link:http://mercurial.selenic.com/wiki/CACertificates#Host_certificate_fingerprints[Host certificate fingerprints].
+
+
+== Finding Modules
+
+=== How do I find which versions of module M are available?
+
+Use the gloss:artifactory[] "Simple Browser" to browse the appropriate _virtual_ gloss:repository[].
+Ask the team which published it to tell you which repository to look in, if you are not sure.  See
+link:very_quick_start.html#_get_something_from_artifactory[] for more information.
+
+=== How do I get version X of module M into my project?
+
+Ask the team which published the gloss:module[] to tell you the name of the gloss:repository[] you
+should get it from.  This should be a _virtual_ repository, because the names of _local_ or _remote_
+repositories may be changed by administrators in future, but those of _virtual_ repositories should
+stay the same.
+
+If the repository is not already in your +build.gradle+ file, add it, along with any credentials
+(username and password) needed to access it.  See link:plugin-intrepid.html#repositories[] for
+details.
+
+Then add an entry to the +packedDependencies+ section to reference the module vesion.  See
+link:plugin-intrepid.html#packedDependencies[] for details.
+
+=== How do I get module version M:X from a remote server to my site's server?
+
+Normally you should not need to do anything for this to happen.  Your site's Artifactory
+administrators will have configured one or more _virtual_ repositories at your site to point to
+_remote_ repositories (also at your site) which cache module files from another site.  When you
+request the module (by adding it to your +build.gradle+ and running +gw fAD+), it will be
+transferred automatically to your site.
+
+If this does not happen, please contact your link:support.html[] staff and give them as much
+information as possible.  There could be several reasons.
+
+* It may be that nobody has needed files from that repository at the other site before, so your
+administrators will have to create a new remote repository.  This can be done quickly.
+* It may be that you do not have permission to access that remote repository.  Permissions can be
+changed quickly, although there may be policies between sites to control access, which may make this
+slower.
+* If the module is very large and/or your site's connection to the other site is slow, your
+gloss:gradle[] build may time out before the files are transferred.  If you send a detailed log file
+including the time when you tried to build, your support staff can check for this in the Artifactory
+log files.

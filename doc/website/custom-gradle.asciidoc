@@ -9,11 +9,14 @@ include::sitemap.ascinc[]
 
 === What is it?
 
-The +custom-gradle+ package is a custom gloss:gradle-distribution[], based on gloss:gradle[] 1.4, with an extra gloss:init-script[].
+The +custom-gradle+ package is a custom gloss:gradle-distribution[], based on gloss:gradle[] 1.4,
+with an extra gloss:init-script[].
 
-You won't usually need to download this manually because if you use a gloss:gradle-wrapper[] then it should fetch it from your gloss:artifactory[] server automatically. 
+You won't usually need to download this manually because if you use a gloss:gradle-wrapper[] then it
+should fetch it from your gloss:artifactory[] server automatically. 
 
-The reasons for using a custom distribution of Gradle as opposed to using the original versions from the Gradle website are:
+The reasons for using a custom distribution of Gradle as opposed to using the original versions from
+the Gradle website are:
 
 * to include the custom init script which does several useful things;
 * to speed up downloads of Gradle by using an in-house repository.
@@ -24,11 +27,34 @@ You need a gloss:gradle-wrapper[] whose properties file refers to a URL correspo
 published version of +custom-gradle+. This would normally be published to an Artifactory server.
 See the link:first_steps.html[] page for an example of how to set this up.
 
-Once you're using a Gradle Wrapper that refers to +custom-gradle+ then an init-script will automatically be applied. This adds a little bit of extra functionality to the standard Gradle distribution, described below.
+Once you're using a Gradle Wrapper that refers to +custom-gradle+ then an init-script will
+automatically be applied. This adds a little bit of extra functionality to the standard Gradle
+distribution, described below.
 
-=== Applying Holy Gradle plugins
+=== Plugin Base URL
 
-The +gplugins+ DSL from the init script makes it easier to use the custom Gradle plugins such as link:plugin-intrepid.html[] and link:plugin-my-credentials.html[]. To use it put the following at the top of your +build.gradle+, with the plugin versions of your choice.
+Since version 7.0.0, the gloss:holygradle[] custom wrapper uses an environment variable to allow the
+same build script to be used at multiple sites, even if they do not share an gloss:artifactory[]
+server.
+
+The environment variable +HOLY_GRADLE_REPOSITORY_BASE_URL+ must be set to the base URL of the
+Artifactory web service at your site (for example,
++https://artifact-server.example-corp.com/artifactory/+).  This URL is used to download the plugins,
+and can also be used as a base for URLs in the +repositories+ section of your +buld.gradle+, to get
+your own gloss:project[]s dependencies.  You should set this in your user environment settings.
+You should not need to change it unless your server name changes, or you are working at a different
+site.
+
+From version 7.2.0, it also adds the property +project.holyGradleRepositoryBase+ which contains the
+value of this environment variable, guaranteed to end with a slash (+'/'+).  See the
+link:plugin-intrepid.html#_example_build_script[] for how this can be used.
+
+
+=== Applying Holy Gradle Plugins
+
+The +gplugins+ DSL from the init script makes it easier to use the custom Gradle plugins such as
+link:plugin-intrepid.html[] and link:plugin-my-credentials.html[]. To use it put the following at
+the top of your +build.gradle+, with the plugin versions of your choice.
 
 [source,groovy]
 ----
@@ -80,7 +106,7 @@ gloss:settings-file[].)
 +framework/framework.gradle+.
 * +my_app/user.gradle+ will be loaded and evaluated immediately after 'my_app/my_app.gradle'.
 
-==== Build script names
+==== Build Script Names
 
 Build scripts are normally called +build.gradle+. In this example we have some build scripts
 called +framework.gradle+ and +my_app.gradle+. This is possible because +settings.gradle+ is

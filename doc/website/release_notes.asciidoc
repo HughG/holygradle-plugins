@@ -9,5 +9,3 @@ There are no public releases of the gloss:holygradle[].
 endif::localDoc[]
 
 include::{localDoc}/release_notes.ascinc[]
-
-

@@ -6,7 +6,7 @@ and Artifactory
 </div>
 <ul>
     <li><a href="index.html">Home</a></li>
-    <li><p>Getting Started<!-- <a href="getting_started.html"></a> --></p>
+    <li><p>Getting Started</p>
         <ul>
             <li><a href="very_quick_start.html"></a></li>
             <li><a href="overview.html"></a></li>
@@ -14,14 +14,11 @@ and Artifactory
         </ul>
     </li>
     <li><a href="support.html"></a>
-<!--
         <ul>
             <li><a href="troubleshooting.html"></a></li>
         </ul>
--->
     </li>
 <!--
-    <li><a href="terminology.html"></a></li>
     <li><a href="tutorial.html">Tutorial</a></li>
 -->
     <li><a href="workflows.html">Workflows</a></li>
@@ -35,7 +32,7 @@ and Artifactory
     <hr />
     <li><a href="development.html"></a>
         <ul>
-            <li><a href="release_notes.html">Release Notes</a></li>
+            <li><a href="release_notes.html"></a></li>
         </ul>
     </li>
 </ul>
