@@ -77,12 +77,12 @@ endif::localDoc[]
 
 include::{localDoc}/first_steps_artifactory.ascinc[]
 
-[[running_the_holy_gradle]]
+[[_running_the_holy_gradle]]
 == Running the Holy Gradle
 
 === Gradle Setup
 
-[[gradle_user_home]]
+[[_gradle_user_home]]
 Gradle automatically downloads files for you and stores them in a cache in the Gradle User Home
 directory.  This defaults to `.gradle` in your home directory, but you can override the location
 by setting the +GRADLE_USER_HOME+ environment variable.  You may wish to move this if your home
@@ -157,7 +157,7 @@ other shells such as PowerShell, or Unix-style shells from Cygwin etc., is not s
 
 DONE: http://ediwiki/mediawiki/index.php/Gradle#Initial_Setup
 
-[[minimal_build_file]]
+[[_minimal_build_file]]
 === A Minimal Holy Gradle Build File
 
 In the folder where you unzipped the wrapper, create a +build.gradle+ file with the following

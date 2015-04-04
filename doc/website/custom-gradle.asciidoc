@@ -68,7 +68,7 @@ gplugins.apply()
 Note that the link:plugin-custom-gradle-core.html[] will automatically be applied whenever you
 use the +gplugins+ DSL.
 
-[[user-gradle]]
+[[_user_gradle]]
 === user.gradle
 
 One of features of the init script is to automatically load +user.gradle+ files that are in the

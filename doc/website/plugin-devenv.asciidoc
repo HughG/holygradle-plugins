@@ -109,7 +109,7 @@ DevEnv {
 }
 ----
 
-TIP: You may want to put this configuration in a link:custom-gradle.html#user-gradle[] file in order
+TIP: You may want to put this configuration in a link:custom-gradle.html#_user_gradle[] file in order
 to keep it out of build scripts that are committed to source control.
 
 ==== defineErrorRegex

@@ -32,7 +32,7 @@ yet, you should use the "Simple Browser", and look in the appropriate _virtual_ 
 are not sure which repository to look in, please contact the team which published it, and/or your
 local link:support.html[] contacts.
 
-[[get_a_whole_software_module]]
+[[_get_a_whole_software_module]]
 === -- a whole software module
 
 In most cases, if you need one file from a module in gloss:artifactory[], you will also need other
@@ -43,7 +43,7 @@ this much easier.  In this case you need to do the following things.
 * Find out the module version ID _and_ the gloss:configuration[](s) you need -- ask the group which
 publishes the module if you are not sure.
 * Make sure you have link:first_steps.html[set up your machine] for gloss:gradle[], and create a
-minimal project (see link:first_steps.html#running_the_holy_gradle[]) if you don't have one already.
+minimal project (see link:first_steps.html#_running_the_holy_gradle[]) if you don't have one already.
 * Add at least one gloss:configuration[] to your +build.gradle+, if you don't have any already.
 +
 [source,groovy]
@@ -83,19 +83,19 @@ packedDependencies {
 }
 ----
 +
-See link:plugin-intrepid.html#packedDependencies[] for details.
+See link:plugin-intrepid.html#_packedDependencies[] for details.
 
 * Run +gw fAD+ in a Windows Command Prompt in your project's directory.  If you have any problems,
 contact your local link:support.html[] staff or the group which publishes the module.
 TIP: Before publishing your module, you should review the list of configurations in your
 +build.gradle+, and the configuration mapping for each dependency.  If you do not, it may be more
-difficult for other teams to use your module.  See the <<make_a_release>> section below, and the
+difficult for other teams to use your module.  See the <<_make_a_release>> section below, and the
 page on link:workflows.html[] for more information.
 
-[[start_a_new_project]]
+[[_start_a_new_project]]
 == ... start a new project
 
-Follow the instructions above to get "<<get_a_whole_software_module>>", and you will have a minimal
+Follow the instructions above to get "<<_get_a_whole_software_module>>", and you will have a minimal
 project with one packed dependency.  You can then add the other dependencies needed for your project,
 fetch them all, and build it.
 
@@ -117,10 +117,10 @@ Note that, if this is the first time you have accessed the project's Artifactory
 the Holy Gradle will pop up a dialog to prompt you for the username and password.  If the project
 has gloss:source-dependencies[] you may be prompted separately for those.  It stores them in the
 gloss:credential-manager[] so you will not need to supply them again until you change your password.
-When your password changes, see link:plugin-my-credentials.html#updating-credentials[] for how to
+When your password changes, see link:plugin-my-credentials.html#_updating_credentials[] for how to
 update the password stored by the Holy Gradle.
 
-[[make_a_release]]
+[[_make_a_release]]
 == ... make a release of my project
 
 If you are just starting to use the gloss:holygradle[] and gloss:artifactory[], you may already have

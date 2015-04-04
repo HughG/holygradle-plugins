@@ -69,13 +69,13 @@ or
 ----
 
 . The link:first_steps.html#_setting_up_a_gradle_wrapper[custom Gradle wrapper] uses a URL to
-download the gloss:holygradle[] plugins.  From version link:release_notes.html#Plugins_7.0.0[] the
+download the gloss:holygradle[] plugins.  From version link:release_notes.html#_plugins_7.0.0[] the
 wrapper gets this URL from the environment variable (+HOLY_GRADLE_REPOSITORY_BASE_URL+), which
 should be set to a site-specific value.  See link:first_steps.html#_accessing_artifactory[] for
 details.
-. Your +build.gradle+ script will use a URL in the link:plugin-intrepid.html#repositories[] section
+. Your +build.gradle+ script will use a URL in the link:plugin-intrepid.html#_repositories[] section
 to point to the gloss:repositories[] where your gloss:project[]'s gloss:dependencies[] can be found.
-. Your +build.gradle+ script may also use a URL in the link:plugin-intrepid.html#publishPackages[]
+. Your +build.gradle+ script may also use a URL in the link:plugin-intrepid.html#_publishPackages[]
 section to say where to publish your gloss:module[].
 
 
@@ -124,7 +124,7 @@ DONE: http://localwiki/Gradle#Useful_Options
 
 === Mercurial Passwords
 
-The username and password used to access Mercurial link:plugin-intrepid.html#sourceDependencies[]
+The username and password used to access Mercurial link:plugin-intrepid.html#_sourceDependencies[]
 comes from the +mercurial-keyring+ Mercurial extension.  However, if no password has already been
 saved, the link:plugin-intrepid.html[] will pre-load it with the +"Domain Credentials"+ from the
 link:plugin-my-credentials.html[].  If the password used by that plugin is out of date, you may get
@@ -135,7 +135,7 @@ update your password.
 
 Some Mercurial repositories within organisations use +https:+ URLs but have SSL certificates which
 are not signed by a public certificate authority.  This means that Mercurial will not trust them by
-default.  If you have link:plugin-intrepid.html#sourceDependencies[] pointing to such servers, you
+default.  If you have link:plugin-intrepid.html#_sourceDependencies[] pointing to such servers, you
 will get errors like the following.
 
 ----
@@ -177,11 +177,11 @@ repositories may be changed by administrators in future, but those of _virtual_ 
 stay the same.
 
 If the repository is not already in your +build.gradle+ file, add it, along with any credentials
-(username and password) needed to access it.  See link:plugin-intrepid.html#repositories[] for
+(username and password) needed to access it.  See link:plugin-intrepid.html#_repositories[] for
 details.
 
 Then add an entry to the +packedDependencies+ section to reference the module vesion.  See
-link:plugin-intrepid.html#packedDependencies[] for details.
+link:plugin-intrepid.html#_packedDependencies[] for details.
 
 === What do I do if I have a version conflict?
 
