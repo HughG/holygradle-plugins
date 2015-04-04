@@ -183,6 +183,21 @@ details.
 Then add an entry to the +packedDependencies+ section to reference the module vesion.  See
 link:plugin-intrepid.html#packedDependencies[] for details.
 
+=== What do I do if I have a version conflict?
+
+If two different gloss:version[]s of the same gloss:module[] are included in your
+gloss:dependencies[], directly or indirectly, you may get an error like this.
+
+----
+* What went wrong:
+Could not resolve all dependencies for configuration ':everything'.
+> A conflict was found between the following modules:
+   - com.example-corp.teamA:base-lib:1.2.8
+   - com.example-corp.teamA:base-lib:1.2.4
+----
+
+To resolve this sort of problem, see link:workflows.html#_fetch_dependencies_after_changing_them[].
+
 === How do I get module version M:X from a remote server to my site's server?
 
 Normally you should not need to do anything for this to happen.  Your site's Artifactory

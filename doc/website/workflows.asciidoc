@@ -220,6 +220,10 @@ digraph {
 
 === Initial Set-up
 
+This section describes how to set up a gloss:project[] so that you can fetch its
+gloss:packed-dependencies[], build it, and publish it to an gloss:artifactory[] gloss:repository[].
+You don't have to do all these steps immediately when you start with a project but understanding
+them will be helpful.
 
 ==== Fetch Source
 
@@ -229,7 +233,10 @@ fixed to be the name of the folder containing the +build.gradle+ file.  So, if y
 publish the module (as opposed to just test publishing), you must put the source in an
 appropriately-named folder.
 
+If you are creating a new project, get a gloss:gradle-wrapper[] and commit it to source control, as
+described in link:first_steps.html#_setting_up_a_gradle_wrapper[].
 
+[[determine_outputs]]
 ==== Determine Outputs (Downstream Dependencies)
 
 Although it might seem counter-intuitive, the first thing to start with is determining the outputs
@@ -411,6 +418,7 @@ packageArtifacts {
 ----
 
 
+[[determine_inputs]]
 ==== Determine Inputs (Upstream Dependencies)
 
 As well as describing the module your Gradle project will produce, you need to describe which other
@@ -621,7 +629,7 @@ prerequisites {
 // Any 'build' tasks for this project depend on DirectX
 afterEvaluate {
     allprojects { proj ->
-        proj.tasks.matching { it.getName().startsWith("build") }.each { 
+        proj.tasks.matching { it.name.startsWith("build") }.each { 
             it.dependsOn prerequisites.getTask("DirectX")
         }
     }
@@ -727,6 +735,7 @@ gw gIMD
 You can find the +ivy.xml+ file in the +build/publications/ivy+ sub-directory of your project's
 folder.
 
+[[_check_publishing]]
 ==== Check Publishing
 
 Finally, you are ready to publish your packaged build output.  First, you must add information to
@@ -769,8 +778,8 @@ Artifactory server) but may be fetching dependencies from a "virtual" repository
 combines artifacts from any number of local or remote repositories).
 
 NOTE: A common arrangement is to initially publish auto-builds to an team-private "integration"
-repository, then move them to a more public repository for release.  See
-<<promotion_and_republishing>> and <<_repository_clean_up>> for more details.
+repository, then move them to a more public repository for release.  See <<_making_a_release>>,
+<<promotion_and_republishing>>, and <<_repository_clean_up>> for more details.
 
 Once you are happy with the contents of this block, run the following command to publish.
 
@@ -911,6 +920,72 @@ for them.  This will not remove symlinks for dependencies which were removed -- 
 do that.  Also it will not remove the ZIP files and their unpacked files from your Gradle cache --
 for that, see the section on <<_gradle_cache_clean_up>>.
 
+It is possible that some of your new dependency versions will be incompatible.  They may conflict
+directly, for example, if you define dependencies on +A:1.2+ and +B:2.0+, but +B:2.0+ depends on
++A:2.0+.  More common is that they will conflict indirectly, because they both depend on some other
+library at different versions.  In this case, you will get an error like the following.
+
+----
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all dependencies for configuration ':everything'.
+> A conflict was found between the following modules:
+   - com.example-corp.teamA:base-lib:1.2.8
+   - com.example-corp.teamA:base-lib:1.2.4
+
+* Try:
+Run with --stacktrace option to get the stack trace. Run with --info or --debug option to get more log output.
+----
+
+To understand where the conflict is, run
+
+----
+gw dependencies
+----
+
+This will output an ASCII-art tree diagram showing your dependencies.  Within this, look for lines
+where a module is shown with two versions separated by "`->`".  (A +(*)+ in this diagram means that
+the sub-dependencies of that module have already appeared earlier in the diagram.)  The following
+example shows a multi-project build of several modules produced by some group +teamC+.
+
+----
+someConfigurationName
++--- com.example-corp.teamC:test-app:unspecified
+|    +--- com.example-corp.teamC:comm-lib:unspecified
+|    |    +--- com.example-corp.teamA:base-lib:1.2.8
+|    |    |    \--- org.boost:boost:1.54.0_9
+|    |    \--- org.boost:boost:1.54.0_9
+|    \--- com.example-corp.teamC:framework:unspecified
+|         +--- com.example-corp.teamC:comm-lib:unspecified (*)
+|         +--- com.example-corp.teamA:utils:1.2.1
+|         |    +--- com.example-corp.teamA:base-lib:1.2.4 -> 1.2.8 (*)
+|         |    \--- org.boost:boost:1.54.0_9
+|         \--- org.boost:boost:1.54.0_9
+\--- com.example-corp.teamC:test-helper:unspecified
+     \--- org.boost:boost:1.54.0_9
+----
+
+The problem is that +teamC+'s +comm-lib+ module depends on version +1.2.8+ of +teamA+'s +base-lib+,
+but +teamC+'s +framework+ module depends on +teamA+'s +utils+ at version +1.2.1+ and _that_ then
+depends on a different version of +base-lib+.  There are several ways to resolve this.
+
+. Downgrade the dependency from +comm-lib+ on +base-lib+ to +1.2.4+.
+. Upgrade the dependency from +comm-lib+ on +utils+ to a later version which depends on +base-lib+
+at version +1.2.8+.  This may require work from +teamA+.
+. Remove one of the dependencies, on +base-lib+ or +utils+.
+. Split the dependencies into different gloss:configuration[]s.  Gradle resolves the dependency
+graph of each configuration separately.  This may still lead to version conflicts later in your
+build process if, for example, you try to copy DLLs and EXEs from both configurations into the
+same folder.
+. Add +dependencySettings.defaultFailOnVersionConflict = false+ to your +build.gradle+.  This will
+ignore all conflicts and automatically choose the "latest" version.
++
+WARNING: This is _not_ recommended, for several reasons.  You may hide other version conflicts which
+happen in future.  The later version of the module may not be compile-time- or runtime-compatible
+with the earlier version and may fail in unexpected ways.  Lastly, Gradle 1.4 picks the "latest"
+version by string (lexicographical) comparison, so "1.2.11" comes before "1.2.3".
+
 
 [[_check_build_after_changing_dependencies]]
 ==== Check Build
@@ -929,7 +1004,7 @@ Once your build works correctly, you should re-check packaging, as described in
 ==== Check Publishing
 
 When you are happy with the packaged outputs and the +ivy.xml+ file, you may want to re-check
-publishing, possibly using  +file:+ URL as described in <<_check_publishing>>.  However, unless
+publishing, possibly using a +file:+ URL as described in <<_check_publishing>>.  However, unless
 you or the Artifactory administrators have changed the destination repository setup in some way, or
 authentication details have changed, there should be no need to do this.
 
@@ -1204,6 +1279,191 @@ URL, for example,
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+=== Making a Release
+
+The previous sections describe how to get the gloss:dependencies[] for a gloss:project[], build it,
+and publish the resulting gloss:module[] to gloss:artifactory[].  In most cases, you need to do a
+bit more than that to release some software.
+
+The main things to consider are
+
+* what needs to be released;
+* what restrictions there are on your release (such as licensing, or export laws);
+* how you identify it later;
+* where the released things will be stored;
+* who should do the release;
+* how your customers will get the release.
+
+It is a good idea to test your release process completely, including having your customer check a
+sample release.
+
+==== What to Release
+
+As discussed under <<determine_outputs>>, the link:plugin-intrepid.html#packageArtifacts[] block
+controls which files are included in the ZIP files (gloss:package[] gloss:artifact[]s) of your
+gloss:module[].
+
+You also need to consider whether any of your dependencies need to be released, and whether there
+are any files not in Artifactory which are part of your release process.
+
+===== Publishing Dependencies
+
+It is common during development within an organisation that one team will use pre-release or
+"release candidate" versions of modules from other teams.  It is also possible that you will be
+<<_packaging_third_party_dependencies>> (libraries or build tools) to use in your project.  If you
+publish your project in some gloss:repository[] which your customers can access, but some of your
+dependencies are in other repositories which are not accessible to them, then they may not be able
+to fetch and use your module.
+
+You may also have dependencies which are used to build your project, but are not needed by teams
+who use your module.  In that case, you may still want to publish those dependencies (maybe to a
+different repository) so that they are stored permanently, to make sure that you can re-build your
+release from source in future.
+
+===== License and Export Restrictions
+
+If some of your dependencies are licensed commercial software, you may not have the right to
+redistribute them, or to export them to other countries.  If your customers have their own license
+to get the software, you can give them a copy of the +build.gradle+ which you used to publish the
+module, and they can publish it into their own private repository.  Every module published using the
+gloss:holygradle[] has a +buildScript+ ZIP file which contains the script.
+
+===== Release Systems Outside Artifactory
+
+You may have other things which are not part of your project but are part of your release process --
+for example, a release notes document.  You can either store them outside of gloss:artifactory[] and
+keep a note of the matching ID(s) of your release (see below), or you can copy them into your
+project before making the release, and publish them to Artifactory.  The Holy Gradle already does
+this for source code: it doesn't include all the source but it creates a +build_info+ folder in each
+ZIP file, and that has files describing the source repository and version it was published from.
+
+===== Release Notes
+
+Release notes are an interesting case because you may want to send out updated release notes after
+your release, for example, if bugs are found.  One approach could be to create a separate module for
+the release notes, which has a dependency on your original module.  Suppose your original module is
+published at version "+1.3.1+"; then you could have multiple versions of your release notes module,
+each using the date and time: "+1.3.1-_YYYYMMDD-HHMMSS_+".  Then someone can always get the latest
+version by defining a dependency on "_group_:_module_\_release\_notes:+".
+
+==== Identifying the Release
+
+Your project has a _gloss:module[] version ID_ when you are running gloss:gradle[] and when you
+publish to gloss:artifactory[].  See <<check_publishing>> for how to set this with the
+gloss:holygradle[].
+
+Customers will need this module version ID plus the name of (or URL for) an Artifactory _virtual_
+repository where they can get it.  See <<_how_customers_get_the_release>> below.
+
+==== Where to Put the Release
+
+To publish to gloss:artifactory[] you must choose a local gloss:repository[] to store your release.
+When choosing, you should consider
+
+* who needs to be able to get your release;
+* who should _not_ be able to get it -- for example, if it is a beta, or confidential; and
+* how long it should be kept for.
+
+The repo to use depends on the policies for your server -- see the link:support.html[] page to find
+out who to ask, and tell them your choices for the points above.  A common approach is _promotion_:
+your automated build publishes to a repo which keeps temporary builds, only for your team; when you
+are ready to release, you copy (promote) a build to a repo where others can get it.  See
+<<promotion_and_republishing>> for information on how to do this.
+
+WARNING: Regarding restricting access to modules, note that someone who has access may get a module
+from you and pass it on to someone else who should not have access.  Artifactory can only provide a
+basic level of control, to prevent accidental sharing.  You must make sure your customers understand
+any restrictions, and that they also tell new members of their teams.
+
+==== Who Should Do the Release
+
+The first point here is that the user who runs gloss:gradle[] must have "Deploy" permission for the
+relevant gloss:repository[] in gloss:artifactory[].  Discuss this with your team lead and/or your
+local link:support.html[] contact.
+
+The other important issue is if you have dependencies which also need to be released, and they were
+published by another team: who should release (promote) those modules?  If you can fetch the
+dependencies, then it is _possible_ for you to promote them, but you should check the release
+policies in your organisation, and usually contact the team to discuss it.
+
+==== How Customers Get the Release
+
+===== Through Artifactory
+
+To publish to gloss:artifactory[], just run +gw publish+ as described under <<check_publishing>>.
+If you customers have access to an gloss:artifactory[] server, then they can fetch your module into
+their project with the gloss:holygradle[], using the +packedDependencies+ block as usual.  You must
+tell them
+
+* your module's version ID (+_group_/_name_/_version+); and
+* the _virtual_ gloss:repository[] which they should fetch it from.
+
+If that repository is not already in the +repositories+ section of their +build.gradle+, they must
+add it directly to that file, or ask their server administrator to add it to one of the virtual
+repositories which is already used in their build script.
+
+If the team is using a different Artifactory server -- for example, at a different site -- then the
+server administrator can set up a _remote_ repository on that server to cache files from a virtual
+repository on your server.  Ideally, the server admin will use a name which matches your virtual
+repository name (or create a virtual repository which matches it and includes the remote repo).  If
+not, that admin must tell the other team which repository name to use.  (The other team could access
+your server directly but that may be slower and use a lot of network capacity.)
+
+===== Without Artifactory
+
+The gloss:holygradle[] has a feature to let teams which use gloss:artifactory[] easily release to
+teams which do not.  It downloads your module and all dependencies, plus a copy of the Holy Gradle,
+into a +local_artifacts+ folder for you to distribute -- for example, as a ZIP file.  When your
+customers get a copy of these files, they can run +gw fAD+ as normal, and everything will be
+unpacked from the +local_artifacts+ folder into the correct location.
+
+First, add a new configuration and a new entry to your +packageArtifacts+ section, as follows.
+
+[source, groovy]
+----
+configurations {
+    preBuiltArtifacts
+}
+
+// ...
+
+packageArtifacts {
+    preBuiltArtifacts {        
+        include "gw.bat", "gradle/**", "gradle.properties"
+        includeBuildScript {
+            addPackedDependency "${project.group}:${project.name}:${project.name}"
+        }
+    }
+}
+----
+
+TIP: For the above to work, your +publishPackages+ block must come _before_ your +packageArtifacts+
+block, otherwise the +_group_+ and +_version_+ will not be set correctly.
+
+Now publish your module to Artifactory as normal.  You will see a ZIP file with a name containing
+the string "+preBuiltArtifacts+".  Download and unzip it to a new folder, which must *not* have the
+same name as your module.  Then run
+
+----
+gw collectDependencies
+----
+
+This will download your module and all its dependencies into a folder called +local_artifacts+.
+Then ZIP up the following folder and files.
+
+* +local_artifacts/+
+* +gradle/+
+* +gw.bat+
+* +settings.gradle+
+* +build.gradle+
+* +gradle.properties+
+
+Send this file to your customer.  They can unzip it and run +gw fAD+ to unpack your module and all
+its dependencies.  (You can and should test this for yourself before you send it.)
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 [[promotion_and_republishing]]
 === Promotion / Republishing
 
@@ -1307,15 +1567,6 @@ want to delete your whole cache.
 
 
 ////
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-=== Product Release
-
-==== Blah
-
-blah
-
-
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
