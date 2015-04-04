@@ -494,13 +494,12 @@ digraph {
 }
 --
 
-More detail on each plugin can be found on the link:plugins.html[] page.
+More detail on each plugin can be found on the link:plugins.html[] page.  The original
+link:requirements.html[] are also part of this documentation.
 
 ''''
 
 TODO: Link to doc on how to do more complex cases with dependencies which also need to be promoted.
-
-TODO: Link to requirements (and rejected solutions?)
 
 DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)
 

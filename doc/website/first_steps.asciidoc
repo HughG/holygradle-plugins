@@ -211,6 +211,6 @@ DONE: http://localwiki/Editing_Gradle_Files
 
 == Next Steps
 
-Once you have this working, you may want to read the link:overview.html[], link:tutorial.html[],
-and/or the page on link:workflows.html[].
+Once you have this working, you may want to read the link:overview.html[] and/or the page on
+link:workflows.html[].
 
