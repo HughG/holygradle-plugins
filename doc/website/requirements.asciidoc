@@ -1,0 +1,14 @@
+include::stdattr.ascinc[]
+:toclevels: 2
+include::{localDoc}/requirements_attr.ascinc[]
+
+
+= Requirements
+
+include::sitemap.ascinc[]
+
+ifndef::localDoc[]
+The requirements for the gloss:holygradle[] are not publicly documented.
+endif::localDoc[]
+
+include::{localDoc}/requirements.ascinc[]

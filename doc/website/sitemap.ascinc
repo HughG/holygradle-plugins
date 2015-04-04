@@ -33,6 +33,7 @@ and Artifactory
     <li><a href="development.html"></a>
         <ul>
             <li><a href="release_notes.html"></a></li>
+            <li><a href="requirements.html"></a></li>
         </ul>
     </li>
 </ul>

@@ -1,0 +1,83 @@
+@import url(master.css);
+@import url('../local/asciidoc/planguage.css');
+
+@media screen {
+
+/*
+    Display divs-that-are-paragraphs with (hopefully) the same style as paragraphs.
+*/
+div.paragraph {
+    display: block;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+/*
+    Add back the ": " which is parsed out by AsciiDoc macros for special Planguage paragraphs,
+*/
+div.paragraph div.title:after {
+    content: ": ";
+}
+/*
+    Display paragraph titles like normal paragraph text, but bold.
+*/
+div.paragraph div.title, div.paragraph div.title + p {
+    display: inline;
+    color: black;
+    font-family: Georgia,"Times New Roman",Times,serif;
+}
+
+/*
+    Highlight "Gist:" paragraph
+*/
+div.paragraph.gist {
+    margin-top: -3.33em;
+    font-size: larger;
+    background: #E0E0FF;
+}
+
+/*
+    Highlight requirements which are "proposed".
+*/
+div.proposed {
+    border: 1px solid grey;
+    background-color: #F0F0F0;
+}
+div.proposed > h3 {
+    background-color: yellow;
+    width: 100%;
+}
+div.proposed > h3:before {
+    content: "PROPOSED: ";
+}
+
+/*
+    Make the first-level headings inside each requirement appear in an indented "margin".
+
+    Note that the various "em" sizes here don't exactly match, because they're relative to the font
+    size, which is different in different places.
+*/
+h3 + div.sect3 {
+    padding-top: 0.05em;
+}
+h4 {
+    margin-left: -10em;
+    display: block;
+    font-size: smaller;
+    width: 10em;
+    height: 4em;
+}
+h4 + div.paragraph {
+    margin-top: -3.66em;
+}
+div.sect3 {
+    margin-left: 8.25em;
+}
+
+/*
+    Hide empty low-level sections.
+*/
+div.sect3 > h4:only-child, div.sect4 > h5:only-child {
+    display: none;
+}
+
+}
