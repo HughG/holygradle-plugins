@@ -1,6 +1,4 @@
 Using pluginsRepoOverride=[active]
-Ignoring any project dependencies from tBPC on other, because either other has yet to be fetched, or it has no gradle project file
-Ignoring any project dependencies from tBPC on other, because either other has yet to be fetched, or it has no gradle project file
 :tasks
 
 ------------------------------------------------------------

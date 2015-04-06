@@ -53,23 +53,30 @@ class SourceDependencyPublishingHandler {
         // that the correct ivy.xml file is produced).
         Project rootProject = this.fromProject.rootProject
         Project depProject = rootProject.findProject(":${this.dependencyName}")
-        if ((depProject != null) && depProject.projectDir.exists()) {
+        if (depProject == null) {
+            if (!newConfigs.empty) {
+                this.fromProject.logger.info(
+                    "Not creating project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
+                        "because ${this.dependencyName} has no project file."
+                )
+            }
+        } else if (!depProject.projectDir.exists()) {
+            if (!newConfigs.empty) {
+                this.fromProject.logger.info(
+                    "Not creating project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
+                    "because ${this.dependencyName} has yet to be fetched."
+                )
+            }
+        } else {
             for (conf in newConfigs) {
                 String fromConf = conf.key
                 String toConf = conf.value
                 this.fromProject.logger.info "sourceDependencies: adding project dependency " +
-                        "from ${fromProject.group}:${fromProject.name} conf=${fromConf} " +
-                        "on :${this.dependencyName} conf=${toConf}"
+                    "from ${fromProject.group}:${fromProject.name} conf=${fromConf} " +
+                    "on :${this.dependencyName} conf=${toConf}"
                 this.fromProject.dependencies.add(
                     fromConf,
                     rootProject.dependencies.project(path: ":${this.dependencyName}", configuration: toConf)
-                )
-            }
-        } else {
-            if (!newConfigs.empty) {
-                this.fromProject.logger.warn(
-                    "Ignoring any project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
-                    "because either ${this.dependencyName} has yet to be fetched, or it has no gradle project file"
                 )
             }
         }
