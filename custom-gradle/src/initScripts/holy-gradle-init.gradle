@@ -135,6 +135,12 @@ class HolyGradlePlugins {
             }
         }
         usages[plugin] = version
+
+        // Hack: Also force the core plugin to use the snapshot version and to be a changing module.  Otherwise picking
+        // up a new SNAPSHOT version of the main plugins won't download the latest core plugin.
+        if (usingSnapshots && !usages.containsKey("custom-gradle-core")) {
+            use("custom-gradle-core", version)
+        }
     }
 
     // This is an API method to be called from build scripts, so suppress IntelliJ warning.
