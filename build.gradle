@@ -66,7 +66,7 @@ subprojects {
         maven {
             url artifactoryServer + 'remote-repos/'
             // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
-            // Artifactory.  If you update dependencies to require a new version of something (such as svnkit) which
+            // Artifactory.  If you update dependencies to require a new version of something (say, http-builder) which
             // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
             // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
             // server, that may require credentials.
@@ -102,12 +102,6 @@ project.ext.LOCAL_GRADLE_USER_HOME = new File(project.projectDir as File, "local
  * CUSTOM_GRADLE_BASE_NAME is needed by the custom-gradle project, but also by the integration test setup.
  */
 project.ext.CUSTOM_GRADLE_BASE_NAME = "custom-gradle-${gradle.gradleVersion}"
-
-/*
- * The root project needs to control the version of Mercurial used by intrepid, so that it can delete the correct
- * folder before integration testing.
- */
-project.ext.MERCURIAL_DEPENDENCY_COORD = "selenic:Mercurial:2.5.1"
 
 apply from: "versionInfo.gradle"
 apply from: "publish.gradle"

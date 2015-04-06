@@ -89,13 +89,27 @@ class HgDependency extends SourceDependency {
                 result = TryCheckout(repoUrl, destinationDir, repoBranch)
                 if (!result) {
                     deleteEmptyDir(destinationDir)
-                    println "  Well, that didn't work. Your \"Domain Credentials\" are probably out of date."
-                    println "  Have you changed your password recently? If so then please try running "
-                    println "  'credential-store.exe' which should be in the root of your workspace."
-                    throw new RuntimeException("Hg authentication failure.")
+
+                    if (keyringIsConfigured(destinationDir)) {
+                        throw new RuntimeException(
+                            "Failed to clone ${repoUrl}. The mercurial_keyring is NOT configured. " +
+                            "Please configure it and try again."
+                        )
+                    } else {
+                        throw new RuntimeException(
+                            "Failed to clone ${repoUrl} even after pre-caching credentials. " +
+                            "The mercurial_keyring IS configured. If your password changed recently, " +
+                            "try running 'credential-store.exe' which should be in the root of your workspace, " +
+                            "then try again."
+                        )
+                    }
                 }
             } else {
-                println "  Authentication failed. Please apply the 'my-credentials' plugin."
+                throw new RuntimeException(
+                    "Failed to clone ${repoUrl}.  Cannot re-try with authentication " +
+                    "because the 'my-credentials' plugin is not applied. " +
+                    "Please apply the 'my-credentials' plugin and try again."
+                )
             }
         }
         
@@ -108,5 +122,14 @@ class HgDependency extends SourceDependency {
         }
         
         result
+    }
+
+    private boolean keyringIsConfigured(File destinationDir) {
+        return hgCommand.execute { ExecSpec spec ->
+            spec.workingDir = destinationDir
+            spec.args "config"
+        }.readLines().any {
+            it.startsWith("extensions.mercurial_keyring")
+        }
     }
 }

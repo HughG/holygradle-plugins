@@ -36,7 +36,7 @@ class SvnDependency extends SourceDependency {
                 spec.args "checkout"
             }
             if (repoRevision != null) {
-                spec.args "@{repoUrl}@@{repoRevision}"
+                spec.args "${repoUrl}@${repoRevision}"
             } else {
                 spec.args repoUrl
             }
