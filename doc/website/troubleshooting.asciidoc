@@ -122,14 +122,27 @@ DONE: http://localwiki/Gradle#Useful_Options
 
 == Accessing Mercurial
 
+DONE: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/HolyGradleCookbook#!mercurial
+
 === Mercurial Passwords
 
-The username and password used to access Mercurial link:plugin-intrepid.html#_sourceDependencies[]
-comes from the +mercurial-keyring+ Mercurial extension.  However, if no password has already been
-saved, the link:plugin-intrepid.html[] will pre-load it with the +"Domain Credentials"+ from the
-link:plugin-my-credentials.html[].  If the password used by that plugin is out of date, you may get
-a error saying that you are unauthorized.  See the link:plugin-my-credentials.html[] for how to
-update your password.
+To access passwords stored in the gloss:credential-manager[], Mercurial uses an extension called
++mercurial-keyring+.  The gloss:holygradle[] relies on this extension being enabled.  See
+http://mercurial.selenic.com/wiki/UsingExtensions for details of how to enable extensions in your
++mercurial.ini+ file, and http://mercurial.selenic.com/wiki/KeyringExtension for the
++mercurial-keyring+ extension itself.  You can also control extensions in the
+http://tortoisehg.bitbucket.org/[TortoiseHg] GUI.
+
+The extension allows passwords to be saved securely but another piece of configuration controls when
+Mercurial will try to send a username and password to a repository.  Without this, Mercurial will
+not use your username and password, even if they are stored.  This configuration is the
+http://www.selenic.com/mercurial/hgrc.5.html#auth[auth] section of the +mercurial.ini+ file.
+
+The link:plugin-intrepid.html[] uses the username and password for a repository according to what
+was saved by the +mercurial-keyring+ extension.  If no password has already been saved, +intrepid+
+will pre-load it with the +"Domain Credentials"+ from the link:plugin-my-credentials.html[].  If the
+password used by that plugin is out of date, you may get a error saying that you are unauthorized.
+See the link:plugin-my-credentials.html[] for how to update your password.
 
 === Mercurial HTTPS Access
 

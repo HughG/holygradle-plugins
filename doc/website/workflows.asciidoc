@@ -35,7 +35,7 @@ understand to read this document.
 * gloss:version[]
 * gloss:configuration[]
 * gloss:dependency[]
-* gloss:metapackage[]
+* gloss:meta-package[]
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -431,8 +431,8 @@ Before declaring dependencies on pre-packed modules (or at least, before attempt
 we must specify where to find them.  You can specify one or more repositories, though you may find
 that an Artifactory-backed repository is in fact a virtual repository which combines several other
 repositories.  For example, your Artifactory instance might have a +libs-release+ virtual repo which
-includes both +libs-release-local+ (official releases of in-house modules) and +externals-release-local+ (in-house
-packagings of third-party modules).
+includes both +libs-release-local+ (official releases of in-house modules) and
++externals-release-local+ (in-house packagings of third-party modules).
 
 Following is an example repository declaration.
 
@@ -977,7 +977,8 @@ at version +1.2.8+.  This may require work from +teamA+.
 . Split the dependencies into different gloss:configuration[]s.  Gradle resolves the dependency
 graph of each configuration separately.  This may still lead to version conflicts later in your
 build process if, for example, you try to copy DLLs and EXEs from both configurations into the
-same folder.
+same folder.  This can be the correct solution if you want to use different versions in different
+parts of your project, for example, in test code and in production code.
 . Add +dependencySettings.defaultFailOnVersionConflict = false+ to your +build.gradle+.  This will
 ignore all conflicts and automatically choose the "latest" version.
 +
@@ -1023,7 +1024,9 @@ is to check versions and create symlinks.
 
 Sometimes you may want to use a third-party library or build tool as a dependency, but find that it
 is not already available as an intrepid-style packed dependency in any suitable Artifactory
-repository.  This section describes how you can package it up yourself.
+repository.  This section describes how you can package it up yourself.  You can also download an
+example build file,
++link:files/third-party-example/third-party-example.gradle[third-party-example.gradle]+.
 
 ==== Using Source Versus Repackaging A Distribution
 
@@ -1532,6 +1535,27 @@ NOTE: You can, of course, run +gw cPD+ in your project directory normally.  Howe
 explicit "+republishing+" package means you can be sure that the build script contains exactly the
 versions of your module's dependencies that are recorded in the +ivy.xml+ for that published
 version.
+
+
+// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+=== Using a Meta-Package
+
+Some teams may publish gloss:meta-package[]s to provide an easy way to get just some of the files
+from a module.  Normally you should just add a module as a gloss:packed-dependency in your own
+gloss:project[].  A meta-package is a "prepared" project in a ZIP file gloss:package[].   Example
+uses for a meta-package include the following.
+
+* Download just the runtime binaries for an application module, so a test engineer can run tests.
+* Fetch the exact source and dependencies for a released version of a module, to rebuild it.
+
+To use a meta-package:
+
+* unzip it to a location of your choice;
+* open a command prompt at the unzipped location;
+* run +gw fetchAllDependencies+ (or +gw fAD+).
+
+DONE: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/HolyGradleCookbook#!i-want-to-retrieve-components-using-a-meta-package
 
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

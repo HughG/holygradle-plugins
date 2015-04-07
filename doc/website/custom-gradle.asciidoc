@@ -106,7 +106,7 @@ gloss:settings-file[].)
 +framework/framework.gradle+.
 * +my_app/user.gradle+ will be loaded and evaluated immediately after 'my_app/my_app.gradle'.
 
-==== Build Script Names
+=== Build Script Names
 
 Build scripts are normally called +build.gradle+. In this example we have some build scripts
 called +framework.gradle+ and +my_app.gradle+. This is possible because +settings.gradle+ is

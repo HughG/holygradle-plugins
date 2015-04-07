@@ -1,0 +1,109 @@
+/* To publish a new release of this module, follow these steps.
+ *
+ * - Change the text below, in the comments and the code, to match the library or tool you are
+ *   publishing.  For example, to publish boost, you might change the group to 'org.boost' and
+ *   change all 'some-lib' to 'boost'.
+ *
+ * - Decide whether the set of configurations is suitable for your module, and change them if not.
+ *   If you want to split it up by platform (Win32, x64) you may need more configurations.  If you
+ *   are just packaging a build tool, you may only need 'bin'.
+ *
+ * - Check that the packageArtifacts block is including the correct files for each artifact.  You
+ *   can run 'gw packageEverything' to create the ZIP files (in the 'packages' folder) without
+ *   publishing them, so you can check them.
+ *
+ * - Fill in the license and description at the bottom.
+ *
+ * - Delete this comment.
+ */
+
+/* To publish a new release of this module, follow these steps.
+ *
+ * - Update the 'pluginVersion' below to the latest version.
+ *
+ * - Place this file in a folder called 'some-lib' along with the latest gradle wrapper.
+ *
+ * - Put the unzipped SomeLib SDK in a subfolder called 'some-lib'.
+ *
+ * - Paste the version number below appending _1 if it's the first time you've packaged that version,
+ *   _[2..n] if it's a subsequent repackage of the same version.
+ *
+ * - Run 'gw -PpublishUrl=https://YOUR_SERVER_HOSTNAME/artifactory/YOUR_TEAM-integration-local publish'.
+ *
+ * - Ask for external review of the published package.  Also test building another project which
+ *   uses it.
+ *
+ * - If appropriate copy or move the published package to a repository which is shared between teams.
+ */
+
+buildscript {
+    def pluginVersion = '7.2.5'
+    gplugins.use "intrepid:${pluginVersion}"
+    gplugins.use "my-credentials:${pluginVersion}"
+}
+gplugins.apply()
+
+configurations {
+    bin
+    include
+    lib
+    pdb
+}
+ 
+packageArtifacts {
+    bin {
+        from "some-lib/"
+        to "."
+        include "bin/*.dll", "bin/*.exe"
+    }
+    include {
+        from "some-lib/include"
+        to "."
+        include "include/**" // '**' means 'all files and folders inside this'
+    }
+    lib {
+        from "some-lib/lib"
+        to "."
+        include "lib/*.*"
+    }
+    pdb {
+        from "some-lib/pdb"
+        to "."
+        include "pdb/*.pdb"
+    }
+}
+
+publishPackages {
+    group "com.something"
+    nextVersionNumber "2.1.0_1" // change this line
+    repositories.ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url (
+            project.hasProperty('publishUrl') ?
+                project.property('publishUrl') :
+                "http://YOU_MUST_PROVIDE_THE_PUBLISH_URL"
+        )
+    }
+}
+
+publishing {
+    publications.ivy.descriptor.withXml {
+        Node infoNode = asNode().info[0]
+   
+        Node licenseNode = infoNode.appendNode("license")
+        licenseNode.@name = "Some Software License for SomeLib"
+        licenseNode.@url = "http://www.some-lib.org/license"
+         
+        String description = """
+This is a package of Sencha's Ext JS 4.2.1, a JavaScript application framework SDK.
+The commercial license permits the distribution of ExtJS only in minified form and 
+only with applications (not with libraries or frameworks).
+More information about the SDK can be found at http://docs.sencha.com/ext-js/4-2/ ."""
+  
+        Node descriptionNode = infoNode.appendNode("description", description)
+        descriptionNode.@homepage = "http://docs.sencha.com/ext-js/4-2/"
+    }
+}

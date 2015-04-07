@@ -4,7 +4,47 @@ include::stdattr.ascinc[]
 
 include::sitemap.ascinc[]
 
-For basic instructions on how to develop the gloss:holygradle[] plugins and custom distribution,
-see the file link:https://bitbucket.org/nm2501/holy-gradle-plugins/src/tip/developer-readme.md[+developer-readme.md+] at the top level of the link:https://bitbucket.org/nm2501/holy-gradle-plugins/[Bitbucket repository].
+For basic instructions on how to develop the gloss:holygradle[] plugins and custom
+gloss:gradle-distribution[], see the file
+link:https://bitbucket.org/nm2501/holy-gradle-plugins/src/tip/developer-readme.md[+developer-readme.md+]
+at the top level of the link:https://bitbucket.org/nm2501/holy-gradle-plugins/[Bitbucket repository].
 
 include::{localDoc}/development.ascinc[]
+
+== Writing Your Own Plugins
+
+There are many ways to write your own plugin, and you don't necessarily need to work with the
+existing Holy Gradle plugins. There are useful training materials on the http://www.gradleware.com/
+website, and you will need to refer to the
+link:http://gradle.org/docs/1.4/userguide/userguide.html[Gradle documentation]. The first thing to
+note is that everything that a plugin can do, a build script can do. You only need to start
+factoring logic out into a plugin for architectural reasons; for example, to keep your build script
+simple, to share logic with other teams, to make it more easily testable, and so on.  There's no
+technical reason that forces you to develop a plugin.
+
+To summarise, you can develop a plugin as follows.
+
+. You could simply write a Plugin class directly in your Gradle build script and apply the plugin
+directly in the build script.
+** This is a very useful first step in factoring logic out of the build script. 
+. You could put your plugin in a +buildSrc+ directory alongside your build script. This is the next
+step in separating your build script from the plugin. This allows you to:
++
+** pull the plugin logic completely out of the build script for simplicity;
+** give the plugin a name so that it can be applied with +apply plugin: 'my-plugin'+ instead of
++apply plugin: teamA.MyPlugin.class+;
+** have unit tests which are automatically run prior to use.
++
+It does not allow you to define a dependency from your plugin to other published components.  That
+means. you can't write a plugin that depends on 'intrepid' but you can still have your build script
+depend on intrepid and have that plugin applied first.
+. Take your buildSrc plugin and turn it into a plugin that gets published to gloss:artifactory[].
+Choose whether to make it a public Holy Gradle plugin, or a plugin internal to your team or
+organisation.  This allows you to:
+** share your plugin with other teams;
+** define dependencies between your plugin and other published components, for example, 3rd party
+Java libraries, other Holy Gradle plugins or helper components like +credential-store.exe+;
+** use the link:custom-gradle.html[] distribution (with its useful init script) to simplify usage
+of plugins. 
+
+DONE: http://LOCALWIKI/Gradle_Cookbook

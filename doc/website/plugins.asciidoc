@@ -5,7 +5,166 @@ include::stdattr.ascinc[]
 include::sitemap.ascinc[]
 
 This page lists the components of the gloss:holygradle[] software, with links to more details on
-each part.
+each part.  Below is a diagram showing how these pieces fit together; this is an expanded version of
+the one on the link:overview.html#_holy_gradle_plugins[Overview] page.
+
+.gloss:Holy Gradle component dependencies
+[caption="Figure {counter:figureindex}: "]
+[graphviz,reference_holygradle_components.svg,dot,svg]
+--
+digraph {
+    ranksep=0.4
+    node [shape=box, style=rounded, margin="0.04,0.04", height=0.4]
+    compound=true
+
+    subgraph key {
+        rank=same
+        key [label="Key:", shape=plaintext]
+        key_proj [label="Your source", color=navy, fontcolor=navy, style=""]
+        key_hg [label="Holy Gradle"]
+        key_ext [label="Third-party", color=darkgreen, fontcolor=darkgreen, style=diagonals]
+    }
+
+    subgraph cluster_project {
+        label="Your project"
+
+        cluster_project_source [shape=point,margin="0.0",style=invis]
+        cluster_project_sink [shape=point,margin="0.0",style=invis]
+        cluster_project_source -> {
+
+            build [label="build.gradle", shape=note, color=navy, fontcolor=navy]
+            gw [label="gw.bat"]
+            wrapper [label="Gradle\nwrapper"]
+
+        } -> cluster_project_sink [style=invis,minlen=0]
+
+    }
+
+    key_proj -> build [style=invis]
+
+    subgraph cluster_plugins {
+        label="Holy Gradle Plugins"
+
+        cluster_plugins_source [shape=point,margin="0.0",style=invis]
+        cluster_plugins_sink [shape=point,margin="0.0",style=invis]
+        cluster_plugins_source -> {
+
+            { rank=same
+                afym [label="artifactory-manager"]
+                stamper [color=grey, fontcolor=grey, style="dashed,rounded"]
+            } -> { rank=same
+                intrepid
+                myc [label="my-credentials"]
+                devenv [color=grey, fontcolor=grey, style="dashed,rounded"]
+                ut [label="unit-test", color=grey, fontcolor=grey, style="dashed,rounded"]
+            } -> { rank=same
+                cgc [label="custom-gradle-core"]
+                cred_store [label="credential-store.exe"]
+            } [style=invis]
+
+        } -> cluster_plugins_sink [style=invis,minlen=0]
+
+        intrepid -> cgc [headport=n]
+        myc -> cgc [headport=n]
+        devenv -> cgc [headport=n]
+        ut -> cgc [headport=n]
+        intrepid -> cred_store
+
+    }
+
+    build -> afym [lhead=cluster_plugins, label="specifies"]
+
+    build -> gw [label="input to", style=dashed]//, minlen=0]
+    gw -> wrapper [label="runs"]
+
+
+    subgraph cluster_kits {
+        label="Starter ZIP files"
+
+        cluster_kits_source [shape=point,margin="0.0",style=invis]
+        cluster_kits_sink [shape=point,margin="0.0",style=invis]
+        cluster_kits_source -> {
+
+            https_kit [label="https-setup-kit"]
+            wsk [label="wrapper-starter-kit"]
+
+        } -> cluster_kits_sink [style=invis,minlen=0]
+    }
+
+    subgraph cluster_distro {
+        label="Holy Gradle\nCustom Distribution"
+
+        cluster_distro_source [shape=point,margin="0.0",style=invis]
+        cluster_distro_sink [shape=point,margin="0.0",style=invis]
+        cluster_distro_source -> {
+
+            custom_gradle [label="custom-gradle"]
+
+            node [color=darkgreen, fontcolor=darkgreen, style=diagonals]
+            Gradle [label="Gradle 1.4"]
+            Groovy [label="Groovy 1.8"]
+
+        } -> cluster_distro_sink [style=invis,minlen=0]
+
+        wsk -> custom_gradle
+        cgc -> custom_gradle [weight=5]
+        wrapper -> custom_gradle [label="downloads\n& runs"]
+        custom_gradle -> cgc [lhead=cluster_plugins, label="downloads", constraint=false]
+    }
+
+    subgraph cluster_tools {
+        label="Separate tools"
+
+        cluster_tools_source [shape=point,margin="0.0",style=invis]
+        cluster_tools_sink [shape=point,margin="0.0",style=invis]
+        cluster_tools_source -> {
+
+            node [color=darkgreen, fontcolor=darkgreen, style=diagonals]
+            sevenzip [label="7zip.exe"]
+            hg [label="hg.exe"]
+            svn [label="svn"]
+            VS [label="Visual Studio"]
+
+        } -> cluster_tools_sink [style=invis,minlen=0]
+
+        myc -> cred_store
+
+        intrepid -> sevenzip
+        intrepid -> hg
+        intrepid -> svn [weight=10]
+        devenv -> VS
+
+    }
+
+    subgraph cluster_platform {
+        label="Platform"
+        node [color=darkgreen, fontcolor=darkgreen, style=diagonals]
+
+        cluster_platform_source [shape=point,margin="0.0",style=invis]
+        cluster_platform_sink [shape=point,margin="0.0",style=invis]
+        cluster_platform_source -> {
+
+            Java [label="Java 7"]
+            Windows
+
+        } -> cluster_platform_sink [style=invis,minlen=0]
+
+        Gradle -> Groovy -> Java
+        https_kit -> Gradle [weight=7]
+        https_kit -> Windows
+        custom_gradle -> Gradle
+    }
+
+    cluster_project_sink -> cluster_plugins_source [style=invis, weight=3]
+    cluster_plugins_sink -> cluster_distro_source [style=invis, weight=3]
+    cluster_kits_sink -> cluster_distro_source [style=invis, weight=3]
+    cluster_plugins_sink -> cluster_kits_source [style=invis, weight=3] // just for layout
+    cluster_plugins_sink -> cluster_tools_source [style=invis, weight=3]
+    cluster_tools_sink -> cluster_kits_source [style=invis, weight=3] // just for layout
+    cluster_plugins_sink -> cluster_platform_source [style=invis, weight=3]
+    cluster_distro_sink -> cluster_platform_source [style=invis, weight=3]
+}
+--
 
 == Custom Gradle Distribution
 
@@ -100,3 +259,60 @@ The link:plugin-stamper.html[] supports the following.
 * Syntax for defining which files to stamp and how to stamp them (using regular expressions).
 
 TODO: http://localwiki/Gradle#LOCAL_Gradle_Software_Details
+
+== How Tasks Are Run
+
+This is a rough explanation of what happens in Gradle and Holy Gradle plugins when you run a simple
+task such as +gw task'+.
+
+. +gw.bat+ is executed and it tries to determine which version of Java to use. If it can't find a
+suitable version of Java then it will fail.  If it can, then it uses Java to run the gradle wrapper
+jar file, +gradle/gradle-wrapper.jar+.
+. The Gradle Wrapper does some bootstrapping to ensure that Gradle is on your machine.  The file
++gradle/distributionPath.txt contains a URL path to a specific link:custom-gradle.html[] version.
++gw.bat+ combines this with the value in +HOLY_GRADLE_REPOSITORY_BASE_URL+ and
++gradle/gradle-wrapper.properties.in+ to create the file +gradle/gradle-wrapper.properties+. If you
+haven't previously used this distribution then the Gradle Wrapper will download it from this URL to
+your Gradle user home directory.  It will display lots of dots while it does this.
+. The Gradle Wrapper calls on to Gradle to run the requested task.
+. Gradle will use the current working directory to determine which project(s) should be evaluated.
+If you're using a stand-alone project then Gradle will simply identify +build.gradle+ as your build
+script. If you're using a multi-project workspace then it's more complicated and depends on
++settings.gradle+ files.
+. Properties will be evaluated. These come from 'gradle.properties' files which can live in a number
+of locations. See link
+http://www.gradle.org/docs/1.4/userguide/build_environment.html#sec:gradle_configuration_properties[here].
+. Next, Gradle will look for any +settings.gradle+ scripts. These scripts do not contain
+configuration of individual projects but allow you to describe which projects to be included. This
+allows for multi-project workspaces.
+. Now, for for each project in your multi-project workspace:
+.. Assuming that you're using a link:custom-gradle.html[] distribution from the Holy Gradle then the
+distribution will contain an gloss:init-script[]. This is called +holy-gradle-init.gradle+ and can
+be found by running the task openInitScript. At this stage Gradle will invoke all init scripts.
+In the case of Holy Gradle, this results in the 'gplugins' extension being registered.
+.. Gradle will evaluate the buildscript block first. This is used for defining the dependencies of
+the buildscript itself; for example, repositories containing plugins, version numbers for plugins,
+and so on. The +gplugins+ extension is a helper to allow you to briefly define the version numbers
+of plugins that you want to use.
+.. When +gplugins.apply()+ is called, all of the plugins you have previously specified will be
+applied. This invokes logic in each of the plugins, which typically adds further extensions and
+tasks. For example, the link:plugin-intrepid.html[] would add
+link:plugin-intrepid.html#_packageArtifacts[] and other extensions.
+.. Now the build script itself is evaluated, and all of the extensions defined in plugins are
+available for use. This typically adds lots of configuration, but doesn't do very much. For example
+the +packageArtifacts+ extension might now have some packages defined, but there would not yet be
+any tasks to do the packaging.
+.. After the build script is evaluated Gradle will invoke any closures that have previously been
+registered using +project.gradle.projectsEvaluated+ or +project.afterEvaluate+. Many of the Holy
+Gradle plugins use this mechanism in order to defer execution of logic until after the build script
+is evaluated. For example, at this stage the intrepid plugin can now iterate over all the packages
+that the build script configured in the +packageArtifacts+ extension and configure tasks.
+. At this stage all plugins have been applied, all project build scripts have been evaluated and all
+plugins have completed their "after evaluated" closures. Gradle now has a complete set of
+tasks and can now look at the original request +gw task+ and try to invoke a task. In this case,
+Gradle has defined a task named +tasks+ and since +task+ is an unambiguous abbreviation, the +tasks+
+task is selected to be run.
+. Gradle now invokes the task, first invoking any +doFirst+ closures and then invoking +doLast+
+closures. 
+
+DONE: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/HolyGradleCookbook#!what-actually-happens-when-i-run-a-simple-task-like-gw-task

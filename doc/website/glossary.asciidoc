@@ -140,6 +140,7 @@ configurations({ ConfigurationHandler c ->
     A gloss:gradle[] init script is a +.gradle+ script which is run before your build.  Such a
     script can be passed on the command line but usually is packed up as part of a
     gloss:gradle-distribution[].  See http://www.gradle.org/docs/1.4/userguide/userguide_single.html#init_scripts for more detail.
+    The gloss:holygradle[] init script can be seen by running +gw openInitScript+.
 [[gloss-ivy]] Ivy::
     A gloss:dependency-management[] tool written in Java, which works stand-alone or with link: 
     https://ant.apache.org/[Apache Ant].  gloss:gradle[] shares many concepts with Ivy, and 
@@ -161,9 +162,9 @@ configurations({ ConfigurationHandler c ->
     information which describes a module: mainly, its identifier, gloss:configuration[]s, 
     gloss:artifact[]s, and gloss:dependencies[].  The gloss:holygradle[] uses gloss:ivy-xml[]
     files, though other file formats exist, and sometimes the metadata can be implicit.
-[[gloss-metapackage]] metapackage::
+[[gloss-meta-package]] meta-package::
     This is a gloss:holygradle[] term for a gloss:package[] which is intended to perform operations
-    on other packages/modules.  Typically the metapackage contains a +build.gradle+ file which uses
+    on other packages/modules.  Typically the meta-package contains a +build.gradle+ file which uses
     the gloss:holygradle[] plugins, plus other gloss:gradle[] features, for tasks such as
     downloading all the transitive dependencies of a module and creating a "+.zip+" file containing
     the module plus its dependencies.
