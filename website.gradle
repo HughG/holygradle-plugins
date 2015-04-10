@@ -206,6 +206,25 @@ for (local in [false, true]) {
         t.dependsOn "build${namePart}Website"
         t.dependsOn ":credential-store:build"
         t.doLast {
+            if (project.getHasUncommittedChanges()) {
+                throw new RuntimeException("Cannot publish website with uncommitted changes in main repo.")
+            }
+            if (project.getHasNonPublicParent(project.projectDir)) {
+                throw new RuntimeException("Cannot publish website from non-public parent revision.")
+            }
+            if (local) {
+                if (project.hgLocalDocVersion.endsWith('+')) {
+                    throw new RuntimeException(
+                        "Cannot publish local website with uncommitted changes in local repo."
+                    )
+                }
+                if (project.getHasNonPublicParent(new File("${WEBSITE_DIR}/local"))) {
+                    throw new RuntimeException(
+                        "Cannot publish local website from non-public parent revision of local repo."
+                    )
+                }
+            }
+
             final String username = (
                 project.hasProperty(publishUsernameProperty)
                 ? project.property(publishUsernameProperty)
@@ -226,6 +245,25 @@ for (local in [false, true]) {
             ConfigurableFileTree filesToPublish = project.fileTree(dirToPublish)
             publisher.publish(filesToPublish, dirToPublish)
             println "Published to ${publishUrl}"
+
+            // Tag the repo
+            final String tagPrefix = 'T' + (local ? 'L' : 'P') + 'W'
+            project.exec {
+                workingDir "${WEBSITE_DIR}"
+                commandLine 'hg.exe', 'tag', '-m', "${task.name}", "${tagPrefix}_${project.hgVersion}"
+            }
+            println "Tagged public repo; now push the tag."
         }
     }
+}
+
+tasks['publishLocalWebsite'].doLast {
+    // Tag the local repo with a cross-ref to the public one.
+    project.exec {
+        workingDir "${WEBSITE_DIR}/local"
+        commandLine 'hg.exe', 'tag',
+            '-m', "${task.name} from holy-gradle-plugins ${project.hgVersion} and this rev of this repo",
+            "TLW_${project.hgVersion}"
+    }
+    println "Tagged local repo; now push the tag."
 }

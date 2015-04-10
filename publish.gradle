@@ -73,27 +73,35 @@ task setPublishVersion {
     outputs.upToDateWhen { false }
 }
 
+project.ext.getHasUncommittedChanges = {
+    final String hgNode = project.hgVersionInfo.split(' ')[1]
+    return hgNode.endsWith('+')
+}
+
+project.ext.getHasNonPublicParent = { File dir ->
+    final OutputStream stdout = new ByteArrayOutputStream()
+    project.exec { ExecSpec spec ->
+        spec.workingDir dir
+        spec.executable = "hg"
+        spec.args = ["phase", "."]
+        spec.setStandardOutput stdout
+    }
+    final String output = stdout.toString().trim()
+    final String phase = output.split()[1]
+    return (phase != "public")
+}
+
 // Print a message, if we're actually publishing.
 project.gradle.taskGraph.whenReady {
     if (project.getIsPublishing()) {
         project.tasks['setHgVersionInfo'].doLast {
             // Fail early if any release publishing preconditions are not met.
             if (!project.version.toString().endsWith('-SNAPSHOT')) {
-                final String hgNode = project.hgVersionInfo.split(' ')[1]
-                final boolean hasUncommittedChanges = hgNode.endsWith('+')
-                if (hasUncommittedChanges) {
+                if (project.getHasUncommittedChanges()) {
                     throw new RuntimeException("Cannot publish a non-SNAPSHOT version with uncommitted changes.")
                 }
 
-                final OutputStream stdout = new ByteArrayOutputStream()
-                project.exec { ExecSpec spec ->
-                    spec.executable = "hg"
-                    spec.args = ["phase", "."]
-                    spec.setStandardOutput stdout
-                }
-                final String output = stdout.toString().trim()
-                final String phase = output.split()[1]
-                if (phase != "public") {
+                if (project.getHasNonPublicParent(project.projectDir)) {
                     throw new RuntimeException("Cannot publish a non-SNAPSHOT version from non-public parent revision.")
                 }
             }
@@ -146,6 +154,26 @@ project.subprojects {
                 password artifactoryPassword
             }
             url t.targetUri
+        }
+
+        doLast {
+            // Tag the repo
+            String tagPrefixEnding
+            switch (publishingGroup) {
+                case "Plugins":
+                    tagPrefixEnding = 'P';
+                    break;
+                case "CustomGradle":
+                    tagPrefixEnding = 'C';
+                    break;
+                default:
+                    throw new RuntimeException("Internal error: unknown publishingGroup ${publishingGroup}")
+            }
+            project.exec {
+                workingDir projectDir
+                commandLine 'hg.exe', 'tag', '-m', "${task.name}", "TR${tagPrefixEnding}_${project.hgVersion}"
+            }
+            println "Tagged public repo; now push the tag."
         }
     }
     project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
