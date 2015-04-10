@@ -262,10 +262,10 @@ for (local in [false, true]) {
 tasks['publishLocalWebsite'].doLast { Task t ->
     // Tag the local repo with a cross-ref to the public one.
     project.exec {
-        workingDir "${WEBSITE_DIR}/local"
+        workingDir Paths.get("${WEBSITE_DIR}/local").toRealPath()
         commandLine 'hg.exe', 'tag',
-            '-m', "${t.name} from holy-gradle-plugins ${project.hgVersion} and this rev of this repo",
-            "TLW_${project.hgVersion}"
+            '-m', "${t.name} from holy-gradle-plugins ${project.hgVersion} and this local repo at ${hgLocalDocVersion}",
+            "TLW_${project.hgVersion}_local_${hgLocalDocVersion}"
     }
     println "Tagged local repo; now push the tag."
 }
