@@ -69,8 +69,8 @@ or
 ----
 
 . The link:first_steps.html#_setting_up_a_gradle_wrapper[custom Gradle wrapper] uses a URL to
-download the gloss:holygradle[] plugins.  From version link:release_notes.html#_plugins_7.0.0[] the
-wrapper gets this URL from the environment variable (+HOLY_GRADLE_REPOSITORY_BASE_URL+), which
+download the gloss:holygradle[] plugins.  From version link:release_notes.html#_plugins_7.0.0[7.0.0]
+the wrapper gets this URL from the environment variable (+HOLY_GRADLE_REPOSITORY_BASE_URL+), which
 should be set to a site-specific value.  See link:first_steps.html#_accessing_artifactory[] for
 details.
 . Your +build.gradle+ script will use a URL in the link:plugin-intrepid.html#_repositories[] section

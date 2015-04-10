@@ -93,6 +93,7 @@ void initializeBuildWebsiteTask(
 }
 
 for (local in [false, true]) {
+    final closed_local = local // capture for use in closures; otherwise you get the final loop value
     final String namePart = local ? "Local" : "Public"
     final String rawHtmlSubdir = local ? 'raw-html-local' : 'raw-html'
     final String rawHtmlDir = "${project.WEBSITE_DIR}/${rawHtmlSubdir}"
@@ -212,7 +213,7 @@ for (local in [false, true]) {
             if (project.getHasNonPublicParent(project.projectDir)) {
                 throw new RuntimeException("Cannot publish website from non-public parent revision.")
             }
-            if (local) {
+            if (closed_local) {
                 if (project.hgLocalDocVersion.endsWith('+')) {
                     throw new RuntimeException(
                         "Cannot publish local website with uncommitted changes in local repo."
