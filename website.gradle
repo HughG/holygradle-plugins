@@ -248,10 +248,10 @@ for (local in [false, true]) {
             println "Published to ${publishUrl}"
 
             // Tag the repo
-            final String tagPrefix = 'T' + (local ? 'L' : 'P') + 'W'
+            final String tagPrefix = 'T' + (closed_local ? 'L' : 'P') + 'W'
             project.exec {
                 workingDir "${WEBSITE_DIR}"
-                commandLine 'hg.exe', 'tag', '-m', "${task.name}", "${tagPrefix}_${project.hgVersion}"
+                commandLine 'hg.exe', 'tag', '-m', "${t.name}", "${tagPrefix}_${project.hgVersion}"
             }
             println "Tagged public repo; now push the tag."
         }
