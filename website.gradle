@@ -270,3 +270,14 @@ tasks['publishLocalWebsite'].doLast { Task t ->
     }
     println "Tagged local repo; now push the tag."
 }
+
+gradle.taskGraph.whenReady {
+    // If we're publishing, clean and rebuild the website, so that the rev info in the footer is correct.
+    for (local in [false, true]) {
+        final String namePart = local ? "Local" : "Public"
+        final Task publishTask = project.tasks["publish${namePart}Website"]
+        if (gradle.taskGraph.hasTask(publishTask)) {
+            project.tasks["build${namePart}Website"].dependsOn "clean${namePart}Website"
+        }
+    }
+}

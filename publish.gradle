@@ -143,11 +143,8 @@ project.subprojects {
         // existence of that task in the task graph, and because it brings in a dependency on integration testing.
         t.dependsOn rootProject.tasks[t.name]
 
-        if (project.version.toString().endsWith('-SNAPSHOT')) {
-            t.ext.targetUri = PUBLISH_SNAPSHOT_TARGET_URI
-        } else {
-            t.ext.targetUri = PUBLISH_RELEASE_TARGET_URI
-        }
+        final boolean isSnapshot = project.version.toString().endsWith('-SNAPSHOT')
+            t.ext.targetUri = isSnapshot ? PUBLISH_SNAPSHOT_TARGET_URI: PUBLISH_RELEASE_TARGET_URI
         t.repositories.ivy {
             credentials {
                 username artifactoryUsername
@@ -156,24 +153,26 @@ project.subprojects {
             url t.targetUri
         }
 
-        doLast {
-            // Tag the repo
-            String tagPrefixEnding
-            switch (publishingGroup) {
-                case "Plugins":
-                    tagPrefixEnding = 'P';
-                    break;
-                case "CustomGradle":
-                    tagPrefixEnding = 'C';
-                    break;
-                default:
-                    throw new RuntimeException("Internal error: unknown publishingGroup ${publishingGroup}")
+        if (!isSnapshot) {
+            doLast {
+                // Tag the repo
+                String tagPrefixEnding
+                switch (publishingGroup) {
+                    case "Plugins":
+                        tagPrefixEnding = 'P';
+                        break;
+                    case "CustomGradle":
+                        tagPrefixEnding = 'C';
+                        break;
+                    default:
+                        throw new RuntimeException("Internal error: unknown publishingGroup ${publishingGroup}")
+                }
+                project.exec {
+                    workingDir projectDir
+                    commandLine 'hg.exe', 'tag', '-m', "${t.name}", "TR${tagPrefixEnding}_${project.hgVersion}"
+                }
+                println "Tagged public repo; now push the tag."
             }
-            project.exec {
-                workingDir projectDir
-                commandLine 'hg.exe', 'tag', '-m', "${task.name}", "TR${tagPrefixEnding}_${project.hgVersion}"
-            }
-            println "Tagged public repo; now push the tag."
         }
     }
     project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
