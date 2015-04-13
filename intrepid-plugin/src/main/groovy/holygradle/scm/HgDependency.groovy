@@ -90,17 +90,17 @@ class HgDependency extends SourceDependency {
                 if (!result) {
                     deleteEmptyDir(destinationDir)
 
-                    if (keyringIsConfigured(destinationDir)) {
-                        throw new RuntimeException(
-                            "Failed to clone ${repoUrl}. The mercurial_keyring is NOT configured. " +
-                            "Please configure it and try again."
-                        )
-                    } else {
+                    if (keyringIsConfigured()) {
                         throw new RuntimeException(
                             "Failed to clone ${repoUrl} even after pre-caching credentials. " +
                             "The mercurial_keyring IS configured. If your password changed recently, " +
                             "try running 'credential-store.exe' which should be in the root of your workspace, " +
                             "then try again."
+                        )
+                    } else {
+                        throw new RuntimeException(
+                            "Failed to clone ${repoUrl}. The mercurial_keyring is NOT configured. " +
+                            "Please configure it and try again."
                         )
                     }
                 }
