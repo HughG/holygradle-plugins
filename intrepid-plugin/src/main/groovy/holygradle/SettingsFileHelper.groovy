@@ -12,7 +12,7 @@ class SettingsFileHelper {
         '// This allows subprojects to name the gradle script the same as the directory'
     private static final String SETTINGS_FILE_CONTENT = """${HOLY_GRADLE_SOURCE_DEPENDENCIES_SECTION_MARKER} BEGIN
 // Do not edit this section.  It may be replaced by the holygradle plugins automatically.
-final List<String> subprojectPaths = new File(settingsDir, '${SETTINGS_SUBPROJECTS_FILE_NAME}').readLines().removeAll { it.startsWith('#') }
+final List<String> subprojectPaths = new File(settingsDir, '${SETTINGS_SUBPROJECTS_FILE_NAME}').readLines().findAll { !it.startsWith('#') }
 subprojectPaths.each { include it }
 // This method means sub-projects in a multi-project build can have their build files named to match the directory.
 void adjustChildrenBuildFiles(ProjectDescriptor proj) {
@@ -38,7 +38,7 @@ ${HOLY_GRADLE_SOURCE_DEPENDENCIES_SECTION_MARKER} END"""
     // Convert slashes to colons, then strip trailing colon.
     private static Collection<String> getIncludeProjectPaths(Collection<String> includeFilePaths) {
         return includeFilePaths.collect {
-            it.replaceAll(/[\\\/]*/, ':').replaceAll(/:$/, '')
+            it.replaceAll(/[\\\/]+/, ':').replaceAll(/:$/, '')
         }
     }
 
@@ -78,21 +78,20 @@ ${HOLY_GRADLE_SOURCE_DEPENDENCIES_SECTION_MARKER} END"""
     // Returns true if the settings have changed.
     public static boolean writeSettingsFileAndDetectChange(File settingsFile, Collection<String> includeFilePaths) {
         List<String> previousIncludeProjectPaths = []
-        List<String> newIncludeProjectPaths = []
 
         File settingsSubprojectsFile = new File(settingsFile.parentFile, SETTINGS_SUBPROJECTS_FILE_NAME)
         if (settingsSubprojectsFile.exists()) {
             previousIncludeProjectPaths = settingsSubprojectsFile.readLines()
         }
 
-        if (includeFilePaths.size() > 0) {
-            newIncludeProjectPaths = writeSettingsFile(settingsFile, includeFilePaths)
-        }
+        // We write the settings file even if we have an empty list of includeFilePaths, because the user might have
+        // removed all sourceDependencies, as compared to the previous run.
+        List<String> newIncludeProjectPaths = writeSettingsFile(settingsFile, includeFilePaths)
 
         Collections.sort(previousIncludeProjectPaths)
         Collections.sort(newIncludeProjectPaths)
 
-        return newIncludeProjectPaths == previousIncludeProjectPaths
+        return newIncludeProjectPaths != previousIncludeProjectPaths
     }
     
     // Returns true if the settings have changed.
