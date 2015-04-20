@@ -46,7 +46,7 @@ repositories.ivy {
     }
 }
 
-// dependencySettings.defaultFailOnVersionConflict = false
+// dependenciesSettings.defaultFailOnVersionConflict = false
 
 configurations {
     headers
@@ -189,14 +189,14 @@ When published, the Ivy module description for this example module will look lik
 
 The intrepid plugin adds several domain-specific-language (DSL) elements.
 
-=== dependencySettings
+=== dependenciesSettings
 
 This object has settings which apply to all dependencies.
 
 
 [source,groovy]
 ----
-dependencySettings {
+dependenciesSettings {
     defaultFailOnVersionConflict = false // defaults to true
 }
 ----
@@ -563,7 +563,7 @@ This property determine whether +fetchAllDependencies+ should perform full up-to
 
 -> Default value: **false**
 
-=== packedDependencySettings
+=== packedDependenciesSettings
 
 This DSL block contains settings which control how packed dependencies are unpacked.
 
@@ -576,7 +576,7 @@ of DSL.
 
 [source,groovy]
 ----
-packedDependencySettings {
+packedDependenciesSettings {
     unpackedDependenciesCacheDir = "d:/dep_cache"
 }
 ----
@@ -611,7 +611,7 @@ behaviour can be re-activated with the following bit of DSL.
 
 [source,groovy]
 ----
-packedDependencySettings {
+packedDependenciesSettings {
     useRelativePathFromIvyXml = true
 }
 ----

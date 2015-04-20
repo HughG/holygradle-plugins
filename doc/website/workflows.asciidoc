@@ -979,7 +979,7 @@ graph of each configuration separately.  This may still lead to version conflict
 build process if, for example, you try to copy DLLs and EXEs from both configurations into the
 same folder.  This can be the correct solution if you want to use different versions in different
 parts of your project, for example, in test code and in production code.
-. Add +dependencySettings.defaultFailOnVersionConflict = false+ to your +build.gradle+.  This will
+. Add +dependenciesSettings.defaultFailOnVersionConflict = false+ to your +build.gradle+.  This will
 ignore all conflicts and automatically choose the "latest" version.
 +
 WARNING: This is _not_ recommended, for several reasons.  You may hide other version conflicts which

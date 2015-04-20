@@ -2,6 +2,7 @@ package holygradle.unpacking
 
 import holygradle.Helper
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.PackedDependenciesSettingsHandler
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -174,7 +175,7 @@ class UnpackModuleVersion {
             // If we don't return above then this must be a transitive dependency.
 
             String relativePathForDependency = ""
-            if (project.packedDependenciesSettings.useRelativePathFromIvyXml) {
+            if (PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).useRelativePathFromIvyXml) {
                 relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
             }
             if (relativePathForDependency == "") {

@@ -1,5 +1,6 @@
 package holygradle.symlinks
 
+import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.test.AbstractHolyGradleTest
 import holygradle.unpacking.DummyBuildScriptDependencies
@@ -49,7 +50,8 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
 
     private static Project getProject() {
         Project project = ProjectBuilder.builder().build()
-        project.packedDependencySettings.unpackedDependenciesCacheDir = new File("theUnpackCache")
+        PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir =
+            new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
     }

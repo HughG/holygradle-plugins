@@ -5,7 +5,8 @@ import org.gradle.api.Project
 /**
  * Extension to hold project-wide settings which affect how packed dependencies are handled.
  */
-class PackedDependencySettingsHandler {
+class PackedDependenciesSettingsHandler {
+    public static final String PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME = "packedDependenciesSettings"
     private static boolean DEFAULT_USE_RELATIVE_PATH_FROM_IVY_XML = false
     private static String DEFAULT_UNPACK_CACHE_DIR = "unpackCache"
 
@@ -13,26 +14,26 @@ class PackedDependencySettingsHandler {
     private File unpackedDependenciesCacheDir = null
     private final Project project
 
-    public static PackedDependencySettingsHandler findPackedDependencySettings(Project project) {
-        return project.extensions.findByName("packedDependencySettings") as PackedDependencySettingsHandler
+    public static PackedDependenciesSettingsHandler findPackedDependenciesSettings(Project project) {
+        return project.extensions.findByName(PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME) as PackedDependenciesSettingsHandler
     }
 
-    public static PackedDependencySettingsHandler findOrCreatePackedDependencySettings(Project project) {
-        return findPackedDependencySettings(project) ?:
-            (project.extensions.create("packedDependencySettings", PackedDependencySettingsHandler, project)
-                as PackedDependencySettingsHandler)
+    public static PackedDependenciesSettingsHandler findOrCreatePackedDependenciesSettings(Project project) {
+        return findPackedDependenciesSettings(project) ?:
+            (project.extensions.create(PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME, PackedDependenciesSettingsHandler, project)
+                as PackedDependenciesSettingsHandler)
     }
 
-    public static PackedDependencySettingsHandler getPackedDependencySettings(Project project) {
-        PackedDependencySettingsHandler ext =
-            project.extensions.findByName("packedDependencySettings") as PackedDependencySettingsHandler
+    public static PackedDependenciesSettingsHandler getPackedDependenciesSettings(Project project) {
+        PackedDependenciesSettingsHandler ext =
+            project.extensions.findByName(PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME) as PackedDependenciesSettingsHandler
         if (ext == null) {
-            throw new RuntimeException("Failed to find packedDependencySettings extension on " + project)
+            throw new RuntimeException("Failed to find ${PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME} extension on " + project)
         }
         return ext
     }
 
-    PackedDependencySettingsHandler(Project project) {
+    PackedDependenciesSettingsHandler(Project project) {
         this.project = project
     }
 
@@ -40,11 +41,11 @@ class PackedDependencySettingsHandler {
      * Returns the root project's extension (if it's been added), or null (if not added, or if this extension is on the
      * root project.
      */
-    private PackedDependencySettingsHandler getFallback() {
+    private PackedDependenciesSettingsHandler getFallback() {
         if (project == project.rootProject) {
             return null
         } else {
-            return findPackedDependencySettings(project.rootProject)
+            return findPackedDependenciesSettings(project.rootProject)
         }
     }
 
@@ -66,7 +67,7 @@ class PackedDependencySettingsHandler {
         if (useRelativePathFromIvyXml != null) {
             return useRelativePathFromIvyXml
         }
-        PackedDependencySettingsHandler fallback = getFallback()
+        PackedDependenciesSettingsHandler fallback = getFallback()
         if (fallback != null) {
             return fallback.getUseRelativePathFromIvyXml()
         }
@@ -81,13 +82,13 @@ class PackedDependencySettingsHandler {
      * If set, the intrepid plugin will unpack dependencies unto subfolders of the given folder;
      * if unset (null), use the value from the root project (defaulting to "{@code $GRADLE_USER_HOME/unpackCache}").
      */
-    public boolean getUnpackedDependenciesCacheDir() {
+    public File getUnpackedDependenciesCacheDir() {
         // Fall back to the settings from the root project, if its extension has already been added there.  (It normally
         // will have, but not if the evaluation order is changed with "evaluationDependsOn" or similar.)
         if (unpackedDependenciesCacheDir != null) {
             return unpackedDependenciesCacheDir
         }
-        PackedDependencySettingsHandler fallback = getFallback()
+        PackedDependenciesSettingsHandler fallback = getFallback()
         if (fallback != null) {
             return fallback.getUnpackedDependenciesCacheDir()
         }

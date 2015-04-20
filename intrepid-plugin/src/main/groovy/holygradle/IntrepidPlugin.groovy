@@ -8,9 +8,9 @@ import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.Symlink
 import holygradle.dependencies.CollectDependenciesTask
 import holygradle.dependencies.DependenciesStateHandler
-import holygradle.dependencies.DependencySettingsHandler
+import holygradle.dependencies.DependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
-import holygradle.dependencies.PackedDependencySettingsHandler
+import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
@@ -53,19 +53,19 @@ public class IntrepidPlugin implements Plugin<Project> {
          **************************************/
         // Set the default version conflict behaviour to failure, unless explicitly overridden in the script, or unless
         // we're running one of the standard tasks used to resolve version conflicts.
-        DependencySettingsHandler dependencySettings =
-            DependencySettingsHandler.findOrCreateDependencySettings(project)
+        DependenciesSettingsHandler dependenciesSettings =
+            DependenciesSettingsHandler.findOrCreateDependenciesSettings(project)
         final ConfigurationContainer configurations = project.configurations
         final List<String> baseTaskNames = project.gradle.startParameter.taskNames.collect { it.split(":").last() }
         final boolean runningDependencyTask = ["dependencies", "dependencyInsight"].any { baseTaskNames.contains(it) }
         // We call failOnVersionConflict inside projectsEvaluated so that the script can set
-        // dependencySettings.defaultFailOnVersionConflict at any point, instead of having to be careful to call it
+        // dependenciesSettings.defaultFailOnVersionConflict at any point, instead of having to be careful to call it
         // before any configurations are added, which would be a surprising constraint--at least, it surprised me,
         // coming back to this option after a couple of months.  We don't just use project.afterEvaluate because the
         // default involves falling back to the root project's setting.
         project.gradle.projectsEvaluated {
             configurations.all((Closure) { Configuration conf ->
-                    if (dependencySettings.defaultFailOnVersionConflict && !runningDependencyTask) {
+                    if (dependenciesSettings.defaultFailOnVersionConflict && !runningDependencyTask) {
                         conf.resolutionStrategy.failOnVersionConflict()
                     }
                 }
@@ -81,6 +81,11 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * DSL extensions
          **************************************/
+
+        // Define the 'packedDependenciesSettingsHandler' DSL for the project (used by BuildScriptDependencies).
+        /*PackedDependenciesSettingsHandler packedDependencySettings =*/
+        PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project)
+
         // Prepare dependencies that this plugin will require.
         BuildScriptDependencies buildScriptDependencies = BuildScriptDependencies.initialize(project)
         // Only define the build script dependencies for the root project because they're shared across all projects.
@@ -100,10 +105,6 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         // Define the 'dependenciesState' DSL for the project's build script.
         /*DependenciesStateHandler buildscriptDependenciesState =*/ DependenciesStateHandler.createExtension(project, true)
-
-        // Define the 'packedDependencySettingsHandler' DSL for the project.
-        /*PackedDependencySettingsHandler packedDependenciesSettings =*/
-        PackedDependencySettingsHandler.findOrCreatePackedDependencySettings(project)
 
         // Define the 'packedDependenciesState' DSL for the project.
         PackedDependenciesStateHandler packedDependenciesState = PackedDependenciesStateHandler.createExtension(project)

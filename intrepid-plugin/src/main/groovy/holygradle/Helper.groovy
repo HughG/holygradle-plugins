@@ -1,6 +1,7 @@
 package holygradle
 
 import holygradle.custom_gradle.PrerequisitesChecker
+import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -57,7 +58,8 @@ class Helper {
     }
     
     public static File getGlobalUnpackCacheLocation(Project project, ModuleVersionIdentifier moduleVersion) {
-        File groupCache = new File(project.packedDependencySettings.unpackedDependenciesCacheDir as File, moduleVersion.getGroup())
+        File unpackCache = PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir
+        File groupCache = new File(unpackCache, moduleVersion.getGroup())
         return new File(groupCache, moduleVersion.getName() + "-" + moduleVersion.getVersion())
     }
     

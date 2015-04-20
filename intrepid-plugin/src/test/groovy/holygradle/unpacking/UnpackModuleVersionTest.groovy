@@ -1,5 +1,6 @@
 package holygradle.unpacking
 
+import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.test.*
 import org.junit.Test
 import org.gradle.api.Project
@@ -45,7 +46,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     
     private static Project getProject() {
         Project project = ProjectBuilder.builder().build()
-        project.packedDependencySettings.unpackedDependenciesCacheDir = new File("theUnpackCache")
+        PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir =
+            new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
     }
@@ -63,7 +65,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertNull("getParent is null", apricot.getParent())
 
         UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
-        assertEquals(new File(project.packedDependencySettings.unpackedDependenciesCacheDir as File, "org/apricot-1.1"), unpackEntry.unpackDir)
+        File unpackCache = PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir
+        assertEquals(new File(unpackCache, "org/apricot-1.1"), unpackEntry.unpackDir)
         assertThat("no zip files", unpackEntry.zipFiles, empty())
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
         assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
@@ -127,7 +130,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals(coconut, date.getParent())
 
         UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
-        assertEquals(new File(project.packedDependencySettings.unpackedDependenciesCacheDir as File, "org/coconut-1.3"), unpackEntry.unpackDir)
+        File unpackCache = PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir
+        assertEquals(new File(unpackCache, "org/coconut-1.3"), unpackEntry.unpackDir)
         assertThat("no zip files", unpackEntry.zipFiles, empty())
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
         assertTrue("makeReadOnly", unpackEntry.makeReadOnly)

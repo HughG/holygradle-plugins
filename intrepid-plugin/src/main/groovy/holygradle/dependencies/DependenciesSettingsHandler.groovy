@@ -5,32 +5,33 @@ import org.gradle.api.Project
 /**
  * Extension to hold project-wide settings which affect how dependencies are handled.
  */
-class DependencySettingsHandler {
+class DependenciesSettingsHandler {
+    public static final String DEPENDENCIES_SETTINGS_HANDLER_NAME = "dependenciesSettings"
     private static boolean DEFAULT_FAIL_ON_VERSION_CONFLICT_DEFAULT = true
 
     private Boolean failOnVersionConflict = null
     private final Project project
 
-    public static DependencySettingsHandler findDependencySettings(Project project) {
-        return project.extensions.findByName("dependencySettings") as DependencySettingsHandler
+    public static DependenciesSettingsHandler findDependenciesSettings(Project project) {
+        return project.extensions.findByName(DEPENDENCIES_SETTINGS_HANDLER_NAME) as DependenciesSettingsHandler
     }
 
-    public static DependencySettingsHandler findOrCreateDependencySettings(Project project) {
-        return findDependencySettings(project) ?:
-            (project.extensions.create("dependencySettings", DependencySettingsHandler, project)
-                as DependencySettingsHandler)
+    public static DependenciesSettingsHandler findOrCreateDependenciesSettings(Project project) {
+        return findDependenciesSettings(project) ?:
+            (project.extensions.create(DEPENDENCIES_SETTINGS_HANDLER_NAME, DependenciesSettingsHandler, project)
+                as DependenciesSettingsHandler)
     }
 
-    public static DependencySettingsHandler getDependencySettings(Project project) {
-        DependencySettingsHandler ext =
-            project.extensions.findByName("dependencySettings") as DependencySettingsHandler
+    public static DependenciesSettingsHandler getDependenciesSettings(Project project) {
+        DependenciesSettingsHandler ext =
+            project.extensions.findByName(DEPENDENCIES_SETTINGS_HANDLER_NAME) as DependenciesSettingsHandler
         if (ext == null) {
-            throw new RuntimeException("Failed to find dependencySettings extension on " + project)
+            throw new RuntimeException("Failed to find ${DEPENDENCIES_SETTINGS_HANDLER_NAME} extension on " + project)
         }
         return ext
     }
 
-    DependencySettingsHandler(Project project) {
+    DependenciesSettingsHandler(Project project) {
         this.project = project
     }
 
@@ -38,11 +39,11 @@ class DependencySettingsHandler {
      * Returns the root project's extension (if it's been added), or null (if not added, or if this extension is on the
      * root project.
      */
-    private DependencySettingsHandler getFallback() {
+    private DependenciesSettingsHandler getFallback() {
         if (project == project.rootProject) {
             return null
         } else {
-            return findDependencySettings(project.rootProject)
+            return findDependenciesSettings(project.rootProject)
         }
     }
 
@@ -64,7 +65,7 @@ class DependencySettingsHandler {
         if (failOnVersionConflict != null) {
             return failOnVersionConflict
         }
-        DependencySettingsHandler fallback = getFallback()
+        DependenciesSettingsHandler fallback = getFallback()
         if (fallback != null) {
             return fallback.getDefaultFailOnVersionConflict()
         }

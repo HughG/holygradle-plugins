@@ -12,7 +12,7 @@ repositories.ivy {
     url "..\\..\\..\\testUtil\\repository\\"
 }
 
-dependencySettings.defaultFailOnVersionConflict = false
+dependenciesSettings.defaultFailOnVersionConflict = false
 
 packedDependencies {
     "example-framework" {
