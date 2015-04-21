@@ -1,18 +1,30 @@
-include '..\\foo', 'bar', '../blah/blah'
-rootProject.children.removeAll { ProjectDescriptor it ->
-    String projName = (it.name =~ /.*?([\w_\-]+)$/)[0][1]
-    it.name = projName
-    // This allows subprojects to name the gradle script the same as the directory e.g. ..\foo\foo.gradle
-    boolean projectNamedScript = new File(it.projectDir, projName + '.gradle').exists()
-    boolean defaultNamedScript = new File(it.projectDir, "build.gradle").exists()
-    if (projectNamedScript && defaultNamedScript) {
-        throw new RuntimeException("For ${projName} you have '${projName}.gradle' AND 'build.gradle'. You should only have one of these.")
-    } else if (projectNamedScript) {
-        it.buildFileName = projName + '.gradle'        
-        return false // this folder has a valid project script so keep it
-    } else if (defaultNamedScript) {
-        return false // this folder has a valid project script so keep it
-    }
-    println("Warning: no gradle file found for subproject ${projName} in ${it.projectDir}, excluding from build.")
-    return true
+// holygradle source dependencies V2 BEGIN
+// Do not edit this section.  It may be replaced by the holygradle plugins automatically.
+final List<String> subprojectPaths = new File(settingsDir, 'settings-subprojects.txt').readLines().findAll {
+    !it.startsWith('#') && !it.trim().isEmpty()
 }
+subprojectPaths.each { include it }
+// This method does two things for sub-projects in a multi-project build.
+//   1) Allows them to lie outside the root project's folder (by removing relative paths from the start of the name).
+//   2) Allows them to have their build files named to match the directory.
+void adjustProjects(ProjectDescriptor proj) {
+    String projBaseName = (proj.name =~ /.*?([\w_\-]+)$/)[0][1]
+    proj.name = projBaseName
+    Collection<File> buildFiles = [proj.name, 'build'].collect { new File(proj.projectDir, "${it}.gradle") }.findAll { it.exists() }
+    switch (buildFiles.size()) {
+        case 0:
+            println("No Gradle build file found for subproject ${proj.name} in ${proj.projectDir}; excluding from build.")
+            project.parent.children.remove(proj)
+            break;
+        case 1:
+            proj.buildFileName = buildFiles[0].name
+            break;
+        case 2:
+            throw new RuntimeException("For ${proj.name} you have '${proj.name}.gradle' AND 'build.gradle'. You should only have one of these.")
+        default:
+            throw new RuntimeException("Internal error: more than 2 build files! ${buildFiles}.")
+    }
+    proj.children.each { adjustProjects(it) }
+}
+adjustProjects(rootProject)
+// holygradle source dependencies V2 END

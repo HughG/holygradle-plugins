@@ -52,6 +52,11 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
             assertTrue("Deleted pre-existing ${projectBPackagesDir}", projectBPackagesDir.deleteDir())
         }
 
+        // Invoke fAD once so that the settings file is created successfully, if it's not already there.
+        invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+        }
+
         // These two configurations should build normally.
         invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies", "packagePreBuiltArtifacts", "packagePinnedSource")
@@ -80,6 +85,11 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         File projectCPackagesDir = new File(projectCDir, "packages")
         if (projectCPackagesDir.exists()) {
             assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
+        }
+
+        // Invoke fAD once so that the settings file is created successfully, if it's not already there.
+        invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
         }
 
         // These two configurations should build normally.
@@ -111,6 +121,11 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         File projectCPackagesDir = new File(projectCDir, "packages")
         if (projectCPackagesDir.exists()) {
             assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
+        }
+
+        // Invoke fAD once so that the settings file is created successfully, if it's not already there.
+        invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
         }
 
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
