@@ -2,6 +2,9 @@ package holygradle.packaging
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.gradle.api.Project
+import org.gradle.process.ExecSpec
+import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ErrorCollector
@@ -36,11 +39,21 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         projectAInputDir.listFiles().each { File file ->
             Files.copy(file.toPath(), new File(projectADir, file.name).toPath())
         }
-        // We set up the repo by launching Gradle, because that means we can use the version of Mercurial which is
-        // required by the plugins, which means we don't need to worry about the path to hg.exe.
-        invokeGradle(projectADir) { WrapperBuildLauncher launcher ->
-            launcher.forTasks("setupRepo")
-        }
+
+        // Set up the project dir as a Mercurial repo.
+        Project project = ProjectBuilder.builder().withProjectDir(projectADir).build()
+        // Make the project dir into a repo, then add the extension.
+        hgExec(project, "init")
+
+        // Add a file.
+        hgExec(project, "add", "build.gradle")
+        // Set the commit message, user, and date, so that the hash will be the same every time.
+        hgExec(project,
+               "commit",
+               "-m", "Initial test state.",
+               "-u", "TestUser",
+               "-d", "2000-01-01"
+        )
 
         // ProjectB, references projectA as a sourceDependency, and has a meta-package which adds that as a pinned
         // sourceDependency.  We Run "packageEverything" for projectB, and regression-test the build.gradle of the
@@ -191,6 +204,14 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 // rest, and report all failures at the end.
                 collector.addError(e)
             }
+        }
+    }
+
+    private static void hgExec(Project project, Object ... args) {
+        project.exec { ExecSpec spec ->
+            spec.workingDir = project.projectDir
+            spec.executable = "hg.exe"
+            spec.args = args.toList()
         }
     }
 }

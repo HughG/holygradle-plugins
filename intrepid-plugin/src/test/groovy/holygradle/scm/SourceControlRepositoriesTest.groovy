@@ -208,7 +208,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         assertNull(repo)
     }
 
-    private void hgExec(Project project, Object ... args) {
+    private static void hgExec(Project project, Object ... args) {
         project.exec { ExecSpec spec ->
             spec.workingDir = project.projectDir
             spec.executable = "hg.exe"
