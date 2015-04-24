@@ -6,6 +6,8 @@ import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
+import java.util.zip.ZipFile
+
 import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertTrue
 
@@ -31,7 +33,12 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         if (packagesDir.exists()) {
             packagesDir.deleteDir()
         }
-        
+
+        // Run fAD to make sure we generate the settings file.
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")
+        }
+
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("packageEverything")
         }
@@ -39,6 +46,10 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         assertTrue(packagesDir.exists())
         assertTrue(new File(packagesDir, "projectB-foo.zip").exists())
         assertTrue(new File(packagesDir, "projectB-bar.zip").exists())
-        assertTrue(new File(packagesDir, "projectB-buildScript.zip").exists())
+        File buildScriptFile = new File(packagesDir, "projectB-buildScript.zip")
+        assertTrue(buildScriptFile.exists())
+        ZipFile buildScriptZipFile = new ZipFile(buildScriptFile)
+        assertNotNull("build file is in zip", buildScriptZipFile.getEntry("build.gradle"))
+        assertNotNull("settings file is in zip", buildScriptZipFile.getEntry("settings.gradle"))
     }
 }

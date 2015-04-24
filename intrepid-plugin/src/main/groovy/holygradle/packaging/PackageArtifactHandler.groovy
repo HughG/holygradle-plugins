@@ -7,6 +7,7 @@ import holygradle.publishing.PublishPackagesExtension
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
 import org.gradle.api.file.*
+import org.gradle.api.initialization.Settings
 import org.gradle.api.tasks.bundling.*
 import org.gradle.util.ConfigureUtil
 import holygradle.publishing.RepublishHandler
@@ -34,6 +35,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             PackageArtifactHandler buildScriptHandler =
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
             buildScriptHandler.include project.buildFile.name
+            buildScriptHandler.include project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
             buildScriptHandler.configuration = "everything"
 
             Task packageEverythingTask = null
