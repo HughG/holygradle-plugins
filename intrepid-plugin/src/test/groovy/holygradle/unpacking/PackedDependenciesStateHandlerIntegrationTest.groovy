@@ -1,8 +1,11 @@
 package holygradle.unpacking
 
 import holygradle.custom_gradle.util.Symlink
+import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.gradle.api.Project
+import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
 import java.nio.file.Files
@@ -21,9 +24,40 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
     @Test
     public void useModulesViaEmptyConfigs() {
         final File projectDir = new File(getTestDir(), "useModulesViaEmptyConfigs")
-        final File emptyConfigLibDir = new File(projectDir, "empty-config-lib")
-        final File extLibDir = new File(projectDir, "extlib")
-        final File anotherLibDir = new File(projectDir, "anotherlib")
+        doUseModulesViaEmptyConfigs(
+            new File(projectDir, "empty-config-lib"),
+            new File(projectDir, "external-lib"),
+            new File(projectDir, "another-lib"),
+            projectDir
+        )
+    }
+
+    /**
+     * Tests that indirect dependencies will be fetched, even if they is reached only via configurations which have no
+     * artifacts, and even if they are reached via different configurations.  (The latter check is because at one point
+     * the code only fetched such dependencies via the first destination configuration encountered from a given origin
+     * configuration.)  This version of the test checks backwards-compatibility mode 'useRelativePathFromIvyXml = true'.
+     */
+    @Test
+    public void useModulesViaEmptyConfigsUsingRelativePathFromIvyXml() {
+        Project project = ProjectBuilder.builder().build()
+        PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).useRelativePathFromIvyXml = true
+
+        final File projectDir = new File(getTestDir(), "useModulesViaEmptyConfigsURPFIX")
+        doUseModulesViaEmptyConfigs(
+            new File(projectDir, "empty-config-lib"),
+            new File(projectDir, "extlib"),
+            new File(projectDir, "anotherlib"),
+            projectDir
+        )
+    }
+
+    private void doUseModulesViaEmptyConfigs(
+        File emptyConfigLibDir,
+        File extLibDir,
+        File anotherLibDir,
+        File projectDir
+    ) {
         [emptyConfigLibDir, extLibDir, anotherLibDir].each {
             if (it.exists()) {
                 assertTrue("Removed existing packed dep symlink ${it}", it.delete())
@@ -36,7 +70,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         }
 
         [emptyConfigLibDir, extLibDir, anotherLibDir].each {
-            assertTrue("File/folder for packed dep has been created at ${it}",it.exists())
+            assertTrue("File/folder for packed dep has been created at ${it}", it.exists())
             assertTrue("Symlink to packed dep has been created at ${it}", Symlink.isJunctionOrSymlink(it))
             // The output of "list()" doesn't include "./" and "../", so "> 0" tells us it's non-empty.
             assertTrue("Symlink target folder is not empty under ${it}", it.list().length > 0)
@@ -53,9 +87,41 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
     @Test
     public void useOnlyViaEmptyConfigs() {
         final File projectDir = new File(getTestDir(), "useOnlyViaEmptyConfigs")
-        final File emptyConfigLibDir = new File(projectDir, "empty-config-lib")
-        final File extLibDir = new File(projectDir, "extlib")
-        final File anotherLibDir = new File(projectDir, "anotherlib")
+        doUseOnlyViaEmptyConfigs(
+            new File(projectDir, "empty-config-lib"),
+            new File(projectDir, "external-lib"),
+            new File(projectDir, "another-lib"),
+            projectDir
+        )
+    }
+
+    /**
+     * Test that, if you depend on a module only via configurations which have no artifacts, and those lead to other
+     * module configurations which do have artifacts, then (a) no symlink is created for the empty-configs module; and
+     * (b) symlinks are still created for the other modules.
+     *
+     * This is a (regression) test for a case discovered while developing GR #4125.
+     */
+    @Test
+    public void useOnlyViaEmptyConfigsUsingRelativePathFromIvyXml() {
+        Project project = ProjectBuilder.builder().build()
+        PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).useRelativePathFromIvyXml = true
+
+        final File projectDir = new File(getTestDir(), "useOnlyViaEmptyConfigsURPFIX")
+        doUseOnlyViaEmptyConfigs(
+            new File(projectDir, "empty-config-lib"),
+            new File(projectDir, "extlib"),
+            new File(projectDir, "anotherlib"),
+            projectDir
+        )
+    }
+
+    private void doUseOnlyViaEmptyConfigs(
+        File emptyConfigLibDir,
+        File extLibDir,
+        File anotherLibDir,
+        File projectDir
+    ) {
         final Collection<File> allPackedDepDirs = [emptyConfigLibDir, extLibDir, anotherLibDir]
         allPackedDepDirs.each {
             if (it.exists()) {

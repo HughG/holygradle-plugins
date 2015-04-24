@@ -46,7 +46,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     
     private static Project getProject() {
         Project project = ProjectBuilder.builder().build()
-        PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir =
+        PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir =
             new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
@@ -65,7 +65,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertNull("getParent is null", apricot.getParent())
 
         UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
-        File unpackCache = PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir
+        File unpackCache = PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir
         assertEquals(new File(unpackCache, "org/apricot-1.1"), unpackEntry.unpackDir)
         assertThat("no zip files", unpackEntry.zipFiles, empty())
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
@@ -130,7 +130,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals(coconut, date.getParent())
 
         UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
-        File unpackCache = PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir
+        File unpackCache =
+            PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir
         assertEquals(new File(unpackCache, "org/coconut-1.3"), unpackEntry.unpackDir)
         assertThat("no zip files", unpackEntry.zipFiles, empty())
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
@@ -147,12 +148,33 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     public void testRelativePaths() {
         Project project = getProject()
         Map<String, UnpackModuleVersion> modules = getTestModules()
-        
+
+        assertEquals(new File(project.projectDir, "root/../apricot"), modules["apricot"].getTargetPathInWorkspace(project))
+        assertEquals(new File(project.projectDir, "root/../blueberry"), modules["blueberry"].getTargetPathInWorkspace(project))
+        assertEquals(new File(project.projectDir, "root/../coconut"), modules["coconut"].getTargetPathInWorkspace(project))
+
+        File datePath = modules["date"].getTargetPathInWorkspace(project)
+        assertEquals(new File(project.projectDir, "root/../coconut/../date"), datePath)
+        assertEquals(new File(project.projectDir, "date"), datePath.getCanonicalFile())
+
+        File eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
+        assertEquals(new File(project.projectDir, "root/../apricot/../eggfruit"), eggfruitPath)
+        assertEquals(new File(project.projectDir, "eggfruit"), eggfruitPath.getCanonicalFile())
+
+    }
+
+    @Test
+    public void testRelativePathsUsingRelativePathFromIvyXml() {
+        Project project = getProject()
+        PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).useRelativePathFromIvyXml = true
+
+        Map<String, UnpackModuleVersion> modules = getTestModules()
+
         assertEquals(new File(project.projectDir, "root/aa"), modules["apricot"].getTargetPathInWorkspace(project))
         assertEquals(new File(project.projectDir, "root/sub/bb"), modules["blueberry"].getTargetPathInWorkspace(project))
         assertEquals(new File(project.projectDir, "root/sub/coconut"), modules["coconut"].getTargetPathInWorkspace(project))
         assertEquals(new File(project.projectDir, "root/sub/coconut/date"), modules["date"].getTargetPathInWorkspace(project))
-        
+
         File eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
         assertEquals(new File(project.projectDir, "root/aa/../eggfruit"), eggfruitPath)
         assertEquals(new File(project.projectDir, "root/eggfruit"), eggfruitPath.getCanonicalFile())

@@ -96,7 +96,8 @@ class UnpackModuleVersion {
         } else {
             // If the relative path from this module to the dependency is not specified in the Ivy, return an empty
             // string, which means that the dependency should be put next to this module, in a folder named after the
-            // dependency.
+            // dependency.  (Or, if useRelativePathFromIvyXml is true then, for backward-compatibility, we put it in
+            // as sub-folder nameed after the dependency.)
             return ""
         }
     }
@@ -177,12 +178,17 @@ class UnpackModuleVersion {
             String relativePathForDependency = ""
             if (PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).useRelativePathFromIvyXml) {
                 relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
+                if (relativePathForDependency == "") {
+                    // If the relative path is empty we need to supply the name of the target directory ourselves.
+                    relativePathForDependency = getTargetDirName()
+                }
+            } else {
+                if (relativePathForDependency == "") {
+                    // If the relative path is empty we need to supply the name of the target directory ourselves.
+                    relativePathForDependency = "../" + getTargetDirName()
+                }
             }
-            if (relativePathForDependency == "") {
-                // If the relative path is empty we need to supply the name of the target directory ourselves.
-                relativePathForDependency = "../" + getTargetDirName()
-            }
-            
+
             if (relativePathForDependency.startsWith("/") || 
                 relativePathForDependency.startsWith("\\")
             ) {
