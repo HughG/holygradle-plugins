@@ -26,7 +26,7 @@ void adjustProjects(ProjectDescriptor proj) {
     switch (buildFiles.size()) {
         case 0:
             println("No Gradle build file found for subproject \${proj.name} in \${proj.projectDir}; excluding from build.")
-            project.parent.children.remove(proj)
+            proj.parent.children.remove(proj)
             break;
         case 1:
             proj.buildFileName = buildFiles[0].name
