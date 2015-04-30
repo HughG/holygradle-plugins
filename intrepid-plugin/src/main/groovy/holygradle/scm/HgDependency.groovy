@@ -90,7 +90,7 @@ class HgDependency extends SourceDependency {
                 if (!result) {
                     deleteEmptyDir(destinationDir)
 
-                    if (keyringIsConfigured()) {
+                    if (keyringIsConfigured(destinationDir)) {
                         throw new RuntimeException(
                             "Failed to clone ${repoUrl} even after pre-caching credentials. " +
                             "The mercurial_keyring IS configured. If your password changed recently, " +
