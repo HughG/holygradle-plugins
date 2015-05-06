@@ -90,9 +90,13 @@ project.ext.setUpTests = { Project project ->
             // Make sure we run the overall integration tests only after each plugins have been
             // integration-tested.
             overallIntegTest.dependsOn t
-            // Make sure we publish this plugin only after all plugins have been integration-tested
-            // and the overall integration tests have been run.
-            project.tasks["publishPluginsReally"].dependsOn overallIntegTest
+
+            // Make the real publish tasks depend on the integration test 
+            if (!project.hasProperty('noIntegTest')) {
+                // Make sure we publish this plugin only after all plugins have been integration-tested
+                // and the overall integration tests have been run (unless disabled).
+                project.tasks["publishPluginsReally"].dependsOn overallIntegTest
+            }
         }
 
         t.doFirst {
