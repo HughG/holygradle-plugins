@@ -162,8 +162,11 @@ Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAP
 ## before fixing, try to add a new integration test that replicates the issue, to help verify the fix and prevent future regression
  
 # Documentation
-Some documentation is on the BitBucket wiki, but we're experimenting with building static HTML pages using AsciiDoc, to
-provide code syntax highlighting and diagrams using GraphViz.
+Documentation was previously in the wiki for this repo but has moved to
+http://holygradle.bitbucket.org/, using AsciiDoc to allow for richer diagrams, linking, etc.
+
+If you're using the Holy Gradle within a company, there may be a custom local build of those web
+pages available.
 
 ## Installing Cygwin utilities.
 
@@ -192,9 +195,23 @@ Possible corrupt mirror?  Setup.ini rejected.
 
 ## Building the documentation
 
-Run `gw buildPublicWebsite` or `gw buildLocalWebsite` to build the website.  The `Local` version will include specific
-site-local, private files from `doc\website\local`.  You can conditionally include files from there by putting lines
-like the following in the AsciiDoc.
+To publish the public documentation, follow these steps.
+
+1. Set `publicWebsitePublishUrl` in your `gradle.properties` to a file URL which contains a repo
+with `https://bitbucket.org/holygradle/holygradle.bitbucket.org` as master.
+2. Run `gw buildPublicWebsite`.  (You can also run with `-Pquickly` to build without syntax
+colouring, which may be noticeably faster.)
+3. Run `hg addremove`, then commit and push to update the website.  The site is viewable at
+`http://holygradle.bitbucket.org/`.
+
+You can also build a custom local version for your own organisation, containing specialised or
+confidential information.  For that you need to set `publicWebsitePublishUrl` and run
+`gw buildLocalWebsite` to build the website.  If you want to publish it to IIS, a simple approach
+is to publish to a `file:` URL which is a Windows share on the IIS server.  You will also need to
+set up extra MIME-type mappings for the example source code (e.g., `.gradle` as `text/plain`).
+
+The `Local` version will include specific site-local, private files from `doc\website\local`.  You
+can conditionally include files from there by putting lines like the following in the AsciiDoc.
 
 ```
 include::{localDoc}/secret.ascinc[]
@@ -203,9 +220,3 @@ include::{localDoc}/secret.ascinc[]
 The buildLocal... tasks will define the `localDoc` attribute to point to the `local` subfolder.  If the attribute is not
 defined, AsciiDoc silently skips the file.  Both tasks only include the files "*.ascidoc" directly within the
 "doc/website" folder, not subfolders, due to restrictions on how AsciiDoc works.  See `website.gradle` for details. 
-
-You can also run with `-Pquickly` to build without syntax colouring, which may be noticeably faster.
-
-Copy the `doc\website\output` contents to a repo which has `https://bitbucket.org/holygradle/holygradle.bitbucket.org`
-as master, run `hg addremove`, then commit and push to update the website.  The site is viewable at
-`http://holygradle.bitbucket.org/`.
