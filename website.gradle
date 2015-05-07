@@ -207,6 +207,12 @@ for (local in [false, true]) {
         t.description = "Publish the ${namePart} website"
         t.dependsOn "build${namePart}Website"
         t.dependsOn ":credential-store:build"
+        t.doFirst {
+            final Task cleanTask = project.tasks["clean${namePart}Website"]
+            if (!gradle.taskGraph.hasTask(cleanTask) || !cleanTask.state.executed) {
+                throw new RuntimeException("Must use ${cleanTask.name} before ${t.name}")
+            }
+        }
         t.doLast {
             if (project.getHasUncommittedChanges()) {
                 throw new RuntimeException("Cannot publish website with uncommitted changes in main repo.")
@@ -272,12 +278,15 @@ tasks['publishLocalWebsite'].doLast { Task t ->
 }
 
 gradle.taskGraph.whenReady {
-    // If we're publishing, clean and rebuild the website, so that the rev info in the footer is correct.
+    // If we're publishing, force user to clean and rebuild the website, so that the rev info in the
+    // footer is correct.  (We can't just do "publishTask.dependsOn cleanTask" because the graph is
+    // already fixed at this point.)
     for (local in [false, true]) {
         final String namePart = local ? "Local" : "Public"
         final Task publishTask = project.tasks["publish${namePart}Website"]
-        if (gradle.taskGraph.hasTask(publishTask)) {
-            project.tasks["build${namePart}Website"].dependsOn "clean${namePart}Website"
+        final Task cleanTask = project.tasks["clean${namePart}Website"]
+        if (gradle.taskGraph.hasTask(publishTask) && !gradle.taskGraph.hasTask(cleanTask)) {
+            throw new RuntimeException("Must use ${cleanTask.name} before ${publishTask.name}")
         }
     }
 }
