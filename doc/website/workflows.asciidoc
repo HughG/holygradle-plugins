@@ -8,8 +8,6 @@ Graphviz for Cygwin comes from <http://cygwinports.org/>.
 
 include::sitemap.ascinc[]
 
-TODO: http://localwiki/Gradle#What_is_it.3F (GradleConfigurations.ppt)
-
 This section describes typical developer workflows for developing a C++ or web software module
 which is involved in dependency relationships, and how Artifactory, Gradle, and the Holy Gradle
 plugins have been used in these workflows in practice.
@@ -41,14 +39,19 @@ understand to read this document.
 
 === Configurations
 
-TODO: Move to reference page on configurations.
+////
+TODO: Move to reference page on configurations?
+////
 
 ==== Extending Configurations
 
-Additionally, a configuration can be defined as extending from another, which means two things.
-First, the set of artifacts for a configuration includes those of any configurations it extends
-from.  Second, a module which declares a dependency on a configuration will also, in terms of
-transitive dependencies, pick up the dependencies of configurations which that one extends from.
+Some information about configurations is explained in the
+link:overview.html#_gradle_module_concepts[Gradle Module Concepts]
+section of the link:overview.html[].  Additionally, a configuration can be defined as extending from
+another, which means two things.  First, the set of artifacts for a configuration includes those of
+any configurations it extends from.  Second, a module which declares a dependency on a configuration
+will also, in terms of transitive dependencies, pick up the dependencies of configurations which
+that one extends from.
 
 For example, a module +a+ might divide its dependencies for compile-time use into +headers+,
 +compileWin32+, and +compileX64+, with +compileWin32+ and +compileX64+ extending from +headers+.
@@ -142,10 +145,13 @@ digraph {
 
 ==== Private configurations
 
-NOTE: Private configurations are normally declared in the +ivy.xml+ file and marked as
-+visibility="private"+.  However, Gradle 1.4 ignores this and allows access to private
-configurations, which is an acknowledged bug.  As a workaround, +intrepid+ removes all references to
-configurations whose names begin with "+private+" from the +ivy.xml+ when it is generated.
+A private configuration is one which is used when building a module, but is not intended for other
+modules to use.  For example, dependencies on build tools might be mapped from a private
+configuration.
+
+Private configurations are normally declared in the +ivy.xml+ file and marked as
++visibility="private"+.  However, +intrepid+ removes all references to configurations whose names
+begin with "+private+" from the +ivy.xml+ when it is generated.
 
 The following diagram highlights in blue the configurations which will be fetched when all
 configurations of the +other+ module are fetched.

@@ -258,8 +258,6 @@ The link:plugin-stamper.html[] supports the following.
 * 'Stamping' information (such as version numbers) into text files.
 * Syntax for defining which files to stamp and how to stamp them (using regular expressions).
 
-TODO: http://localwiki/Gradle#LOCAL_Gradle_Software_Details
-
 == How Tasks Are Run
 
 This is a rough explanation of what happens in Gradle and Holy Gradle plugins when you run a simple

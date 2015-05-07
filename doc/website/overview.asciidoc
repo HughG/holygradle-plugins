@@ -500,9 +500,3 @@ link:requirements.html[] are also part of this documentation.
 ''''
 
 TODO: Link to doc on how to do more complex cases with dependencies which also need to be promoted.
-
-DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)
-
-DONE: http://localwiki/Gradle#Getting_Started (pictorial overviews, GradleConfigurations.ppt, Gradle_High_Level_Map.pptx (brief plugin/package list))
-
-DONE: http://localwiki/Artifactory#Repository_Types (repo types)

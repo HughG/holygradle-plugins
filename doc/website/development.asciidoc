@@ -46,5 +46,3 @@ organisation.  This allows you to:
 Java libraries, other Holy Gradle plugins or helper components like +credential-store.exe+;
 ** use the link:custom-gradle.html[] distribution (with its useful init script) to simplify usage
 of plugins. 
-
-DONE: http://LOCALWIKI/Gradle_Cookbook

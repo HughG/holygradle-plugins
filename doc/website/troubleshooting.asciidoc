@@ -48,6 +48,13 @@ you have to use one of the predefined colors.
 -Dorg.gradle.color.description=MAGENTA
 ----
 
++--no-daemon+::
+    Runs without the gloss:gradle-daemon[].
++--stop+::
+    Stops the background gloss:gradle-daemon[] if it is running.  In rare cases this may be needed
+if the daemon process has a lock on files you want to delete.
+
+
 You can add any of these options to the +GRADLE_OPTS+ environment variable if you want them
 permanently set.  For example, this may be useful for +--no-color+.
 
@@ -114,10 +121,6 @@ the team which owns that repository.
 
 If you are not sure which repositories are causing the problem, please send the complete output of
 your command, plus your +build.gradle+ and +gradle.properties+, to the appropriate support contact.
-
-DONE: http://localwiki/Gradle#Passwords_.2F_Authentication
-
-DONE: http://localwiki/Gradle#Useful_Options
 
 
 == Accessing Mercurial

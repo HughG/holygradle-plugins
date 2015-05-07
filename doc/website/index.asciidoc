@@ -30,6 +30,4 @@ well documented in other places.
 
 include::{localDoc}/index_out_of_scope.ascinc[]
 
-DONE: http://localwiki/Gradle#What_is_it.3F (intro to tools)
-
 TODO: Update pluginHelp command.

@@ -21,7 +21,9 @@ if not.  A tool such as Visual Studio would be one example of this.
 
 === Example build script
 
+////
 TODO: Use callout list.
+////
 
 [source,groovy]
 ----
@@ -84,7 +86,9 @@ TODO: Explain what the "Windows" prereq actually checks against.
 
 ==== +specify+
 
+////
 TODO: Move method details to groovydoc, and specify types in these examples.
+////
 
 This method allows you to supply parameters for the prerequisite. Simply calling +specify+ doesn't
 perform the check immediately because you will probably will want to control the timing of the
@@ -97,8 +101,8 @@ will be performed, as follow.
 * You can have the user invoke the +checkPrerequisites+ task to check all prerequisites.
 * You can use the +prerequisites.check+ method to do the check at a later point in the build script.
 * You can retrieve a task for an individual prerequisite and add it as a dependency of some other
-* task.  For example, you could have DevEnv build tasks [TODO: link to devenv plugin] depend on a
-task corresponding to a prerequisite for Visual Studio 10.
+task.  For example, you could have link:plugin-devenv.html[] build tasks depend on a task
+corresponding to a prerequisite for Visual Studio 10.
 
 ===== Predefined prerequisite type
 
@@ -166,11 +170,12 @@ checks.
 
 === taskDependencies
 
-TODO: Replace with explanation of normal Gradle mechanism.
+Before version link:release_notes.html#_7_3_0[] this plugin had a +taskDependencies+ DSL to help set
+up dependencies between tasks in related projects.  This was removed because gloss:gradle[] already
+has a mechanism for this, described below.
 
-This gloss:dsl[] extension allows you to configure the dependencies of your own custom tasks using
-the known build dependencies between projects. Say you have a project +foo+ which has a [TODO: link
-to intrepid's sourceDependencies section] on +bar+ defined as follows.
+Suppose you have a project +foo+ which has +link:plugin-intrepid.html#_sourceDependencies[]+ to
+other projects, for example as follows.
 
 [source,groovy]
 ----
@@ -202,10 +207,13 @@ Instead call this method after the definition of your task:
 
 [source,groovy]
 ----
-taskDependencies.configure("myTest")
+configurations.all { Configuration conf ->
+    myTest.dependsOn conf.getTaskDependencyFromProjectDependency(true, myTest.name)
+}
 ----
 
-which will find the 'myTest' task in the current project, then find any tasks with the same name in the dependent projects and set up the task dependencies.
+which will find the 'myTest' task in the current project, then find any tasks with the same name in
+the dependent projects and set up the task dependencies.
 
 == Tasks
 

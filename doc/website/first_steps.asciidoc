@@ -6,10 +6,6 @@ include::sitemap.ascinc[]
 
 This page describes how to use gloss:artifactory[] and the gloss:holygradle[] for the first time.
 
-DONE: http://localwiki/Gradle#Getting_Started
-
-DONE: http://localwiki/Artifactory#Explicit_Local_HTTPS_Setup
-
 == System Requirements
 
 gloss:artifactory[] runs as a web service which can be accessed through any modern browser or
@@ -91,8 +87,6 @@ manually, from time to time.
 
 === Setting up a Gradle Wrapper
 
-DONE: http://localwiki/Gradle#Gradle_Wrapper
-
 Although Gradle can be installed system-wide, usually you will add some "bootstrap" files to your
 project, known as a gloss:gradle-wrapper[].  The wrapper includes a batch file which will
 download a Gradle distribution if necessary, then run it using that download location, so you do
@@ -155,8 +149,6 @@ applies the plugins.
 NOTE: The Holy Gradle only supports running from within the usual Windows Command Prompt.  Using
 other shells such as PowerShell, or Unix-style shells from Cygwin etc., is not supported.
 
-DONE: http://ediwiki/mediawiki/index.php/Gradle#Initial_Setup
-
 [[_minimal_build_file]]
 === A Minimal Holy Gradle Build File
 
@@ -183,7 +175,7 @@ Gradle is controlled by several text files in the folder where you run it.
 this file.
 * +settings.gradle+ is used when you have multiple projects, to tell gloss:gradle[] where to find
 them, relative to the root project.  The gloss:holygradle[] will generate this for you based on
-(TODO: link) +sourceDependencies+ in your +build.gradle+.
++link:plugin-intrepid.html#_sourceDependencies[sourceDependencies]+ in your +build.gradle+.
 * +gradle.properties+ is a file in the
 link:http://docs.oracle.com/javase/6/docs/api/java/util/Properties.html#load%28java.io.Reader%29[Java properties format]
 which is useful if you need to share simple values across multiple projects.
@@ -203,10 +195,6 @@ bottom of the "Language" menu.
 
 Future versions of this page will include instructions for editing Gradle files using
 link:https://www.jetbrains.com/idea/[IntelliJ IDEA], to get pop-up help and type-checking.
-
-DONE: http://localwiki/Gradle#What_is_it.3F (editing Gradle)
-
-DONE: http://localwiki/Editing_Gradle_Files
 
 
 == Next Steps

@@ -4,12 +4,34 @@ include::stdattr.ascinc[]
 
 include::sitemap.ascinc[]
 
-ifndef::localDoc[]
-No public support is available for the gloss:holygradle[].
-endif::localDoc[]
+== General
 
 For general information on gloss:gradle[] see <http://www.gradle.org/>.  The gloss:holygradle[] is based on Gradle 1.4.  For general information on gloss:artifactory[] see <http://www.jfrog.com/>.
 
 TODO: https://bitbucket.org/nm2501/holy-gradle-plugins/wiki/Home (source back-ref in release)
+
+== Holy Gradle
+
+ifndef::localDoc[]
+No public support is available for the gloss:holygradle[].
+endif::localDoc[]
+
+If you are reporting a bug please send as much information as possible, including the following.
+
+* Your +build.gradle+ script and any related files (for example, +gradle.properties+, +settings.gradle+).
+* The debug output from Gradle, by adding +-d -S+ and redirecting all output to a log file, like this
++
+----
+gw -d -S other_arguments_here >bug_report.log 2>&1
+----
++
+or, if you have the +tee.exe+ utility, you may prefer
++
+----
+gw -d -S other_arguments_here 2>&1 | tee bug_report.log
+----
++
+The +2>&1+ redirects standard error to the same file, so that any error messages and exceptions are
+also captured.
 
 include::{localDoc}/support.ascinc[]
