@@ -1,6 +1,9 @@
-// holygradle source dependencies V2 BEGIN
+// holygradle source dependencies V3 BEGIN
 // Do not edit this section.  It may be replaced by the holygradle plugins automatically.
-final List<String> subprojectPaths = new File(settingsDir, 'settings-subprojects.txt').readLines().findAll {
+final String settingsFileName = startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
+final String subprojectsFileName = settingsFileName.replaceAll(/\.[^\.]+$/, "-subprojects.txt")
+final File subprojectsFile = new File(settingsDir, subprojectsFileName)
+final List<String> subprojectPaths = !subprojectsFile.exists() ? [] : subprojectsFile.readLines().findAll {
     !it.startsWith('#') && !it.trim().isEmpty()
 }
 subprojectPaths.each { include it }
@@ -27,4 +30,4 @@ void adjustProjects(ProjectDescriptor proj) {
     proj.children.each { adjustProjects(it) }
 }
 adjustProjects(rootProject)
-// holygradle source dependencies V2 END
+// holygradle source dependencies V3 END
