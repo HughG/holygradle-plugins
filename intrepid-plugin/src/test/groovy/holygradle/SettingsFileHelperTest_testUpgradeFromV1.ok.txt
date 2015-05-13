@@ -1,0 +1,33 @@
+// holygradle source dependencies V3 BEGIN
+// Do not edit this section.  It may be replaced by the holygradle plugins automatically.
+final String settingsFileName = startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
+final String subprojectsFileName = settingsFileName.replaceAll(/\.[^\.]+$/, "-subprojects.txt")
+final File subprojectsFile = new File(settingsDir, subprojectsFileName)
+final List<String> subprojectPaths = !subprojectsFile.exists() ? [] : subprojectsFile.readLines().findAll {
+    !it.startsWith('#') && !it.trim().isEmpty()
+}
+subprojectPaths.each { include it }
+// This method does two things for sub-projects in a multi-project build.
+//   1) Allows them to lie outside the root project's folder (by removing relative paths from the start of the name).
+//   2) Allows them to have their build files named to match the directory.
+void adjustProjects(ProjectDescriptor proj) {
+    String projBaseName = (proj.name =~ /.*?([\w_\-]+)$/)[0][1]
+    proj.name = projBaseName
+    Collection<File> buildFiles = [proj.name, 'build'].collect { new File(proj.projectDir, "${it}.gradle") }.findAll { it.exists() }
+    switch (buildFiles.size()) {
+        case 0:
+            println("No Gradle build file found for subproject ${proj.name} in ${proj.projectDir}; excluding from build.")
+            proj.parent.children.remove(proj)
+            break;
+        case 1:
+            proj.buildFileName = buildFiles[0].name
+            break;
+        case 2:
+            throw new RuntimeException("For ${proj.name} you have '${proj.name}.gradle' AND 'build.gradle'. You should only have one of these.")
+        default:
+            throw new RuntimeException("Internal error: more than 2 build files! ${buildFiles}.")
+    }
+    proj.children.each { adjustProjects(it) }
+}
+adjustProjects(rootProject)
+// holygradle source dependencies V3 END
