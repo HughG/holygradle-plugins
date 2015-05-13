@@ -49,7 +49,7 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
 // because it requires the publish task to be in the task graph, to set the version.
 (project.rootProject.tasks["publishCustomGradleLocally"] as Task).dependsOn(cleanIntegrationTestState)
 
-subprojects { Project project ->
+project.ext.setUpTests = { Project project ->
     // For any projects with a "test" task, other than the custom distribution project, add
     //   - extra test dependencies;
     //   - integration tests; and
@@ -85,6 +85,14 @@ subprojects { Project project ->
         if (project.name != "integration") {
             t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
             t.dependsOn(project.tasks["publishPluginsLocally"])
+
+            Task overallIntegTest = project.findProject(":integration").tasks["integTest"]
+            // Make sure we run the overall integration tests only after each plugins have been
+            // integration-tested.
+            overallIntegTest.dependsOn t
+            // Make sure we publish this plugin only after all plugins have been integration-tested
+            // and the overall integration tests have been run.
+            project.tasks["publishPluginsReally"].dependsOn overallIntegTest
         }
 
         t.doFirst {
@@ -115,7 +123,7 @@ subprojects { Project project ->
         }
     }
 
-    task showTestReport(type: DefaultTask) {
+    project.task('showTestReport', type: DefaultTask) {
         group = "Verification"
         description "Opens the unit test report."
         doLast {
@@ -124,7 +132,7 @@ subprojects { Project project ->
             }
         }
     }
-    task showIntegrationTestReport(type: DefaultTask) {
+    project.task('showIntegrationTestReport', type: DefaultTask) {
         group = "Verification"
         description "Opens the integration test report."
         doLast {
@@ -164,7 +172,7 @@ subprojects { Project project ->
         }
     }
 
-    task deleteTestSymlinks {
+    project.task('deleteTestSymlinks') {
         description = "Delete any broken symlinks in the test source folder(s), to make sure it can build."
         doFirst {
             // Broken symlinks will cause compileTestGroovy to fail (because it tries to scan the folder
@@ -176,3 +184,7 @@ subprojects { Project project ->
     }
 
 }
+
+// Set up tests for integration first, so other projects can depend on its integTest.
+setUpTests(findProject(':integration'))
+subprojects.findAll { it.path != ':integration' }.each { println it.path; setUpTests(it) }

@@ -1,3 +1,7 @@
+/*
+    Code before special section.
+*/
+
 // holygradle source dependencies V3 BEGIN
 // Do not edit this section.  It may be replaced by the holygradle plugins automatically.
 final String settingsFileName = startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
@@ -31,3 +35,7 @@ void adjustProjects(ProjectDescriptor proj) {
 }
 adjustProjects(rootProject)
 // holygradle source dependencies V3 END
+
+/*
+    Code after special section.
+*/
