@@ -9,30 +9,74 @@ class CollectDependenciesTask extends Copy {
     private DependenciesStateHandler buildscriptDependenciesState
     private DependenciesStateHandler dependenciesState
 
+    /*
+     * This task is only used on the root project because its purpose is to collect all dependencies for all projects.
+     * For each project we find all dependencies, for both buildscript and project, then find their Ivy/POM files, and
+     * copy those metadata files plus all dependency artifacts we need (but not those for unused configurations).
+     * The search doesn't include or look inside dependencies which match sourceDependencies, because they all
+     * correspond to sub-projects, and we search through them separately.  We search each project separately because we
+     * need all its dependencies in order to build that project from source, but the root project might not have a
+     * configuration mapping to all the configurations of each sub-project.
+     *
+     * In earlier versions the task was applied to and ran separately for each project, with no dependencies between
+     * tasks.  Therefore, collecting dependencies for all projects relied on running the task for all projects.  That
+     * would happen automatically if you just ran "gw collectDependencies", but if you ran another task which depended
+     * on collectDependencies, that dependency would only pull in the task in the root project, which was unexpected and
+     * not useful.  So, it was rewritten to run only on the root project, and directly visit all projects.
+     *
+     * Another approach would have been to leave one task per project and connect them with task dependencies.  However,
+     * that would require introducing a new configuration just to establish that cross-project dependencies.  I didn't
+     * want to use the "everything" configuration because I want to get rid of it.  Also, doing everything at the root
+     * means we can be sure we only copy each dependency file once, even if it's used by multiple subprojects, so it
+     * will be faster.
+     */
     public void initialize(Project project) {
+        if (project != project.rootProject) {
+            throw new RuntimeException("CollectDependenciesTask can only be used in the root project.")
+        }
+
         this.project = project
         this.buildscriptDependenciesState = project.extensions.buildscriptDependenciesState
         this.dependenciesState = project.extensions.dependenciesState
 
         destinationDir = new File(project.rootProject.projectDir, "local_artifacts")
+        doFirst {
+            if (destinationDir.exists()) {
+                throw new RuntimeException(
+                    "Cannot run CollectDependenciesTask when ${destinationDir} already exists, " +
+                    "because it would overwrite files for the running version of the holygradle plugins."
+                )
+            }
+        }
+
         // Take local references to private members for use inside closure
         final def localBuildscriptDeps = this.buildscriptDependenciesState
         final def localDeps = this.dependenciesState
+        // We find the set of artifacts after all projects are evaluated, so that all subprojects and their packed
+        // dependencies are known.  We use "this.ext.lazyConfiguration" instead of "project.gradle.projectsEvaluated"
+        // because this is slow, so we don't want to do it unless we're really executing the task.
         this.ext.lazyConfiguration = {
 
-            Set<ResolvedArtifact> artifactsWithoutMetadataFiles = new HashSet<ResolvedArtifact>()
-            final Map<ConfigurationContainer, DependenciesStateHandler> configurationsWithState = [
-                (project.buildscript.configurations): localBuildscriptDeps,
-                (project.configurations): localDeps
-            ]
-            configurationsWithState.each {
-                ConfigurationContainer configurations, DependenciesStateHandler dependenciesState
-             ->
-                configurations.each((Closure){ Configuration conf ->
-                    configureToCopyModulesFromConfiguration(conf, dependenciesState, artifactsWithoutMetadataFiles)
-                })
+            Map<ModuleVersionIdentifier, File> ivyFiles = new HashMap<ModuleVersionIdentifier, File>()
+            Map<ModuleVersionIdentifier, File> pomFiles = new HashMap<ModuleVersionIdentifier, File>()
+            Set<ResolvedArtifact> artifacts = new HashSet<ResolvedArtifact>()
+
+            project.allprojects { Project proj ->
+                final Map<ConfigurationContainer, DependenciesStateHandler> configurationsWithState = [
+                    (proj.buildscript.configurations): localBuildscriptDeps,
+                    (proj.configurations): localDeps
+                ]
+                configurationsWithState.each {
+                    ConfigurationContainer configurations, DependenciesStateHandler dependenciesState
+                        ->
+                    configurations.each((Closure){ Configuration conf ->
+                        collectFilesFromConfiguration(conf, dependenciesState, ivyFiles, pomFiles, artifacts)
+                    })
+                }
             }
 
+            Set<ResolvedArtifact> artifactsWithoutMetadataFiles = new HashSet<ResolvedArtifact>()
+            configureToCopyFiles(ivyFiles, pomFiles, artifacts, artifactsWithoutMetadataFiles)
             if (!artifactsWithoutMetadataFiles.isEmpty()) {
                 throw new RuntimeException(
                     "Failed to find metadata files for all modules.  Missing ${artifactsWithoutMetadataFiles}"
@@ -40,32 +84,56 @@ class CollectDependenciesTask extends Copy {
             }
         }
 
-        if (project == project.rootProject) {
-            configureToCopyCustomGradleDistribution()
-            configureToRewriteGradleWrapperProperties()
-        }
+        configureToCopyCustomGradleDistribution()
+        configureToRewriteGradleWrapperProperties()
     }
 
     /**
      * Configures this task to copy all files required to resolve all dependencies for the given configuration.
-     * This includes the artifacts, plus all related Ivy and Maven (POM) metaadta files.
+     * This includes the artifacts, plus all related Ivy and Maven (POM) metadata files.
      *
      * @param conf The configuration for which files are to be copied.
      * @param dependenciesState Helper object for finding dependency metadata files.
      * @param artifactsWithoutMetadataFiles Output object, to which are added any artifacts for which the corresponding
      * metadata files could not be found.
      */
-    public void configureToCopyModulesFromConfiguration(
+    public void collectFilesFromConfiguration(
         Configuration conf,
         DependenciesStateHandler dependenciesState,
+        Map<ModuleVersionIdentifier, File> ivyFiles,
+        Map<ModuleVersionIdentifier, File> pomFiles,
+        Set<ResolvedArtifact> artifacts
+    ) {
+        // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
+        // Taking a local copy ends in a "no applicable method" error for some unknown reason.
+
+        ivyFiles << dependenciesState.getIvyFilesForConfiguration(conf)
+        pomFiles << dependenciesState.getPomFilesForConfiguration(conf)
+        pomFiles << dependenciesState.getAncestorPomFiles(conf)
+        collectResolvedArtifacts(conf, dependenciesState, artifacts)
+    }
+
+    /**
+     * Configures this task to copy all files required to resolve all dependencies for the given configuration.
+     * This includes the artifacts, plus all related Ivy and Maven (POM) metadata files.
+     *
+     * @param conf The configuration for which files are to be copied.
+     * @param dependenciesState Helper object for finding dependency metadata files.
+     * @param artifactsWithoutMetadataFiles Output object, to which are added any artifacts for which the corresponding
+     * metadata files could not be found.
+     */
+    public void configureToCopyFiles(
+        Map<ModuleVersionIdentifier, File> ivyFiles,
+        Map<ModuleVersionIdentifier, File> pomFiles,
+        Set<ResolvedArtifact> artifacts,
         Set<ResolvedArtifact> artifactsWithoutMetadataFiles
     ) {
         // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
         // Taking a local copy ends in a "no applicable method" error for some unknown reason.
 
-        Map<ModuleVersionIdentifier, File> ivyFiles = configureToCopyIvyFiles(conf, dependenciesState)
-        Map<ModuleVersionIdentifier, File> pomFiles = configureToCopyPomFiles(conf, dependenciesState)
-        for (ResolvedArtifact artifact in getResolvedArtifacts(conf, dependenciesState)) {
+        configureToCopyIvyFiles(ivyFiles)
+        configureToCopyPomFiles(pomFiles)
+        for (ResolvedArtifact artifact in artifacts) {
             if (!configureToCopyArtifact(artifact, ivyFiles, pomFiles)) {
                 artifactsWithoutMetadataFiles.add(artifact)
             }
@@ -84,19 +152,19 @@ class CollectDependenciesTask extends Copy {
      * Configures this task to copy the Ivy files for the transitive closure of dependencies of the given configuration.
      * @return A map of files copied.
      */
-    public Map<ModuleVersionIdentifier, File> configureToCopyIvyFiles(Configuration conf, DependenciesStateHandler state) {
+    public void configureToCopyIvyFiles(Map<ModuleVersionIdentifier, File> ivyFiles) {
         // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
         // Taking a local copy ends in a "no applicable method" error for some unknown reason.
 
-        Map<ModuleVersionIdentifier, File> ivyFiles = state.getIvyFilesForConfiguration(conf)
         ivyFiles.each { ModuleVersionIdentifier version, File ivyFile ->
             String targetPath = getIvyPath(version)
-            println "Copy ivyFile from ${ivyFile} into ${targetPath}"
+            if (logger.isDebugEnabled()) {
+                logger.debug("Copy ivyFile from ${ivyFile} into ${targetPath}")
+            }
             from(ivyFile) {
                 into targetPath
             }
         }
-        return ivyFiles
     }
 
     /**
@@ -105,52 +173,58 @@ class CollectDependenciesTask extends Copy {
      * dependencies; rather, they are used to extend the main POM files, possibly defining further dependencies.)
      * @return A map of files copied.
      */
-    public Map<ModuleVersionIdentifier, File> configureToCopyPomFiles(Configuration conf, DependenciesStateHandler state) {
+    public void configureToCopyPomFiles(Map<ModuleVersionIdentifier, File> pomFiles) {
         // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
         // Taking a local copy ends in a "no applicable method" error for some unknown reason.
 
-//        TODO 2014-07-14 HughG: I should keep a set of artiacts I've already asked to copy, so I don't ask more than once.
-
-
-        Map<ModuleVersionIdentifier, File> pomFilesWithAncestors = new HashMap<ModuleVersionIdentifier, File>()
-
-        Collection<Map<ModuleVersionIdentifier, File>> pomFileMaps = [
-            state.getPomFilesForConfiguration(conf),
-            state.getAncestorPomFiles(conf)
-        ]
-        pomFileMaps.each { Map<ModuleVersionIdentifier, File> pomFiles ->
-            pomFiles.each { ModuleVersionIdentifier version, File ivyFile ->
-                String targetPath = getMavenPath(version)
-                println "Copy pomFile from ${ivyFile} into ${targetPath}"
-                from(ivyFile) {
-                    into targetPath
-                }
+        pomFiles.each { ModuleVersionIdentifier version, File ivyFile ->
+            String targetPath = getMavenPath(version)
+            if (logger.isDebugEnabled()) {
+                logger.debug("Copy pomFile from ${ivyFile} into ${targetPath}")
             }
-
-            pomFilesWithAncestors.putAll(pomFiles)
+            from(ivyFile) {
+                into targetPath
+            }
         }
-
-        return pomFilesWithAncestors
     }
 
     /**
      * Returns the complete set of resolved artifacts for a given configuration.
      */
-    public Set<ResolvedArtifact> getResolvedArtifacts(Configuration conf, DependenciesStateHandler state) {
+    public void collectResolvedArtifacts(
+        Configuration conf,
+        DependenciesStateHandler state,
+        Set<ResolvedArtifact> dependencyArtifacts
+    ) {
         // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
         // Taking a local copy ends in a "no applicable method" error for some unknown reason.
 
-        Set<ResolvedArtifact> dependencyArtifacts = new HashSet<ResolvedArtifact>()
+        if (logger.isDebugEnabled()) {
+            logger.debug("getResolvedArtifacts(${conf}, ...)")
+        }
         ResolvedConfiguration resConf = conf.resolvedConfiguration
         resConf.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
-            // Only include artifacts for modules which we are not building from source.
+            if (logger.isDebugEnabled()) {
+                logger.debug("getResolvedArtifacts: resolvedDependency ${resolvedDependency.module.id}")
+            }
+
+            // Only include artifacts for modules which we are not building from source.  Those modules will correspond
+            // to other subprojects, and they will be visited separately by the caller of this method.
             if (!state.isModuleInBuild(resolvedDependency.module.id)) {
                 resolvedDependency.allModuleArtifacts.each { ResolvedArtifact artifact ->
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("getResolvedArtifacts: adding artifact ${artifact.file.name}")
+                    }
                     dependencyArtifacts.add(artifact)
+                }
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug(
+                        "getResolvedArtifacts: skipping subprojcet module in build ${resolvedDependency.module.id}"
+                    )
                 }
             }
         }
-        return dependencyArtifacts
     }
 
     /**
@@ -204,7 +278,7 @@ class CollectDependenciesTask extends Copy {
             )
             propFile.write(newPropText)
 
-            project.logger.info(
+            logger.info(
                 "NOTE: '${propFile.name}' has been rewritten to refer to the 'local_artifacts' version of " +
                 "custom-gradle. A backup has been saved as '${backupPropFile.name}'."
             )
@@ -242,7 +316,9 @@ class CollectDependenciesTask extends Copy {
         if (!foundMetadataFile) {
             logger.error("Failed to find metadata file corresponding to ${artifact}")
         } else {
-            logger.debug("configureToCopyArtifact: ${version} - ${artifact}: copying ${artifact.file} to ${targetPath}")
+            if (logger.isDebugEnabled()) {
+                logger.debug("configureToCopyArtifact: ${version} - ${artifact}: copying ${artifact.file} to ${targetPath}")
+            }
             from (artifact.getFile()) {
                 into targetPath
             }

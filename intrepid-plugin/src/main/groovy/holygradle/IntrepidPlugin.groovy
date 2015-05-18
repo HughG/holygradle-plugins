@@ -348,13 +348,16 @@ public class IntrepidPlugin implements Plugin<Project> {
          * Unpacking stuff
          **************************************/
 
-        // This task will be initialized once the project is evaluated, because we need packed dependencies info.
-        CollectDependenciesTask collectDependenciesTask = (CollectDependenciesTask)project.task(
-            "collectDependencies",
-            type: CollectDependenciesTask
-        ) { CollectDependenciesTask task ->
-            task.group = "Dependencies"
-            task.description = "Collect all non-source dependencies into a 'local_artifacts' folder."
+        CollectDependenciesTask collectDependenciesTask
+        if (project == project.rootProject) {
+            // This task will be initialized once the project is evaluated, because we need packed dependencies info.
+            collectDependenciesTask = (CollectDependenciesTask)project.task(
+                "collectDependencies",
+                type: CollectDependenciesTask
+            ) { CollectDependenciesTask task ->
+                task.group = "Dependencies"
+                task.description = "Collect all non-source dependencies into a 'local_artifacts' folder."
+            }
         }
 
         project.gradle.projectsEvaluated {
@@ -405,11 +408,11 @@ public class IntrepidPlugin implements Plugin<Project> {
                 publishPackages.defineCheckTask(packedDependenciesState)
             }
 
-            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for collectDependenciesTask") {
-                /**************************************
-                 * Collecting dependencies
-                 **************************************/
-                collectDependenciesTask.initialize(project)
+            // collectDependenciesTask only exists for the root project.
+            if (collectDependenciesTask != null) {
+                profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for collectDependenciesTask") {
+                    collectDependenciesTask.initialize(project)
+                }
             }
         }
 
