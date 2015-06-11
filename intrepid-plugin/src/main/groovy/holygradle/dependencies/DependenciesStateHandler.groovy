@@ -55,16 +55,24 @@ class DependenciesStateHandler {
         this.logger = project.logger
     }
 
-    public Configuration createDetachedConfiguration(Dependency... dependencies) {
+    /**
+     * Copies the original {@code configuration}, ignoring its super-configurations and omitting all its dependencies,
+     * then adding all the given {@code dependencies} -- thus keeping any other @{link Configuration} values such as the
+     * @{link Configuration#resolutionStrategy}.
+     * @param configuration
+     * @param dependencies
+     * @return A copy of the configuration with replaced dependencies (and ignoring the original's super-configurations).
+     */
+    public static Configuration copyConfigurationReplacingDependencies(
+        Configuration configuration,
+        Dependency... dependencies
+    ) {
         // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
 
-        // NOTE 2014-07-15 HughG: I'm not sure if it's important that we create the detached configuration from a
-        // particular ConfigurationContainer but, to be on the safe side, I'm going to follow that symmetry.
-        ConfigurationContainer originalConfigurations = forBuildscript ?
-            project.buildscript.configurations :
-            project.configurations
-        //noinspection GroovyAssignabilityCheck
-        originalConfigurations.detachedConfiguration(*dependencies)
+        // Copy the original
+        Configuration newConfiguration = configuration.copy(Specs.convertClosureToSpec { false })
+        newConfiguration.dependencies.addAll(dependencies)
+        newConfiguration
     }
 
     /**
@@ -288,7 +296,7 @@ class DependenciesStateHandler {
             final Map<ModuleVersionIdentifier, File> newParentPomFiles =
                 parentPomDeps.collectEntries { Dependency parentPomDep ->
                     //noinspection GroovyAssignabilityCheck
-                    Configuration parentPomConf = createDetachedConfiguration(parentPomDep)
+                    Configuration parentPomConf = copyConfigurationReplacingDependencies(conf, parentPomDep)
                     final LenientConfiguration lenientConf = parentPomConf.resolvedConfiguration.lenientConfiguration
                     Set<ResolvedArtifact> allResolvedArtifacts =
                         lenientConf.getArtifacts(Specs.convertClosureToSpec { true })
@@ -330,7 +338,7 @@ class DependenciesStateHandler {
                 conf.resolvedConfiguration.firstLevelModuleDependencies
             )
             //noinspection GroovyAssignabilityCheck
-            Configuration ivyConf = createDetachedConfiguration(*metadataDeps)
+            Configuration ivyConf = copyConfigurationReplacingDependencies(conf, *metadataDeps)
             final LenientConfiguration lenientConf = ivyConf.resolvedConfiguration.lenientConfiguration
             Set<ResolvedArtifact> allResolvedArtifacts = lenientConf.getArtifacts(Specs.convertClosureToSpec { true })
 
