@@ -13,9 +13,14 @@
  */
 
 import org.artifactory.repo.Repositories
+import org.artifactory.repo.HttpRepositoryConfiguration
 import org.artifactory.repo.VirtualRepositoryConfiguration
 import org.artifactory.request.Request
 import org.artifactory.resource.ResourceStreamHandle
+import groovyx.net.http.RESTClient
+import groovyx.net.http.HttpResponseDecorator
+import groovyx.net.http.ResponseParseException
+import net.sf.json.JSONObject
 
 executions {
   
@@ -46,24 +51,25 @@ executions {
    */
   
   getRepositoryTree(version: "0.1", description: "Repository Tree", httpMethod: 'GET') { params ->
-    message = "{\n'";
+    JSONObject output = new JSONObject();
 
     List<String> localRepoNames = repositories.getLocalRepositories();
-    message += localRepoNames.join("': [],\n'");
-    message += "': []";
+    for (name in localRepoNames) {
+        output.element(name, []);
+    }
 
     List<String> remoteRepoNames = repositories.getRemoteRepositories();
     for (name in remoteRepoNames) {
-        message += ",\n'REMOTE:${name}': []";
+        output.element("REMOTE:" + name, []);
     }
 
     List<String> virtualRepoNames = repositories.getVirtualRepositories();
     for (name in virtualRepoNames) {
         VirtualRepositoryConfiguration repoConf = repositories.getRepositoryConfiguration(name);
-        message += ",\n'${name}': ['" + repoConf.getRepositories().join("', '") + "']";
+        output.element(name, repoConf.getRepositories());
     }
 
-    message += "\n}"
+    message = output.toString();
     status = 200;
   }
 

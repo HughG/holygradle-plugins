@@ -10,6 +10,10 @@
    width: 1250px;
    height: 1250px;
 }
+.link-tools { display: none }
+.marker-arrowheads { display: none }
+.marker-vertices: { display : none }
+.connection-wrap: { display: none }
         </style>
 
         <script src="joint.min.js" type="text/javascript"></script>
@@ -34,7 +38,18 @@ var paper = new joint.dia.Paper({
 V(paper.viewport).translate(20, 20);
 
 
-function makeRepo (remote, label) {
+function makeRepo (virtual, remote, label) {
+    var colour = '#AADD63';
+    var thickness = 2;
+
+    if (remote) {
+        colour = '#C9EAA1';
+        thickness = 0;
+    } else if (virtual) {
+        colour = '#79C824';
+        thickness = 1;
+    }
+
     return new joint.shapes.basic.Rect({
         id: label,
         size: {
@@ -52,8 +67,8 @@ function makeRepo (remote, label) {
                 width: 165,
                 height: 20,
                 stroke: '#000000',
-                'stroke-width': remote? 0: 1,
-                fill: '#B2DB71'
+                'stroke-width': thickness,
+                fill: colour
             }
         }
     });
@@ -86,18 +101,19 @@ function buildGraphFromAdjacencyList (adjacencyList) {
     // Create a text box for each repo
     _.each(adjacencyList, function(edges, repoLabel) {
         var remote = (repoLabel.substr(0, 7) == "REMOTE:");
-
         if (remote) {
             repoLabel = repoLabel.substr(7);
         }
 
-        repos.push(makeRepo(remote, repoLabel));
+        if (repoLabel != "repo") {
+            repos.push(makeRepo(edges.length > 0, remote, repoLabel));
 
-        // Create a link arrow for each referenced repo
-        _.each(edges, function(refLabel) {
-            var remoteRef = (("REMOTE:" + refLabel) in adjacencyList);
-            links.push(makeRefLink(remoteRef, repoLabel, refLabel));
-        });
+            // Create a link arrow for each referenced repo
+            _.each(edges, function(refLabel) {
+                var remoteRef = (("REMOTE:" + refLabel) in adjacencyList);
+                links.push(makeRefLink(remoteRef, repoLabel, refLabel));
+            });
+        }
     });
 
     // Links must be added after the repos to which they refer.
@@ -123,7 +139,7 @@ $.ajax(
         graph,
         {
             setLinkVertices: false,
-            rankDir: "RL",
+            rankDir: "LR",
             nodeSep: 20,
             rankSep: 60
         }
