@@ -899,11 +899,22 @@ publishPackages {
 
 defines that when this module is published then:
 
-* the group name will be "com.company.team" 
-* the version number will be read from the text file +next_version.txt+ 
-* the repository to publish to and the necessary credentials are as stated
+* the group name will be "com.company.team";
+* the version number will be read from the text file +next_version.txt+;
+* the repository to publish to and the necessary credentials are as stated.
 
-You may want the group value to identify your entire organisation, or you may want to add sub-levels for separate departments or teams.  The latter makes it easier to tell who is responsible for a published module, and allows you to set up permissions in a repository server to allow only the relevant team to publish modules with that group value to shared repositories.
+The name of the module is by default taken from the folder which contains the +build.gradle+ file.  Since version 7.3.0,
+you can override this for the root project in +settings.gradle+ like this:
+
+[source,groovy]
+----
+rootProject.name = "my_module"
+----
+
+You may want the group value to identify your entire organisation, or you may want to add sub-levels for separate
+departments or teams.  The latter makes it easier to tell who is responsible for a published module, and allows you to
+set up permissions in a repository server to allow only the relevant team to publish modules with that group value to
+shared repositories.
 
 When published, the module descriptor would look something like this:
 

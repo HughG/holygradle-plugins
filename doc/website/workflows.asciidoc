@@ -234,10 +234,10 @@ them will be helpful.
 ==== Fetch Source
 
 First you must create or check out a working copy of the source for the module you want to publish.
-The Gradle +name+ part of the module is fixed to be the name of the Gradle project, which itself is
-fixed to be the name of the folder containing the +build.gradle+ file.  So, if you intend to really
+The Gradle +name+ part of the module is fixed to be the name of the Gradle project, which itself
+defaults to the name of the folder containing the +build.gradle+ file.  So, if you intend to really
 publish the module (as opposed to just test publishing), you must put the source in an
-appropriately-named folder.
+appropriately-named folder, or override the module name as described under link:plugin-intrepid.html#_publishPackages[].
 
 If you are creating a new project, get a gloss:gradle-wrapper[] and commit it to source control, as
 described in link:first_steps.html#_setting_up_a_gradle_wrapper[].
@@ -769,8 +769,8 @@ is specific to your team has a couple of advantages.
 * Artifactory allows deploy permissions to be set on a pattern-matching basis, so the server admin
 can make sure than only your team can publish packages in that location.
 
-The +name+, as described under <<_fetch_source>>, is the name of the folder containing
-the +build.gradle+ file.
+The +name+, as described under <<_fetch_source>>, defaults to the name of the folder containing the +build.gradle+ file,
+but can be overridden in +settings.gradle+.
 
 The +version+ can be set in several ways, as described in the documentation for the
 link:plugin-intrepid.html#_publishPackages[] block.  Note that it can be any string, not necessarily
@@ -1059,8 +1059,9 @@ It's a good idea to put clear instructions for the use of this +build.gradle+ fi
 the top of the file, for when it becomes necessary to publish a new version.  In particular, the
 +packageArtifacts+ block will contain assumptions about the paths to various third-party files, so
 your instructions should state where to put them, whether they need to be unzipped first, etc.
-Bear in mind that the name of the wrapper folder will be used as the +name+ of the published module,
-so your instructions should say what to call it.
+Bear in mind that the +name+ of the published module will default to the name of the wrapper folder,
+so you should add a line +settings.gradle+ which sets it to a specific name, as described under
+link:plugin-intrepid.html#_publishPackages[].
 
 ===== Packaging Third-Party Modules From Source
 
@@ -1257,7 +1258,14 @@ may not be able to overwrite the incorrect version if you have already published
 repository.  Or, you may not want to if you have already created useful builds which depend on it,
 and you want to be sure you can reproduce them later.
 
-Thus you might end up with the following, in a +build.gradle+ file in a folder named "+jsoncpp_md+".
+So, you might end up with the following: a +settings.gradle+ with just one line:
+
+[source,groovy]
+----
+rootProject.name = "jsoncpp_md"
+----
+
+and a +build.gradle+ containing the following:
 
 [source,groovy]
 ----
