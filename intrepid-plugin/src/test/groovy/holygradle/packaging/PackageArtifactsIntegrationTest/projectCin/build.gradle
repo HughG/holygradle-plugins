@@ -1,0 +1,13 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+sourceDependencies {
+	"subProj" {
+		hg "http://dummy_url"
+	}
+	"noBuildFile" {
+		hg "http://dummy_url"
+	}
+}

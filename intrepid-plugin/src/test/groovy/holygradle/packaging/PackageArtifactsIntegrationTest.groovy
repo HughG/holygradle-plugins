@@ -2,9 +2,11 @@ package holygradle.packaging
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import org.gradle.api.file.FileTree
 import org.gradle.api.file.FileVisitDetails
+import org.gradle.process.ExecSpec
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
@@ -60,21 +62,80 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         checkBuildInfo(project.zipTree(new File("packages", "projectB-buildScript.zip")))
     }
 
-    public static void checkBuildInfo(FileTree directory) {
-        boolean foundBuildInfo = false
-        boolean foundVersionsTxt = false
+    @Test
+    public void testPackageSourceDependencies() {
+        File projectTemplateDir = new File(getTestDir(), "projectCin")
+        File projectDir = new File(getTestDir(), "projectC")
+        if (projectDir.exists()) {
+            projectDir.deleteDir()
+        }
+
+        FileUtils.copyDirectory(projectTemplateDir, projectDir)
+
+        File packagesDir = new File(projectDir, "packages")
+
+        // Create a dummy project to provide access to FileTree methods
+        Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+
+        hgExec(project, "init", "noBuildFile")
+        hgExec(project, "init", "subProj")
+        hgExec(project, "init")
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("packageEverything")
+        }
+
+        File buildScriptFile = new File(packagesDir, "projectC-buildScript.zip")
+        assertTrue(buildScriptFile.exists())
+
+        checkBuildInfo(
+            project.zipTree(new File("packages", "projectC-buildScript.zip")),
+            [
+                "build_info/source_path.txt",
+                "build_info/source_revision.txt",
+                "build_info/source_url.txt",
+
+                "build_info/source_dependencies",
+
+                "build_info/source_dependencies/noBuildFile",
+                "build_info/source_dependencies/noBuildFile/source_path.txt",
+                "build_info/source_dependencies/noBuildFile/source_revision.txt",
+                "build_info/source_dependencies/noBuildFile/source_url.txt",
+
+                "build_info/source_dependencies/subProj",
+                "build_info/source_dependencies/subProj/source_path.txt",
+                "build_info/source_dependencies/subProj/source_revision.txt",
+                "build_info/source_dependencies/subProj/source_url.txt"
+            ]
+        )
+    }
+
+    public static void checkBuildInfo(FileTree directory, Collection<String> checkFiles = []) {
+        checkFiles.addAll([
+            "build_info",
+            "build_info/versions.txt"
+        ])
+
+        Map<String, Boolean> fileMap = checkFiles.collectEntries { [it, false] }
 
         directory.visit { FileVisitDetails visitor ->
-            if (visitor.relativePath.toString() == "build_info") {
-                foundBuildInfo = true
-            }
-
-            if (visitor.relativePath.toString() == "build_info/versions.txt") {
-                foundVersionsTxt = true
+            String fileRelativePath = visitor.relativePath.toString()
+            println(fileRelativePath)
+            if (fileMap.containsKey(fileRelativePath)) {
+                fileMap[fileRelativePath] = true
             }
         }
 
-        assertTrue(foundBuildInfo)
-        assertTrue(foundVersionsTxt)
+        fileMap.each { file ->
+            assertTrue(file.key, file.value)
+        }
+    }
+
+    private static void hgExec(Project project, Object ... args) {
+        project.exec { ExecSpec spec ->
+            spec.workingDir = project.projectDir
+            spec.executable = "hg.exe"
+            spec.args = args.toList()
+        }
     }
 }
