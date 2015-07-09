@@ -1,4 +1,5 @@
-
+// Here is some pre-existing code, with no EOL.
+rootProject.name = "custom_name"
 // holygradle source dependencies V0de07549fd2698d3f433a9ed344af502 BEGIN
 // Do not edit this section.  It may be replaced by the holygradle plugins automatically.
 // When the Holy Gradle adds or modifies this section, you should commit this file to source control.

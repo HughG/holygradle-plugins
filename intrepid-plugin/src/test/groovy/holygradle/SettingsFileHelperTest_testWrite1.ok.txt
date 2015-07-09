@@ -1,5 +1,7 @@
-// holygradle source dependencies V3 BEGIN
+
+// holygradle source dependencies V0de07549fd2698d3f433a9ed344af502 BEGIN
 // Do not edit this section.  It may be replaced by the holygradle plugins automatically.
+// When the Holy Gradle adds or modifies this section, you should commit this file to source control.
 final String settingsFileName = startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
 final String subprojectsFileName = settingsFileName.replaceAll(/\.[^\.]+$/, "-subprojects.txt")
 final File subprojectsFile = new File(settingsDir, subprojectsFileName)
@@ -30,4 +32,4 @@ void adjustProjects(ProjectDescriptor proj) {
     proj.children.each { adjustProjects(it) }
 }
 adjustProjects(rootProject)
-// holygradle source dependencies V3 END
+// holygradle source dependencies V0de07549fd2698d3f433a9ed344af502 END
