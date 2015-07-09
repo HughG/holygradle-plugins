@@ -16,29 +16,33 @@ final List<String> subprojectPaths = !subprojectsFile.exists() ? [] : subproject
     !it.startsWith('#') && !it.trim().isEmpty()
 }
 subprojectPaths.each { include it }
-// This method does two things for sub-projects in a multi-project build.
+Collection<ProjectDescriptor> collectProjects(Collection<ProjectDescriptor> projects) {
+    projects + projects.collectMany { collectProjects(it.children) }
+}
+Collection<String> getBuildFiles(ProjectDescriptor proj) {
+    [proj.name, 'build'].collect { new File(proj.projectDir, "\${it}.gradle") }.findAll { it.exists() }
+}
+collectProjects([rootProject]).findAll { !getBuildFiles(it).any() }.each {
+    println("No Gradle build file found for subproject \${it.name} in \${it.projectDir}; excluding from build.")
+    it.parent.children.remove(it)
+}
+// This block does two things for sub-projects in a multi-project build.
 //   1) Allows them to lie outside the root project's folder (by removing relative paths from the start of the name).
 //   2) Allows them to have their build files named to match the directory.
-void adjustProjects(ProjectDescriptor proj) {
-    String projBaseName = (proj.name =~ /.*?([\\w_\\-]+)\$/)[0][1]
-    proj.name = projBaseName
-    Collection<File> buildFiles = [proj.name, 'build'].collect { new File(proj.projectDir, "\${it}.gradle") }.findAll { it.exists() }
+collectProjects([rootProject]).each { ProjectDescriptor proj ->
+    Collection<File> buildFiles = getBuildFiles(proj)
     switch (buildFiles.size()) {
         case 0:
-            println("No Gradle build file found for subproject \${proj.name} in \${proj.projectDir}; excluding from build.")
-            proj.parent.children.remove(proj)
-            break;
+            throw new RuntimeException("Internal error: project \${proj} has no build files, so it should have been removed!")
         case 1:
             proj.buildFileName = buildFiles[0].name
             break;
         case 2:
-            throw new RuntimeException("For \${proj.name} you have '\${proj.name}.gradle' AND 'build.gradle'. You should only have one of these.")
+            throw new RuntimeException("Project \${proj} has '\${proj.name}.gradle' AND 'build.gradle'. You should only have one of these.")
         default:
-            throw new RuntimeException("Internal error: more than 2 build files! \${buildFiles}.")
+            throw new RuntimeException("Internal error: project \${proj} has more than 2 build files! \${buildFiles}.")
     }
-    proj.children.each { adjustProjects(it) }
-}
-adjustProjects(rootProject)"""
+}"""
         private static final String BEGIN_PATTERN = "${SECTION_MARKER}[0-9a-f]+ BEGIN"
         private static final String END_PATTERN = "${SECTION_MARKER}[0-9a-f]+ END"
         private static final String SETTINGS_FILE_METHOD_1_MARKER =
