@@ -1,8 +1,3 @@
-/*
-    Code before special section.
-*/
-
-// holygradle source dependencies Va94d6912d47fc33fb7ecde7ed57f8134 BEGIN
 // Do not edit this section.  It may be replaced by the holygradle plugins automatically.
 // When the Holy Gradle adds or modifies this section, you should commit this file to source control.
 final String settingsFileName = ((StartParameter)startParameter).settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
@@ -41,8 +36,3 @@ collectProjects([rootProject]).each { ProjectDescriptor proj ->
             throw new RuntimeException("Internal error: project ${proj} has more than 2 build files! ${buildFiles}.")
     }
 }
-// holygradle source dependencies Va94d6912d47fc33fb7ecde7ed57f8134 END
-
-/*
-    Code after special section.
-*/

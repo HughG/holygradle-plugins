@@ -7,42 +7,6 @@ import org.gradle.api.Project
 class SettingsFileHelper {
     private static class SettingsContent {
         private static final String SECTION_MARKER = '// holygradle source dependencies V'
-        private static final String SETTINGS_FILE_CONTENT = """// Do not edit this section.  It may be replaced by the holygradle plugins automatically.
-// When the Holy Gradle adds or modifies this section, you should commit this file to source control.
-final String settingsFileName = startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
-final String subprojectsFileName = settingsFileName.replaceAll(/\\.[^\\.]+\$/, "-subprojects.txt")
-final File subprojectsFile = new File(settingsDir, subprojectsFileName)
-final List<String> subprojectPaths = !subprojectsFile.exists() ? [] : subprojectsFile.readLines().findAll {
-    !it.startsWith('#') && !it.trim().isEmpty()
-}
-subprojectPaths.each { include it }
-Collection<ProjectDescriptor> collectProjects(Collection<ProjectDescriptor> projects) {
-    projects + projects.collectMany { collectProjects(it.children) }
-}
-Collection<String> getBuildFiles(ProjectDescriptor proj) {
-    [proj.name, 'build'].collect { new File(proj.projectDir, "\${it}.gradle") }.findAll { it.exists() }
-}
-collectProjects([rootProject]).findAll { !getBuildFiles(it).any() }.each {
-    println("No Gradle build file found for subproject \${it.name} in \${it.projectDir}; excluding from build.")
-    it.parent.children.remove(it)
-}
-// This block does two things for sub-projects in a multi-project build.
-//   1) Allows them to lie outside the root project's folder (by removing relative paths from the start of the name).
-//   2) Allows them to have their build files named to match the directory.
-collectProjects([rootProject]).each { ProjectDescriptor proj ->
-    Collection<File> buildFiles = getBuildFiles(proj)
-    switch (buildFiles.size()) {
-        case 0:
-            throw new RuntimeException("Internal error: project \${proj} has no build files, so it should have been removed!")
-        case 1:
-            proj.buildFileName = buildFiles[0].name
-            break;
-        case 2:
-            throw new RuntimeException("Project \${proj} has '\${proj.name}.gradle' AND 'build.gradle'. You should only have one of these.")
-        default:
-            throw new RuntimeException("Internal error: project \${proj} has more than 2 build files! \${buildFiles}.")
-    }
-}"""
         private static final String BEGIN_PATTERN = "${SECTION_MARKER}[0-9a-f]+ BEGIN"
         private static final String END_PATTERN = "${SECTION_MARKER}[0-9a-f]+ END"
         private static final String SETTINGS_FILE_METHOD_1_MARKER =
@@ -53,9 +17,11 @@ collectProjects([rootProject]).each { ProjectDescriptor proj ->
         public static String getMethod1Marker() { SETTINGS_FILE_METHOD_1_MARKER }
 
         public static String getContent() {
-            String md5 = DigestUtils.md5Hex(SETTINGS_FILE_CONTENT)
+            String baseContent = IntrepidPlugin.class.getResourceAsStream("/holygradle/settings-content.gradle").
+                getText("UTF-8")
+            String md5 = DigestUtils.md5Hex(baseContent)
             return """${SECTION_MARKER}${md5} BEGIN
-${SETTINGS_FILE_CONTENT}
+${baseContent}
 ${SECTION_MARKER}${md5} END"""
         }
     }

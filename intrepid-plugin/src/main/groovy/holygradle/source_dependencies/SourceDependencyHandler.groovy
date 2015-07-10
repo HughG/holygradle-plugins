@@ -213,8 +213,16 @@ class SourceDependencyHandler extends DependencyHandler {
             String version = publishingHandler.publishVersion
             String firstTargetConfig = publishingHandler.configurations.find().value
             
-            if (!usePublishedVersion) {                
+            if (!usePublishedVersion) {
                 Project dependencyProject = project.rootProject.findProject(targetName)
+                if (dependencyProject == null) {
+                    // NOTE HughG: I've made this mistake a few times when modifying the settings.gradle code, so I put
+                    // in this explicit check and helpful message.
+                    throw new RuntimeException(
+                        "Internal error: failed to find project '${targetName}'; " +
+                        "maybe name override in settings.gradle was not done correctly."
+                    )
+                }
                 groupName = dependencyProject.group.toString()
                 if (version == null) {
                     version = dependencyProject.version
