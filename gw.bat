@@ -77,8 +77,8 @@ if exist local_artifacts (
 
 
 @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist %~dp0local\holy-gradle-plugins-base-url-lookup.txt (
-  copy %~dp0local\holy-gradle-plugins-base-url-lookup.txt %~dp0gradle\base-url-lookup.txt
+if exist %~dp0local\holy-gradle-plugins\base-url-lookup.txt (
+  copy %~dp0local\holy-gradle-plugins\base-url-lookup.txt %~dp0gradle\base-url-lookup.txt
 )
 if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
 
