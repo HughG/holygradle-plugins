@@ -1,4 +1,4 @@
-@if "%DEBUG%" == "" @echo off
+@if "%DEBUG_GW%" == "" @echo off
 @rem ##########################################################################
 @rem
 @rem  Holy Gradle startup script for Windows, version [[GW_SCRIPT_VERSION]]
@@ -75,11 +75,34 @@ if exist local_artifacts (
   goto wrapperPropertiesDone
 )
 
+
+@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+if exist %~dp0local\holy-gradle-plugins-base-url-lookup.txt (
+  copy %~dp0local\holy-gradle-plugins-base-url-lookup.txt %~dp0gradle\base-url-lookup.txt
+)
 if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
-  echo You must set environment variable HOLY_GRADLE_REPOSITORY_BASE_URL
-  echo to the base URL for the Holy Gradle distribution and plugins,
-  echo for example, https://artifactory-server.my-corp.com/artifactory/
-  goto fail
+
+  @rem Try to find a server URL based on the DNS suffix values on the local machine.
+  if exist %~dp0gradle\base-url-lookup.txt (
+    for /f "tokens=6" %%S in ('ipconfig ^| findstr "Connection-specific DNS Suffix"') do (
+      for /f "eol=# tokens=1,2" %%T in (%~dp0gradle\base-url-lookup.txt) do (
+        if "%%S"=="%%T" (
+          echo In domain "%%S", defaulting HOLY_GRADLE_REPOSITORY_BASE_URL to "%%U".
+          set HOLY_GRADLE_REPOSITORY_BASE_URL=%%U
+          goto end_dns_search
+        )
+      )
+    )
+:end_dns_search
+    @rem We need a comment here because a label must label a command, not a closing parenthesis.
+  )
+
+  if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
+    echo You must set environment variable HOLY_GRADLE_REPOSITORY_BASE_URL
+    echo to the base URL for the Holy Gradle distribution and plugins,
+    echo for example, https://artifactory-server.my-corp.com/artifactory/
+    goto fail
+  )
 )
 
 @rem Write the distribution base URL to a file and concat with the properties and path.

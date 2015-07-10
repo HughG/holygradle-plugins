@@ -16,7 +16,8 @@ apply plugin: 'ivy-publish'
 
 evaluationDependsOn("newWrapper")
 
-project.group = "holygradle"
+final File localGroupFile = new File(projectDir, "../local/holy-gradle-plugins-wrapper-group.txt")
+project.group = localGroupFile.exists() ? localGroupFile.text : "holygradle"
 project.version = wrapperVersion
 
 configurations {

@@ -2,6 +2,7 @@ import org.gradle.api.initialization.dsl.ScriptHandler
 
 apply plugin: 'groovy'
 
+// Force-add a Mercurial client-side hook to avoid comitting anything with "banned" words.
 final File HGRC = new File('.hg/hgrc')
 if (!HGRC.readLines().any { it.contains('pretxncommit.sanitise') }) {
     HGRC.withWriterAppend { BufferedWriter bw ->
@@ -14,6 +15,17 @@ if (!HGRC.readLines().any { it.contains('pretxncommit.sanitise') }) {
                 'findstr /i /g:local\\holy-gradle-plugins-banned-words.txt & ' +
                 'if errorlevel 1 (exit /b 0) else (exit /b 1)'
             )
+        }
+    }
+}
+
+// Force-copy build bootstrap files to independenct sub-projects, so they stay up to date.
+["https-setup-kit", "wrapper-starter-kit", "wrapper-starter-kit/newWrapper"].each {
+    File otherProjectDir = new File(projectDir, it)
+    ["gw.bat", "gradle/base-url-lookup.txt"].each { String fileName ->
+        copy {
+            into(otherProjectDir)
+            from(projectDir) { include fileName }
         }
     }
 }

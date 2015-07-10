@@ -30,7 +30,7 @@ if (wrapperVersion != customGradleCoreVersion) {
 }
 
 task clean << {
-    delete "gw", "gw.bat", "gw.bat.in", "gradle"
+    delete "gw", "gw.bat", "gradle"
 }
 
 createWrapper.dependsOn clean
