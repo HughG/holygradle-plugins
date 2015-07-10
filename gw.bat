@@ -122,10 +122,51 @@ if "%APP_HOME:~-21%"=="\wrapper-starter-kit\" (
 copy >nul /y /a "%APP_HOME%\gradle\gradle-wrapper.properties.in"+"%APP_HOME%\gradle\distributionUrlBase.txt"+"%APP_HOME%\gradle\distributionPath.txt" "%APP_HOME%\gradle\gradle-wrapper.properties" /b
 
 :wrapperPropertiesDone
+
+@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+if exist %~dp0local\holy-gradle-plugins\certs (
+  xcopy /i /s /y %~dp0local\holy-gradle-plugins\certs %~dp0gradle\certs
+)
+if not exist %APP_HOME%\gradle\certs goto certsDone
+
+set JAVA_HOME=%JAVA_HOME:"=%
+set KEYTOOL_EXE=%JAVA_HOME%\bin\keytool.exe
+
+if exist "%JAVA_EXE%" goto keytoolFound
+
+echo.
+echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
+echo.
+echo A custom certificates directory was found at %APP_HOME%\gradle\certs
+echo and the Java keytool.exe tool is required to process it.
+echo.
+echo Please set the JAVA_HOME variable in your environment to match the
+echo location of your Java installation.
+
+:keytoolFound
+
+set GW_CACERTS_PASS=gwcerts
+if exist "%JAVA_HOME%\jre" (
+    set JRE_HOME=%JAVA_HOME%\jre
+) else (
+    set JRE_HOME=%JAVA_HOME%
+)
+set JAVA_KEY_STORE="%JRE_HOME%\lib\security\cacerts"
+set GW_KEY_STORE="%APP_HOME%\gradle\cacerts"
+set KEY_STORE_IMPORT_LOG="%APP_HOME%\gradle\cacerts.import.log"
+if exist %GW_KEY_STORE% del %GW_KEY_STORE%
+>%KEY_STORE_IMPORT_LOG% 2>&1 "%KEYTOOL_EXE%" -importkeystore -srckeystore %JAVA_KEY_STORE% -srcstorepass changeit -destkeystore %GW_KEY_STORE% -deststorepass %GW_CACERTS_PASS%
+if errorlevel 1 goto fail
+for %%C in (%APP_HOME%\gradle\certs\*.*) do (>>"%APP_HOME%\gradle\cacerts.import.log" 2>>&1 "%KEYTOOL_EXE%" -importcert -noprompt -file %%C -alias %%~nC -keystore %GW_KEY_STORE% -storepass %GW_CACERTS_PASS%)
+if errorlevel 1 goto fail
+set TRUST_STORE_OPTS="-Djavax.net.ssl.trustStore=%APP_HOME%\gradle\cacerts" "-Djavax.net.ssl.trustStorePassword=%GW_CACERTS_PASS%"
+
+:certsDone
+
 set CLASSPATH=%APP_HOME%\gradle\gradle-wrapper.jar
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% %TRUST_STORE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION%
 
 :end
 @rem End local scope for the variables with windows NT shell

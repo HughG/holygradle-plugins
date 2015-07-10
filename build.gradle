@@ -22,10 +22,12 @@ if (!HGRC.readLines().any { it.contains('pretxncommit.sanitise') }) {
 // Force-copy build bootstrap files to independenct sub-projects, so they stay up to date.
 ["https-setup-kit", "wrapper-starter-kit", "wrapper-starter-kit/newWrapper"].each {
     File otherProjectDir = new File(projectDir, it)
-    ["gw.bat", "gradle/base-url-lookup.txt"].each { String fileName ->
+    ["gw.bat", "gradle/base-url-lookup.txt", "gradle/certs/**"].each { String copyPattern ->
         copy {
             into(otherProjectDir)
-            from(projectDir) { include fileName }
+            from(projectDir) {
+                include copyPattern
+            }
         }
     }
 }
