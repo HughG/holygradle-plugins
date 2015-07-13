@@ -259,7 +259,7 @@ for (local in [false, true]) {
             final String tag = "${tagPrefix}_${project.hgVersion}"
             project.exec {
                 workingDir "${WEBSITE_DIR}"
-                commandLine 'hg.exe', 'tag', '-m', "${t.name} ${tag}", tag
+                commandLine 'hg.exe', 'tag', '-f', '-m', "${t.name} ${tag}", tag
             }
             println "Tagged public repo; now push the tag."
         }
@@ -271,6 +271,7 @@ tasks['publishLocalWebsite'].doLast { Task t ->
     project.exec {
         workingDir Paths.get("${WEBSITE_DIR}/local").toRealPath().toFile()
         commandLine 'hg.exe', 'tag',
+            '-f',
             '-m', "${t.name} from holy-gradle-plugins ${project.hgVersion} and this local repo at ${hgLocalDocVersion}",
             "TLW_${project.hgVersion}_local_${hgLocalDocVersion}"
     }
