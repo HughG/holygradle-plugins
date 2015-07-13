@@ -1075,9 +1075,9 @@ Along with +collectDependencies+, this task can be useful in pre-fetching depend
 
 === collectDependencies
 
-This task will navigate through all of the project's non-source dependencies. This includes +packedDependencies+ and their transitive dependencies, Gradle plugins and all of their dependencies. A folder named +local_artifacts+ will be created. Ivy and Maven style dependencies will be placed in their respective subfolders. Finally, +custom-gradle+ will be placed in its own subfolder. 
+This task will navigate through all of the project's dependencies. This includes +packedDependencies+ and their transitive dependencies, Gradle plugins and all of their dependencies. A folder named +local_artifacts+ will be created. Ivy and Maven style dependencies will be placed in their respective subfolders. Source dependencies will be summarised in a "build_info" folder but the source itself will not be included. Finally, +custom-gradle+ will be placed in its own subfolder. 
 
-The result is a directory which contains all non-source dependencies. This is useful for pre-fetching dependencies so that you can package them up and give them to a customer who doesn't have access to your network.
+The result is a directory which contains all packed dependencies. This is useful for pre-fetching dependencies so that you can package them up and give them to a customer who doesn't have access to your network.
 
 === rebuildSymlinks
 
