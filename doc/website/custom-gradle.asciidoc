@@ -45,15 +45,15 @@ your own gloss:project[]s dependencies.
 
 ==== Setup of Base URL
 
-From version link:release_notes.html#_custom_gradle_7.5.0[7.5.0] of the gradle _wrapper_, +gw.bat+ will attempt to set
-this variable based on the file +gradle/base-url-lookup.txt+.  You can add this file to your source code, or it may be
-available as part of a +wrapper-starter-kit+ in your organisation -- see
+From version link:release_notes.html#&#x5f;custom_gradle_7.5.0[7.5.0] of the gloss:gradle-wrapper[], +gw.bat+ will
+attempt to set this variable based on the file +gradle/base-url-lookup.txt+.  You can add this file to your source code,
+or it may be available as part of a +wrapper-starter-kit+ in your organisation -- see
 link:first_steps.html#&#x5f;setting_up_a_gradle_wrapper[] for details.  The file should be a text file with several
 lines of the format "+_DNS-suffix_ _Base-URL_+", for example as follows.
 
 ----
 foo.com http://artifactory.foo.com/artifactory/
-bar.com https://artifacts.internal.bar.com/artfactory
+bar.com https://artifacts.internal.bar.com/artfactory/
 ----
 
 The DNS suffix is taken from the output of +ipconfig.exe+.
