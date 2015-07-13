@@ -41,12 +41,29 @@ The environment variable +HOLY_GRADLE_REPOSITORY_BASE_URL+ must be set to the ba
 Artifactory web service at your site (for example,
 +https://artifact-server.example-corp.com/artifactory/+).  This URL is used to download the plugins,
 and can also be used as a base for URLs in the +repositories+ section of your +buld.gradle+, to get
-your own gloss:project[]s dependencies.  You should set this in your user environment settings.
-You should not need to change it unless your server name changes, or you are working at a different
-site.
+your own gloss:project[]s dependencies.
 
-From version 7.2.0, it also adds the property +project.holyGradleRepositoryBase+ which contains the
-value of this environment variable, guaranteed to end with a slash (+'/'+).  See the
+==== Setup of Base URL
+
+From version 7.5.0 of the gradle _wrapper_, +gw.bat+ will attempt to set this variable based on the file
++gradle/base-url-lookup.txt+.  You can add this file to your source code, or it may be available as part of a
++wrapper-starter-kit+ in your organisation -- see link:first_steps.html#&#x5f;setting_up_a_gradle_wrapper[] for details.
+The file should be a text file with several lines of the format "+_DNS-suffix_ _Base-URL_+", for example as follows.
+
+----
+foo.com http://artifactory.foo.com/artifactory/
+bar.com https://artifacts.internal.bar.com/artfactory
+----
+
+The DNS suffix is taken from the output of +ipconfig.exe+.
+
+For versions before 7.5.0, you must set this manually in your user environment settings.  You should not need to change
+it unless your server name changes, or you are working at a different site.
+
+==== Project Property for Base URL
+
+From version 7.2.0, the property +project.holyGradleRepositoryBase+ is automatically added to your project.  This
+contains the value of the environment variable, guaranteed to end with a slash (+'/'+).  See the
 link:plugin-intrepid.html#_example_build_script[] for how this can be used.
 
 
