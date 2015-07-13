@@ -8,7 +8,10 @@ import org.gradle.api.file.FileTree
 import org.gradle.api.file.FileVisitDetails
 import org.gradle.process.ExecSpec
 import org.gradle.testfixtures.ProjectBuilder
+import org.hamcrest.core.IsEqual
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ErrorCollector
 
 import java.util.zip.ZipFile
 
@@ -16,6 +19,9 @@ import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertTrue
 
 class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest {
+    @Rule
+    public ErrorCollector collector = new ErrorCollector()
+
     @Test
     public void testBasicConfiguration() {
         File projectDir = new File(getTestDir(), "projectA")
@@ -59,7 +65,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         assertNotNull("build file is in zip", buildScriptZipFile.getEntry("build.gradle"))
         assertNotNull("settings file is in zip", buildScriptZipFile.getEntry("settings.gradle"))
 
-        checkBuildInfo(project.zipTree(new File("packages", "projectB-buildScript.zip")))
+        checkBuildInfo(project.zipTree(new File("packages", "projectB-buildScript.zip")), collector)
     }
 
     @Test
@@ -90,6 +96,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
 
         checkBuildInfo(
             project.zipTree(new File("packages", "projectC-buildScript.zip")),
+            collector,
             [
                 "build_info/source_path.txt",
                 "build_info/source_revision.txt",
@@ -110,7 +117,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         )
     }
 
-    public static void checkBuildInfo(FileTree directory, Collection<String> checkFiles = []) {
+    public static void checkBuildInfo(FileTree directory, ErrorCollector collector, Collection<String> checkFiles = []) {
         checkFiles.addAll([
             "build_info",
             "build_info/versions.txt"
@@ -120,14 +127,14 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
 
         directory.visit { FileVisitDetails visitor ->
             String fileRelativePath = visitor.relativePath.toString()
-            println(fileRelativePath)
+
             if (fileMap.containsKey(fileRelativePath)) {
                 fileMap[fileRelativePath] = true
             }
         }
 
         fileMap.each { file ->
-            assertTrue(file.key, file.value)
+            collector.checkThat("File '$file.key' was not found", file.value, IsEqual.equalTo(true))
         }
     }
 

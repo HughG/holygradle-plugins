@@ -6,7 +6,9 @@ import holygradle.test.WrapperBuildLauncher
 import org.gradle.api.Project
 import org.gradle.api.file.FileTree
 import org.gradle.testfixtures.ProjectBuilder
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ErrorCollector
 
 import java.nio.file.Files
 
@@ -14,6 +16,9 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
 class CollectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTest {
+    @Rule
+    public ErrorCollector collector = new ErrorCollector()
+
     /**
      * Test that, if you depend on a module only via configurations which have no artifacts, and those lead to other
      * module configurations which do have artifacts, then all those modules are correctly collected.  The one with
@@ -94,6 +99,6 @@ class CollectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
             )
         }
 
-        PackageArtifactsIntegrationTest.checkBuildInfo(project.fileTree(new File("local_artifacts")))
+        PackageArtifactsIntegrationTest.checkBuildInfo(project.fileTree(new File("local_artifacts")), collector)
     }
 }

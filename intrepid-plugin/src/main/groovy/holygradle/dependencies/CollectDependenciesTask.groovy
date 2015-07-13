@@ -39,6 +39,7 @@ class CollectDependenciesTask extends Copy {
         this.buildscriptDependenciesState = project.extensions.buildscriptDependenciesState
         this.dependenciesState = project.extensions.dependenciesState
 
+        // Add a dependency on the createPublishNotes task so the build_info folder will be available for copying
         Task createPublishNotesTask = project.tasks.findByName("createPublishNotes")
         if (createPublishNotesTask != null) {
             this.dependsOn createPublishNotesTask
@@ -268,7 +269,7 @@ class CollectDependenciesTask extends Copy {
         Task createPublishNotesTask = project.tasks.findByName("createPublishNotes")
         if (createPublishNotesTask != null) {
             from(createPublishNotesTask.ext.buildInfoDir.toString()) {
-                into "build_info"
+                into createPublishNotesTask.ext.buildInfoDir.name
             }
         }
     }
