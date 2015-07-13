@@ -269,7 +269,10 @@ jar file, +gradle/gradle-wrapper.jar+.
 . The Gradle Wrapper does some bootstrapping to ensure that Gradle is on your machine.
 .. If the optional file +gradle/base-url-lookup.txt+ is present and contains a line for the DNS suffix of the machine,
 that value is used to initialise +HOLY_GRADLE_REPOSITORY_BASE_URL+; otherwise the user must set it manually.
-.. The file +gradle/distributionPath.txt contains a URL path to a specific link:custom-gradle.html[] version.
+.. If the optional folder +gradle/certs+ exists, the Java +keytool.exe+ will be used to combine all SSL certificate
+files in that folder with the Java built-in ones in +_JRE_/lib/security/cacerts+, and the combined "trust store" file
+will be passed to the Gradle process.  This allows it to access servers which use self-signed gloss:root-cert[]s.
+.. The file +gradle/distributionPath.txt+ contains a URL path to a specific link:custom-gradle.html[] version.
 +gw.bat+ combines this with the value in +HOLY_GRADLE_REPOSITORY_BASE_URL+ and
 +gradle/gradle-wrapper.properties.in+ to create the file +gradle/gradle-wrapper.properties+. If you
 haven't previously used this distribution then the Gradle Wrapper will download it from this URL to
