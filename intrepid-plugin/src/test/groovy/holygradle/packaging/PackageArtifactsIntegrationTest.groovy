@@ -3,6 +3,8 @@ package holygradle.packaging
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.gradle.api.Project
+import org.gradle.api.file.FileTree
+import org.gradle.api.file.FileVisitDetails
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
@@ -34,6 +36,9 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
             packagesDir.deleteDir()
         }
 
+        // Create a dummy project to provide access to FileTree methods
+        Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+
         // Run fAD to make sure we generate the settings file.
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fAD")
@@ -51,5 +56,25 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         ZipFile buildScriptZipFile = new ZipFile(buildScriptFile)
         assertNotNull("build file is in zip", buildScriptZipFile.getEntry("build.gradle"))
         assertNotNull("settings file is in zip", buildScriptZipFile.getEntry("settings.gradle"))
+
+        checkBuildInfo(project.zipTree(new File("packages", "projectB-buildScript.zip")))
+    }
+
+    public static void checkBuildInfo(FileTree directory) {
+        boolean foundBuildInfo = false
+        boolean foundVersionsTxt = false
+
+        directory.visit { FileVisitDetails visitor ->
+            if (visitor.relativePath.toString() == "build_info") {
+                foundBuildInfo = true
+            }
+
+            if (visitor.relativePath.toString() == "build_info/versions.txt") {
+                foundVersionsTxt = true
+            }
+        }
+
+        assertTrue(foundBuildInfo)
+        assertTrue(foundVersionsTxt)
     }
 }

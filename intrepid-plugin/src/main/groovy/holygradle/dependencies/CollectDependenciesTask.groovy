@@ -39,6 +39,11 @@ class CollectDependenciesTask extends Copy {
         this.buildscriptDependenciesState = project.extensions.buildscriptDependenciesState
         this.dependenciesState = project.extensions.dependenciesState
 
+        Task createPublishNotesTask = project.tasks.findByName("createPublishNotes")
+        if (createPublishNotesTask != null) {
+            this.dependsOn createPublishNotesTask
+        }
+
         destinationDir = new File(project.rootProject.projectDir, "local_artifacts")
         doFirst {
             if (destinationDir.exists()) {
@@ -85,6 +90,7 @@ class CollectDependenciesTask extends Copy {
         }
 
         configureToCopyCustomGradleDistribution()
+        configureToCopyPublishNotes()
         configureToRewriteGradleWrapperProperties()
     }
 
@@ -252,6 +258,18 @@ class CollectDependenciesTask extends Copy {
         String customDistVersion = splitDistName[-1]
         from(new File(project.gradle.gradleHomeDir.parentFile, distName + ".zip").toString()) {
             into "custom-gradle/${customDistVersion}"
+        }
+    }
+
+    /**
+     * Configures this task to copy the publish notes into the target "local_artifacts" folder
+     */
+    private void configureToCopyPublishNotes() {
+        Task createPublishNotesTask = project.tasks.findByName("createPublishNotes")
+        if (createPublishNotesTask != null) {
+            from(createPublishNotesTask.ext.buildInfoDir.toString()) {
+                into "build_info"
+            }
         }
     }
 

@@ -1,7 +1,11 @@
 package holygradle.dependencies
 
+import holygradle.packaging.PackageArtifactsIntegrationTest
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.gradle.api.Project
+import org.gradle.api.file.FileTree
+import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
 import java.nio.file.Files
@@ -64,6 +68,9 @@ class CollectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
             new File(gradleDir, "gradle-wrapper.properties").toPath()
         )
 
+        // Create a dummy project to provide access to FileTree methods
+        Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
             launcher.forTasks("collectDependencies")
@@ -86,5 +93,7 @@ class CollectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
                 depVersionDir.list().length > 1
             )
         }
+
+        PackageArtifactsIntegrationTest.checkBuildInfo(project.fileTree(new File("local_artifacts")))
     }
 }

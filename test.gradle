@@ -127,21 +127,25 @@ project.ext.setUpTests = { Project project ->
         }
     }
 
-    project.task('showTestReport', type: DefaultTask) {
-        group = "Verification"
-        description "Opens the unit test report."
-        doLast {
-            project.exec {
-                commandLine "cmd", "/c", "start", "${test.testReportDir}/index.html"
+    if (project.name != "integration") {
+        project.task('showTestReport', type: DefaultTask) {
+            group = "Verification"
+            description "Opens the unit test report."
+            File report = new File(project.test.testReportDir, "index.html")
+            doLast {
+                project.exec {
+                    commandLine "cmd", "/c", "if exist ${report} start ${report}"
+                }
             }
         }
     }
     project.task('showIntegrationTestReport', type: DefaultTask) {
         group = "Verification"
         description "Opens the integration test report."
+        File report = new File(project.integTest.testReportDir, "index.html")
         doLast {
             project.exec {
-                commandLine "cmd", "/c", "start", "${integTest.testReportDir}/index.html"
+                commandLine "cmd", "/c", "if exist ${report} start ${report}"
             }
         }
     }
@@ -182,7 +186,7 @@ project.ext.setUpTests = { Project project ->
             // Broken symlinks will cause compileTestGroovy to fail (because it tries to scan the folder
             // hierarchy for source).  Broken symlinks can appear if the top-level test repo dir is
             // deleted directly.
-            sourceSets.test.allSource.srcDirs.each { dir -> deleteBrokenSymlinksRecursively dir }
+            sourceSets.test.allSource.srcDirs.each { dir -> project.deleteBrokenSymlinksRecursively dir }
         }
         tasks["compileTestGroovy"].dependsOn it
     }

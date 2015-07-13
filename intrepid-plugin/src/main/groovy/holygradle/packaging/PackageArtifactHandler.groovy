@@ -77,6 +77,10 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             t.group = "Publishing"
             t.description = "Creates 'build_info' directory which will be included in published packages."
             File buildInfoDir = new File(project.projectDir, "build_info")
+
+            // Save the build directory to an extension so it can be accessed from outside
+            t.ext.buildInfoDir = buildInfoDir
+
             t.onlyIf {
                 // Don't do anything if we are republishing, or we will end up deleting the original build_info and
                 // replacing it with nearly no info.
