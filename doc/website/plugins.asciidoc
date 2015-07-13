@@ -32,6 +32,7 @@ digraph {
         cluster_project_sink [shape=point,margin="0.0",style=invis]
         cluster_project_source -> {
 
+            settings [label="settings.gradle", shape=note, color=navy, fontcolor=navy]
             build [label="build.gradle", shape=note, color=navy, fontcolor=navy]
             gw [label="gw.bat"]
             wrapper [label="Gradle\nwrapper"]
@@ -74,9 +75,11 @@ digraph {
 
     build -> afym [lhead=cluster_plugins, label="specifies"]
 
-    build -> gw [label="input to", style=dashed]//, minlen=0]
+    settings -> gw [label="input to", style=dashed]
+    build -> gw [label="input to", style=dashed]
     gw -> wrapper [label="runs"]
 
+    intrepid -> settings [label="modifies", style=dashed]
 
     subgraph cluster_kits {
         label="Starter ZIP files"
