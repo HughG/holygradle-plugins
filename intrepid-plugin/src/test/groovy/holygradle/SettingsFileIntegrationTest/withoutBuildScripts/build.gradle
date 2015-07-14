@@ -1,0 +1,25 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    foo
+    bar
+}
+
+/*
+    Note: To correctly test that we don't get a ConcurrentModificationException in settings.gradle, we need the source
+    dep with no build file to be processed first, to cause a project to be removed.
+*/
+sourceDependencies {
+    // Declare a source dependency which has a build file.
+    "B_src_dep" {
+        hg "http://a_dummy_url_that_we_wont_need"
+        publishing.configuration "foo->someChildConfig"
+    }
+    // Declare a source dependency which does NOT have a build file.
+    "A_no_build_script" {
+        hg "http://another_dummy_url_that_we_wont_need"
+    }
+}

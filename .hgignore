@@ -17,8 +17,9 @@ custom-gradle-core-plugin/src/main/resources/holygradle/gw.bat
 distributionUrlBase.txt
 credential-store.exe
 *-subprojects.txt
-# Ignore any gradle[-foo].properties, as they may contain company-specific information.
+# Ignore any files which may contain company-specific information.
 gradle*.properties
+base-url-lookup.txt
 syntax: regexp
 # Gradle / Java
 (^|/).gradle/

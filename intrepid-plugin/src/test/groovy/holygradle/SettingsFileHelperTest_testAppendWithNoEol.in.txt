@@ -1,0 +1,2 @@
+// Here is some pre-existing code, with no EOL.
+rootProject.name = "custom_name"

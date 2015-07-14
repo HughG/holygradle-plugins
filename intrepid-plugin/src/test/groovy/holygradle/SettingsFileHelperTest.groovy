@@ -22,11 +22,8 @@ class SettingsFileHelperTest extends AbstractHolyGradleTest {
      */
     @Test
     public void testUpgradeFromV1() {
-        doTestWrite("testUpgradeFromV1") { File settingsFile ->
-            // Copy in an example "V1" settings file.
-            File initialSettingsFile = new File(settingsFile.parent, settingsFile.name.replaceAll('\\.test', '.in'))
-            Files.copy(initialSettingsFile.toPath(), settingsFile.toPath())
-        }
+        // Copy in an example "V1" settings file.
+        doTestWrite("testUpgradeFromV1", this.&copyInitialInput)
     }
 
     /**
@@ -36,11 +33,24 @@ class SettingsFileHelperTest extends AbstractHolyGradleTest {
      */
     @Test
     public void testUpgradeFromV2() {
-        doTestWrite("testUpgradeFromV2") { File settingsFile ->
-            // Copy in an example "V2" settings file.
-            File initialSettingsFile = new File(settingsFile.parent, settingsFile.name.replaceAll('\\.test', '.in'))
-            Files.copy(initialSettingsFile.toPath(), settingsFile.toPath())
-        }
+        // Copy in an example "V2" settings file.
+        doTestWrite("testUpgradeFromV2", this.&copyInitialInput)
+    }
+
+    /**
+     * Test for appending the helper code when the pre-existing file has no line ending on its last line.  After append,
+     * all the pre-existing lines should appear first, and be the same as before (ignoring line endings), and the begin
+     * marker should appear at the start of the line.  If we re-run, no more blank lines should be inserted.
+     */
+    @Test
+    public void testAppendWithNoEol() {
+        // Copy in an example file whose last line has no EOL character(s).
+        doTestWrite("testAppendWithNoEol", this.&copyInitialInput)
+    }
+
+    public copyInitialInput(File settingsFile) {
+        File initialSettingsFile = new File(settingsFile.parent, settingsFile.name.replaceAll('\\.test', '.in'))
+        Files.copy(initialSettingsFile.toPath(), settingsFile.toPath())
     }
 
     private void doTestWrite(String testName, Closure closure = null) {
@@ -54,14 +64,16 @@ class SettingsFileHelperTest extends AbstractHolyGradleTest {
             closure(settingsFile)
         }
 
-        Collection<String> newIncludes = SettingsFileHelper.writeSettingsFile(
-            settingsFile,
-            settingsSubprojectsFile,
-            includes
-        )
-        assertEquals(['../foo', 'bar', 'blah/blah'], newIncludes)
-        regression.checkForRegression(testName)
-        regression.checkForRegression("${testName}-subprojects")
+        2.times {
+            Collection<String> newIncludes = SettingsFileHelper.writeSettingsFile(
+                settingsFile,
+                settingsSubprojectsFile,
+                includes
+            )
+            assertEquals(['../foo', 'bar', 'blah/blah'], newIncludes)
+            regression.checkForRegression(testName)
+            regression.checkForRegression("${testName}-subprojects")
+        }
     }
 
 }

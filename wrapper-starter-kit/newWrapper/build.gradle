@@ -30,7 +30,18 @@ if (wrapperVersion != customGradleCoreVersion) {
 }
 
 task clean << {
-    delete "gw", "gw.bat", "gw.bat.in", "gradle"
+    delete "gw", "gw.bat", "gradle"
 }
 
 createWrapper.dependsOn clean
+
+// The URL lookup file will be deleted by the clean task, so copy it back in from the parent project.
+createWrapper << {
+    copy {
+        into(new File(projectDir, "gradle"))
+        from(new File(rootProject.projectDir, "gradle")) {
+            include "base-url-lookup.txt"
+            include "certs/**"
+        }
+    }
+}

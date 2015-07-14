@@ -232,7 +232,8 @@ history of a set of related files.
 [[gloss-settings-file]] settings file::
     A gloss:gradle[] file called +settings.gradle+ which read before your build script.  This
     script is normally in the same folder as your build script.  See http://www.gradle.org/docs/1.4/userguide/userguide_single.html#sec:settings_file for more
-    detail.  When using the link:plugin-intrepid.html, this file is generated for you.
+    detail.  When using the link:plugin-intrepid.html[], part this file is generated for you, to add
+    sub-gloss:project[]s based on gloss:source-dependencies[].
 [[gloss-source-dependency]] source dependency::
     The gloss:holygradle[] allows projects to have dependencies which are built from source in other
     repositories, using the standard gloss:gradle[] multi-project build approach.  The source code

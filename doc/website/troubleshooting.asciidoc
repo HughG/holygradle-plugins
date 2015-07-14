@@ -75,11 +75,12 @@ or
 404 Not Found
 ----
 
-. The link:first_steps.html#_setting_up_a_gradle_wrapper[custom Gradle wrapper] uses a URL to
-download the gloss:holygradle[] plugins.  From version link:release_notes.html#_plugins_7.0.0[7.0.0]
-the wrapper gets this URL from the environment variable (+HOLY_GRADLE_REPOSITORY_BASE_URL+), which
-should be set to a site-specific value.  See link:first_steps.html#_accessing_artifactory[] for
-details.
+. The link:first_steps.html#_setting_up_a_gradle_wrapper[custom Gradle wrapper] uses a URL to download the
+gloss:holygradle[] plugins.  From version link:release_notes.html#_plugins_7.0.0[7.0.0] the wrapper gets this URL from
+the environment variable (+HOLY_GRADLE_REPOSITORY_BASE_URL+), which should be set to a site-specific value.  From
+link:release_notes.html#&#x5f;custom_gradle_7.5.0[7.5.0] of the gloss:gradle-wrapper[] it can be set up automatically
+using a DNS lookup file in your project's source code.  See link:first_steps.html#_setting_up_a_gradle_wrapper[] and
+link:first_steps.html#_accessing_artifactory[] for details.
 . Your +build.gradle+ script will use a URL in the link:plugin-intrepid.html#_repositories[] section
 to point to the gloss:repositories[] where your gloss:project[]'s gloss:dependencies[] can be found.
 . Your +build.gradle+ script may also use a URL in the link:plugin-intrepid.html#_publishPackages[]

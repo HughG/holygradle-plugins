@@ -60,12 +60,16 @@ also be useful to check which Java executable a process is running.
 
 == Accessing Artifactory
 
-First find the web address of your local Artifactory server.  With a default Artifactory setup,
-the base URL will have the server name followed by +/artifactory/+. Browsing to this URL will
-show you any publicly available modules, and allow you to log in.
+For versions of the Holy Gradle's gloss:gradle-wrapper[] before link:release_notes.html#&#x5f;custom_gradle_7_5_0[7.5.0], you must manually set up an environment variable pointing to an
+organisation-specific server where the plugins can be downloaded.  (From 7.5.0 this can be committed with your project's
+source code -- see <<_setting_up_a_gradle_wrapper>> for details.)
 
-You should then set the environment variable +HOLY_GRADLE_REPOSITORY_BASE_URL+ to this same,
-site-specific URL, as described at link:custom-gradle.html#_plugin_base_url[].
+For manual setup, first find the web address of your local Artifactory server.  With a default Artifactory installation,
+the base URL will have the server name followed by +/artifactory/+. Browsing to this URL will show you any publicly
+available modules, and allow you to log in.
+
+You should then set the environment variable +HOLY_GRADLE_REPOSITORY_BASE_URL+ to this same, site-specific URL, as
+described at link:custom-gradle.html#_plugin_base_url[].
 
 ifndef::localDoc[]
 You must contact your site administrator to get login details and set up permissions.

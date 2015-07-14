@@ -1,7 +1,5 @@
-/*
-    Code before special section.
-*/
-
+// Here is some pre-existing code, with no EOL.
+rootProject.name = "custom_name"
 // holygradle source dependencies Va94d6912d47fc33fb7ecde7ed57f8134 BEGIN
 // Do not edit this section.  It may be replaced by the holygradle plugins automatically.
 // When the Holy Gradle adds or modifies this section, you should commit this file to source control.
@@ -42,7 +40,3 @@ collectProjects([rootProject]).each { ProjectDescriptor proj ->
     }
 }
 // holygradle source dependencies Va94d6912d47fc33fb7ecde7ed57f8134 END
-
-/*
-    Code after special section.
-*/

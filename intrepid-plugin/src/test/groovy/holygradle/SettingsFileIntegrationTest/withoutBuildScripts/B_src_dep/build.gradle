@@ -1,0 +1,8 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    someChildConfig
+}

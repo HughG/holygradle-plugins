@@ -32,6 +32,7 @@ digraph {
         cluster_project_sink [shape=point,margin="0.0",style=invis]
         cluster_project_source -> {
 
+            settings [label="settings.gradle", shape=note, color=navy, fontcolor=navy]
             build [label="build.gradle", shape=note, color=navy, fontcolor=navy]
             gw [label="gw.bat"]
             wrapper [label="Gradle\nwrapper"]
@@ -74,9 +75,11 @@ digraph {
 
     build -> afym [lhead=cluster_plugins, label="specifies"]
 
-    build -> gw [label="input to", style=dashed]//, minlen=0]
+    settings -> gw [label="input to", style=dashed]
+    build -> gw [label="input to", style=dashed]
     gw -> wrapper [label="runs"]
 
+    intrepid -> settings [label="modifies", style=dashed]
 
     subgraph cluster_kits {
         label="Starter ZIP files"
@@ -261,13 +264,18 @@ The link:plugin-stamper.html[] supports the following.
 == How Tasks Are Run
 
 This is a rough explanation of what happens in Gradle and Holy Gradle plugins when you run a simple
-task such as +gw task'+.
+task such as +gw tasks+.
 
 . +gw.bat+ is executed and it tries to determine which version of Java to use. If it can't find a
 suitable version of Java then it will fail.  If it can, then it uses Java to run the gradle wrapper
 jar file, +gradle/gradle-wrapper.jar+.
-. The Gradle Wrapper does some bootstrapping to ensure that Gradle is on your machine.  The file
-+gradle/distributionPath.txt contains a URL path to a specific link:custom-gradle.html[] version.
+. The Gradle Wrapper does some bootstrapping to ensure that Gradle is on your machine.
+.. If the optional file +gradle/base-url-lookup.txt+ is present and contains a line for the DNS suffix of the machine,
+that value is used to initialise +HOLY_GRADLE_REPOSITORY_BASE_URL+; otherwise the user must set it manually.
+.. If the optional folder +gradle/certs+ exists, the Java +keytool.exe+ will be used to combine all SSL certificate
+files in that folder with the Java built-in ones in +_JRE_/lib/security/cacerts+, and the combined "trust store" file
+will be passed to the Gradle process.  This allows it to access servers which use self-signed gloss:root-cert[]s.
+.. The file +gradle/distributionPath.txt+ contains a URL path to a specific link:custom-gradle.html[] version.
 +gw.bat+ combines this with the value in +HOLY_GRADLE_REPOSITORY_BASE_URL+ and
 +gradle/gradle-wrapper.properties.in+ to create the file +gradle/gradle-wrapper.properties+. If you
 haven't previously used this distribution then the Gradle Wrapper will download it from this URL to
