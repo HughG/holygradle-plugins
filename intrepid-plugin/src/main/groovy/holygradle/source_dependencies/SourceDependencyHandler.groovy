@@ -8,6 +8,7 @@ import holygradle.dependencies.DependencyHandler
 import holygradle.scm.CommandLine
 import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
+import holygradle.scm.GitDependency
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -56,6 +57,15 @@ class SourceDependencyHandler extends DependencyHandler {
         } else {
             protocol = "svn"
             url = svnUrl
+        }
+    }
+
+    public void git(String gitUrl) {
+        if (protocol != null || url != null) {
+            throw new RuntimeException("Cannot call 'git' when protocol and/or url has already been set")
+        } else {
+            protocol = "git"
+            url = gitUrl
         }
     }
 
@@ -131,7 +141,7 @@ class SourceDependencyHandler extends DependencyHandler {
                 this,
                 hgCommand
             )
-        } else {
+        } else if (protocol == "hg") {
             def hgCommand = new CommandLine(
                 "hg.exe",
                 project.&exec
@@ -142,6 +152,19 @@ class SourceDependencyHandler extends DependencyHandler {
                 buildScriptDependencies,
                 hgCommand
             )
+        } else if (protocol == "git") {
+            def gitCommand = new CommandLine(
+                "git.exe",
+                project.&exec
+            )
+            sourceDependency = new GitDependency(
+                project,
+                this,
+                buildScriptDependencies,
+                gitCommand
+            )
+        } else {
+            throw new RuntimeException("Unsupported protocol: " + protocol)
         }
         String fetchTaskName = CamelCase.build("fetch", targetName)
         FetchSourceDependencyTask fetchTask =

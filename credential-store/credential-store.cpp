@@ -121,7 +121,7 @@ int ci_find_substr( const T& str1, const T& str2, const std::locale& loc = std::
     else return -1; // not found
 }
 
-BOOL IsMercurialCredential(wstring& target_name, wstring& username) {
+BOOL IsMercurialCredential(const wstring& target_name, const wstring& username) {
     BOOL is_mercurial = FALSE;
     if (target_name.size() > username.size() &&
         ci_find_substr(target_name, username) == 0 &&
@@ -137,7 +137,34 @@ BOOL IsMercurialCredential(wstring& target_name, wstring& username) {
     return is_mercurial;
 }
 
-BOOL IsIntrepidCredential(wstring& target_name) {
+BOOL IsGitCredential(const wstring& target_name, const wstring& username) {
+    // git://<scheme>://<username>@<hostname>
+    if (target_name.find("git://") != 0) { // Starts with "git://"
+        return FALSE;
+    }
+    
+    size_t username_pos = target_name.find(username);
+    if (username_pos == wstring::npos) { // Contains username
+        return FALSE;
+    }
+    if (target_name.substr(username_pos - 3, 3) != "://") { // Username preceded by "://"
+        return FALSE;
+    }
+    if (username_pos - 3 <= 10) { // "://<username>" is preceded by at least one character
+        return FALSE;
+    }
+    
+    if (target_name.find("@") != (username_pos + username.size())) { // Username followed by "@"
+        return FALSE;
+    }
+    if (target_name.size() <= (username_pos + username.size() + 1)) { // Text follows the "@"
+        return FALSE;
+    }
+    
+    return TRUE;
+}
+
+BOOL IsIntrepidCredential(const wstring& target_name) {
     return target_name.find(L"Intrepid - ") == 0;
 }
 
@@ -158,7 +185,9 @@ int UpdateAllCredentials(wstring& username, wstring& password) {
 
             //PrintCredential(pCredential);
 
-            if (IsMercurialCredential(target_name, username)) {
+            if (IsMercurialCredential(target_name, username) ||
+                IsGitCredential(target_name, username)
+            ) {
                 wcout << "Updated: " << target_name << endl;
 
                 StoreCredential(target_name, password, wstring(pCredential->UserName));
