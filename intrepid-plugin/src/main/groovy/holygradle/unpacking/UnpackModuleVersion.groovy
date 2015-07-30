@@ -212,6 +212,11 @@ class UnpackModuleVersion {
         getSelfOrAncestorPackedDependency().shouldUnpackToCache()
     }
 
+    // If true this module is using a source replacement
+    private boolean hasSourceOverride() {
+        getSelfOrAncestorPackedDependency().sourceOverride != null
+    }
+
     /**
      * If true, a symlink for this module should be created, to the central cache, otherwise no symlink should be
      * created.  A symlink should be created if
@@ -230,7 +235,9 @@ class UnpackModuleVersion {
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
     // cache or it could be to somewhere in the workspace.
     public File getUnpackDir(Project project) {
-        if (shouldUnpackToCache()) {
+        if (hasSourceOverride()) {
+            new File(getSelfOrAncestorPackedDependency().getSourceOverride())
+        } else if (shouldUnpackToCache()) {
             // Our closest packed-dependency entry (which could be for 'this' module, or any parent module)
             // dictated that we should unpack to the global cache.
             Helper.getGlobalUnpackCacheLocation(project, moduleVersion)

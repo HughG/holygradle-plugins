@@ -13,6 +13,7 @@ class PackedDependencyHandler extends DependencyHandler {
     private String dependencyGroup
     private String dependencyModule
     private String dependencyVersion
+    private String sourceOverrideLocation = null
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
     public Boolean unpackToCache = null
@@ -193,6 +194,14 @@ class PackedDependencyHandler extends DependencyHandler {
                 new DefaultExternalModuleDependency(dependencyGroup, dependencyModule, dependencyVersion, toConf)
             )
         }
+    }
+
+    public void sourceOverride(String override) {
+        sourceOverrideLocation = override
+    }
+
+    public String getSourceOverride() {
+        sourceOverrideLocation
     }
     
     public void configuration(String... configs) {

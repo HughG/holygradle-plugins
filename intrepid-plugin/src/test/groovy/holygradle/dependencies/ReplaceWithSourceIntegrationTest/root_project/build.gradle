@@ -1,0 +1,28 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    foo
+    bar
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+packedDependencies {
+    "ext_11" {
+        dependency "holygradle.test:external-lib:1.1"
+        configuration "foo->compile"
+    }
+    "framework" {
+        dependency "holygradle.test:example-framework:1.1"
+        configuration "bar->compileVc10Debug,compileVc10Release"
+		sourceOverride "source"
+    }
+}
+
+/*packedDependencies {
+}*/
