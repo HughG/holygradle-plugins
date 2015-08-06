@@ -76,4 +76,52 @@ class SettingsFileHelperTest extends AbstractHolyGradleTest {
         }
     }
 
+    @Test
+    public void testNoChange0() {
+        doTestDetectChanges("testNoChange0", [], [])
+    }
+
+    @Test
+    public void testNoChange2() {
+        doTestDetectChanges("testNoChange2", ['../foo', 'bar'], ['../foo', 'bar'])
+    }
+
+    @Test
+    public void testChange0To1() {
+        doTestDetectChanges("testChange0To1", [], ['../foo'])
+    }
+
+    @Test
+    public void testChange1To2() {
+        doTestDetectChanges("testChange1To2", ['../foo'], ['../foo', 'bar'])
+    }
+
+    @Test
+    public void testChange2To1() {
+        doTestDetectChanges("testChange2To1", ['../foo', 'bar'], ['bar'])
+    }
+
+    @Test
+    public void testChange1To0() {
+        doTestDetectChanges("testChange1To0", ['bar'], [])
+    }
+
+    @Test
+    public void testChange2To1Different() {
+        doTestDetectChanges("testChange2To1Different", ['../foo', 'bar'], ['bar', 'blah/blah'])
+    }
+
+    private void doTestDetectChanges(String testName, Collection<String> paths1, Collection<String> paths2) {
+        File settingsFile = regression.getTestFile(testName)
+        File settingsSubprojectsFile = SettingsFileHelper.getSettingsSubprojectsFile(settingsFile)
+        [settingsFile, settingsSubprojectsFile].each {
+            it.delete()
+//            println "Deleted ${it}"
+        }
+
+        boolean changed1 = SettingsFileHelper.writeSettingsFileAndDetectChange(settingsFile, paths1)
+        assertEquals("First paths collection change was detected correctly: ${paths1}", !(paths1.empty), changed1)
+        boolean changed2 = SettingsFileHelper.writeSettingsFileAndDetectChange(settingsFile, paths2)
+        assertEquals("Second paths collection change was detected correctly: ${paths1} -> ${paths2}", paths1 != paths2, changed2)
+    }
 }

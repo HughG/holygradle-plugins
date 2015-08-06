@@ -27,7 +27,7 @@ ${SECTION_MARKER}${md5} END"""
     }
 
     // We don't just use a fixed filename because we need it to be different for tests.
-    private static File getSettingsSubprojectsFile(File settingsFile) {
+    public static File getSettingsSubprojectsFile(File settingsFile) {
         return new File(
             settingsFile.parentFile,
             settingsFile.name.replaceAll(/\.[^\.]+$/, "-subprojects.txt")
@@ -52,7 +52,9 @@ ${SECTION_MARKER}${md5} END"""
     ) {
         includeFilePaths = getNormalisedIncludeFilePaths(includeFilePaths)
         settingsSubprojectsFile.withPrintWriter { w ->
-            includeFilePaths.each { w.println(it) }
+            includeFilePaths.each {
+                w.println(it)
+            }
         }
 
         // The settings file is always going to be relatively small, so it's okay to handle all the lines in memory.

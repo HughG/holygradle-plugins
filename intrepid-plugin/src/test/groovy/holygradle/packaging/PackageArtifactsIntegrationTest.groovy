@@ -2,6 +2,7 @@ package holygradle.packaging
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import holygradle.testUtil.HgUtil
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import org.gradle.api.file.FileTree
@@ -83,9 +84,9 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         // Create a dummy project to provide access to FileTree methods
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
 
-        hgExec(project, "init", "noBuildFile")
-        hgExec(project, "init", "subProj")
-        hgExec(project, "init")
+        HgUtil.hgExec(project, "init", "noBuildFile")
+        HgUtil.hgExec(project, "init", "subProj")
+        HgUtil.hgExec(project, "init")
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("packageEverything")
@@ -135,14 +136,6 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
 
         fileMap.each { file ->
             collector.checkThat("File '$file.key' was not found", file.value, IsEqual.equalTo(true))
-        }
-    }
-
-    private static void hgExec(Project project, Object ... args) {
-        project.exec { ExecSpec spec ->
-            spec.workingDir = project.projectDir
-            spec.executable = "hg.exe"
-            spec.args = args.toList()
         }
     }
 }

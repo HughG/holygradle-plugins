@@ -1,0 +1,15 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    foo
+}
+
+sourceDependencies {
+    "src1" {
+        hg "${rootProject.projectDir.parent}/src1"
+        publishing.configuration "foo"
+    }
+}

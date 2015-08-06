@@ -1,5 +1,7 @@
 package holygradle.test
 
+import static org.junit.Assert.assertTrue
+
 class AbstractHolyGradleTest {
     protected RegressionFileHelper regression
 
@@ -25,5 +27,16 @@ class AbstractHolyGradleTest {
 
     protected File getTestDir() {
         return new File("src/test/groovy/" + getClass().getName().replace(".", "/"))
+    }
+
+    protected void ensureFileDeleted(File file) {
+        if (file.exists()) {
+            assertTrue("Removed existing ${file}", file.delete())
+        }
+    }
+    protected void ensureDirDeleted(File dir) {
+        if (dir.exists()) {
+            assertTrue("Removed existing ${dir}", dir.deleteDir())
+        }
     }
 }

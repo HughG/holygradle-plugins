@@ -2,6 +2,7 @@ package holygradle.packaging
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import holygradle.testUtil.HgUtil
 import org.gradle.api.Project
 import org.gradle.process.ExecSpec
 import org.gradle.testfixtures.ProjectBuilder
@@ -43,12 +44,12 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // Set up the project dir as a Mercurial repo.
         Project project = ProjectBuilder.builder().withProjectDir(projectADir).build()
         // Make the project dir into a repo, then add the extension.
-        hgExec(project, "init")
+        HgUtil.hgExec(project, "init")
 
         // Add a file.
-        hgExec(project, "add", "build.gradle")
+        HgUtil.hgExec(project, "add", "build.gradle")
         // Set the commit message, user, and date, so that the hash will be the same every time.
-        hgExec(project,
+        HgUtil.hgExec(project,
                "commit",
                "-m", "Initial test state.",
                "-u", "TestUser",
@@ -204,14 +205,6 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 // rest, and report all failures at the end.
                 collector.addError(e)
             }
-        }
-    }
-
-    private static void hgExec(Project project, Object ... args) {
-        project.exec { ExecSpec spec ->
-            spec.workingDir = project.projectDir
-            spec.executable = "hg.exe"
-            spec.args = args.toList()
         }
     }
 }
