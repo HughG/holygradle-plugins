@@ -1,5 +1,6 @@
 package holygradle.scm
 
+import holygradle.io.FileHelper
 import holygradle.test.*
 import holygradle.testUtil.HgUtil
 import holygradle.testUtil.ZipUtil
@@ -42,10 +43,8 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         ////////////////////////////////////////////////////////////////////////////////
         // Create a repo to run the test in.
         File projectDir = new File(getTestDir(), "testHg")
-        if (projectDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectDir}", projectDir.deleteDir())
-        }
-        assertTrue("Created empty ${projectDir}", projectDir.mkdirs())
+        FileHelper.ensureDeleteDirRecursive(projectDir)
+        FileHelper.ensureMkdirs(projectDir)
 
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
         // Make the project dir into a repo, then add the extension.
@@ -109,10 +108,8 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         ////////////////////////////////////////////////////////////////////////////////
         // Create a repo to run the test in.
         File projectDir = new File(getTestDir(), "tGRWNC")
-        if (projectDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectDir}", projectDir.deleteDir())
-        }
-        assertTrue("Created empty ${projectDir}", projectDir.mkdirs())
+        FileHelper.ensureDeleteDirRecursive(projectDir)
+        FileHelper.ensureMkdirs(projectDir)
 
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
 

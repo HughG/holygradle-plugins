@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 repositories {
     mavenCentral()
 }
@@ -17,7 +19,7 @@ String initScriptsPath = 'src/initScripts/'
 String versionedInitScriptsPath = 'build/tmp/tempInitScripts/'
 File f = new File(project.projectDir, versionedInitScriptsPath)
 if (!f.exists()) {
-    f.mkdir()
+    Files.createDirectory(f.toPath())
 }
 
 task createVersionedInitScript(type: Copy) {
@@ -59,7 +61,7 @@ task customDistribution(type: Zip) {
         println "gradle.gradleHomeDir: " + gradle.gradleHomeDir
         File temp = new File(project.projectDir, versionedInitScriptsPath)
         for (tempFile in temp.listFiles()) {
-            tempFile.delete()
+            Files.delete(tempFile.toPath())
         }
     }
 }

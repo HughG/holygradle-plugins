@@ -1,5 +1,6 @@
 package holygradle.devenv
 
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import org.gradle.tooling.BuildLauncher
 import org.junit.Test
@@ -11,9 +12,7 @@ class IntegrationTest extends AbstractHolyGradleIntegrationTest {
     public void testVc10MultiPlatform() { 
         File projectDir = new File(getTestDir(), "vc10_multi_platform")
         File libDir = new File(projectDir, "build/lib")
-        if (libDir.exists()) {
-            libDir.deleteDir()
-        }
+        FileHelper.ensureDeleteDirRecursive(libDir)
         invokeGradle(projectDir) { BuildLauncher launcher ->
             launcher.forTasks("buildRelease", "buildDebug")
         }
@@ -29,9 +28,7 @@ class IntegrationTest extends AbstractHolyGradleIntegrationTest {
     public void testMultiCompiler() { 
         File projectDir = new File(getTestDir(), "multi_compiler")
         File libDir = new File(projectDir, "build/lib")
-        if (libDir.exists()) {
-            libDir.deleteDir()
-        }
+        FileHelper.ensureDeleteDirRecursive(libDir)
         // Not implemented this feature yet.
         /*
         invokeGradle(projectDir).forTasks("buildRelease", "buildDebug")

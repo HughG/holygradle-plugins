@@ -3,6 +3,7 @@ package holygradle.packaging
 import holygradle.custom_gradle.PluginUsages
 import holygradle.dependencies.DependencyHandler
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.io.FileHelper
 import holygradle.publishing.RepublishHandler
 import holygradle.scm.SourceControlRepository
 import holygradle.source_dependencies.SourceDependencyHandler
@@ -185,9 +186,7 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
 
     @Override
     public void writeFile(File buildFile) {
-        if (!buildFile.parentFile.exists() && !buildFile.parentFile.mkdirs()) {
-            throw new RuntimeException("Failed to create output folder for build script ${buildFile}")
-        }
+        FileHelper.ensureMkdirs(buildFile.parentFile, "as output folder for build script ${buildFile}")
     
         StringBuilder buildScript = new StringBuilder()
         

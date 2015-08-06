@@ -1,5 +1,6 @@
 package holygradle.packaging
 
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import holygradle.testUtil.HgUtil
@@ -32,10 +33,8 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
     public void testCreateBuildScriptWithPinnedSourceDependency() {
         // Create a repo with projectA in it.  This doesn't have to be a Gradle project.
         File projectADir = new File(getTestDir(), "projectA")
-        if (projectADir.exists()) {
-            assertTrue("Deleted pre-existing ${projectADir}", projectADir.deleteDir())
-        }
-        assertTrue("Created empty ${projectADir}", projectADir.mkdirs())
+        FileHelper.ensureDeleteDirRecursive(projectADir)
+        FileHelper.ensureMkdirs(projectADir)
         File projectAInputDir = new File(getTestDir(), "projectAInput")
         projectAInputDir.listFiles().each { File file ->
             Files.copy(file.toPath(), new File(projectADir, file.name).toPath())
@@ -62,9 +61,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // date after the first run.
         File projectBDir = new File(getTestDir(), "projectB")
         File projectBPackagesDir = new File(projectBDir, "packages")
-        if (projectBPackagesDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectBPackagesDir}", projectBPackagesDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(projectBPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
@@ -97,9 +94,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
 
         File projectCDir = new File(getTestDir(), "projectC")
         File projectCPackagesDir = new File(projectCDir, "packages")
-        if (projectCPackagesDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
@@ -133,9 +128,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
     public void testBuildScriptRequired() {
         File projectCDir = new File(getTestDir(), "buildScriptRequired")
         File projectCPackagesDir = new File(projectCDir, "packages")
-        if (projectCPackagesDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->

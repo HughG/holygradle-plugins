@@ -1,5 +1,6 @@
 package holygradle.packaging
 
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import holygradle.testUtil.HgUtil
@@ -41,9 +42,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
     public void testBasicPackageEverything() {
         File projectDir = new File(getTestDir(), "projectB")
         File packagesDir = new File(projectDir, "packages")
-        if (packagesDir.exists()) {
-            packagesDir.deleteDir()
-        }
+        FileHelper.ensureDeleteDirRecursive(packagesDir)
 
         // Create a dummy project to provide access to FileTree methods
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
@@ -73,9 +72,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
     public void testPackageSourceDependencies() {
         File projectTemplateDir = new File(getTestDir(), "projectCin")
         File projectDir = new File(getTestDir(), "projectC")
-        if (projectDir.exists()) {
-            projectDir.deleteDir()
-        }
+        FileHelper.ensureDeleteDirRecursive(projectDir)
 
         FileUtils.copyDirectory(projectTemplateDir, projectDir)
 

@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.io.FileHelper
 import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
@@ -30,8 +31,8 @@ class SettingsFileIntegrationTest extends AbstractHolyGradleIntegrationTest {
         File src2Dir = copyDirFromTemplate(baseDir, "src2")
         initRepo(src2Dir)
         def rootProjectDir = new File(baseDir, "root")
-        ensureDirDeleted(new File(rootProjectDir, "src1"))
-        ensureFileDeleted(new File(rootProjectDir, "settings-subprojects.txt"))
+        FileHelper.ensureDeleteDirRecursive(new File(rootProjectDir, "src1"))
+        FileHelper.ensureDeleteFile(new File(rootProjectDir, "settings-subprojects.txt"))
 
         // First ":fAD" should see that src1 is a src dep of root, add "src1" to the settings file, clone src1, then
         // re-run (both because the settings file changed, and because src1 was fetched).
@@ -65,7 +66,7 @@ class SettingsFileIntegrationTest extends AbstractHolyGradleIntegrationTest {
     private File copyDirFromTemplate(File baseDir, String dirName) {
         File templateDir = new File(baseDir, "${dirName}in")
         File dir = new File(baseDir, dirName)
-        ensureDirDeleted(dir)
+        FileHelper.ensureDeleteDirRecursive(dir)
         FileUtils.copyDirectory(templateDir, dir)
         return dir
     }

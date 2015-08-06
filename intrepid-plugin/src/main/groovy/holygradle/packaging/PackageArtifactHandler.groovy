@@ -3,6 +3,7 @@ package holygradle.packaging
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.RetryHelper
+import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
@@ -324,9 +325,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             
             File taskDir = new File(it.destinationDir, taskName)
-            if (!taskDir.exists() && !taskDir.mkdirs()) {
-                throw new RuntimeException("Failed to create output folder for publish notes ${taskDir}")
-            }
+            FileHelper.ensureMkdirs(taskDir, "as output folder for publish notes ${taskDir}")
         
             // If we're publishing then let's generate the auto-generatable files. But if we're 'republishing'
             // then just make sure that all auto-generated files are present.

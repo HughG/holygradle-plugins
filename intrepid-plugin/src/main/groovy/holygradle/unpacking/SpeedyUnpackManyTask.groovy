@@ -2,6 +2,7 @@ package holygradle.unpacking
 
 import holygradle.Helper
 import holygradle.custom_gradle.util.Symlink
+import holygradle.io.FileHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -99,18 +100,18 @@ class SpeedyUnpackManyTask
         if (entry.unpackDir.exists()) {
             if (Symlink.isJunctionOrSymlink(entry.unpackDir)) {
                 logger.info "SpeedyUnpackManyTask: replacing symlink ${entry.unpackDir} with real directory"
-                entry.unpackDir.delete()
-                entry.unpackDir.mkdir()
+                FileHelper.ensureDeleteFile(entry.unpackDir)
+                FileHelper.ensureMkdirs(entry.unpackDir)
             }
         } else {
-            logger.info "SpeedyUnpackManyTask: creating directory symlink ${entry.unpackDir}"
-            entry.unpackDir.mkdir()
+            logger.info "SpeedyUnpackManyTask: creating unpack dir ${entry.unpackDir}"
+            FileHelper.ensureMkdirs(entry.unpackDir)
         }
         if (!entry.applyUpToDateChecks) {
             // If we're not using the normal Gradle mechanism, reset the info file.
             if (infoFile.exists()) {
                 logger.info "SpeedyUnpackManyTask: re-creating info file ${infoFile}"
-                infoFile.delete()
+                FileHelper.ensureDeleteFile(infoFile)
                 infoFile.createNewFile()
             }
         }

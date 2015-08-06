@@ -1,5 +1,6 @@
 package holygradle
 
+import holygradle.io.FileHelper
 import holygradle.test.*
 import org.junit.Test
 
@@ -58,7 +59,7 @@ class SettingsFileHelperTest extends AbstractHolyGradleTest {
 
         File settingsFile = regression.getTestFile(testName)
         File settingsSubprojectsFile = regression.getTestFile("${testName}-subprojects")
-        [settingsFile, settingsSubprojectsFile].each { it.delete() }
+        [settingsFile, settingsSubprojectsFile].each { FileHelper.ensureDeleteFile(it) }
 
         if (closure) {
             closure(settingsFile)
@@ -114,10 +115,7 @@ class SettingsFileHelperTest extends AbstractHolyGradleTest {
     private void doTestDetectChanges(String testName, Collection<String> paths1, Collection<String> paths2) {
         File settingsFile = regression.getTestFile(testName)
         File settingsSubprojectsFile = SettingsFileHelper.getSettingsSubprojectsFile(settingsFile)
-        [settingsFile, settingsSubprojectsFile].each {
-            it.delete()
-//            println "Deleted ${it}"
-        }
+        [settingsFile, settingsSubprojectsFile].each { FileHelper.ensureDeleteFile(it) }
 
         boolean changed1 = SettingsFileHelper.writeSettingsFileAndDetectChange(settingsFile, paths1)
         assertEquals("First paths collection change was detected correctly: ${paths1}", !(paths1.empty), changed1)

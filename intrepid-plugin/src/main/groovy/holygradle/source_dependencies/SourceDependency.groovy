@@ -1,5 +1,6 @@
 package holygradle.source_dependencies
 
+import holygradle.io.FileHelper
 import org.gradle.api.*
 import holygradle.Helper
 
@@ -15,7 +16,7 @@ abstract class SourceDependency {
     protected static void deleteEmptyDir(File dir) {
         if (dir.exists()) {
             if (dir.list().length == 0) {
-                dir.delete()
+                FileHelper.ensureDeleteDirRecursive(dir)
             }
         }
     }
