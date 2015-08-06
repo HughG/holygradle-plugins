@@ -75,6 +75,9 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
                 "Packed dependency ${packedDepName} was added with no configurations; need at least one."
             )
         }
+        if (packedDependencies.containsKey(packedDepName)) {
+            throw new RuntimeException("Packed dependency ${packedDepName} has already been added.")
+        }
         packedDependencies[packedDepName] = configurations as Collection<String>
         atTop = false
     }
