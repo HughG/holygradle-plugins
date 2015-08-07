@@ -27,6 +27,17 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { String name ->
             new PackageArtifactHandler(project, name)
         }
+        Task createPublishNotesTask = defineCreatePublishNotesTask(project)
+        Task packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
+            group = "Publishing"
+            description = "Creates all zip packages for project '${project.name}'."
+        }
+        Task repackageEverythingTask = project.task("repackageEverything", type: DefaultTask) { Task repack ->
+            repack.group = "Publishing"
+            repack.description = "As 'packageEverything' but doesn't auto-generate any files."
+            repack.dependsOn packageEverythingTask
+        }
+
         // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.  We do this in a
         // projectsEvaluated block because otherwise the source dependency information won't be available, and some
         // tesks which we want to depend on won't have been created.
@@ -39,28 +50,14 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             buildScriptHandler.include project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
             buildScriptHandler.configuration = "everything"
 
-            Task packageEverythingTask = null
-            if (packageArtifactHandlers.size() > 0) {
-                packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
-                    group = "Publishing"
-                    description = "Creates all zip packages for project '${project.name}'."
-                }
-            }
-            
             PublishPackagesExtension publishPackages =
                 project.rootProject.extensions.findByName("publishPackages") as PublishPackagesExtension
             if (publishPackages.getRepublishHandler() != null) {
-                Task repackageEverythingTask = project.task("repackageEverything", type: DefaultTask) { Task repack ->
-                    repack.group = "Publishing"
-                    repack.description = "As 'packageEverything' but doesn't auto-generate any files."
-                    repack.dependsOn packageEverythingTask
-                }
                 Task republishTask = project.tasks.findByName("republish")
                 if (republishTask != null) {
                     republishTask.dependsOn repackageEverythingTask
                 }
             }
-            Task createPublishNotesTask = defineCreatePublishNotesTask(project)
             packageArtifactHandlers.each { packArt ->
                 Task packageTask = packArt.definePackageTask(createPublishNotesTask)
                 project.artifacts.add(packArt.getConfiguration(), packageTask)
