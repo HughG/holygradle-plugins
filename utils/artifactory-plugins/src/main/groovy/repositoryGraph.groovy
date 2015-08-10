@@ -20,7 +20,7 @@ import org.artifactory.resource.ResourceStreamHandle
 import groovyx.net.http.RESTClient
 import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.ResponseParseException
-import net.sf.json.JSONObject
+import groovy.json.JsonOutput
 
 executions {
   
@@ -50,27 +50,23 @@ executions {
    *    This will be considered only if the type ResourceStreamHandle is declared in the closure.
    */
   
-  getRepositoryTree(version: "0.1", description: "Repository Tree", httpMethod: 'GET') { params ->
-    JSONObject output = new JSONObject();
+  getRepositoryGraph(version: "0.1", description: "Repository Graph", httpMethod: 'GET') { params ->
+    outputMap = [:]
 
-    List<String> localRepoNames = repositories.getLocalRepositories();
-    for (name in localRepoNames) {
-        output.element(name, []);
+    for (name in repositories.localRepositories) {
+        outputMap << ["$name": []]
     }
 
-    List<String> remoteRepoNames = repositories.getRemoteRepositories();
-    for (name in remoteRepoNames) {
-        output.element("REMOTE:" + name, []);
+    for (name in repositories.remoteRepositories) {
+        outputMap << ["REMOTE:$name": []]
     }
 
-    List<String> virtualRepoNames = repositories.getVirtualRepositories();
-    for (name in virtualRepoNames) {
-        VirtualRepositoryConfiguration repoConf = repositories.getRepositoryConfiguration(name);
-        output.element(name, repoConf.getRepositories());
+    for (name in repositories.virtualRepositories) {
+        outputMap << ["$name": repositories.getRepositoryConfiguration(name).repositories]
     }
 
-    message = output.toString();
-    status = 200;
+    message = JsonOutput.toJson(outputMap)
+    status = 200
   }
 
 }
