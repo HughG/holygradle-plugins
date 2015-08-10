@@ -17,9 +17,6 @@ import org.artifactory.repo.HttpRepositoryConfiguration
 import org.artifactory.repo.VirtualRepositoryConfiguration
 import org.artifactory.request.Request
 import org.artifactory.resource.ResourceStreamHandle
-import groovyx.net.http.RESTClient
-import groovyx.net.http.HttpResponseDecorator
-import groovyx.net.http.ResponseParseException
 import groovy.json.JsonOutput
 
 executions {
@@ -50,7 +47,7 @@ executions {
    *    This will be considered only if the type ResourceStreamHandle is declared in the closure.
    */
   
-  getRepositoryGraph(version: "0.1", description: "Repository Graph", httpMethod: 'GET') { params ->
+  getRepositoryGraph(version: "0.1", description: "Repository Graph", httpMethod: 'GET', groups: ['developers']) { params ->
     output = [:]
 
     for (name in repositories.localRepositories) {

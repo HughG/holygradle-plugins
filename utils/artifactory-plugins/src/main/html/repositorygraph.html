@@ -23,6 +23,7 @@
     </head>
 
     <body>
+        <div id="message">Please wait, loading repository graph ...</div>
         <div id="paper"></div>
 
         <script type="text/javascript">
@@ -30,8 +31,6 @@ var graph = new joint.dia.Graph;
 
 var paper = new joint.dia.Paper({
     el: $('#paper'),
-    width: 1230,
-    height: 1230,
     gridSize: 1,
     model: graph
 });
@@ -145,12 +144,15 @@ $.ajax(
             rankSep: 60
         }
     );
+    paper.fitToContent({padding: 40});
+    var serviceUrl = window.location.protocol + window.location.host + '/artifactory/';
+    $('#message').html('Repository graph for <a href="' + serviceUrl + '" target="_artifactory">' + serviceUrl + '</a>:');
 }).fail(function(jqXHR /*, textStatus, errorThrown*/) {
     // Display the error in place of the graph
     if (jqXHR.status === 403) {
-        $('#paper').html('Please <a href="/artifactory/webapp/login.html" target="_artifactory">log in</a> to Artifactory use this tool.');
+        $('#message').html('Please <a href="/artifactory/webapp/login.html" target="_artifactory">log in</a> to Artifactory use this tool.');
     } else {
-        $('#paper').html('Fail: ' + jqXHR.status + ' ' + jqXHR.statusText);
+        $('#message').html('Fail: ' + jqXHR.status + ' ' + jqXHR.statusText);
     }
 });
         </script>
