@@ -11,9 +11,11 @@
    height: 1250px;
 }
 .link-tools { display: none }
+.link-tools .tool-remove { display: none }
+.link-tools .tool-options { display: none }
 .marker-arrowheads { display: none }
-.marker-vertices: { display : none }
-.connection-wrap: { display: none }
+.marker-vertices { display : none }
+.connection-wrap { display: none }
         </style>
 
         <script src="script/joint.min.js" type="text/javascript"></script>
@@ -38,27 +40,33 @@ var paper = new joint.dia.Paper({
 V(paper.viewport).translate(20, 20);
 
 
-function makeRepo (virtual, remote, label) {
-    var colour = '#AADD63';
-    var thickness = 1;
-
-    if (remote) {
-        colour = '#C9EAA1';
-        thickness = 0;
-    } else if (virtual) {
-        colour = '#79C824';
-        thickness = 2;
+function makeRepo (repo, repoName) {
+    var colour = '#FF0000';
+    var thickness = 5;
+    switch (repo.type) {
+        case "local":
+            colour = '#AADD63';
+            thickness = 1;
+            break;
+        case "remote":
+            colour = '#C9EAA1';
+            thickness = 0;
+            break;
+        case "virtual":
+            colour = '#79C824';
+            thickness = 2;
+            break;
     }
 
     return new joint.shapes.basic.Rect({
-        id: label,
+        id: repoName,
         size: {
             width: 165,
             height: 20
         },
         attrs: {
             text: {
-                text: label,
+                text: repoName,
                 'font-size': 13,
                 'font-family': 'Arial, Myriad, Helvetica, clean, sans-serif',
                 y: 12
@@ -81,8 +89,8 @@ function makeRefLink (remote, repoLabel, refLabel) {
         attrs: {
             '.connection': {
                 stroke: '#5D5C5D',
-                'stroke-width': remote? 1: 2,
-                'stroke-dasharray': '1,1'
+                'stroke-width': remote ? 1 : 2,
+                'stroke-dasharray': remote ? '3,3' : '5,1'
             },
             '.marker-target': {
                 d: 'M 10 0 L 0 5 L 10 10 z',
@@ -94,24 +102,24 @@ function makeRefLink (remote, repoLabel, refLabel) {
     });
 }
 
-function buildGraphFromAdjacencyList (adjacencyList) {
+function buildGraphFromRepoList (repoList) {
     var repos = [];
     var links = [];
 
     // Create a text box for each repo
-    _.each(adjacencyList, function(edges, repoLabel) {
-        var remote = (repoLabel.substr(0, 7) == "REMOTE:");
-        if (remote) {
-            repoLabel = repoLabel.substr(7);
+    _.each(repoList, function(repo, repoName) {
+        if (repoName === "repo") {
+            // Skip the includes-everything repo
+            return;
         }
 
-        if (repoLabel != "repo") {
-            repos.push(makeRepo(edges.length > 0, remote, repoLabel));
+        repos.push(makeRepo(repo, repoName));
 
-            // Create a link arrow for each referenced repo
-            _.each(edges, function(refLabel) {
-                var remoteRef = (("REMOTE:" + refLabel) in adjacencyList);
-                links.push(makeRefLink(remoteRef, repoLabel, refLabel));
+        // Create a link arrow for each referenced repo
+        if (repo.type === "virtual") {
+            _.each(repo.includes, function(refName) {
+                var remoteRef = (repoList[refName].type === "remote");
+                links.push(makeRefLink(remoteRef, repoName, refName));
             });
         }
     });
@@ -121,17 +129,10 @@ function buildGraphFromAdjacencyList (adjacencyList) {
 }
 
 $.ajax(
-    "/artifactory/api/plugins/execute/getRepositoryGraph"
+    "/artifactory/api/plugins/execute/getRepositoryGraph", {dataType: "json"}
 ).done(function(response /*, textStatus, jqXHR */) {
-    // Turn the response into JSON
-    try {
-        var adjacencyList = eval('adjacencyList = ' + response);
-    } catch (e) {
-        alert(e);
-    }
-
     // Build the graph based on the JSON
-    var cells = buildGraphFromAdjacencyList(adjacencyList);
+    var cells = buildGraphFromRepoList(response);
 
     // Lay out the new graph
     graph.resetCells(cells);

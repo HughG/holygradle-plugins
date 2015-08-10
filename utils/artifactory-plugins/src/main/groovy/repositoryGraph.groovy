@@ -51,21 +51,21 @@ executions {
    */
   
   getRepositoryGraph(version: "0.1", description: "Repository Graph", httpMethod: 'GET') { params ->
-    outputMap = [:]
+    output = [:]
 
     for (name in repositories.localRepositories) {
-        outputMap << ["$name": []]
+        output << ["$name": [type: "local"]]
     }
 
     for (name in repositories.remoteRepositories) {
-        outputMap << ["REMOTE:$name": []]
+        output << ["$name": [type: "remote"]]
     }
 
     for (name in repositories.virtualRepositories) {
-        outputMap << ["$name": repositories.getRepositoryConfiguration(name).repositories]
+        output << ["$name": [type: "virtual", includes: repositories.getRepositoryConfiguration(name).repositories]]
     }
 
-    message = JsonOutput.toJson(outputMap)
+    message = JsonOutput.toJson(output)
     status = 200
   }
 
