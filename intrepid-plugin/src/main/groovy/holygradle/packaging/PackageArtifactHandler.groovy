@@ -110,17 +110,15 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 if (versionInfoExtension != null) {
                     versionInfoExtension.writeFile(new File(buildInfoDir, "versions.txt"))
                 }
-            }
-            addSourceRepositoryInfo(t, buildInfoDir)
-            Collection<SourceDependencyHandler> allSourceDependencies = findAllSourceDependencies(project)
-            File sourceDependenciesDir = new File(buildInfoDir, "source_dependencies")
-            t.doLast {
+                addSourceRepositoryInfo(t, buildInfoDir)
+                Collection<SourceDependencyHandler> allSourceDependencies = findAllSourceDependencies(project)
+                File sourceDependenciesDir = new File(buildInfoDir, "source_dependencies")
                 RetryHelper.retry(10, 1000, project.logger, "create ${sourceDependenciesDir.name} dir") {
                     sourceDependenciesDir.mkdir()
                 }
-            }
-            allSourceDependencies.each { SourceDependencyHandler handler ->
-                addSourceRepositoryInfo(t, sourceDependenciesDir, handler)
+                allSourceDependencies.each { SourceDependencyHandler handler ->
+                    addSourceRepositoryInfo(t, sourceDependenciesDir, handler)
+                }
             }
         }
     }
@@ -178,31 +176,29 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             sourceRepoDir
         )
         if (sourceRepo != null) {
-            createPublishNotesTask.doLast {
-                File sourceDepInfoDir
-                if (handler == null) {
-                    // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
-                    sourceDepInfoDir = baseDir
-                } else {
-                    // We're adding info for a subproject source dependency, so put it in a sub-folder; in this case,
-                    // baseDir = "build_info/source_dependencies"
-                    sourceDepInfoDir = new File(baseDir, handler.targetName)
-                    RetryHelper.retry(10, 1000, project.logger, "create ${sourceDepInfoDir.name} dir") {
-                        sourceDepInfoDir.mkdir()
-                    }
+            File sourceDepInfoDir
+            if (handler == null) {
+                // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
+                sourceDepInfoDir = baseDir
+            } else {
+                // We're adding info for a subproject source dependency, so put it in a sub-folder; in this case,
+                // baseDir = "build_info/source_dependencies"
+                sourceDepInfoDir = new File(baseDir, handler.targetName)
+                RetryHelper.retry(10, 1000, project.logger, "create ${sourceDepInfoDir.name} dir") {
+                    sourceDepInfoDir.mkdir()
                 }
-
-                new File(sourceDepInfoDir, "source_url.txt").write(sourceRepo.getUrl())
-                new File(sourceDepInfoDir, "source_revision.txt").write(sourceRepo.getRevision())
-                // The path from the createPublishNotes task's project to the source repository.
-                String relativePath
-                if (handler == null) {
-                    relativePath = '.'
-                } else {
-                    relativePath = Helper.relativizePath(handler.absolutePath, project.projectDir)
-                }
-                new File(sourceDepInfoDir, "source_path.txt").write(relativePath)
             }
+
+            new File(sourceDepInfoDir, "source_url.txt").write(sourceRepo.getUrl())
+            new File(sourceDepInfoDir, "source_revision.txt").write(sourceRepo.getRevision())
+            // The path from the createPublishNotes task's project to the source repository.
+            String relativePath
+            if (handler == null) {
+                relativePath = '.'
+            } else {
+                relativePath = Helper.relativizePath(handler.absolutePath, project.projectDir)
+            }
+            new File(sourceDepInfoDir, "source_path.txt").write(relativePath)
         }
     }
 
