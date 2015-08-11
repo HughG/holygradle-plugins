@@ -1,6 +1,7 @@
 package holygradle.packaging
 
 import holygradle.io.FileHelper
+import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import holygradle.testUtil.HgUtil
@@ -84,6 +85,15 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         HgUtil.hgExec(project, "init", "noBuildFile")
         HgUtil.hgExec(project, "init", "subProj")
         HgUtil.hgExec(project, "init")
+
+        // Run fAD to make sure the settings.gradle and settings-subprojects.txt are created.
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
+        }
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")
+        }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("packageEverything")

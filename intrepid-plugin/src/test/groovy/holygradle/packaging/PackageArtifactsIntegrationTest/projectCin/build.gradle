@@ -4,10 +4,10 @@ buildscript {
 gplugins.apply()
 
 sourceDependencies {
-	"subProj" {
-		hg "http://dummy_url"
-	}
-	"noBuildFile" {
-		hg "http://dummy_url"
-	}
+    "subProj" {
+        hg "http://dummy_url"
+    }
+    "noBuildFile" {
+        hg "http://dummy_url"
+    }
 }
