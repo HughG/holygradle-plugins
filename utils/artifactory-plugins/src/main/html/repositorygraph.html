@@ -32,7 +32,13 @@ var graph = new joint.dia.Graph;
 var paper = new joint.dia.Paper({
     el: $('#paper'),
     gridSize: 1,
-    model: graph
+    model: graph,
+    interactive: {
+        vertexAdd: false,
+        vertexMove: false,
+        vertexRemove: false,
+        arrowheadMove: false
+    }
 });
 
 // Required to ensure full borders & drop-shadows are visible
@@ -57,7 +63,7 @@ function makeRepo (repo, repoName) {
             break;
     }
 
-    return new joint.shapes.basic.Rect({
+    var element = new joint.shapes.basic.Rect({
         id: repoName,
         size: {
             width: 165,
@@ -79,6 +85,17 @@ function makeRepo (repo, repoName) {
             }
         }
     });
+
+    switch (repo.type) {
+        case "local":
+        case "remote":
+            element.prop("rank", "max")
+            break;
+        case "virtual":
+            break;
+    }
+
+    return element;
 }
 
 function makeRefLink (remote, repoLabel, refLabel) {
