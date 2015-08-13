@@ -156,9 +156,21 @@ set GW_KEY_STORE="%APP_HOME%\gradle\cacerts"
 set KEY_STORE_IMPORT_LOG="%APP_HOME%\gradle\cacerts.import.log"
 if exist %GW_KEY_STORE% del %GW_KEY_STORE%
 >%KEY_STORE_IMPORT_LOG% 2>&1 "%KEYTOOL_EXE%" -importkeystore -srckeystore %JAVA_KEY_STORE% -srcstorepass changeit -destkeystore %GW_KEY_STORE% -deststorepass %GW_CACERTS_PASS%
-if errorlevel 1 goto fail
-for %%C in (%APP_HOME%\gradle\certs\*.*) do (>>"%APP_HOME%\gradle\cacerts.import.log" 2>>&1 "%KEYTOOL_EXE%" -importcert -noprompt -file %%C -alias %%~nC -keystore %GW_KEY_STORE% -storepass %GW_CACERTS_PASS%)
-if errorlevel 1 goto fail
+if errorlevel 1 (
+    echo Failed to import original Java keystore %JAVA_KEY_STORE%
+    echo to local trust store %GW_KEY_STORE%.
+    echo See %KEY_STORE_IMPORT_LOG% for details.
+    goto fail
+)
+for %%C in (%APP_HOME%\gradle\certs\*.*) do (
+    >>%KEY_STORE_IMPORT_LOG% 2>>&1 "%KEYTOOL_EXE%" -importcert -noprompt -file %%C -alias %%~nC -keystore %GW_KEY_STORE% -storepass %GW_CACERTS_PASS%
+    if errorlevel 1 (
+        echo Failed to import file %%C
+        echo to local trust store %GW_KEY_STORE%.
+        echo See %KEY_STORE_IMPORT_LOG% for details.
+        goto fail
+    )
+)
 set TRUST_STORE_OPTS="-Djavax.net.ssl.trustStore=%APP_HOME%\gradle\cacerts" "-Djavax.net.ssl.trustStorePassword=%GW_CACERTS_PASS%"
 
 :certsDone
