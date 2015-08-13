@@ -77,12 +77,6 @@ class TestHandler {
         }
     }
     
-    public static void preDefineTasks(Project project) {
-        TestFlavourHandler.getAllFlavours(project).each { flavour ->
-            project.task("unitTest${flavour}", type: DefaultTask)
-        }
-    }
-    
     public static void defineTasks(Project project) {
         Collection<String> allFlavours = TestFlavourHandler.getAllFlavours(project)
         for (flavour in allFlavours) {
@@ -99,7 +93,7 @@ class TestHandler {
                 // TODO 2015-01-30 HughG: Remove this at next major revision change.
                 Task dummyTask = project.task("unitTest${flavour}Independently", type: DefaultTask)
                 dummyTask.group = "Unit Test"
-                dummyTask.description = "Run the ${flavour} unit tests for '${project.name}'. " +
+                dummyTask.description = "Runs the ${flavour} unit tests for '${project.name}'. " +
                     "Deprecated; use 'gw -a unitTest${flavour}' instead."
                 dummyTask.doFirst {
                     throw new RuntimeException(
@@ -115,8 +109,10 @@ class TestHandler {
                 it.configureTask(project, flavour, task)
             }
             
-            if (anyBuildDependencies) {
-                task.description = "Run the ${flavour} unit tests for '${project.name}' and all dependent projects."
+            if (anyBuildDependencies && project.gradle.startParameter.buildProjectDependencies) {
+                task.description =
+                        "Runs the ${flavour} unit tests for '${project.name}' and all dependent projects. " +
+                        "Run 'gw -a ...' to run tests for this project only."
                 if (sourceDependenciesState != null) {
                     // For each configurations in this project which point into a source dependency, make this
                     // project's task depend on the same task in the other project (if it exists).
