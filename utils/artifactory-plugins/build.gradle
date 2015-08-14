@@ -26,3 +26,51 @@ repositories {
         }
     }
 }
+
+project.ext.pluginsPackageSubdir = "artifactory/etc/plugins"
+project.ext.contentPackageSubdir = "content"
+if (!project.hasProperty("pluginsDeployDir")) {
+    project.ext.pluginsDeployDir = new File(buildDir, "deploy/artifactory-etc-plugins")
+}
+if (!project.hasProperty("contentDeployDir")) {
+    project.ext.contentDeployDir = new File(buildDir, "deploy/webserver")
+}
+
+task packageRepositoryGraph(type: Copy) {
+    into "${buildDir}/package/repositoryGraph"
+    from("src/main/groovy/repositoryGraph.groovy") {
+        into "${pluginsPackageSubdir}"
+    }
+    from("src/main/html/") {
+        include "repositorygraph.html"
+        into contentPackageSubdir
+    }
+    from("src/main/css/") {
+        include "joint.min.css"
+        into "${contentPackageSubdir}/style/"
+    }
+    from("src/main/javascript/") {
+        include "joint.min.js"
+        include "joint.layout.DirectedGraph.min.js"
+        into "${contentPackageSubdir}/script/"
+    }
+}
+
+// Annoyingly, the task outputs for a Copy are the single root destinationDir, so we have to just magically know
+// what to deploy from the package dir.
+//
+// This isn't a Copy task because we expect some network cost to checking up-to-date-ness, and the set of files to copy
+// is small.
+task deployRepositoryGraph {
+    dependsOn packageRepositoryGraph
+    doLast {
+        project.copy {
+            from new File(packageRepositoryGraph.destinationDir, pluginsPackageSubdir)
+            into pluginsDeployDir
+        }
+        project.copy {
+            from new File(packageRepositoryGraph.destinationDir, contentPackageSubdir)
+            into contentDeployDir
+        }
+    }
+}

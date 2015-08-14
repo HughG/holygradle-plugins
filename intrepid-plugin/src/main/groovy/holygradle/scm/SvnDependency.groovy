@@ -1,6 +1,7 @@
 package holygradle.scm
 
 import holygradle.custom_gradle.plugin_apis.CredentialSource
+import holygradle.io.FileHelper
 import org.gradle.api.*
 import org.gradle.process.ExecSpec
 import holygradle.source_dependencies.SourceDependency
@@ -65,9 +66,7 @@ class SvnDependency extends SourceDependency {
     private File getSvnConfigDir() {
         // Get SVN-config path.
         File svnConfigDir = new File((String)project.svnConfigPath)
-        if (!svnConfigDir.exists()) {
-            svnConfigDir.mkdir()
-        }
+        FileHelper.ensureMkdirs(svnConfigDir, "(subversion configuration dir)")
         return svnConfigDir
     }
     

@@ -251,6 +251,14 @@ set of configurations your module will have, and you need to know that to decide
 to publish between your module's configurations, and the configurations it uses from its
 dependencies.
 
+You can skip some of this section if you are building a module which is not used by other modules
+(and maybe will not be published to Artifactory) -- for example, if you are building an application.
+In that case you can normally
+
+* use a single configuration (for example, +privateBuild+) for all you dependencies;
+* not have a packageArtifacts block;
+* and skip ahead to <<_determine_inputs>>.
+
 
 ===== Determine Configurations
 
@@ -513,14 +521,15 @@ build configurations.
 ** If the module publishes a +headers+ configuration, you will normally not need to declare a
 dependency on that directly, because the module will have its static library configurations
 extending from +headers+.
-** The up-stream module may declare one or more runtime configurations, even though it is a static
+** The dependency module may declare one or more runtime configurations, even though it is a static
 library, for example if it depends on other "+.dll+"s at runtime.  If it does, you should declare
 a mapping from your each of your runtime configurations to the corresponding ones in that module, as
 with the "+.pdb+"s.  This may require you to add runtime configurations to your module, even though
 it does not have any direct runtime dependencies itself.
 * If the dependency is a dynamic library, you should declare a mapping from your each of your
 runtime configurations to the corresponding ones in that module.
-* For both static and dynamic libraries, you may wish to separately declare a dependency from each of your debugging configurations to the corresponding ones in the up-stream module.  This means
+* For both static and dynamic libraries, you may wish to separately declare a dependency from each
+of your debugging configurations to the corresponding ones in the up-stream module.  This means
 that projects which use your module can easily fetch the "+.pdb+"s for it along with yours.  You
 should declare each separately so that down-stream modules which use only a subset of your
 configurations will pull in only a subset of the debugging files.  You should declare it in addition
@@ -569,31 +578,6 @@ packedDependencies {
 ----
 
 
-==== Fetch Dependencies
-
-At this point, you should be able to have Gradle fetch, unpack, and symlink all your packed
-(pre-built) dependencies.  To do this, run the following at the Windows Command Prompt.
-
-----
-gw fetchAllDependencies
-----
-
-or
-
-----
-gw fAD
-----
-
-NOTE: If this is the first time you have fetched dependencies from a particular Artifactory
-server, or you have deleted your password from the gloss:credential-manager[], add the +--no-daemon+
-option to the command line, immediately after +gw+.  For more information, see the documentation for
-the link:plugin-my-credentials.html[].
-
-If your project's direct dependencies have further dependencies of their own, they will be fetched,
-unpacked, and symlinked as well.  The location of the symlinks for these indirect dependencies is
-determined by the modules which depend on them, using a +relativePath+ attribute in their +ivy.xml+
-file, added by +intrepid+.
-
 ===== Determine Installed Prerequisites
 
 In our experience so far, most executable tools required for building can be packaged in stand-alone
@@ -641,6 +625,71 @@ afterEvaluate {
     }
 }
 ----
+
+
+==== Fetch Dependencies
+
+At this point, you should be able to have Gradle fetch, unpack, and symlink all your packed
+(pre-built) dependencies.  To do this, run the following at the Windows Command Prompt.
+
+----
+gw fetchAllDependencies
+----
+
+or
+
+----
+gw fAD
+----
+
+NOTE: If this is the first time you have fetched dependencies from a particular Artifactory
+server, or you have deleted your password from the gloss:credential-manager[], add the +--no-daemon+
+option to the command line, immediately after +gw+.  For more information, see the documentation for
+the link:plugin-my-credentials.html[].
+
+If your project's direct dependencies have further dependencies of their own, they will be fetched,
+unpacked, and symlinked as well.  The location of the symlinks for these indirect dependencies is
+determined by the modules which depend on them, using a +relativePath+ attribute in their +ivy.xml+
+file, added by +intrepid+.
+
+
+===== Sharing Dependencies with Disconnected Sites
+
+If you are developing a project together with a team at another site, and that site does not have
+an gloss:artifactory[] server, you can still share dependencies with them.  This means both sites
+can work on the same source code, and be sure they are using the same versions of dependencies.
+
+The gloss:holygradle[] can automatically download all dependencies, plus a copy of the Holy Gradle,
+into a +local_artifacts+ folder.  This folder can be zipped and shared by FTP, for example.  A new
+version of the ZIP file is only needed when dependencies change -- see <<_changing_dependencies>>.
+
+When a team at a disconnected site gets a copy of these files, they should put the unzipped
++local_artifacts+ folder in the same place as the project's +build.gradle+, then run +gw fAD+.  All
+dependencies will be unpacked to the gloss:gradle[] cache, with symlinks added at the correct
+locations in the project folder.  From version link:release_notes.html#_7_5_0[] of the Holy Gradle,
+the +local_artifacts+ contains a +build_info+ folder which contains a note of which source code
+repository and revision was used to generate it.  This means that the team which receives it can
+check that they have the correct version of the ZIP file.
+
+To make this +local_artifacts+ folder, just run 
+
+----
+gw collectDependencies
+----
+
+then ZIP the +local_artifacts+ folder.
+
+If you want to check the result, you can follow these steps.
+
+* Check out a separate working copy of the source code.
+* Copy the +local_artifacts+ folder into that new working copy.
+* Run +gw -o -g tmp_guh fAD+.
+** The +-o+ argument means that Gradle will not use the network (work offline).  This tests
+that all dependencies are available in +local_artifacts+, without fetching from your Artifactory
+server.
+** The +-g+ argument means Gradle will use the folder +./tmp_guh+ instead of your usual
+gloss:gradle-user-home[] for unpacking.  This tests that all dependencies are available in
++local_artifacts+, without using files already downloaded to the Gradle cache on your PC.
 
 
 ==== Check Build
@@ -1429,10 +1478,10 @@ your server directly but that may be slower and use a lot of network capacity.)
 ===== Without Artifactory
 
 The gloss:holygradle[] has a feature to let teams which use gloss:artifactory[] easily release to
-teams which do not.  It downloads your module and all dependencies, plus a copy of the Holy Gradle,
-into a +local_artifacts+ folder for you to distribute -- for example, as a ZIP file.  When your
-customers get a copy of these files, they can run +gw fAD+ as normal, and everything will be
-unpacked from the +local_artifacts+ folder into the correct location.
+teams which do not.  This is basically the same as <<_sharing_dependencies_with_disconnected_sites>>,
+but for teams which are *using* your module, not teams which are *developing* your module.
+The difference in this section is that you will use the Holy Gradle to automatically create a
+separate +build.gradle+ which uses your project, and then test that.
 
 First, add a new configuration and a new entry to your +packageArtifacts+ section, as follows.
 
@@ -1442,7 +1491,20 @@ configurations {
     preBuiltArtifacts
 }
 
-// ...
+// Setting group and version: EITHER
+
+group = "com.example-corp.teamA"
+version = System.getenv("MY_MODULE_VERSION") ?: "unspecified"
+
+// OR (if you want to put publishPackages after packageArtifacts)
+
+publishPackages {
+    group "com.example-corp.teamA"
+    nextVersionNumberEnvironmentVariable "MY_MODULE_VERSION"
+    // ...
+}
+
+// (end of Setting group and version)
 
 packageArtifacts {
     preBuiltArtifacts {        
@@ -1454,8 +1516,8 @@ packageArtifacts {
 }
 ----
 
-TIP: For the above to work, your +publishPackages+ block must come _before_ your +packageArtifacts+
-block, otherwise the +_group_+ and +_version_+ will not be set correctly.
+TIP: For the above to work, the +_group_+ and +_version_+ must be set before the +packageArtifacts+
+block, either directly or by using the +publishPackages+.
 
 Now publish your module to Artifactory as normal.  You will see a ZIP file with a name containing
 the string "+preBuiltArtifacts+".  Download and unzip it to a new folder, which must *not* have the
@@ -1476,7 +1538,8 @@ Then ZIP up the following folder and files.
 * +gradle.properties+
 
 Send this file to your customer.  They can unzip it and run +gw fAD+ to unpack your module and all
-its dependencies.  (You can and should test this for yourself before you send it.)
+its dependencies.  You can and should test this for yourself before you send it, using
++gw -o -g tmp_guh fAD+ as described in <<_sharing_dependencies_with_disconnected_sites>>.
 
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

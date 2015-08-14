@@ -1,6 +1,7 @@
 package holygradle.custom_gradle.util
 
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 
 public class Symlink {
@@ -30,7 +31,12 @@ public class Symlink {
             }
         }
 
-        if (!target.exists()) {
+        // If target is relative, createSymbolicLink will create a link relative to link so we have to calculate this
+        // (as opposed to relative to the current working directory)
+        Path re_relativized_target = canonicalLink.toPath().resolveSibling(target.toPath())
+        File re_relativized_file = new File(re_relativized_target.toString())
+
+        if (!re_relativized_file.exists()) {
             throw new IOException("Cannot create link to non-existent target; from '${canonicalLink}' to '${target}'")
         }
         Files.createSymbolicLink(canonicalLink.toPath(), target.toPath())

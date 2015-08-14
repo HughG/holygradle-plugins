@@ -1,7 +1,9 @@
 package holygradle.packaging
 
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import holygradle.testUtil.HgUtil
 import org.gradle.api.Project
 import org.gradle.process.ExecSpec
 import org.gradle.testfixtures.ProjectBuilder
@@ -31,10 +33,8 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
     public void testCreateBuildScriptWithPinnedSourceDependency() {
         // Create a repo with projectA in it.  This doesn't have to be a Gradle project.
         File projectADir = new File(getTestDir(), "projectA")
-        if (projectADir.exists()) {
-            assertTrue("Deleted pre-existing ${projectADir}", projectADir.deleteDir())
-        }
-        assertTrue("Created empty ${projectADir}", projectADir.mkdirs())
+        FileHelper.ensureDeleteDirRecursive(projectADir)
+        FileHelper.ensureMkdirs(projectADir)
         File projectAInputDir = new File(getTestDir(), "projectAInput")
         projectAInputDir.listFiles().each { File file ->
             Files.copy(file.toPath(), new File(projectADir, file.name).toPath())
@@ -43,12 +43,12 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // Set up the project dir as a Mercurial repo.
         Project project = ProjectBuilder.builder().withProjectDir(projectADir).build()
         // Make the project dir into a repo, then add the extension.
-        hgExec(project, "init")
+        HgUtil.hgExec(project, "init")
 
         // Add a file.
-        hgExec(project, "add", "build.gradle")
+        HgUtil.hgExec(project, "add", "build.gradle")
         // Set the commit message, user, and date, so that the hash will be the same every time.
-        hgExec(project,
+        HgUtil.hgExec(project,
                "commit",
                "-m", "Initial test state.",
                "-u", "TestUser",
@@ -61,9 +61,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // date after the first run.
         File projectBDir = new File(getTestDir(), "projectB")
         File projectBPackagesDir = new File(projectBDir, "packages")
-        if (projectBPackagesDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectBPackagesDir}", projectBPackagesDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(projectBPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
@@ -96,9 +94,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
 
         File projectCDir = new File(getTestDir(), "projectC")
         File projectCPackagesDir = new File(projectCDir, "packages")
-        if (projectCPackagesDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
@@ -132,9 +128,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
     public void testBuildScriptRequired() {
         File projectCDir = new File(getTestDir(), "buildScriptRequired")
         File projectCPackagesDir = new File(projectCDir, "packages")
-        if (projectCPackagesDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectCPackagesDir}", projectCPackagesDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
@@ -204,14 +198,6 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 // rest, and report all failures at the end.
                 collector.addError(e)
             }
-        }
-    }
-
-    private static void hgExec(Project project, Object ... args) {
-        project.exec { ExecSpec spec ->
-            spec.workingDir = project.projectDir
-            spec.executable = "hg.exe"
-            spec.args = args.toList()
         }
     }
 }

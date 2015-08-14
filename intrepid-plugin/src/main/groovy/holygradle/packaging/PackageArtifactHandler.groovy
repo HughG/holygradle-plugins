@@ -3,6 +3,7 @@ package holygradle.packaging
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.RetryHelper
+import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
@@ -26,6 +27,17 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { String name ->
             new PackageArtifactHandler(project, name)
         }
+        Task createPublishNotesTask = defineCreatePublishNotesTask(project)
+        Task packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
+            group = "Publishing"
+            description = "Creates all zip packages for project '${project.name}'."
+        }
+        Task repackageEverythingTask = project.task("repackageEverything", type: DefaultTask) { Task repack ->
+            repack.group = "Publishing"
+            repack.description = "As 'packageEverything' but doesn't auto-generate any files."
+            repack.dependsOn packageEverythingTask
+        }
+
         // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.  We do this in a
         // projectsEvaluated block because otherwise the source dependency information won't be available, and some
         // tesks which we want to depend on won't have been created.
@@ -38,28 +50,14 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             buildScriptHandler.include project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
             buildScriptHandler.configuration = "everything"
 
-            Task packageEverythingTask = null
-            if (packageArtifactHandlers.size() > 0) {
-                packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
-                    group = "Publishing"
-                    description = "Creates all zip packages for project '${project.name}'."
-                }
-            }
-            
             PublishPackagesExtension publishPackages =
                 project.rootProject.extensions.findByName("publishPackages") as PublishPackagesExtension
             if (publishPackages.getRepublishHandler() != null) {
-                Task repackageEverythingTask = project.task("repackageEverything", type: DefaultTask) { Task repack ->
-                    repack.group = "Publishing"
-                    repack.description = "As 'packageEverything' but doesn't auto-generate any files."
-                    repack.dependsOn packageEverythingTask
-                }
                 Task republishTask = project.tasks.findByName("republish")
                 if (republishTask != null) {
                     republishTask.dependsOn repackageEverythingTask
                 }
             }
-            Task createPublishNotesTask = defineCreatePublishNotesTask(project)
             packageArtifactHandlers.each { packArt ->
                 Task packageTask = packArt.definePackageTask(createPublishNotesTask)
                 project.artifacts.add(packArt.getConfiguration(), packageTask)
@@ -112,17 +110,15 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 if (versionInfoExtension != null) {
                     versionInfoExtension.writeFile(new File(buildInfoDir, "versions.txt"))
                 }
-            }
-            addSourceRepositoryInfo(t, buildInfoDir)
-            Collection<SourceDependencyHandler> allSourceDependencies = findAllSourceDependencies(project)
-            File sourceDependenciesDir = new File(buildInfoDir, "source_dependencies")
-            t.doLast {
+                addSourceRepositoryInfo(t, buildInfoDir)
+                Collection<SourceDependencyHandler> allSourceDependencies = findAllSourceDependencies(project)
+                File sourceDependenciesDir = new File(buildInfoDir, "source_dependencies")
                 RetryHelper.retry(10, 1000, project.logger, "create ${sourceDependenciesDir.name} dir") {
                     sourceDependenciesDir.mkdir()
                 }
-            }
-            allSourceDependencies.each { SourceDependencyHandler handler ->
-                addSourceRepositoryInfo(t, sourceDependenciesDir, handler)
+                allSourceDependencies.each { SourceDependencyHandler handler ->
+                    addSourceRepositoryInfo(t, sourceDependenciesDir, handler)
+                }
             }
         }
     }
@@ -180,31 +176,29 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             sourceRepoDir
         )
         if (sourceRepo != null) {
-            createPublishNotesTask.doLast {
-                File sourceDepInfoDir
-                if (handler == null) {
-                    // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
-                    sourceDepInfoDir = baseDir
-                } else {
-                    // We're adding info for a subproject source dependency, so put it in a sub-folder; in this case,
-                    // baseDir = "build_info/source_dependencies"
-                    sourceDepInfoDir = new File(baseDir, handler.targetName)
-                    RetryHelper.retry(10, 1000, project.logger, "create ${sourceDepInfoDir.name} dir") {
-                        sourceDepInfoDir.mkdir()
-                    }
+            File sourceDepInfoDir
+            if (handler == null) {
+                // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
+                sourceDepInfoDir = baseDir
+            } else {
+                // We're adding info for a subproject source dependency, so put it in a sub-folder; in this case,
+                // baseDir = "build_info/source_dependencies"
+                sourceDepInfoDir = new File(baseDir, handler.targetName)
+                RetryHelper.retry(10, 1000, project.logger, "create ${sourceDepInfoDir.name} dir") {
+                    sourceDepInfoDir.mkdir()
                 }
-
-                new File(sourceDepInfoDir, "source_url.txt").write(sourceRepo.getUrl())
-                new File(sourceDepInfoDir, "source_revision.txt").write(sourceRepo.getRevision())
-                // The path from the createPublishNotes task's project to the source repository.
-                String relativePath
-                if (handler == null) {
-                    relativePath = '.'
-                } else {
-                    relativePath = Helper.relativizePath(handler.absolutePath, project.projectDir)
-                }
-                new File(sourceDepInfoDir, "source_path.txt").write(relativePath)
             }
+
+            new File(sourceDepInfoDir, "source_url.txt").write(sourceRepo.getUrl())
+            new File(sourceDepInfoDir, "source_revision.txt").write(sourceRepo.getRevision())
+            // The path from the createPublishNotes task's project to the source repository.
+            String relativePath
+            if (handler == null) {
+                relativePath = '.'
+            } else {
+                relativePath = Helper.relativizePath(handler.absolutePath, project.projectDir)
+            }
+            new File(sourceDepInfoDir, "source_path.txt").write(relativePath)
         }
     }
 
@@ -324,9 +318,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             
             File taskDir = new File(it.destinationDir, taskName)
-            if (!taskDir.exists() && !taskDir.mkdirs()) {
-                throw new RuntimeException("Failed to create output folder for publish notes ${taskDir}")
-            }
+            FileHelper.ensureMkdirs(taskDir, "as output folder for publish notes ${taskDir}")
         
             // If we're publishing then let's generate the auto-generatable files. But if we're 'republishing'
             // then just make sure that all auto-generated files are present.

@@ -1,6 +1,7 @@
 package holygradle.unpacking
 
 import groovy.mock.interceptor.StubFor
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleTest
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -73,12 +74,9 @@ class SpeedyUnpackManyTaskTest extends AbstractHolyGradleTest {
 
         // (Re)create the directory which SpeedyUnpackManyTask will use.
         File testUnpackDir = new File(testDir, TEST_UNPACK_DIR)
-        if (testUnpackDir.exists()) {
-            // Note: File#delete() doesn't delete non-empty directory, but Groovy deleteDir extension method does.
-            Assert.assertTrue("Deleted unpack dir", testUnpackDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(testUnpackDir)
         // Note: File#mkdir() doesn't make a directory if its ancestors don't exist, but File#mkdirs() does.
-        Assert.assertTrue("Created unpack dir", testUnpackDir.mkdirs())
+        FileHelper.ensureMkdirs(testUnpackDir, "as unpack dir")
 
         ////////////////////////////////////////////////////////////////////////////////////////
         // Now for the actual test.
@@ -110,8 +108,6 @@ class SpeedyUnpackManyTaskTest extends AbstractHolyGradleTest {
         // Test cleanup.
 
         // This is intentionally not in a "finally", so that the files are left around for inspection if the test fails.
-        if (testUnpackDir.exists()) {
-            Assert.assertTrue("Deleted unpack dir", testUnpackDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(testUnpackDir)
     }
 }

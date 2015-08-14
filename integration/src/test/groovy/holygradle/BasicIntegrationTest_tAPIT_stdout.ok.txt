@@ -61,6 +61,7 @@ createPublishNotes - Creates 'build_info' directory which will be included in pu
 generateIvyModuleDescriptor - Generates the Ivy Module Descriptor XML file for publication 'ivy'
 packageEverything - Creates all zip packages for project 'tAPIT'.
 publish - Publishes all publications for this module.
+repackageEverything - As 'packageEverything' but doesn't auto-generate any files.
 
 Source Dependencies tasks
 -------------------------

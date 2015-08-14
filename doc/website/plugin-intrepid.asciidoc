@@ -535,7 +535,29 @@ Here are some examples of string parameters passed to the +configuration+ method
 
 ===== Private dependencies
 
-If your module depends on artifacts that you do not want to be mentioned in your module descriptor then you can use configurations starting with the word +private+. All such configurations and associated dependencies will be automatically omitted from the module descriptor e.g. the +NUnit+ dependency shown in the above example uses the configuration +privateBuild+ so the dependency will automatically be stripped from the module descriptor, as will the configuration with that name.
+Sometimes you may want to use the gloss:holygradle[] to fetch build tools -- for example, Doxygen to document C++ code.
+This is different from when your module depends on another library module, because usually another developer will not
+need these build tools to use your module.  In cases like these, you can map the dependency from a _private_
+gloss:configuration[].  This means the configuration is marked as +visible="false"+ in the gloss:ivy-xml[], which means
+some tools will ignore it in default cases.  You can do this when you specify a configuration in your module:
+
+[source,groovy]
+----
+configurations {
+    build { visible = false } // private
+    other // public
+}
+----
+
+Also, with the Holy Gradle, any configurations with a name beginning with "+private+" will be marked private.
+
+[source,groovy]
+----
+configurations {
+    privateBuild // private
+    other // public
+}
+----
 
 ==== unpackToCache
 

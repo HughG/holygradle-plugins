@@ -78,6 +78,7 @@ generateIvyModuleDescriptor - Generates the Ivy Module Descriptor XML file for p
 packageEverything - Creates all zip packages for project 'tBPC'.
 publish - Publishes all publications for this module.
 publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'
+repackageEverything - As 'packageEverything' but doesn't auto-generate any files.
 
 Source Dependencies tasks
 -------------------------

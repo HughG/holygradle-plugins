@@ -22,7 +22,7 @@ class SymlinkTest extends AbstractHolyGradleTest
     @Test
     public void testCreateLinkToMissingDirectory() {
         File link = new File(testDir, "link_to_missing")
-        File missingDir = new File(testDir, "missing_folder")
+        File missingDir = new File("missing_folder")
         if (link.exists()) {
             fail("Test pre-condition: ${link} should not exist")
         }

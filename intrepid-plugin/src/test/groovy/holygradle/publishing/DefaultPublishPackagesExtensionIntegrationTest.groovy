@@ -1,9 +1,8 @@
 package holygradle.publishing
 
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
-import org.gradle.api.Project
-import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
 import static org.junit.Assert.assertTrue
@@ -17,10 +16,7 @@ class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleI
     
             File projectDir = new File(getTestDir(), testProjectDirName)
             File publicationsDir = new File(projectDir, "build/publications")
-            
-            if (publicationsDir.exists()) {
-                publicationsDir.deleteDir()
-            }
+            FileHelper.ensureDeleteDirRecursive(publicationsDir)
             invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
                 launcher.forTasks("generateIvyModuleDescriptor")
                 launcher.addArguments("--info")

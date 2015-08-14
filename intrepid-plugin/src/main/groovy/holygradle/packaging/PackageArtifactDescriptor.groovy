@@ -1,5 +1,6 @@
 package holygradle.packaging
 
+import holygradle.io.FileHelper
 import org.gradle.api.Project
 import org.gradle.api.file.CopySpec
 import org.gradle.api.tasks.bundling.Zip
@@ -138,9 +139,7 @@ class PackageArtifactDescriptor implements PackageArtifactBaseDSL {
         String sourceText = sourceFile.text
         String targetText = "// Processed...\n\n" + sourceText
 
-        if (!targetFile.parentFile.exists() && !targetFile.parentFile.mkdirs()) {
-            throw new RuntimeException("Failed to create output folder for ${targetFile}")
-        }
+        FileHelper.ensureMkdirs(targetFile.parentFile, "as output folder for ${targetFile}")
 
         targetFile.withWriter { Writer writer -> writer.write(targetText) }
     }

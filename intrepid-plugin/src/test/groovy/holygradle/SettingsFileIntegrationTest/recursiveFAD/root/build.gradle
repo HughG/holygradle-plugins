@@ -3,11 +3,13 @@ buildscript {
 }
 gplugins.apply()
 
+configurations {
+    foo
+}
+
 sourceDependencies {
-    "subProj" {
-        hg "http://dummy_url"
-    }
-    "noBuildFile" {
-        hg "http://dummy_url"
+    "src1" {
+        hg "${rootProject.projectDir.parent}/src1"
+        publishing.configuration "foo"
     }
 }

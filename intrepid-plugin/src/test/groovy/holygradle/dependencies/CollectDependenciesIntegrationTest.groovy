@@ -1,5 +1,6 @@
 package holygradle.dependencies
 
+import holygradle.io.FileHelper
 import holygradle.packaging.PackageArtifactsIntegrationTest
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
@@ -60,14 +61,10 @@ class CollectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
         File emptyConfigLibDir
     ) {
         final File collectedDependenciesDir = new File(projectDir, "local_artifacts")
-        if (collectedDependenciesDir.exists()) {
-            assertTrue("Removed existing ${collectedDependenciesDir}", collectedDependenciesDir.deleteDir())
-        }
+        FileHelper.ensureDeleteDirRecursive(collectedDependenciesDir)
         final File gradleDir = new File(projectDir, "gradle")
-        if (gradleDir.exists()) {
-            assertTrue("Removed existing ${gradleDir}", gradleDir.deleteDir())
-        }
-        assertTrue("Created empty ${gradleDir}", gradleDir.mkdir())
+        FileHelper.ensureDeleteDirRecursive(gradleDir)
+        FileHelper.ensureMkdir(gradleDir)
         Files.copy(
             new File(projectDir, "../dummy-gradle-wrapper.properties").toPath(),
             new File(gradleDir, "gradle-wrapper.properties").toPath()

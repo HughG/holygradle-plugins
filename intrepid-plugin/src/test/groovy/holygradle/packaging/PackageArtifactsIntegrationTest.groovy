@@ -1,7 +1,10 @@
 package holygradle.packaging
 
+import holygradle.io.FileHelper
+import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import holygradle.testUtil.HgUtil
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import org.gradle.api.file.FileTree
@@ -40,9 +43,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
     public void testBasicPackageEverything() {
         File projectDir = new File(getTestDir(), "projectB")
         File packagesDir = new File(projectDir, "packages")
-        if (packagesDir.exists()) {
-            packagesDir.deleteDir()
-        }
+        FileHelper.ensureDeleteDirRecursive(packagesDir)
 
         // Create a dummy project to provide access to FileTree methods
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
@@ -72,9 +73,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
     public void testPackageSourceDependencies() {
         File projectTemplateDir = new File(getTestDir(), "projectCin")
         File projectDir = new File(getTestDir(), "projectC")
-        if (projectDir.exists()) {
-            projectDir.deleteDir()
-        }
+        FileHelper.ensureDeleteDirRecursive(projectDir)
 
         FileUtils.copyDirectory(projectTemplateDir, projectDir)
 
@@ -83,9 +82,18 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         // Create a dummy project to provide access to FileTree methods
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
 
-        hgExec(project, "init", "noBuildFile")
-        hgExec(project, "init", "subProj")
-        hgExec(project, "init")
+        HgUtil.hgExec(project, "init", "noBuildFile")
+        HgUtil.hgExec(project, "init", "subProj")
+        HgUtil.hgExec(project, "init")
+
+        // Run fAD to make sure the settings.gradle and settings-subprojects.txt are created.
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
+        }
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")
+        }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("packageEverything")
@@ -135,14 +143,6 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
 
         fileMap.each { file ->
             collector.checkThat("File '$file.key' was not found", file.value, IsEqual.equalTo(true))
-        }
-    }
-
-    private static void hgExec(Project project, Object ... args) {
-        project.exec { ExecSpec spec ->
-            spec.workingDir = project.projectDir
-            spec.executable = "hg.exe"
-            spec.args = args.toList()
         }
     }
 }

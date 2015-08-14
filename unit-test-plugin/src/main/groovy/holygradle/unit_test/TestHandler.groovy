@@ -1,5 +1,6 @@
 package holygradle.unit_test
 
+import holygradle.io.FileHelper
 import holygradle.source_dependencies.SourceDependenciesStateHandler
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
@@ -61,13 +62,14 @@ class TestHandler {
                             if (tryPath.exists()) {
                                 exePath = tryPath
                             }
-                        }                        
+                        }
                         cmd[0] = exePath.path
                         spec.commandLine cmd
                         if (redirectOutputFilePath != null) {
-                            spec.standardOutput = new FileOutputStream(
-                                "${project.projectDir}/${replaceFlavour(redirectOutputFilePath, flavour)}"
-                            )
+                            final File testOutputFile =
+                                new File(project.projectDir, replaceFlavour(redirectOutputFilePath, flavour))
+                            FileHelper.ensureMkdirs(testOutputFile.parentFile, "as parent folder for test output")
+                            spec.standardOutput = new FileOutputStream(testOutputFile)
                         }
                     }
                 }

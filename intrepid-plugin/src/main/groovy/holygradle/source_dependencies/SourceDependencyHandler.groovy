@@ -134,10 +134,6 @@ class SourceDependencyHandler extends DependencyHandler {
         project.sourceDependencies as Collection<SourceDependencyHandler>
     }
 
-    public SourceDependencyHandler(String depName) {
-        super(depName)
-    }
-    
     public SourceDependencyHandler(String depName, Project project) {
         super(depName, project)
         destinationDir = new File(project.projectDir, depName).getCanonicalFile()

@@ -1,13 +1,12 @@
 package holygradle.scm
 
+import holygradle.io.FileHelper
 import holygradle.test.*
+import holygradle.testUtil.HgUtil
 import holygradle.testUtil.ZipUtil
 import org.gradle.api.Project
-import org.gradle.process.ExecSpec
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder
-
-import java.nio.file.Files
 
 import static org.junit.Assert.*
 
@@ -44,25 +43,23 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         ////////////////////////////////////////////////////////////////////////////////
         // Create a repo to run the test in.
         File projectDir = new File(getTestDir(), "testHg")
-        if (projectDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectDir}", projectDir.deleteDir())
-        }
-        assertTrue("Created empty ${projectDir}", projectDir.mkdirs())
+        FileHelper.ensureDeleteDirRecursive(projectDir)
+        FileHelper.ensureMkdirs(projectDir)
 
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
         // Make the project dir into a repo, then add the extension.
-        hgExec(project, "init")
+        HgUtil.hgExec(project, "init")
         SourceControlRepositories.createExtension(project)
 
         // Add a file.
         (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
-        hgExec(project, "add", EXAMPLE_FILE)
+        HgUtil.hgExec(project, "add", EXAMPLE_FILE)
         // Set the commit message, user, and date, so that the hash will be the same every time.
-        hgExec(project,
-               "commit",
-               "-m", "Added another file.",
-               "-u", "TestUser",
-               "-d", "2000-01-01"
+        HgUtil.hgExec(project,
+           "commit",
+           "-m", "Added another file.",
+           "-u", "TestUser",
+           "-d", "2000-01-01"
         )
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -111,15 +108,13 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         ////////////////////////////////////////////////////////////////////////////////
         // Create a repo to run the test in.
         File projectDir = new File(getTestDir(), "tGRWNC")
-        if (projectDir.exists()) {
-            assertTrue("Deleted pre-existing ${projectDir}", projectDir.deleteDir())
-        }
-        assertTrue("Created empty ${projectDir}", projectDir.mkdirs())
+        FileHelper.ensureDeleteDirRecursive(projectDir)
+        FileHelper.ensureMkdirs(projectDir)
 
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
 
         // Make the project dir into a repo, then add the extension.
-        hgExec(project, "init")
+        HgUtil.hgExec(project, "init")
         SourceControlRepositories.createExtension(project)
 
 
@@ -137,13 +132,13 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             w.println("^build/")
             w.println("^.*\\.gradle/")
         }
-        hgExec(project, "add", ".hgignore")
+        HgUtil.hgExec(project, "add", ".hgignore")
         // Set the commit message, user, and date, so that the hash will be the same every time.
-        hgExec(project,
-               "commit",
-               "-m", "Initial test state.",
-               "-u", "TestUser",
-               "-d", "2000-01-01"
+        HgUtil.hgExec(project,
+           "commit",
+           "-m", "Initial test state.",
+           "-u", "TestUser",
+           "-d", "2000-01-01"
         )
 
         assertEquals(
@@ -155,13 +150,13 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
 
         // Add another file.
         (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
-        hgExec(project, "add", EXAMPLE_FILE)
+        HgUtil.hgExec(project, "add", EXAMPLE_FILE)
         // Set the commit message, user, and date, so that the hash will be the same every time.
-        hgExec(project,
-               "commit",
-               "-m", "Added another file.",
-               "-u", "TestUser",
-               "-d", "2000-01-02"
+        HgUtil.hgExec(project,
+           "commit",
+           "-m", "Added another file.",
+           "-u", "TestUser",
+           "-d", "2000-01-02"
         )
 
         assertEquals(
@@ -170,10 +165,10 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             sourceControl.getRevision()
         )
 
-        hgExec(project,
-               "update",
-               "-r", "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
-               )
+        HgUtil.hgExec(project,
+           "update",
+           "-r", "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
+       )
 
         assertEquals(
             "Updating to first commit hash is detected as expected",
@@ -206,14 +201,6 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         Project project = ProjectBuilder.builder().withProjectDir(dummyDir).build()
         SourceControlRepository repo = SourceControlRepositories.create(project, dummyDir)
         assertNull(repo)
-    }
-
-    private static void hgExec(Project project, Object ... args) {
-        project.exec { ExecSpec spec ->
-            spec.workingDir = project.projectDir
-            spec.executable = "hg.exe"
-            spec.args = args.toList()
-        }
     }
 
 }

@@ -2,6 +2,7 @@ package holygradle.unpacking
 
 import holygradle.custom_gradle.util.Symlink
 import holygradle.dependencies.PackedDependenciesSettingsHandler
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.gradle.api.Project
@@ -58,11 +59,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         File anotherLibDir,
         File projectDir
     ) {
-        [emptyConfigLibDir, extLibDir, anotherLibDir].each {
-            if (it.exists()) {
-                assertTrue("Removed existing packed dep symlink ${it}", it.delete())
-            }
-        }
+        [emptyConfigLibDir, extLibDir, anotherLibDir].each { FileHelper.ensureDeleteFile(it) }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
@@ -123,11 +120,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         File projectDir
     ) {
         final Collection<File> allPackedDepDirs = [emptyConfigLibDir, extLibDir, anotherLibDir]
-        allPackedDepDirs.each {
-            if (it.exists()) {
-                assertTrue("Removed existing packed dep symlink ${it}", it.delete())
-            }
-        }
+        allPackedDepDirs.each { FileHelper.ensureDeleteFile(it) }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
@@ -160,11 +153,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         final File emptyConfigLibDir = new File(projectDir, "example-framework")
         final File extLibDir = new File(projectDir, "external-lib")
         final Collection<File> allPackedDepDirs = [emptyConfigLibDir, extLibDir]
-        allPackedDepDirs.each {
-            if (it.exists()) {
-                assertTrue("Removed existing packed dep symlink ${it}", it.delete())
-            }
-        }
+        allPackedDepDirs.each { FileHelper.ensureDeleteFile(it) }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
