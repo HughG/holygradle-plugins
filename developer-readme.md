@@ -114,6 +114,8 @@ whole set of plugins.
  - Without any other arguments, the version used will be `<user>-SNAPSHOT`, where `<user>` is your system username (not
 your BitBucket username).
  - To publish a release version, pass the version number with `-PpublishVersion=<version number>`.
+ - To skip unit testing (for example, when repeatedly using `-DintegTest.single`), pass `-PnoTest`.  This only works for
+SNAPSHOT releases.
  - To skip integration testing, pass `-PnoIntegTest`.  This only works for SNAPSHOT releases.
 
 You can't publish a release version unless the working copy has no uncommitted changes, and the
