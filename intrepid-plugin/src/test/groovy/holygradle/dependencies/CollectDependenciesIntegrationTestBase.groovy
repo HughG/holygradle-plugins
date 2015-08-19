@@ -52,6 +52,24 @@ abstract class CollectDependenciesIntegrationTestBase extends AbstractHolyGradle
         doCollectDependenciesTest(projectDir, allCollectedDepDirNames, emptyConfigLibDir)
     }
 
+    /**
+     * Test that, if you depend on a module only via a private configuration in a non-root project (and the root project
+     * has no dependency on that config) then all those modules are correctly collected.  The one with empty
+     * configurations will just have an ivy.xml file.
+     *
+     * This is a (regression) test for a bug introduced in c2f77e448810c9d42bc0a1a260db22c1c6ea1d9d (released as 7.4.1).
+     */
+    @Test
+    public void useInPrivateSubprojConfig() {
+        final File projectDir = new File(getTestDir(), "useInPrivateSubprojConfig")
+        final Collection<String> allCollectedDepDirNames = [
+            "external-lib",
+            "another-lib"
+        ]
+
+        doCollectDependenciesTest(projectDir, allCollectedDepDirNames, null)
+    }
+
     protected void doCollectDependenciesTest(
         File projectDir,
         Collection<String> allCollectedDepDirNames,
@@ -80,7 +98,7 @@ abstract class CollectDependenciesIntegrationTestBase extends AbstractHolyGradle
         checkBuildInfo(
             getCollectedArtifactsFileTree(project),
             getCollectedFilesPathPrefix(),
-            emptyConfigLibDir.name,
+            emptyConfigLibDir?.name,
             allCollectedDepDirNames,
             collector
         )

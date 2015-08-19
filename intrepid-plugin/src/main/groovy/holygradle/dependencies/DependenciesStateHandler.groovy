@@ -276,7 +276,7 @@ class DependenciesStateHandler {
      * @return
      */
     public Map<ModuleVersionIdentifier, File> getAncestorPomFiles(Configuration conf) {
-        logger.debug "getAncestorPomFiles(${conf})"
+        logger.debug "getAncestorPomFiles(${conf} in ${project})"
 
         // As the javadoc comment says, we don't want to treat the parent POMs as dependencies to be resolved, because
         // we might need multiple versions of the same POM, and Gradle doesn't let you have multiple versions of a
@@ -314,7 +314,7 @@ class DependenciesStateHandler {
             pomFiles = newParentPomFiles
         }
 
-        logger.info("getAncestorPomFiles: Resolved ancestor pom files for ${conf}: ${ancestorPomFiles.values().join('\r\n')}")
+        logger.info("getAncestorPomFiles: Resolved ancestor pom files for ${conf} in ${project}: ${ancestorPomFiles.values().join('\r\n')}")
 
         return ancestorPomFiles
     }
@@ -328,7 +328,7 @@ class DependenciesStateHandler {
     // We can't just ask Gradle for the locations, because it doesn't expose them.  See the forum post at
     // http://forums.gradle.org/gradle/topics/how_to_get_hold_of_ivy_xml_file_of_dependency
     private void initializeMetadataFilesForConfiguration(Configuration conf) {
-        logger.debug "initializeMetadataFilesForConfiguration(${conf})"
+        logger.debug "initializeMetadataFilesForConfiguration(${conf} in ${project})"
 
         Map<ModuleVersionIdentifier, File> ivyFiles = ivyFileMaps[conf.name]
         Map<ModuleVersionIdentifier, File> pomFiles = pomFileMaps[conf.name]
@@ -344,11 +344,17 @@ class DependenciesStateHandler {
 
             ivyFiles = getResolvedMetadataFilesOfType(allResolvedArtifacts, "ivy")
             ivyFileMaps[conf.name] = ivyFiles
-            logger.info("initializeMetadataFilesForConfiguration: Resolved ivy files for ${conf}: ${ivyFiles.entrySet().join('\r\n')}")
+            logger.info(
+                "initializeMetadataFilesForConfiguration: Resolved ivy files for ${conf} in ${project}: " +
+                "${ivyFiles.entrySet().join('\r\n')}"
+            )
 
             pomFiles = getResolvedMetadataFilesOfType(allResolvedArtifacts, "pom")
             pomFileMaps[conf.name] = pomFiles
-            logger.info("initializeMetadataFilesForConfiguration: Resolved pom files for ${conf}: ${pomFiles.entrySet().join('\r\n')}")
+            logger.info(
+                "initializeMetadataFilesForConfiguration: Resolved pom files for ${conf} in ${project}: " +
+                " ${pomFiles.entrySet().join('\r\n')}"
+            )
         }
     }
 

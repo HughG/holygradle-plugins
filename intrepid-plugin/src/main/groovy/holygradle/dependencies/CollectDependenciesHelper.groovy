@@ -225,7 +225,7 @@ class CollectDependenciesHelper {
             } else {
                 if (logger.isDebugEnabled()) {
                     logger.debug(
-                        "getResolvedArtifacts: skipping subprojcet module in build ${resolvedDependency.module.id}"
+                        "getResolvedArtifacts: skipping subproject module in build ${resolvedDependency.module.id}"
                     )
                 }
             }
