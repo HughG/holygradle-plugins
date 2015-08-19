@@ -359,13 +359,30 @@ class DependenciesStateHandler {
     }
 
     public Map<ModuleVersionIdentifier, File> getIvyFilesForConfiguration(Configuration conf) {
+        checkConfigurationIsInProject(conf)
         initializeMetadataFilesForConfiguration(conf)
         return ivyFileMaps[conf.name]
     }
 
     public Map<ModuleVersionIdentifier, File> getPomFilesForConfiguration(Configuration conf) {
+        checkConfigurationIsInProject(conf)
         initializeMetadataFilesForConfiguration(conf)
         return pomFileMaps[conf.name]
+    }
+
+    //
+    /**
+     * Check that the configuration really belongs to this project.  If not -- that is, if we're given a configuration
+     * from another project, we risk collecting state which is wrong for this project.  If we didn't do this check, and
+     * were later asked to get the state for the same-named configuration in this project, we'd return that wrong info.
+     * @param conf
+     */
+    private void checkConfigurationIsInProject(Configuration conf) {
+        Configuration projectConfWithName = project.configurations.findByName(conf.name)
+        Configuration buildscriptConfWithName = project.buildscript.configurations.findByName(conf.name)
+        if (projectConfWithName != conf && buildscriptConfWithName != conf) {
+            throw new RuntimeException("${conf} is not from ${project} or its buildscript")
+        }
     }
 
     /**

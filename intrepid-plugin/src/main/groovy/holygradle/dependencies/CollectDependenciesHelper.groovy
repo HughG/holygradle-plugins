@@ -58,16 +58,14 @@ class CollectDependenciesHelper {
         // dependencies are known.  We use "this.ext.lazyConfiguration" instead of "project.gradle.projectsEvaluated"
         // because this is slow, so we don't want to do it unless we're really executing the task.
         copyTask.ext.lazyConfiguration = {
-            final DependenciesStateHandler buildscriptDeps = project.extensions.buildscriptDependenciesState
-            final DependenciesStateHandler deps = project.extensions.dependenciesState
             Map<ModuleVersionIdentifier, File> ivyFiles = new HashMap<ModuleVersionIdentifier, File>()
             Map<ModuleVersionIdentifier, File> pomFiles = new HashMap<ModuleVersionIdentifier, File>()
             Set<ResolvedArtifact> artifacts = new HashSet<ResolvedArtifact>()
 
             project.allprojects { Project proj ->
                 final Map<ConfigurationContainer, DependenciesStateHandler> configurationsWithState = [
-                    (proj.buildscript.configurations): buildscriptDeps,
-                    (proj.configurations): deps
+                    (proj.buildscript.configurations): proj.buildscriptDependenciesState as DependenciesStateHandler,
+                    (proj.configurations): proj.dependenciesState as DependenciesStateHandler
                 ]
                 configurationsWithState.each {
                     ConfigurationContainer configurations, DependenciesStateHandler dependenciesState
