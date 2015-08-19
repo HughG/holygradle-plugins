@@ -2,6 +2,7 @@ package holygradle.dependencies
 
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import holygradle.Helper
 
@@ -10,9 +11,7 @@ import java.util.regex.Matcher
 class PackedDependencyHandler extends DependencyHandler {
     private Project projectForHandler
     private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
-    private String dependencyGroup
-    private String dependencyModule
-    private String dependencyVersion
+    private ModuleVersionIdentifier dependencyId = null
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
     public Boolean unpackToCache = null
@@ -46,7 +45,6 @@ class PackedDependencyHandler extends DependencyHandler {
         }
 
         this.projectForHandler = projectForHandler
-        dependencyModule = depName
     }
     
     public PackedDependencyHandler(
@@ -57,7 +55,7 @@ class PackedDependencyHandler extends DependencyHandler {
     ) {
         this(depName, projectForHandler)
         this.projectForHandler = projectForHandler
-        parseDependencyCoordinate(dependencyCoordinate)
+        initialiseDependencyId(dependencyCoordinate)
         this.configurations = configurations
     }
     
@@ -67,9 +65,7 @@ class PackedDependencyHandler extends DependencyHandler {
         ModuleVersionIdentifier dependencyCoordinate
     ) {
         this(depName, projectForHandler)
-        dependencyGroup = dependencyCoordinate.getGroup()
-        dependencyModule = dependencyCoordinate.getName()
-        dependencyVersion = dependencyCoordinate.getVersion()
+        dependencyId = dependencyCoordinate
     }
     
     private PackedDependencyHandler getParentHandler() {
@@ -165,20 +161,21 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
     
-    private void parseDependencyCoordinate(String dependencyCoordinate) {
+    private void initialiseDependencyId(String dependencyCoordinate) {
+        if (dependencyId != null) {
+            throw new RuntimeException("Cannot set dependency more than once")
+        }
         Matcher groupMatch = dependencyCoordinate =~ /(.+):(.+):(.+)/
         if (groupMatch.size() == 0) {
             throw new RuntimeException("Incorrect dependency coordinate format: '$dependencyCoordinate'")
         } else {
             final List<String> match = groupMatch[0] as List<String>
-            dependencyGroup = match[1]
-            dependencyModule = match[2]
-            dependencyVersion = match[3]
+            dependencyId = new DefaultModuleVersionIdentifier(match[1], match[2], match[3])
         }
     }
         
     public void dependency(String dependencyCoordinate) {
-        parseDependencyCoordinate(dependencyCoordinate)
+        initialiseDependencyId(dependencyCoordinate)
     }
         
     public void configuration(String config) {
@@ -190,7 +187,9 @@ class PackedDependencyHandler extends DependencyHandler {
             String toConf = conf.value
             projectForHandler.dependencies.add(
                 fromConf,
-                new DefaultExternalModuleDependency(dependencyGroup, dependencyModule, dependencyVersion, toConf)
+                new DefaultExternalModuleDependency(
+                    dependencyId.group, dependencyId.module.name, dependencyId.version, toConf
+                )
             )
         }
     }
@@ -206,19 +205,19 @@ class PackedDependencyHandler extends DependencyHandler {
     }
     
     public String getGroupName() {
-        dependencyGroup
+        dependencyId.group
     }
     
     public String getDependencyName() {
-        dependencyModule
+        dependencyId.module.name
     }
    
     public String getVersionStr() {
-        dependencyVersion
+        dependencyId.version
     }
     
     public String getDependencyCoordinate() {
-        "${dependencyGroup}:${dependencyModule}:${dependencyVersion}"
+        dependencyId.toString()
     }
     
     public boolean pathIncludesVersionNumber() {
