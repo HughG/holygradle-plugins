@@ -32,6 +32,7 @@ fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildSymlinks - Rebuild all symlinks.
 rebuildSymlinksToCache - Rebuild all symlinks to the unpack cache
+zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
 
 DevEnv tasks
 ------------

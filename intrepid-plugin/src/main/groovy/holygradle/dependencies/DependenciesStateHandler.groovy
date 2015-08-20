@@ -364,8 +364,8 @@ class DependenciesStateHandler {
 
     /**
      * Get the ivy file for the resolved dependency.  This may either be in the Gradle cache, or exist in a subdirectory
-     * "local_artifacts" of the project directory, which we create for those who may not have access to the artifact
-     * repository.  May return null.
+     * of the project directory, named {@link CollectDependenciesHelper#LOCAL_ARTIFACTS_DIR_NAME}, which we create for
+     * developers who may not have access to the artifact repository.  May return null.
      */
     public File getIvyFile(
         Configuration conf,
