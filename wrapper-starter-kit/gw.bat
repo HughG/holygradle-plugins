@@ -64,7 +64,34 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
 )
 
 set DISTRIBUTION_ORIGINAL_PATH_FILE="%APP_HOME%gradle\distributionPath.txt"
-if exist local_artifacts (
+
+@rem Find a local_artifacts sub-folder, in this folder or any ancestor folder.
+set LOCAL_ARTIFACTS_DIR_NAME=local_artifacts
+set LOCAL_ARTIFACTS_DIR_RELATIVE_URL=
+set LOCAL_ARTIFACTS_DIR_PATH=
+set "dir=%~f0"
+:findLocalArtifactsLoop
+  @rem Get the parent directory using ~dp trick, then strip the trailing '\'
+  for %%d in (%dir%) do set "dir=%%~dpd"
+  set "dir=%dir:~0,-1%"
+
+  if exist "%dir%\%LOCAL_ARTIFACTS_DIR_NAME%\" (
+    set "LOCAL_ARTIFACTS_DIR_PATH=%dir%\%LOCAL_ARTIFACTS_DIR_NAME%"
+    goto :findLocalArtifactsDone
+  )
+
+  if "%dir:~-1%" == ":" (
+    goto :findLocalArtifactsDone
+  )
+
+  set "LOCAL_ARTIFACTS_DIR_RELATIVE_PATH=../%LOCAL_ARTIFACTS_DIR_RELATIVE_PATH%"
+goto findLocalArtifactsLoop
+
+:findLocalArtifactsDone
+
+
+
+if not "x%LOCAL_ARTIFACTS_DIR_PATH%"=="x" (
   @rem We have to use goto here, instead of an "else (...)", because Windows will try to parse the
   @rem "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%" inside the else, and fail because the variable isn't set.
   goto writeWrapperPropertiesForLocalArtifacts
@@ -117,9 +144,9 @@ set DISTRIBUTION_PATH_FILE=%DISTRIBUTION_ORIGINAL_PATH_FILE%
 goto writeWrapperProperties
 
 :writeWrapperPropertiesForLocalArtifacts
-<nul set /p=distributionUrl=../local_artifacts/> "%APP_HOME%gradle\distributionUrlBase.txt"
+<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/> "%APP_HOME%gradle\distributionUrlBase.txt"
 set DISTRIBUTION_LOCAL_PATH_FILE="%APP_HOME%gradle\distributionLocalPath.txt"
-echo %~nx0 found local_artifacts folder,
+echo %~nx0 found %LOCAL_ARTIFACTS_DIR_NAME% folder,
 echo so will generate "%APP_HOME%gradle\gradle-wrapper.properties"
 echo from %DISTRIBUTION_LOCAL_PATH_FILE%
 echo instead of %DISTRIBUTION_ORIGINAL_PATH_FILE%.

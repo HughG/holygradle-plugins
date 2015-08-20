@@ -252,8 +252,7 @@ class CollectDependenciesHelper {
 
         final File gradleHomeParentDir = copyTask.project.gradle.gradleHomeDir.parentFile
         final String distName = gradleHomeParentDir.parentFile.name
-        final String[] splitDistName = distName.split("-")
-        String customDistVersion = splitDistName[-1]
+        String customDistVersion = distName - "custom-gradle-${copyTask.project.gradle.gradleVersion}-"
         copySpec.from(new File(gradleHomeParentDir, distName + ".zip").toString()) { CopySpec child ->
             child.into "custom-gradle/${customDistVersion}"
         }
