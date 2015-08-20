@@ -84,7 +84,7 @@ set "dir=%~f0"
     goto :findLocalArtifactsDone
   )
 
-  set "LOCAL_ARTIFACTS_DIR_RELATIVE_PATH=../%LOCAL_ARTIFACTS_DIR_RELATIVE_PATH%"
+  set "LOCAL_ARTIFACTS_DIR_RELATIVE_URL=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%"
 goto findLocalArtifactsLoop
 
 :findLocalArtifactsDone
@@ -146,7 +146,7 @@ goto writeWrapperProperties
 :writeWrapperPropertiesForLocalArtifacts
 <nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/> "%APP_HOME%gradle\distributionUrlBase.txt"
 set DISTRIBUTION_LOCAL_PATH_FILE="%APP_HOME%gradle\distributionLocalPath.txt"
-echo %~nx0 found %LOCAL_ARTIFACTS_DIR_NAME% folder,
+echo %~nx0 found "%LOCAL_ARTIFACTS_DIR_PATH%"
 echo so will generate "%APP_HOME%gradle\gradle-wrapper.properties"
 echo from %DISTRIBUTION_LOCAL_PATH_FILE%
 echo instead of %DISTRIBUTION_ORIGINAL_PATH_FILE%.
