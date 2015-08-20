@@ -39,7 +39,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             getIvyFile(moduleName + ".xml"),
-            parent,
+            (parent == null) ? [] : [parent],
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )
     }
@@ -60,9 +60,9 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals("org:apricot:1.1", apricot.getFullCoordinate())
         assertNotNull("getPackedDependency not null", apricot.getPackedDependency())
         assertEquals("apricot", apricot.getPackedDependency().name)
-        assertNotNull("getSelfOrAncestorPackedDependency not null", apricot.getSelfOrAncestorPackedDependency())
-        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependency().name)
-        assertNull("getParent is null", apricot.getParent())
+        assertEquals("getSelfOrAncestorPackedDependency has a single entry", apricot.getSelfOrAncestorPackedDependencies().size(), 1)
+        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependencies()[0].name)
+        assertEquals("getParent is empty", apricot.getParents().size(), 0)
 
         UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
         File unpackCache = PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir
@@ -125,9 +125,9 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         Project project = getProject()
         UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
         UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
-        
-        assertNotNull("getParent not null", date.getParent())
-        assertEquals(coconut, date.getParent())
+
+        assertNotEquals("getParents not empty", date.getParents().size(), 0)
+        assertEquals([coconut], date.getParents())
 
         UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
         File unpackCache =
@@ -137,7 +137,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
         assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
 
-        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependency())
+        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependencies()[0])
         
         File targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))

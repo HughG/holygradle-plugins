@@ -38,9 +38,11 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
         UnpackModuleVersion version = new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             getIvyFile(moduleName + ".xml"),
-            parent,
+            (parent == null) ? [] : [parent],
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )
+        version.addParents([ parent ])
+
         if (addDummyArtifact) {
             // Add a dummy artifact, otherwise the symlink won't be created (because no artifacts exist to be unpacked).
             version.addArtifacts([makeDummyResolvedArtifact("${moduleName}_dummy_artifact.zip")], "default")

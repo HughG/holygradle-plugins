@@ -15,26 +15,26 @@ class UnpackModuleVersion {
     // The set of configurations in the containing project which lead to this module being included.
     public final Set<String> originalConfigurations = new HashSet<String>()
     private final Map<String, String> dependencyRelativePaths = [:]
-    private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
+    private List<UnpackModuleVersion> parentsList = []
     
     UnpackModuleVersion(
         ModuleVersionIdentifier moduleVersion,
         File ivyFile,
-        UnpackModuleVersion parentUnpackModuleVersion,
+        Collection<UnpackModuleVersion> parents,
         PackedDependencyHandler packedDependency00
     ) {
-        this(moduleVersion, ivyFile.text, parentUnpackModuleVersion, packedDependency00)
+        this(moduleVersion, ivyFile.text, parents, packedDependency00)
     }
 
     UnpackModuleVersion(
         ModuleVersionIdentifier moduleVersion,
         String ivyText,
-        UnpackModuleVersion parentUnpackModuleVersion,
+        Collection<UnpackModuleVersion> parents,
         PackedDependencyHandler packedDependency00
     ) {
         this.moduleVersion = moduleVersion
-        this.parentUnpackModuleVersion = parentUnpackModuleVersion
+        this.parentsList = parents
         this.packedDependency00 = packedDependency00
         if (packedDependency00 == null) {
             this.includeVersionNumberInPath = false
@@ -43,7 +43,7 @@ class UnpackModuleVersion {
         }
 
         // Therefore we must have a parent. Not having a parent is an error.
-        if (packedDependency00 == null && parentUnpackModuleVersion == null) {
+        if (packedDependency00 == null && parentsList.size() == 0) {
             throw new RuntimeException("Module '${moduleVersion}' has no parent module.")
         }
 
@@ -101,6 +101,10 @@ class UnpackModuleVersion {
             return ""
         }
     }
+
+    public void addParents(Collection<UnpackModuleVersion> parents) {
+        this.parentsList.plus(parents)
+    }
     
     // This returns the packedDependencies entry corresponding to this dependency. This will
     // return null if no such entry exists, which would be the case if this is a transitive
@@ -111,8 +115,8 @@ class UnpackModuleVersion {
     
     // TODO: will need to track all parents because each one (unpacked to a different location in
     // the central cache) will need to create a symlink to this module in the cache.
-    public UnpackModuleVersion getParent() {
-        parentUnpackModuleVersion
+    public Collection<UnpackModuleVersion> getParents() {
+        parentsList
     }
 
     /**
@@ -135,17 +139,57 @@ class UnpackModuleVersion {
     // The entry could be specifically for this module, in the case where a project directly
     // specifies a dependency. Or this entry could be for a 'parent' packedDependency entry 
     // i.e. one which causes this module to be pulled in as a transitive dependency.
-    public PackedDependencyHandler getSelfOrAncestorPackedDependency() {
+    public Collection<PackedDependencyHandler> getSelfOrAncestorPackedDependencies() {
         if (packedDependency00 != null) {
-            return packedDependency00
+            return [packedDependency00]
         }
-        
+
         // If we don't return packedDependency00 above then this must be a transitive dependency.
         // Therefore we must have a parent. Not having a parent is an error.
-        if (parentUnpackModuleVersion == null) {
+        if (parentsList.size() == 0) {
             throw new RuntimeException("Error - module '${getFullCoordinate()}' has no parent module.")
         }
-        return parentUnpackModuleVersion.getSelfOrAncestorPackedDependency()
+
+        return parentsList.collectMany {p -> p.getSelfOrAncestorPackedDependencies()}
+    }
+
+    private String getParentRelativePath(UnpackModuleVersion module) {
+        Collection<String> paths = parentsList.collectMany {
+            parent -> [parent.getRelativePathForDependency(module)]
+        }
+
+        // If there is more than one result, throw an error
+        if (paths.size() != 1) {
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has no different parent results for getRelativePathForDependency.")
+        } else {
+            return paths[0]
+        }
+    }
+
+    private String getParentTargetPath(Project project) {
+        Collection<String> paths = parentsList.collectMany {
+            parent -> [parent.getTargetPathInWorkspace(project)]
+        }
+
+        // If there is more than one result, throw an error
+        if (paths.size() != 1) {
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has no different parent results for getTargetPathInWorkspace.")
+        } else {
+            return paths[0]
+        }
+    }
+
+    private String getParentModuleVersion() {
+        Collection<String> versions = parentsList.collectMany {
+            parent -> [parent.moduleVersion]
+        }
+
+        // If there is more than one result, throw an error
+        if (versions.size() != 1) {
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has no different parent results for moduleVersion.")
+        } else {
+            return versions[0]
+        }
     }
     
     // Return the name of the directory that should be constructed in the workspace for the unpacked artifacts. 
@@ -177,7 +221,7 @@ class UnpackModuleVersion {
 
             String relativePathForDependency = ""
             if (PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).useRelativePathFromIvyXml) {
-                relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
+                relativePathForDependency = getParentRelativePath(this)
                 if (relativePathForDependency == "") {
                     // If the relative path is empty we need to supply the name of the target directory ourselves.
                     relativePathForDependency = getTargetDirName()
@@ -201,7 +245,7 @@ class UnpackModuleVersion {
                 }
             } else {
                 // Recursively navigate up the parent hierarchy, appending relative paths.
-                return new File(parentUnpackModuleVersion.getTargetPathInWorkspace(project), relativePathForDependency)
+                return new File(getParentTargetPath(project), relativePathForDependency)
             }
         }
     }
@@ -209,7 +253,17 @@ class UnpackModuleVersion {
     // If true this module should be unpacked to the central cache, otherwise it should be unpacked
     // directly to the workspace.
     private boolean shouldUnpackToCache() {
-        getSelfOrAncestorPackedDependency().shouldUnpackToCache()
+        Collection<Boolean> rootDependencies = getSelfOrAncestorPackedDependencies().collectMany {
+            dependency -> [dependency.shouldUnpackToCache()]
+        }
+
+        // If there is more than one result, throw an error
+        if (rootDependencies.size() != 1) {
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has no different parent configurations for shouldUnpackToCache.")
+        } else {
+            return rootDependencies[0]
+        }
+        //getSelfOrAncestorPackedDependency().shouldUnpackToCache()
     }
 
     // If true this module is using a source replacement
@@ -233,7 +287,16 @@ class UnpackModuleVersion {
      * @return A flag indicating whether to create a symlink to the unpack cache for this version.
      */
     public boolean shouldCreateSymlinkToCache() {
-        getSelfOrAncestorPackedDependency().shouldCreateSymlinkToCache() && hasArtifacts()
+        Collection<Boolean> rootDependencies = getSelfOrAncestorPackedDependencies().collectMany {
+            dependency -> [dependency.shouldCreateSymlinkToCache()]
+        }
+
+        // If there is more than one result, throw an error
+        if (rootDependencies.size() != 1) {
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has no different parent configurations for shouldCreateSymlinkToCache.")
+        } else {
+            return rootDependencies[0] && hasArtifacts()
+        }
     }
 
     public File getSymlinkDir(Project project) {
@@ -266,10 +329,10 @@ class UnpackModuleVersion {
                 packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             ) +
             "', parent relative path='" + (packedDependency00 == null ?
-                parentUnpackModuleVersion?.getRelativePathForDependency(this) :
+                (parentsList.size() > 0 ? getParentRelativePath(this) : "") :
                 "n/a"
             ) +
-            "', parentUnpackModuleVersion=" + parentUnpackModuleVersion?.moduleVersion +
+            "', parentUnpackModuleVersion=" + (parentsList.size() > 0 ? getParentModuleVersion() : "") +
             '}';
     }
 }

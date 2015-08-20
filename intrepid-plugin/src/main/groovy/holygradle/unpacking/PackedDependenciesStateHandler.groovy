@@ -172,11 +172,17 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         parentUnpackModule?.getVersion(parentDependencyVersion)
                     }
 
+                Collection<UnpackModuleVersion> parents = resolvedDependency.getParents().findAll { parentDepencency ->
+                    ModuleVersionIdentifier parentDependencyVersion = parentDepencency.module.id
+                    UnpackModule parentUnpackModule = unpackModules[parentDependencyVersion.module]
+                    parentUnpackModule?.getVersion(parentDependencyVersion)
+                }
+
                 // Find or create an UnpackModuleVersion instance.
                 UnpackModuleVersion unpackModuleVersion
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
-                    unpackModuleVersion.addParent(parentUnpackModuleVersion)
+                    unpackModuleVersion.addParents(parents)
                 } else {
 
                     // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
@@ -192,7 +198,12 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
                     File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                    unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parentUnpackModuleVersion, thisPackedDep)
+                    unpackModuleVersion = new UnpackModuleVersion(
+                        id,
+                        ivyFile,
+                        (parentUnpackModuleVersion == null) ? [] : [parentUnpackModuleVersion],
+                        thisPackedDep
+                    )
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
@@ -288,8 +299,9 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 )
                 versions.each { UnpackModuleVersion version ->
                     project.logger.error("    ${version.fullCoordinate} in configurations ${version.originalConfigurations}")
-                    while (version.parent != null) {
-                        version = version.parent
+                    // Todo: In theory we could traverse the whole tree and print every parent
+                    while (version.parents.size() > 0) {
+                        version = version.parents.first()
                         project.logger.error("        which is from ${version.fullCoordinate}")
                     }
                     project.logger.error("        which is from packed dependency ${version.packedDependency.name}")

@@ -1,5 +1,6 @@
 package holygradle.dependencies
 
+import holygradle.custom_gradle.util.Symlink
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.apache.commons.io.FileUtils
@@ -16,7 +17,12 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
     public void twoLevels() {
         File templateDir = new File(getTestDir(), "projectAIn")
         File projectDir = new File(getTestDir(), "projectA")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File externalDirectory = new File(projectDir, "ext_11")
+
         if (projectDir.exists()) {
+            Symlink.delete(frameworkDirectory)
+            Symlink.delete(externalDirectory)
             assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
         }
 
@@ -26,10 +32,8 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             launcher.forTasks("fetchAllDependencies")
         }
 
-        File frameworkDirectory = new File(projectDir, "framework")
         File sourceFile1 = new File(frameworkDirectory, "a_source_file.txt")
 
-        File externalDirectory = new File(projectDir, "ext_11")
         File sourceFile2 = new File(externalDirectory, "another_source_file.txt")
 
         assertTrue("Dependency 1 is correctly linked to source", sourceFile1.exists())
@@ -40,7 +44,13 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
     public void oneLevelWithNestedSourceDependencies() {
         File templateDir = new File(getTestDir(), "projectBIn")
         File projectDir = new File(getTestDir(), "projectB")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File anotherDirectory = new File(projectDir, "another-lib")
+        File externalDirectory = new File(projectDir, "external-lib")
+
         if (projectDir.exists()) {
+            Symlink.delete(frameworkDirectory)
+            Symlink.delete(anotherDirectory)
             assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
         }
 
@@ -50,11 +60,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             launcher.forTasks("fetchAllDependencies")
         }
 
-        File frameworkDirectory = new File(projectDir, "framework")
         File sourceFile1 = new File(frameworkDirectory, "a_source_file.txt")
-
-        File externalDirectory = new File(projectDir, "external-lib")
-        File anotherDirectory = new File(projectDir, "another-lib")
 
         assertTrue("Dependency 1 is correctly linked to source", sourceFile1.exists())
         assertTrue("Dependency 2 is correctly linked to another-lib via source", anotherDirectory.exists())
@@ -65,7 +71,12 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
     public void oneLevelWithNestedSourceVersionConflict() {
         File templateDir = new File(getTestDir(), "projectCIn")
         File projectDir = new File(getTestDir(), "projectC")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File externalDirectory = new File(projectDir, "ext_11")
+
         if (projectDir.exists()) {
+            Symlink.delete(frameworkDirectory)
+            Symlink.delete(externalDirectory)
             assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
         }
 
@@ -80,7 +91,12 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
     public void oneLevelWithNestedSourceVersionConflictMultipleConfigurations() {
         File templateDir = new File(getTestDir(), "projectDIn")
         File projectDir = new File(getTestDir(), "projectD")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File externalDirectory = new File(projectDir, "ext_11")
+
         if (projectDir.exists()) {
+            Symlink.delete(frameworkDirectory)
+            Symlink.delete(externalDirectory)
             assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
         }
 

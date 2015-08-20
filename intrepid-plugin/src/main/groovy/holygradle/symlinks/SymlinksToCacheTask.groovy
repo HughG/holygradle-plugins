@@ -88,10 +88,12 @@ class SymlinksToCacheTask extends DefaultTask {
         // appear before its descendants, which ensures that symlinks exist before any attempts to create symlinks
         // *inside* those symlinked folders.  We remove the parent first, in case it is already in the list, so that we
         // don't process it twice.
-        final UnpackModuleVersion parent = version.parent
-        if (parent != null) {
-            removeUnpackModuleVersionIfPresent(parent)
-            addUnpackModuleVersionWithAncestors(parent)
+        Collection<UnpackModuleVersion> parents = version.parents
+        parents.each {
+            UnpackModuleVersion parent ->
+                removeUnpackModuleVersionIfPresent(parent)
+                addUnpackModuleVersionWithAncestors(parent)
+
         }
     }
 
@@ -118,7 +120,7 @@ class SymlinksToCacheTask extends DefaultTask {
      * Removes {@code version} from the list of versions for which this task will create symlinks.  If the version is
      * NOT already present, this method does nothing.
      */
-    private void removeUnpackModuleVersionIfPresent(UnpackModuleVersion version) {
+    public void removeUnpackModuleVersionIfPresent(UnpackModuleVersion version) {
         if (versionsSeen.remove(version.moduleVersion)) {
             versionList.remove(version)
         }
