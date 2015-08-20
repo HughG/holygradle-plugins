@@ -1112,6 +1112,15 @@ This task will navigate through all of the project's dependencies. This includes
 
 The result is a directory which contains all packed dependencies. This is useful for pre-fetching dependencies so that you can package them up and give them to a customer who doesn't have access to your network.
 
+This task is a subclass of the usual Gradle +Copy+ task, so the +destinationDir+ and other aspects can be customised as
+normal.
+
+=== zipDependencies
+
+This task collects the same files as <<_collectdependencies>> but puts them in a ZIP file in the project root.  By
+default the file is named +local_artifacts_{date}_UTC.zip+ where +{date}+ is the local machine date, converted to UTC.
+This task is a subclass of the usual Gradle +Zip+ task, so the +baseName+ and other aspects can be customised as normal.
+
 === rebuildSymlinks
 
 This task performs a subset of the functionality of the +fetchAllDependencies+ task - it simply rebuilds all the symlinks for all dependencies.
