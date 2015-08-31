@@ -91,7 +91,7 @@ digraph "Build Dependencies" {
     main_src [label="source"]
     test_src [label="test source"]
     main_classes [label="classes"]
-    test_classes [label="classes"]
+    test_classes [label="test classes"]
     main_jar [label="jar"]
     test_report [label="test report"]
 
@@ -152,7 +152,7 @@ Configurations
 ** _not_ your project's source code
 * when resolved, provide: artifacts (files with metadata)
 
-Task input files can be
+Tasks also use configurations: a task's input files can be
 
 * from your project, within its folder hierarchy
 ** for example, your project's source code
@@ -183,7 +183,7 @@ digraph "Build Dependencies" {
     main_src [label="source"]
     test_src [label="test source"]
     main_classes [label="classes"]
-    test_classes [label="classes"]
+    test_classes [label="test classes"]
     main_jar [label="jar"]
     test_report [label="test report"]
 
@@ -194,11 +194,12 @@ digraph "Build Dependencies" {
     compile [shape=oval]
     testCompile [shape=oval]
 
-    task -> test_src [style=invisible,arrowhead=none]
-    configuration -> compile [style=invisible,arrowhead=none]
-    dependency -> library3 [style=invisible,arrowhead=none]
+    configuration -> library1 [style=invisible,arrowhead=none]
+    dependency -> library1 [style=invisible,arrowhead=none]
+    files -> library2 [style=invisible,arrowhead=none]
+    task -> test_src [style=invisible,arrowhead=none,minlen=3]
 
-    testCompile -> compile [arrowhead=empty]
+    compile -> testCompile [dir=back,arrowtail=empty]
 
     library1 -> compile [arrowhead=odiamond]
     library2 -> compile [arrowhead=odiamond]
@@ -421,6 +422,9 @@ Hello 2
 Hello 3
 ----
 
+This example shows Groovy string interpolation: +
+put any expression in +${}+ inside a double-quoted string
+
 
 == Basic Examples -- Code Configuring Tasks
 
@@ -447,9 +451,6 @@ Hello 2
 Hello 3
 Hello 0
 ----
-
-This example shows Groovy string interpolation: +
-put any expression in +${}+ inside a double-quoted string
 
 
 == Basic Examples -- Built-In Tasks
