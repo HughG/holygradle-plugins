@@ -78,13 +78,14 @@ void initializeBuildWebsiteTask(
                     // Nothing
                 ]
                 def loggingArgs = (project.logger.isEnabled(LogLevel.INFO)) ? ['-v'] : []
+                def backendArgs = (ascBase.startsWith("slides-")) ? ['-b', 'slidy'] : []
                 def filenameArgs = [
                     "-o", "${asciidocOutputSubdir}/${ascOutJustFileName}", "${asc.name}"
                 ]
                 exec { ExecSpec e ->
                     e.workingDir project.WEBSITE_DIR
                     e.executable "cmd.exe"
-                    e.args = baseArgs + buildQuicklyArgs + buildLocalArgs + loggingArgs + filenameArgs
+                    e.args = baseArgs + buildQuicklyArgs + buildLocalArgs + loggingArgs + backendArgs + filenameArgs
                 }
             }
         }

@@ -1,0 +1,665 @@
+include::stdattr.ascinc[]
+:toc2!:
+:stylesheet: slides.css
+
+= Basic Introduction to Gradle 1.4
+
+== Contents
+
+* Purpose
+* Setup
+* Use
+* Examples
+* References
+
+
+== WARNING: Gradle 1.4 on Windows
+
+This presentation covers Gradle 1.4 on Windows +
+because that's what the Holy Gradle uses
+
+
+== Purpose -- What is Gradle?
+
+A tool for managing
+
+* build tasks for software modules
+* dependencies between modules
+
+It is
+
+* written in Java and Groovy
+* controlled with Groovy scripts
+* extensible with Java/Groovy plugins
+
+
+== Purpose -- Projects
+
+A Gradle _project_ represents ``something you can build or do''
+
+* Build a C++ library or application
+* Build a whole Visual Studio solution
+* Deploy / install an application
+* Run automated integration tests
+
+Can have single-project or multi-project builds
+
+Projects define _tasks_
+
+Command-line arguments choose which tasks to execute
+
+
+== Purpose -- Tasks
+
+Like Make, NMake, MSBuild, Ant, etc.
+
+Define tasks to build output files from input files
+
+Dependencies between tasks
+
+* declared explicitly
+* by using the output of one task as input to another
+
+Tell Gradle to run some tasks, +
+and it will build/run dependencies first
+
+* Like MSBuild, Ant
+* Unlike tradition Make, where you say what _output_ to build
+
+Caches ``up to date'' state of outputs across runs
+
+
+== Purpose -- Build Tasks
+
+Simplified example of Java project
+
+["graphviz", "build_deps.svg", "dot", "svg"]
+---------------------------------------------------------------------
+digraph "Build Dependencies" {
+    rankdir=TB
+    ranksep=0.25
+    nodesep=0.1
+    
+    node [shape=parallelogram,height=0.3,width=1.5,fixedsize=true]
+
+    subgraph cluster_Key {
+        label="Key:"
+        files
+        task [shape=box]
+    }
+
+    main_src [label="source"]
+    test_src [label="test source"]
+    main_classes [label="classes"]
+    test_classes [label="classes"]
+    main_jar [label="jar"]
+    test_report [label="test report"]
+
+    files -> main_src [style=invisible,arrowhead=none]
+    task -> test_src [style=invisible,arrowhead=none]
+
+    compileJava [shape=box]
+    compileTestJava [shape=box]
+    test [shape=box]
+    jar [shape=box]
+    build [shape=box]
+    upload [shape=box]
+
+    main_src -> compileJava -> main_classes
+    test_src -> compileTestJava -> test_classes
+    main_classes -> test
+    test_classes -> test
+    test -> test_report [weight=5]
+    main_classes -> jar
+    jar -> main_jar [weight=5]
+
+    test -> build [dir=back,style=dotted,arrowtail=vee]
+    jar -> build [dir=back,style=dotted,arrowtail=vee]
+    build -> upload [dir=back,style=dotted,arrowtail=vee]
+}
+---------------------------------------------------------------------
+
+
+== Purpose -- Module Dependencies
+
+Familiar: Between _projects_ in a _multi-project build_
+
+More interesting: Use of pre-compiled libraries
+
+Slightly like CMake or Unix-style +configure+
+
+You specify
+
+* list of module _repositories_
+* list of module _IDs_ (group, name, version)
+
+Gradle will
+
+* _resolve_ (find) each module in the repositories
+** with optional metadata about dependencies
+* find _transitive dependencies_, recursively
+* download the _artifacts_ (files) for all of them
+* provide information to tasks through APIs
+
+
+== Purpose -- Module Dependencies
+
+_Configurations_ connect build artifacts and module dependencies
+
+Configurations
+
+* depend on: projects, external modules, other configurations
+** _not_ your project's source code
+* when resolved, provide: artifacts (files with metadata)
+
+Task input files can be
+
+* from your project, within its folder hierarchy
+** for example, your project's source code
+* from configuration artifacts (stored in Gradle cache)
+
+
+== Purpose -- Module Dependencies
+
+Simplified example of Java project with configurations
+
+["graphviz", "build_deps_with_confs.svg", "dot", "svg"]
+---------------------------------------------------------------------
+digraph "Build Dependencies" {
+    rankdir=TB
+    ranksep=0.25
+    nodesep=0.1
+    
+    node [shape=parallelogram,height=0.3,width=1.5,fixedsize=true]
+
+    subgraph cluster_Key {
+        label="Key:"
+        files
+        task [shape=box]
+        configuration [shape=oval]
+        dependency [shape=component]
+    }
+
+    main_src [label="source"]
+    test_src [label="test source"]
+    main_classes [label="classes"]
+    test_classes [label="classes"]
+    main_jar [label="jar"]
+    test_report [label="test report"]
+
+    library1 [shape=component]
+    library2 [shape=component]
+    library3 [shape=component]
+
+    compile [shape=oval]
+    testCompile [shape=oval]
+
+    task -> test_src [style=invisible,arrowhead=none]
+    configuration -> compile [style=invisible,arrowhead=none]
+    dependency -> library3 [style=invisible,arrowhead=none]
+
+    testCompile -> compile [arrowhead=empty]
+
+    library1 -> compile [arrowhead=odiamond]
+    library2 -> compile [arrowhead=odiamond]
+    library3 -> testCompile [arrowhead=odiamond]
+
+    compileJava [shape=box]
+    compileTestJava [shape=box]
+    test [shape=box]
+    jar [shape=box]
+    build [shape=box]
+    upload [shape=box]
+
+    compile -> compileJava
+    main_src -> compileJava -> main_classes
+    testCompile -> compileTestJava
+    test_src -> compileTestJava -> test_classes
+    main_classes -> test
+    test_classes -> test
+    test -> test_report [weight=5]
+    main_classes -> jar
+    jar -> main_jar [weight=5]
+
+    test -> build [dir=back,style=dotted,arrowtail=vee]
+    jar -> build [dir=back,style=dotted,arrowtail=vee]
+    build -> upload [dir=back,style=dotted,arrowtail=vee]
+}
+---------------------------------------------------------------------
+
+
+== Setup
+
+Install Java 7
+
+* JRE, or JDK for more customisation
+
+Download from http://gradle.org/gradle-download/ +
+and install
+
+Or, bootstrap without system-wide install +
+using the link:https://docs.gradle.org/1.4/userguide/gradle_wrapper.html[Gradle wrapper] +
+(committed with your project's source)
+
+Optionally, set GRADLE_USER_HOME to cache parent folder.
+
+* Defaults to +%USERPROFILE%\.gradle+
+
+
+== Use
+
+Controlled with Groovy scripts
+
+* Mostly looks declarative, but actually imperative
+* Access to large Gradle API
+* Access to all standard Java libraries
+* Access to most other Java libraries on the Internet
+
+Run from
+
+* command line (+gradle.bat+, +gradlew.bat+)
+* Java IDEs (IntelliJ IDEA, Eclipse, etc.)
+
+
+== Use -- Control Files
+
++settings.gradle+ (optional)
+
+* Lists project folders, for multi-project build
+* Sets root project name
+
++gradle.properties+ (optional)
+
+* Standard Java properties file
+* Values become properties on +project+ object in build file
+
++build.gradle+
+
+* Applies plugins to specialise for Java, Sonar, Eclipse, ...
+* Defines configurations, inputs/outputs, tasks
+* Does anything else you like -- it's a program :-)
+
+
+== Use -- Execution Phases
+
+[glossary]
+Initialization::
+    Load and run +settings.gradle+ to find set of projects
+Configuration::
+    Load and run every project's +build.gradle+ +
+to set up repositories, configurations, dependencies, tasks, etc.
+Execution::
+    Execute tasks from command line (and their dependencies)
+
+See link:https://docs.gradle.org/1.4/userguide/build_lifecycle.html[Build Lifecycle] chapter.
+
+== Basic Examples
+
+Minimal: no configurations, one task
+
+[source,groovy]
+----
+task hello {
+    doLast {
+        println "Hello world!"
+    }
+}
+
+// or ...
+
+task hello2 << {
+    println "Hello world!"
+}
+----
+
+Run like this
+
+----
+gradlew hello
+----
+
+and see the output
+
+----
+Hello world!
+----
+
+
+== Basic Examples -- Task Dependencies
+
+Dependencies between tasks
+
+[source,groovy]
+----
+task hello {
+    doLast {
+        print "Hello"
+    }
+}
+task world {
+    doLast {
+        print " world"
+    }
+    dependsOn hello
+}
+task helloWorld {
+    doLast {
+        println "!"
+    }
+    dependsOn world
+}
+----
+
+Running
+
+----
+gradlew helloWorld hello
+----
+
+does each task once in dependency order, outputting
+
+----
+Hello world!
+----
+
+
+== Basic Examples -- Common Task Error
+
+For beginners it's common to confuse the code for
+
+* configuration: sets task properties, including action(s)
+* execution: runs the action
+
+[source,groovy]
+----
+task hello {
+    doLast {
+        print "Hello"
+    }
+}
+task world << {
+    print " world"
+    // dependsOn should be outside doLast.
+    // Doing this means the dependency isn't set
+    // until the task has started executing: too late!
+    dependsOn hello
+}
+task helloWorld {
+    // println should be inside doLast.
+    // Doing this means the message is printed
+    // when the task is configured
+    // even if it is not executed: too early!
+    println "!"
+    dependsOn world
+}
+----
+
+
+== Basic Examples -- Code Inside Tasks
+
+[source,groovy]
+----
+task hello << {
+    4.times { counter ->
+        println "Hello ${counter}"
+    }
+}
+----
+
+Running
+
+----
+gradlew hello
+----
+
+outputs
+
+----
+Hello 0
+Hello 1
+Hello 2
+Hello 3
+----
+
+
+== Basic Examples -- Code Configuring Tasks
+
+[source,groovy]
+----
+4.times { counter ->
+    task "hello${counter}" << {
+        println "Hello ${counter}"
+    }
+}
+hello0.dependsOn hello2, hello3
+----
+
+Running
+
+----
+gradlew hello0
+----
+
+outputs
+
+----
+Hello 2
+Hello 3
+Hello 0
+----
+
+This example shows Groovy string interpolation: +
+put any expression in +${}+ inside a double-quoted string
+
+
+== Basic Examples -- Built-In Tasks
+
+Tasks for many things, including
+
+* files: copying, deleting, zipping, unzipping etc.
+* publishing modules: generating metadata files, uploading
+* Java builds: making JARs/WARs/EARs, building JavaDoc
+
+[source,groovy]
+----
+task deployMyApp(type: Copy) {
+    from("out/main") {
+        include "**/*.jar"
+    }
+    from("out/resources") {
+        include "lang-${currentLanguage}.jar"
+        rename "lang-(.*).xml", "\$1"
+    }
+    into "deploy"
+    exclude "**/*.bak"
+}
+
+----
+
+Running this multiple times will only copy modified files +
+because Gradle tracks change information in folder +.gradle/+
+
+
+== Basic Examples -- Configurations & Dependencies
+
+[source,groovy]
+----
+repositories {
+    maven { url "https://repo1.maven.org/maven2/" }
+}
+
+// If you're not using a plugin like "java"
+// you must define configurations if you want to define dependencies.
+configurations {
+    example
+    testExample.extendsFrom example
+}
+
+dependencies {
+    example group: "commons-io", name: "commons-io", version: "2.4"
+    example "commons-lang:commons-lang:2.4" // short form
+    testExample "org.mockito:mockito-core:1.+" // floating version
+}
+
+task listDependencies << {
+    for (c in configurations) {
+        println "Listing ${c}"
+        for (d in c.allDependencies) {
+            println "    dependency ${d}"
+        }
+        println "Resolving ${c}"
+        for (a in c.resolvedConfiguration.resolvedArtifacts) {
+            println "        ${a.name}.${a.extension} from ${a.moduleVersion.id}"
+        }
+    }
+}
+----
+
+
+== Basic Examples -- Warning: Floating Versions
+
+The `+` character at the end of a version matches any characters +
+and resolves to the latest version
+
+BUT (in Gradle 1.4) _latest_ means ``lexicographically last'' +
+so +1.12+ comes before +1.2+
+
+Also, there's no built-in way to record which versions were used +
+and apply them when re-building the same source later +
+although you could implement it yourself
+
+
+== Advanced Examples -- Callbacks for Tasks
+
+Do things when Gradle has computed the set of tasks to run
+
+[source,groovy]
+----
+gradle.taskGraph.beforeTask ( Task t ->
+    if (t.name == "foo") {
+        // ...
+    }
+}
+
+gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
+    if (graph.hasTask("foo")) {
+        // ...
+    }
+}
+----
+
+
+== Advanced Examples -- Callbacks for Projects
+
+Do things before/after a project's build script is evaluated 
+
+[source,groovy]
+----
+project.afterEvaluate {
+    // ...
+}
+----
+
+
+== Advanced Examples -- Callbacks for Configurations
+
+Do things before/after a project's dependencies are resolved,
+for example to override the version of a transitive dependency
+
+[source,groovy]
+----
+configurations {
+    example
+}
+
+example.resolutionStrategy {
+    eachDependency { DependencyResolveDetails details ->
+        // specifying a fixed version for all libraries with 'org.gradle' group
+        if (details.requested.group == "org.gradle") {
+            details.useVersion "1.4"
+        }
+    }    
+}
+
+gradle.addListener [
+    afterResolve: { ResolvableDependencies dependencies ->
+        // ...
+    }
+] as DependencyResolutionListener
+----
+
+This last part shows a Groovy shortcut: +
+implement an interface with a map of closures
+
+
+== Advanced Examples -- Using External Modules in +build.gradle+
+
+You can add external dependencies to the Java classpath +
+which applies to your build script
+
+The following example task builds a report containing +
+MD5 sum values for all files in a folder hierarchy
+
+[source,groovy]
+----
+buildscript {
+    dependencies {
+        classpath "commons-codec:commons-codec:1.6"
+    }
+}
+
+import org.apache.commons.codec.digest.DigestUtils
+
+task md5src {
+    File md5Report = new File(buildDir, "md5_report.txt")
+    inputs project.fileTree("src")
+    output md5Report
+    doLast {
+        md5Report.withPrintWriter {
+            inputs.files.each { File f ->
+                println "${DigestUtils.md5Hex(f.text)}\t${f}"
+            }
+        }
+    }
+}
+----
+
+
+== References
+
+User Guide
+
+* https://docs.gradle.org/1.4/userguide/tutorial_using_tasks.html[Build Script Basics]
+* https://docs.gradle.org/1.4/userguide/artifact_dependencies_tutorial.html[Dependency Management Basics]
+* link:https://docs.gradle.org/1.4/userguide/tutorial_gradle_command_line.html[Using the Gradle Command Line]
+* link:https://docs.gradle.org/1.4/userguide/writing_build_scripts.html[Writing Build Scripts]
+* link:https://docs.gradle.org/1.4/userguide/more_about_tasks.html[More about Tasks]
+
+
+== References
+
+DSL (domain-specific langauge) references
+
+* link:https://docs.gradle.org/1.4/dsl/org.gradle.api.artifacts.ConfigurationContainer.html[configurations {}]
+* link:https://docs.gradle.org/1.4/dsl/org.gradle.api.artifacts.dsl.DependencyHandler.html[dependencies {}]
+
+
+== References
+
+API references
+
+* link:https://docs.gradle.org/1.4/javadoc/org/gradle/api/Project.html[Project]
+* link:https://docs.gradle.org/1.4/javadoc/org/gradle/api/Task.html[Task]
+* link:https://docs.gradle.org/1.4/javadoc/org/gradle/api/artifacts/Configuration.html[Configuration]
+* link:https://docs.gradle.org/1.4/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html[DependencyHandler]
+
+To get to the latest Gradle docs, instead of the 1.4 docs,
+just replace +1.4+ with +current+ in the URLs
+
+
+== References
+
+Groovy
+    
+* link:http://www.groovy-lang.org/documentation.html[Language documentation]
+* link:http://www.groovy-lang.org/gdk.html[Groovy Development Kit] -- extensions of Java classes
