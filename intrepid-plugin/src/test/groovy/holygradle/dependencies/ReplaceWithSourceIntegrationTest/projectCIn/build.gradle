@@ -12,17 +12,16 @@ repositories.ivy {
     url "..\\..\\..\\testUtil\\repository\\"
 }
 
+// This is testing one level of source override in the same configuration with another dependency
+// where the version differs. This should fail at dependency resolution time.
 packedDependencies {
     "ext_11" {
         dependency "holygradle.test:external-lib:1.1"
-        configuration "foo->compile"
+        configuration "bar->compile"
     }
     "framework" {
         dependency "holygradle.test:example-framework:1.1"
         configuration "bar->compileVc10Debug,compileVc10Release"
-		sourceOverride "source"
+		sourceOverride "../source"
     }
 }
-
-/*packedDependencies {
-}*/

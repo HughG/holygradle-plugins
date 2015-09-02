@@ -41,7 +41,7 @@ class SymlinksToCacheTask extends DefaultTask {
         doLast {
             localVersionList.each { UnpackModuleVersion version ->
                 File linkDir = version.getTargetPathInWorkspace(project)
-                File targetDir = version.getUnpackDir(project)
+                File targetDir = version.getSymlinkDir(project)
 
                 SymlinkTask.checkIsSymlinkOrMissing(linkDir, targetDir)
 

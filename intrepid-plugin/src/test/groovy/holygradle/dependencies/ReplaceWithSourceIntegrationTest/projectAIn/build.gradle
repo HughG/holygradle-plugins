@@ -1,0 +1,27 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    foo
+    bar
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+// This is testing two levels of source override where the modules are in the same configuration.
+packedDependencies {
+    "ext_11" {
+        dependency "holygradle.test:external-lib:1.1"
+        configuration "bar->compile"
+		sourceOverride "../sub_source"
+    }
+    "framework" {
+        dependency "holygradle.test:example-framework:1.1"
+        configuration "bar->compileVc10Debug,compileVc10Release"
+		sourceOverride "../source"
+    }
+}

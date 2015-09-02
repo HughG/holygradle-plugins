@@ -176,6 +176,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 UnpackModuleVersion unpackModuleVersion
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
+                    unpackModuleVersion.addParent(parentUnpackModuleVersion)
                 } else {
 
                     // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved

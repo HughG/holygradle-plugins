@@ -2,23 +2,92 @@ package holygradle.dependencies
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.apache.commons.io.FileUtils
 import org.junit.Assert
 import org.junit.Test
 
-/**
- * Created by pega on 22/07/2015.
- */
+import java.nio.file.Files
+
+import static org.junit.Assert.assertTrue
+import static org.junit.Assert.assertTrue
+
 class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
-    public void rootProjectSourceReplacement() {
-        File root_directory = new File(getTestDir(), "root_project")
-        invokeGradle(root_directory) { WrapperBuildLauncher launcher ->
+    public void twoLevels() {
+        File templateDir = new File(getTestDir(), "projectAIn")
+        File projectDir = new File(getTestDir(), "projectA")
+        if (projectDir.exists()) {
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
         }
 
-        File framework_directory = new File(root_directory, "framework")
-        File source_file = new File(framework_directory, "a_source_file.txt")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File sourceFile1 = new File(frameworkDirectory, "a_source_file.txt")
 
-        Assert.assertTrue(source_file.exists())
+        File externalDirectory = new File(projectDir, "ext_11")
+        File sourceFile2 = new File(externalDirectory, "another_source_file.txt")
+
+        assertTrue("Dependency 1 is correctly linked to source", sourceFile1.exists())
+        assertTrue("Dependency 2 is correctly linked to source", sourceFile2.exists())
+    }
+
+    @Test
+    public void oneLevelWithNestedSourceDependencies() {
+        File templateDir = new File(getTestDir(), "projectBIn")
+        File projectDir = new File(getTestDir(), "projectB")
+        if (projectDir.exists()) {
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+        }
+
+        File frameworkDirectory = new File(projectDir, "framework")
+        File sourceFile1 = new File(frameworkDirectory, "a_source_file.txt")
+
+        File externalDirectory = new File(projectDir, "external-lib")
+        File anotherDirectory = new File(projectDir, "another-lib")
+
+        assertTrue("Dependency 1 is correctly linked to source", sourceFile1.exists())
+        assertTrue("Dependency 2 is correctly linked to another-lib via source", anotherDirectory.exists())
+        assertFalse("Dependency 2 is correctly not linked to external-lib via binary", externalDirectory.exists())
+    }
+
+    @Test
+    public void oneLevelWithNestedSourceVersionConflict() {
+        File templateDir = new File(getTestDir(), "projectCIn")
+        File projectDir = new File(getTestDir(), "projectC")
+        if (projectDir.exists()) {
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+        }
+    }
+
+    @Test
+    public void oneLevelWithNestedSourceVersionConflictMultipleConfigurations() {
+        File templateDir = new File(getTestDir(), "projectDIn")
+        File projectDir = new File(getTestDir(), "projectD")
+        if (projectDir.exists()) {
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+        }
     }
 }
