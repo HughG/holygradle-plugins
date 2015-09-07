@@ -73,6 +73,14 @@ project.ext.setUpTests = { Project project ->
         if (project.name != "integration") {
             project.tasks["publishPluginsLocally"].dependsOn(t)
         }
+        if (project.hasProperty('noTest')) {
+             if (project.version.endsWith('-SNAPSHOT')) {
+                // Skip unit testing.
+                t.enabled = false
+            } else {
+                throw new RuntimeException("You can only use -PnoTest for SNAPSHOT releases, but this is ${project.version}")
+            }
+        }
     }
     project.task([type: Test], "integTest") { Test t ->
         t.group = "Verification"
@@ -195,4 +203,4 @@ project.ext.setUpTests = { Project project ->
 
 // Set up tests for integration first, so other projects can depend on its integTest.
 setUpTests(findProject(':integration'))
-subprojects.findAll { it.path != ':integration' }.each { println it.path; setUpTests(it) }
+subprojects.findAll { it.path != ':integration' }.each { setUpTests(it); }

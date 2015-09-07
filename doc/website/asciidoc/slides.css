@@ -1,0 +1,19 @@
+@import url('public.css');
+
+@media screen {
+    /* Make code font a little smaller. */
+    div.listingblock pre, div.literalblock pre
+    {
+        font-size: 18px;
+        line-height: 110%;
+    }
+
+    /* Make code padding a little smaller. */
+    div.listingblock > div.content {
+      padding: 0.1em;
+    }
+
+    a {
+        text-decoration: underline;
+    }
+}

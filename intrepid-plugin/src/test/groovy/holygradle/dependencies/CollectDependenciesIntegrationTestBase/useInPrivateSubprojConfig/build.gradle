@@ -1,0 +1,28 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    // For this test, the name of this configuration needs to be the same as that in the "sub" project,
+    // and it must be a private configuration (so that the two aren't connected by the "everything" configuration).
+    privateFoo
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+sourceDependencies {
+    sub {
+        hg "http://dummy_url"
+    }
+}
+
+// Declare a packed dependency for this root project.
+packedDependencies {
+    "external-lib" {
+        dependency "holygradle.test:external-lib:1.0"
+        configuration "privateFoo->compile"
+    }
+}

@@ -660,29 +660,36 @@ an gloss:artifactory[] server, you can still share dependencies with them.  This
 can work on the same source code, and be sure they are using the same versions of dependencies.
 
 The gloss:holygradle[] can automatically download all dependencies, plus a copy of the Holy Gradle,
-into a +local_artifacts+ folder.  This folder can be zipped and shared by FTP, for example.  A new
+into a +local_artifacts+ folder or ZIP file.  This can be shared by FTP, for example.  A new
 version of the ZIP file is only needed when dependencies change -- see <<_changing_dependencies>>.
 
-When a team at a disconnected site gets a copy of these files, they should put the unzipped
-+local_artifacts+ folder in the same place as the project's +build.gradle+, then run +gw fAD+.  All
-dependencies will be unpacked to the gloss:gradle[] cache, with symlinks added at the correct
-locations in the project folder.  From version link:release_notes.html#_7_5_0[] of the Holy Gradle,
-the +local_artifacts+ contains a +build_info+ folder which contains a note of which source code
-repository and revision was used to generate it.  This means that the team which receives it can
-check that they have the correct version of the ZIP file.
+When a developer at a disconnected site gets a copy of these files, they should put the unzipped
++local_artifacts+ folder in the same place as the project's +build.gradle+.  (The folder can also
+be in any folder above the project root, to share it between multiple projects.)  The developer
+can then run +gw fAD+ and all dependencies will be unpacked to the gloss:gradle[] cache, with
+symlinks added at the correct locations in the project folder.  From version
+link:release_notes.html#_7_5_0[] of the Holy Gradle, the +local_artifacts+ contains a +build_info+
+folder which contains a note of which source code repository and revision was used to generate it.
+This means that the team which receives it can check that they have the correct version of the ZIP
+file.
 
-To make this +local_artifacts+ folder, just run 
+To make a +local_artifacts+ ZIP, just run 
+
+----
+gw zipDependencies
+----
+
+Or, to put dependencies in a folder but not ZIP them, run 
 
 ----
 gw collectDependencies
-----
-
-then ZIP the +local_artifacts+ folder.
+---- 
 
 If you want to check the result, you can follow these steps.
 
 * Check out a separate working copy of the source code.
-* Copy the +local_artifacts+ folder into that new working copy.
+* Unzip the +local_artifacts+ ZIP (or copy the +local_artifacts+ folder) into that new working
+copy.
 * Run +gw -o -g tmp_guh fAD+.
 ** The +-o+ argument means that Gradle will not use the network (work offline).  This tests
 that all dependencies are available in +local_artifacts+, without fetching from your Artifactory
@@ -1540,7 +1547,9 @@ Then ZIP up the following folder and files.
 Send this file to your customer.  They can unzip it and run +gw fAD+ to unpack your module and all
 its dependencies.  You can and should test this for yourself before you send it, using
 +gw -o -g tmp_guh fAD+ as described in <<_sharing_dependencies_with_disconnected_sites>>.
-
+(You can use the +zipDependencies+ task to do this, if you also configure it to add the other files
+and folders above apart from +local_artifacts/+.  To see how to do this, read the Gradle
+documentation on the Zip task.)
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 

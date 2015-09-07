@@ -89,15 +89,14 @@ class DevEnvTask extends DefaultTask {
     }
 
     private void configureTaskDependencies() {
-        if (independently) {
-            return
-        }
-
         // Add dependencies to tasks with the same "devenv task configuration" (rather than "Gradle configuration") and
         // operation in dependent projects.
         Collection<SourceDependenciesStateHandler> sourceDependenciesState =
             project.extensions.findByName("sourceDependenciesState") as Collection<SourceDependenciesStateHandler>
-        if (sourceDependenciesState == null) {
+        if (independently ||
+            sourceDependenciesState == null ||
+            !project.gradle.startParameter.buildProjectDependencies
+        ) {
             return
         }
         // For each configurations in this project which point into a source dependency, make this project's task
@@ -135,7 +134,12 @@ class DevEnvTask extends DefaultTask {
         File outputFile = new File(solutionFile.getParentFile(), "build_${configuration}_${platform}.txt")
         GString title = "${project.name} (${platform} ${configuration})"
         
-        description = "Builds the solution '${solutionFile.name}' with ${buildToolName} in $configuration mode."
+        description = "Builds the solution '${solutionFile.name}' with ${buildToolName} in $configuration mode, " +
+            "first building all dependent projects. " +
+            (independently ?
+                "Deprecated; use 'gw -a ${getNameForTask(operation, platform, configuration, false)}' instead." :
+                "Run 'gw -a ...' to build for this project only."
+            )
         configureTask(
             project, title, buildToolPath, solutionFile, targetSwitch, 
             configSwitch, outputFile, warningRegexes, errorRegexes
@@ -151,7 +155,12 @@ class DevEnvTask extends DefaultTask {
         File outputFile = new File(solutionFile.getParentFile(), "clean_${configuration}_${platform}.txt")
         GString title = "${project.name} (${platform} ${configuration})"
         
-        description = "Cleans the solution '${solutionFile.name}' with DevEnv in $configuration mode."
+        description = "Cleans the solution '${solutionFile.name}' with DevEnv in $configuration mode, " +
+            "first building all dependent projects. " +
+            (independently ?
+                "Deprecated; use 'gw -a ${getNameForTask(operation, platform, configuration, false)}' instead." :
+                "Run 'gw -a ...' to build for this project only."
+            )
         configureTask(
             project, title, buildToolPath, solutionFile, targetSwitch, 
             configSwitch, outputFile, warningRegexes, errorRegexes
@@ -166,7 +175,6 @@ class DevEnvTask extends DefaultTask {
         StyledTextOutput styledOutput = this.output
         if (independently) {
             def normalTaskName = getNameForTask(operation, platform, configuration, false)
-            description += " Deprecated; use 'gw -a ${normalTaskName}' instead."
             doFirst {
                 throw new RuntimeException(
                     "${name} is deprecated; use 'gw -a ${normalTaskName}' instead"

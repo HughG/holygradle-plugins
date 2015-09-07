@@ -6,11 +6,13 @@ import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.Symlink
+import holygradle.dependencies.CollectDependenciesHelper
 import holygradle.dependencies.CollectDependenciesTask
 import holygradle.dependencies.DependenciesStateHandler
 import holygradle.dependencies.DependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.PackedDependenciesSettingsHandler
+import holygradle.dependencies.ZipDependenciesTask
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
@@ -355,15 +357,26 @@ public class IntrepidPlugin implements Plugin<Project> {
          * Unpacking stuff
          **************************************/
 
-        CollectDependenciesTask collectDependenciesTask
         if (project == project.rootProject) {
-            // This task will be initialized once the project is evaluated, because we need packed dependencies info.
-            collectDependenciesTask = (CollectDependenciesTask)project.task(
+            CollectDependenciesTask collectDependenciesTask = (CollectDependenciesTask)project.task(
                 "collectDependencies",
                 type: CollectDependenciesTask
             ) { CollectDependenciesTask task ->
                 task.group = "Dependencies"
-                task.description = "Collect all non-source dependencies into a 'local_artifacts' folder."
+                task.description = "Collect all non-source dependencies into a '${CollectDependenciesHelper.LOCAL_ARTIFACTS_DIR_NAME}' folder."
+            }
+            profilingHelper.timing("IntrepidPlugin(${project}) configure collectDependenciesTask") {
+                collectDependenciesTask.initialize()
+            }
+            ZipDependenciesTask zipDependenciesTask = (ZipDependenciesTask)project.task(
+                "zipDependencies",
+                type: ZipDependenciesTask
+            ) { ZipDependenciesTask task ->
+                task.group = "Dependencies"
+                task.description = "Collect all non-source dependencies into a '${CollectDependenciesHelper.LOCAL_ARTIFACTS_DIR_NAME}' ZIP."
+            }
+            profilingHelper.timing("IntrepidPlugin(${project}) configure zipDependenciesTask") {
+                zipDependenciesTask.initialize()
             }
         }
 
@@ -384,13 +397,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for checkPackedDependencies") {
                 final PublishPackagesExtension publishPackages = project.publishPackages as PublishPackagesExtension
                 publishPackages.defineCheckTask(packedDependenciesState)
-            }
-
-            // collectDependenciesTask only exists for the root project.
-            if (collectDependenciesTask != null) {
-                profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for collectDependenciesTask") {
-                    collectDependenciesTask.initialize(project)
-                }
             }
         }
 

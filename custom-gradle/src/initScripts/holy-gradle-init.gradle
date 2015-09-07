@@ -223,19 +223,30 @@ gradle.allprojects { Project project ->
     // Check if we should override use of repositories based on presence of 'local_artifacts' folder.
     // This is to support building projects without access to an Artifactory or similar repository.
     boolean usingLocalArtifacts = false
-    File localArtifactsFile = new File(project.rootProject.projectDir, "local_artifacts")
+    File localArtifactsFile = null
     if (project == project.rootProject) {
-        if (localArtifactsFile.exists()) {
-            usingLocalArtifacts = true
-            
+        for (File possibleParent = project.projectDir;
+            possibleParent != null;
+            possibleParent = possibleParent.parentFile
+        ) {
+            localArtifactsFile = new File(possibleParent, "local_artifacts")
+            if (localArtifactsFile.exists()) {
+                usingLocalArtifacts = true
+                break
+            }
+        }
+        if (usingLocalArtifacts) {
             println "="*75
-            println "Detected '${localArtifactsFile.name}' directory. Overriding usage of non-local repositories..."
+            println "Detected '${localArtifactsFile.name}' directory at '${localArtifactsFile}'"
+            println "Overriding usage of non-local repositories..."
             println "="*75
         }
     } else {
         usingLocalArtifacts = project.rootProject.property("usingLocalArtifacts")
+        localArtifactsFile = project.rootProject.property("localArtifactsFile")
     }
     project.ext["usingLocalArtifacts"] = usingLocalArtifacts
+    project.ext["localArtifactsFile"] = localArtifactsFile
 
     if (usingLocalArtifacts) {
         // Make the "local_artifacts" folder be the first (ivy-format) repository the project will see,
