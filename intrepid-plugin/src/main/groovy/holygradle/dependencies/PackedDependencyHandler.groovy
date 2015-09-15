@@ -13,6 +13,7 @@ class PackedDependencyHandler extends DependencyHandler {
     private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
     private ModuleVersionIdentifier dependencyId = null
     private String sourceOverrideLocation = null
+    private Closure sourceOverrideIvyFile = null
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
     public Boolean unpackToCache = null
@@ -201,6 +202,14 @@ class PackedDependencyHandler extends DependencyHandler {
 
     public String getSourceOverride() {
         sourceOverrideLocation
+    }
+
+    public void ivyFileGenerator(Closure generator) {
+        sourceOverrideIvyFile = generator
+    }
+
+    public Closure getIvyFileGenerator() {
+        sourceOverrideIvyFile
     }
     
     public void configuration(String... configs) {
