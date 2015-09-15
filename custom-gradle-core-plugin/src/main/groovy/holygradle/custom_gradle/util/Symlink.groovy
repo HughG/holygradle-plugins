@@ -1,8 +1,7 @@
 package holygradle.custom_gradle.util
 
-import holygradle.io.FileHelper
-
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 
 public class Symlink {
@@ -12,7 +11,7 @@ public class Symlink {
 
     public static void delete(File link) {
         if (isJunctionOrSymlink(link)) {
-            FileHelper.ensureDeleteFile(link)
+            link.delete()
         }
     }
     
@@ -21,16 +20,23 @@ public class Symlink {
         
         // Delete the symlink if it exists
         if (isJunctionOrSymlink(canonicalLink)) {
-            FileHelper.ensureDeleteFile(canonicalLink)
+            canonicalLink.delete()
         }
         
         // Make sure the parent directory exists
         final File linkParentDir = canonicalLink.parentFile
         if (linkParentDir != null) {
-            FileHelper.ensureMkdirs(linkParentDir, "as parent for symlnk ${canonicalLink.name}")
+            if (!linkParentDir.exists() && !linkParentDir.mkdirs()) {
+                throw new RuntimeException("Failed to create parent folder ${linkParentDir} for symlink ${canonicalLink.name}")
+            }
         }
 
-        if (!target.exists()) {
+        // If target is relative, createSymbolicLink will create a link relative to link so we have to calculate this
+        // (as opposed to relative to the current working directory)
+        Path re_relativized_target = canonicalLink.toPath().resolveSibling(target.toPath())
+        File re_relativized_file = new File(re_relativized_target.toString())
+
+        if (!re_relativized_file.exists()) {
             throw new IOException("Cannot create link to non-existent target; from '${canonicalLink}' to '${target}'")
         }
         Files.createSymbolicLink(canonicalLink.toPath(), target.toPath())
