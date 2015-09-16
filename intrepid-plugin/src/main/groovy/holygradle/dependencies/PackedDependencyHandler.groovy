@@ -38,7 +38,7 @@ class PackedDependencyHandler extends DependencyHandler {
         //throw new RuntimeException("No project for PackedDependencyHandler for $depName")
 
     }
-    
+
     public PackedDependencyHandler(String depName, Project projectForHandler) {
         super(depName, projectForHandler)
 
@@ -48,7 +48,7 @@ class PackedDependencyHandler extends DependencyHandler {
 
         this.projectForHandler = projectForHandler
     }
-    
+
     public PackedDependencyHandler(
         String depName,
         Project projectForHandler,
@@ -60,7 +60,7 @@ class PackedDependencyHandler extends DependencyHandler {
         initialiseDependencyId(dependencyCoordinate)
         this.configurations = configurations
     }
-    
+
     public PackedDependencyHandler(
         String depName,
         Project projectForHandler,
@@ -69,7 +69,7 @@ class PackedDependencyHandler extends DependencyHandler {
         this(depName, projectForHandler)
         dependencyId = dependencyCoordinate
     }
-    
+
     private PackedDependencyHandler getParentHandler() {
         if (projectForHandler == null) {
             null
@@ -136,7 +136,7 @@ class PackedDependencyHandler extends DependencyHandler {
             return createSettingsFile
         }
     }
-    
+
     public boolean shouldMakeReadonly() {
         if (readonly == null) {
             PackedDependencyHandler p = getParentHandler()
@@ -162,7 +162,7 @@ class PackedDependencyHandler extends DependencyHandler {
             return applyUpToDateChecks
         }
     }
-    
+
     private void initialiseDependencyId(String dependencyCoordinate) {
         if (dependencyId != null) {
             throw new RuntimeException("Cannot set dependency more than once")
@@ -175,11 +175,11 @@ class PackedDependencyHandler extends DependencyHandler {
             dependencyId = new DefaultModuleVersionIdentifier(match[1], match[2], match[3])
         }
     }
-        
+
     public void dependency(String dependencyCoordinate) {
         initialiseDependencyId(dependencyCoordinate)
     }
-        
+
     public void configuration(String config) {
         Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
@@ -210,6 +210,40 @@ class PackedDependencyHandler extends DependencyHandler {
 
     public Closure getIvyFileGenerator() {
         sourceOverrideIvyFile
+    }
+
+    private File sourceOverrideIvyFileCache = null
+    public File getSourceOverrideIvyFile() {
+
+        return new File(sourceOverride, "build/publications/ivy/ivy.xml")
+
+        // First check the cache map
+        if (sourceOverrideIvyFileCache != null) {
+            println("Using cached ivy file")
+            sourceOverrideIvyFileCache = sourceOverrideIvyFileCache
+        } else if (getIvyFileGenerator()) {
+            println("Using custom ivy file generator code")
+            def generator = getIvyFileGenerator()
+            sourceOverrideIvyFileCache = generator()
+        } else if (new File ( sourceOverride, "generateIvyModuleDescriptor.bat").exists ()) {
+            // Otherwise try to run a user provided Ivy file generator
+            println("Using standard ivy file generator batch script")
+            project.exec {
+                workingDir sourceOverride
+                executable "generateIvyModuleDescriptor.bat"
+            }
+            sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
+        } else { // Otherwise try to run gw.bat
+            println("Falling back to gw.bat ivy file generation")
+            project.exec {
+                workingDir sourceOverride
+                executable "gw.bat"
+                args "generateIvyModuleDescriptor"
+            }
+            sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
+        }
+
+        return sourceOverrideIvyFileCache
     }
     
     public void configuration(String... configs) {

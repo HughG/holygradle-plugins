@@ -1,6 +1,7 @@
 package holygradle
 
 import ch.qos.logback.core.util.FileUtil
+import groovy.xml.XmlUtil
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
@@ -24,6 +25,7 @@ import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.symlinks.SymlinksToCacheTask
 import holygradle.unpacking.*
+import org.apache.commons.io.FileUtils
 import org.apache.ivy.core.cache.DefaultRepositoryCacheManager
 import org.apache.ivy.plugins.repository.file.FileRepository
 import org.apache.maven.artifact.Artifact
@@ -37,9 +39,11 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.DependencyArtifact
 import org.gradle.api.artifacts.DependencyResolutionListener
 import org.gradle.api.artifacts.DependencyResolveDetails
+import org.gradle.api.artifacts.Module
 import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository
@@ -438,89 +442,107 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
         }
 
-        def ivyMap = [:]
 
-        File tempDir = new File(project.buildDir, "holygradle/source_replacement")
+
+        setupSourceReplacementListener(project)
+
+
+        timer.endBlock()
+    }
+
+    private void setupSourceReplacementListener(Project project) {
+        Collection<PackedDependencyHandler> packedDependencies = project.packedDependencies
+        /*File tempDir = new File(project.buildDir, "holygradle/source_replacement")
         FileHelper.ensureMkdirs(tempDir, "creating source replacement dummy file repository")
         File dummyArtifact = new File(tempDir, "dummy_artifact.txt")
-        dummyArtifact.text = ""
+        dummyArtifact.text = ""*/
 
+        File tempDir = new File(
+            project.buildDir,
+            "holygradle/source_replacement"
+        )
+
+        println("Repository Url ${tempDir.toURI().toURL()}")
         project.repositories {
-            flatDir {
-                dir tempDir
+            ivy {
+                url tempDir.toURI().toURL()
             }
         }
 
         def listener = new DependencyResolutionListener() {
-            void beforeResolve(ResolvableDependencies dependencies) {
+            void beforeResolve(ResolvableDependencies resolvableDependencies) {
+                //println "beforeResolve ${resolvableDependencies.name}: ${resolvableDependencies.dependencies*.toString()}"
+                //return
+                Configuration configuration = project.configurations.findByName(resolvableDependencies.name)
+                if (configuration == null) {
+                    return
+                }
 
-                dependencies.dependencies.each { dependency ->
+                // If "configuration" depends on multiple configurations of an external module there will be a separate
+                // entry for each
+                resolvableDependencies.dependencies.each { Dependency dependency ->
+
                     def fullName = dependency.group + ":" + dependency.name + ":" + dependency.version
                     def dep = packedDependencies.find { packedDependency ->
-                        packedDependency.groupName + ":" + packedDependency.dependencyName + ":" + packedDependency.versionStr == fullName
+                        packedDependency.dependencyCoordinate == fullName
                     }
+
                     if (dep?.sourceOverride) {
-                        def ivyFile = null
-
-                        // First check the cache map
-                        if (ivyMap.containsKey(fullName)) {
-                            println("Using cached ivy file")
-                            ivyFile = ivyMap[fullName]
-                        } else if (dep.getIvyFileGenerator()) {
-                            println("Using custom ivy file generator code")
-                            def generator = dep.getIvyFileGenerator()
-                            ivyFile = generator()
-                        } else if (new File(dep.sourceOverride, "generateIvyModuleDescriptor.bat").exists()) { // Otherwise try to run a user provided Ivy file generator
-                            println("Using standard ivy file generator batch script")
-                            project.exec {
-                                workingDir dep.sourceOverride
-                                executable "generateIvyModuleDescriptor.bat"
-                            }
-                            ivyFile = new File(dep.sourceOverride, "build/publications/ivy/ivy.xml")
-                        } else { // Otherwise try to run gw.bat
-                            println("Falling back to gw.bat ivy file generation")
-                            project.exec {
-                                workingDir dep.sourceOverride
-                                executable "gw.bat"
-                                args "generateIvyModuleDescriptor"
-                            }
-                            ivyFile = new File(dep.sourceOverride, "build/publications/ivy/ivy.xml")
+                        ModuleDependency moduleDependency = dependency as ModuleDependency
+                        if (moduleDependency == null) {
+                            throw new RuntimeException(
+                                "Got non-module dependency ${dependency} while resolving ${configuration.name}"
+                            )
                         }
 
-                        ivyFile = new File(dep.sourceOverride, "build/publications/ivy/ivy.xml")
-
-                        if (ivyFile != "") {
-                            ivyMap[fullName] = ivyFile
-                        }
-
-                        def replacementSource = new DefaultClientModule(dependency.group, dependency.name + "-source-replacement", dependency.version)
-                        replacementSource.transitive = true
+                        println("Adding dependency ${dependency.name} to ${configuration.name} with configuration {$moduleDependency.configuration}")
+                        def replacementSource = new DefaultClientModule(
+                            dependency.group,
+                            dependency.name,// + "-source-replacement",
+                            dependency.version + "-source",
+                            moduleDependency.configuration
+                        )
+                        replacementSource.setTransitive(true)
                         replacementSource.artifact { DependencyArtifact a ->
                             a.name = "dummy_artifact"
                             a.type = "txt"
                             a.extension = "txt"
                         }
 
+                        /*println("Ivy file for $fullName is $ivyFile")
+
                         def ivyXml = new XmlSlurper(false, false).parse(ivyFile)
                         ivyXml.dependencies.dependency.each { newDep ->
                             println("New dependency: " + newDep.@name + " " + newDep.@org + " " + newDep.@rev)
-                            def replacementDep = new DefaultExternalModuleDependency(
-                                newDep.@group.toString(),
-                                newDep.@name.toString(),
-                                newDep.@rev.toString(),
-                                newDep.@conf.toString())
-                            replacementSource.addDependency(replacementDep)
-                        }
 
-                        println("Ivy file for $fullName is $ivyFile")
-
-                        configurations.each { configuration ->
-                            if (configuration.allDependencies.contains(dependency)) {
-                                println("Excluding $dependency.name from $configuration.name")
-                                configuration.exclude(module: dependency.name, group: dependency.group)
-                                configuration.dependencies.add(replacementSource)
+                            Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
+                            newDep.@conf.toString().tokenize(';').each { mapping ->
+                                Helper.parseConfigurationMapping(
+                                    mapping,
+                                    newConfigs,
+                                    "Formatting error for '$newDep.@name' in Ivy file '$ivyFile'"
+                                )
                             }
-                        }
+
+                            newConfigs.each { config ->
+                                if (config.key == replacementSource.configuration) {
+                                    def replacementDep = new DefaultExternalModuleDependency(
+                                        newDep.@org.toString(),
+                                        newDep.@name.toString(),
+                                        newDep.@rev.toString(),
+                                        (String)config.value
+                                    )
+                                    replacementSource.addDependency(replacementDep)
+                                }
+                            }
+                        }*/
+
+                        createDummyModuleFiles(project, replacementSource, dep.sourceOverrideIvyFile)
+
+                        println("Excluding $dependency.name from $configuration.name")
+                        configuration.dependencies.remove(dependency)
+                        //configuration.exclude(module: dependency.name, group: dependency.group)
+                        configuration.dependencies.add(replacementSource)
                     }
                 }
             }
@@ -528,10 +550,41 @@ public class IntrepidPlugin implements Plugin<Project> {
             void afterResolve(ResolvableDependencies dependencies) {
             }
         }
+
         project.gradle.addListener(listener)
+    }
 
+    private void createDummyModuleFiles(Project project, Dependency dependency, File ivyFile) {
+        File tempDir = new File(
+            project.buildDir,
+            "holygradle/source_replacement/${dependency.group}/${dependency.name}/${dependency.version}"
+        )
+        FileHelper.ensureMkdirs(tempDir, "creating source replacement dummy file repository")
+        File dummyArtifact = new File(tempDir, "dummy_artifact.txt")
+        dummyArtifact.text = ""
 
-        timer.endBlock()
+        def ivyFileName = "ivy-${dependency.version}.xml"
+
+        println("Copying $ivyFile to $tempDir")
+        project.copy {
+            into tempDir.toString()
+            from(ivyFile.parentFile.toString()) {
+                include ivyFile.name.toString()
+                rename 'ivy.xml', ivyFileName
+            }
+        }
+
+        // Modify the ivy file to reflect our source
+        def ivyXmlFile = new File(tempDir, ivyFileName)
+        def ivyXml = new XmlSlurper(false, false).parse(ivyXmlFile)
+
+        ivyXml.info.@organisation = dependency.group
+        ivyXml.info.@module = dependency.name
+        ivyXml.info.@revision = dependency.version
+
+        ivyXmlFile.withWriter { writer ->
+            XmlUtil.serialize(ivyXml, writer)
+        }
     }
 }
 
