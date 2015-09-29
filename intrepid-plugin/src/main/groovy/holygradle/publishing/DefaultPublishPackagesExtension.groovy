@@ -413,6 +413,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
+            xml.asNode().'@xmlns:holygradle' = 'http://holy-gradle/'
             xml.asNode().dependencies.dependency.each { depNode ->
                 // If the dependency is a packed dependency, get its relative path from the 
                 // gradle script's packedDependencyHandler
@@ -438,6 +439,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     if (sourceDep != null) {
                         project.logger.info "Adding relative path to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
                         depNode.@relativePath = sourceDep.getFullTargetPath()
+                        depNode.'@holygradle:isSource' = true
                     } else {
                         project.logger.warn "Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in source or packed dependencies"
                     }

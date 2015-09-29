@@ -462,7 +462,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             "holygradle/source_replacement"
         )
 
-        println("Repository Url ${tempDir.toURI().toURL()}")
         project.repositories {
             ivy {
                 url tempDir.toURI().toURL()
@@ -496,52 +495,19 @@ public class IntrepidPlugin implements Plugin<Project> {
                         }
 
                         println("Adding dependency ${dependency.name} to ${configuration.name} with configuration {$moduleDependency.configuration}")
-                        def replacementSource = new DefaultClientModule(
+                        def replacementSource = new DefaultExternalModuleDependency(
                             dependency.group,
                             dependency.name,// + "-source-replacement",
-                            dependency.version + "-source",
+                            "source", //dependency.version + "-source",
                             moduleDependency.configuration
                         )
                         replacementSource.setTransitive(true)
-                        replacementSource.artifact { DependencyArtifact a ->
-                            a.name = "dummy_artifact"
-                            a.type = "txt"
-                            a.extension = "txt"
-                        }
-
-                        /*println("Ivy file for $fullName is $ivyFile")
-
-                        def ivyXml = new XmlSlurper(false, false).parse(ivyFile)
-                        ivyXml.dependencies.dependency.each { newDep ->
-                            println("New dependency: " + newDep.@name + " " + newDep.@org + " " + newDep.@rev)
-
-                            Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
-                            newDep.@conf.toString().tokenize(';').each { mapping ->
-                                Helper.parseConfigurationMapping(
-                                    mapping,
-                                    newConfigs,
-                                    "Formatting error for '$newDep.@name' in Ivy file '$ivyFile'"
-                                )
-                            }
-
-                            newConfigs.each { config ->
-                                if (config.key == replacementSource.configuration) {
-                                    def replacementDep = new DefaultExternalModuleDependency(
-                                        newDep.@org.toString(),
-                                        newDep.@name.toString(),
-                                        newDep.@rev.toString(),
-                                        (String)config.value
-                                    )
-                                    replacementSource.addDependency(replacementDep)
-                                }
-                            }
-                        }*/
 
                         createDummyModuleFiles(project, replacementSource, dep.sourceOverrideIvyFile)
 
                         println("Excluding $dependency.name from $configuration.name")
+                        //configuration.exclude(module: dependency.name, group: dependency.group, version: dependency.version)
                         configuration.dependencies.remove(dependency)
-                        //configuration.exclude(module: dependency.name, group: dependency.group)
                         configuration.dependencies.add(replacementSource)
                     }
                 }
@@ -581,6 +547,14 @@ public class IntrepidPlugin implements Plugin<Project> {
         ivyXml.info.@organisation = dependency.group
         ivyXml.info.@module = dependency.name
         ivyXml.info.@revision = dependency.version
+        ivyXml.publications.replaceNode {}
+
+        // Todo: Do namespace prefixes properly
+        ivyXml.dependencies.dependency.each { dep ->
+            if (dep.'@holygradle:isSource') {
+                dep.@rev="source"
+            }
+        }
 
         ivyXmlFile.withWriter { writer ->
             XmlUtil.serialize(ivyXml, writer)
