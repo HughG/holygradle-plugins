@@ -12,7 +12,7 @@ repositories.ivy {
     url "..\\..\\..\\testUtil\\repository\\"
 }
 
-// This is testing one level of source override in the same configuration with another dependency
+// This is testing one level of source override in a different configuration with another dependency
 // where the version differs. This should fail at symlink creation time.
 packedDependencies {
     "ext_11" {

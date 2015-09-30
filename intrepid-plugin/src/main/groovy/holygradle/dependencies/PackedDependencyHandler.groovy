@@ -215,7 +215,11 @@ class PackedDependencyHandler extends DependencyHandler {
     private File sourceOverrideIvyFileCache = null
     public File getSourceOverrideIvyFile() {
 
-        return new File(sourceOverride, "build/publications/ivy/ivy.xml")
+        if (project.hasProperty("useCachedIvyFiles")) {
+            //project.property("useCachedIvyFiles")
+            return new File(sourceOverride, "build/publications/ivy/ivy.xml")
+        }
+
 
         // First check the cache map
         if (sourceOverrideIvyFileCache != null) {

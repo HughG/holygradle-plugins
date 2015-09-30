@@ -439,6 +439,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     if (sourceDep != null) {
                         project.logger.info "Adding relative path to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
                         depNode.@relativePath = sourceDep.getFullTargetPath()
+                        depNode.'@holygradle:absolutePath' = sourceDep.getAbsolutePath().toString()
                         depNode.'@holygradle:isSource' = true
                     } else {
                         project.logger.warn "Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in source or packed dependencies"

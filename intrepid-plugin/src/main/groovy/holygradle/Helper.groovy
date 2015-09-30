@@ -191,5 +191,11 @@ Please run the task 'fixMercurialIni'."""
             mercurialIniFile.write(iniText)
             println "Your mercurial.ini (in ${mercurialIniFile.parent}) has been modified."
         }
-    } 
+    }
+
+    public static String convertPathToVersion(String path) {
+        String canonicalPath = new File(path).canonicalPath
+        return canonicalPath.replaceAll(/[^a-zA-Z0-9-._+=]/, "_") // Replace any non-valid version characters with an underscore
+                            .replaceAll(/_+/, "_") // Remove any instances of multiple adjacent underscores
+    }
 }
