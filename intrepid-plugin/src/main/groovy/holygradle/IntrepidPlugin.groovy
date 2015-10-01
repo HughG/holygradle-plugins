@@ -15,6 +15,7 @@ import holygradle.dependencies.DependenciesStateHandler
 import holygradle.dependencies.DependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.PackedDependenciesSettingsHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.dependencies.ZipDependenciesTask
 import holygradle.io.FileHelper
 import holygradle.packaging.PackageArtifactHandler
@@ -35,6 +36,7 @@ import org.apache.maven.artifact.repository.ArtifactRepository
 import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout
 import org.gradle.api.DefaultTask
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -136,6 +138,9 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         // Define the 'packedDependency' DSL for the project.
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
+
+        // Define the 'sourceOverrides' DSL for the project
+        Collection<SourceOverrideHandler> sourceOverrides = SourceOverrideHandler.createContainer(project)
 
         // Define the 'dependenciesState' DSL for the project.
         /*DependenciesStateHandler dependenciesState =*/ DependenciesStateHandler.createExtension(project)
@@ -454,16 +459,15 @@ public class IntrepidPlugin implements Plugin<Project> {
 
     private void setupSourceReplacementListener(Project project) {
         Collection<PackedDependencyHandler> packedDependencies = project.packedDependencies
-        /*File tempDir = new File(project.buildDir, "holygradle/source_replacement")
-        FileHelper.ensureMkdirs(tempDir, "creating source replacement dummy file repository")
-        File dummyArtifact = new File(tempDir, "dummy_artifact.txt")
-        dummyArtifact.text = ""*/
+        NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
 
         File tempDir = new File(
             project.buildDir,
             "holygradle/source_replacement"
         )
 
+        // Todo: Force this to the start of the repo list
+        // Consider not adding it at all if there are no source overrides
         project.repositories {
             ivy {
                 url tempDir.toURI().toURL()
@@ -479,48 +483,14 @@ public class IntrepidPlugin implements Plugin<Project> {
                     return
                 }
 
-                // If "configuration" depends on multiple configurations of an external module there will be a separate
-                // entry for each
-                resolvableDependencies.dependencies.each { Dependency dependency ->
-
-                    def fullName = dependency.group + ":" + dependency.name + ":" + dependency.version
-                    def dep = packedDependencies.find { packedDependency ->
-                        packedDependency.dependencyCoordinate == fullName
-                    }
-
-                    if (dep?.sourceOverride) {
-                        ModuleDependency moduleDependency = dependency as ModuleDependency
-                        if (moduleDependency == null) {
-                            throw new RuntimeException(
-                                "Got non-module dependency ${dependency} while resolving ${configuration.name}"
-                            )
-                        }
-
-                        // Convert this to a DefaultModuleVersionIdentifier
-                        println("Adding dependency ${dependency.name} to ${configuration.name} with configuration {$moduleDependency.configuration}")
-                        def replacementSource = new DefaultExternalModuleDependency(
-                            dependency.group,
-                            dependency.name,// + "-source-replacement",
-                            Helper.convertPathToVersion(dep.sourceOverride), //"source", //dependency.version + "-source",
-                            moduleDependency.configuration
-                        )
-                        replacementSource.setTransitive(true)
-
-                        //checkSourceOverrideVersionInconsistencies()
-                        createDummyModuleFiles(project, replacementSource, dep.sourceOverrideIvyFile)
-
-                        println("Excluding $dependency.name from $configuration.name")
-                        //configuration.exclude(module: dependency.name, group: dependency.group, version: dependency.version)
-                        //configuration.dependencies.remove(dependency)
-                        //configuration.dependencies.add(replacementSource)
-
-                        // Replace with the new version across the whole tree
-                        configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                            if (details.requested.group == dependency.group &&
-                                details.requested.name == dependency.name &&
-                                details.requested.version == dependency.version) {
-                                details.useVersion(replacementSource.version)
-                            }
+                // Add the version forcing bit to each configuration here
+                sourceOverrides.each { SourceOverrideHandler handler ->
+                    handler.createDummyModuleFiles()
+                    configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                        if (details.requested.group == handler.groupName &&
+                            details.requested.name == handler.dependencyName &&
+                            details.requested.version == handler.versionStr) {
+                            details.useVersion(handler.dummyVersionString)
                         }
                     }
                 }
@@ -531,99 +501,6 @@ public class IntrepidPlugin implements Plugin<Project> {
         }
 
         project.gradle.addListener(listener)
-    }
-
-    /**
-     * Overridden dependencies do not inherit any other source overrides from the root project, A. If a source override
-     * B depends (directly or transitively) on a module C that is also overridden in the root project (A) we should
-     * detect this and prompt the user to also add the override for C to the project B.
-     *
-     * We could query B's Ivy file to get the direct dependencies but that wouldn't give us the transitive ones.
-     * Instead, since we're going to patch B's direct dependencies onto A anyway, we'll wait until we've resolved all of
-     * A's dependencies, then check A's dependencies. [No, that won't work, because conflicts within a single
-     * configuration of A will just be resolved, to the source override version!  And even if we detect the conflict, it
-     * won't be obvious that it's because of something which came from B.]
-     *
-     * Instead, add a task that generates a full graph of dependencies for every configuration and outputs to a file.
-     * Then run this in B from A and parse the file. Probably using the same sort of mechanism as used for generating
-     * the Ivy file (with fallbacks).
-     *
-     * TODO 2015-09-20 HughG: It's possible that the set of repositories used in B is different from the set for A.
-     * So far, we don't do anything to address this, but we maybe should.
-     *
-     * - In the worst case, that could mean that the same dependency coordinate resolves to a different set of
-     *   artifacts, but it doesn't seem like we can easily fix that, and can't even easily detect it (unless we get B to
-     *   output a list of filenames for local copies of all resolved artifacts, then binary-compare them?!?).
-     *
-     * - A slightly more likely case is that there's a dependency which can be resolved in B but not in A.  For that
-     *   case, we could keep a note of any dependencies which we "patch into" A from B and, if they fail to resolve,
-     *   suggest to the user that they may need to add repositories from B to A's build file.
-     */
-    private void checkSourceOverrideVersionInconsistencies(
-        Project project, File ivyFile, PackedDependencyHandler packedDependency
-    ) {
-        def ivyXml = new XmlSlurper(false, false).parse(ivyFile)
-
-        Collection<PackedDependencyHandler> sourceOverridePackedDependencies = project.packedDependencies.find {
-            PackedDependencyHandler it -> it.sourceOverride // is not null or empty
-        }
-
-        ivyXml.dependencies.dependency.each { dependency ->
-            if (sourceOverridePackedDependencies.any {
-                    dependency.@organisation == it.groupName &&
-                    dependency.@module == it.name &&
-                    dependency.@revision != "source"
-                }
-            ) {
-                throw new RuntimeException("Dependency ${dependency.@organisation}:${dependency.@module} is overridden in the root project so you should also override it in ${packedDependency.name} at ${packedDependency.sourceOverride}")
-            }
-        }
-    }
-
-    private void createDummyModuleFiles(Project project, Dependency dependency, File ivyFile) {
-        File tempDir = new File(
-            project.buildDir,
-            "holygradle/source_replacement/${dependency.group}/${dependency.name}/${dependency.version}"
-        )
-        FileHelper.ensureMkdirs(tempDir, "creating source replacement dummy file repository")
-        File dummyArtifact = new File(tempDir, "dummy_artifact.txt")
-        dummyArtifact.text = ""
-
-        def ivyFileName = "ivy-${dependency.version}.xml"
-
-        println("Copying $ivyFile to $tempDir")
-        project.copy {
-            into tempDir.toString()
-            from(ivyFile.parentFile.toString()) {
-                include ivyFile.name.toString()
-                rename 'ivy.xml', ivyFileName
-            }
-        }
-
-        // Modify the ivy file to reflect our source
-        def ivyXmlFile = new File(tempDir, ivyFileName)
-        XmlParser xmlParser = new XmlParser(false, true)
-        Node ivyXml = xmlParser.parse(ivyXmlFile)
-
-        def hg = new Namespace("http://holy-gradle/", "holygradle")
-
-        ivyXml.info.@organisation = dependency.group
-        ivyXml.info.@module = dependency.name
-        ivyXml.info.@revision = dependency.version
-        ivyXml.publications.replaceNode {}
-
-        // Todo: Do namespace prefixes properly
-        ivyXml.dependencies.dependency.each { dep ->
-            if (dep.attributes()[hg.'isSource']?.toBoolean()) {
-                dep.@rev = Helper.convertPathToVersion(dep.attributes()[hg.'absolutePath'])
-            }
-        }
-
-        ivyXmlFile.withWriter { writer ->
-            XmlNodePrinter nodePrinter = new XmlNodePrinter(new PrintWriter(writer))
-            nodePrinter.setPreserveWhitespace(true)
-            nodePrinter.print(ivyXml)
-        }
     }
 }
 

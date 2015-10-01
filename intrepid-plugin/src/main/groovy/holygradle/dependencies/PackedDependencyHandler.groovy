@@ -12,8 +12,6 @@ class PackedDependencyHandler extends DependencyHandler {
     private Project projectForHandler
     private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
     private ModuleVersionIdentifier dependencyId = null
-    private String sourceOverrideLocation = null
-    private Closure sourceOverrideIvyFile = null
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
     public Boolean unpackToCache = null
@@ -196,60 +194,6 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
 
-    public void sourceOverride(String override) {
-        sourceOverrideLocation = override
-    }
-
-    public String getSourceOverride() {
-        sourceOverrideLocation
-    }
-
-    public void ivyFileGenerator(Closure generator) {
-        sourceOverrideIvyFile = generator
-    }
-
-    public Closure getIvyFileGenerator() {
-        sourceOverrideIvyFile
-    }
-
-    private File sourceOverrideIvyFileCache = null
-    public File getSourceOverrideIvyFile() {
-
-        if (project.hasProperty("useCachedIvyFiles")) {
-            //project.property("useCachedIvyFiles")
-            return new File(sourceOverride, "build/publications/ivy/ivy.xml")
-        }
-
-
-        // First check the cache map
-        if (sourceOverrideIvyFileCache != null) {
-            println("Using cached ivy file")
-            sourceOverrideIvyFileCache = sourceOverrideIvyFileCache
-        } else if (getIvyFileGenerator()) {
-            println("Using custom ivy file generator code")
-            def generator = getIvyFileGenerator()
-            sourceOverrideIvyFileCache = generator()
-        } else if (new File ( sourceOverride, "generateIvyModuleDescriptor.bat").exists ()) {
-            // Otherwise try to run a user provided Ivy file generator
-            println("Using standard ivy file generator batch script")
-            project.exec {
-                workingDir sourceOverride
-                executable "generateIvyModuleDescriptor.bat"
-            }
-            sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
-        } else { // Otherwise try to run gw.bat
-            println("Falling back to gw.bat ivy file generation")
-            project.exec {
-                workingDir sourceOverride
-                executable "gw.bat"
-                args "generateIvyModuleDescriptor"
-            }
-            sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
-        }
-
-        return sourceOverrideIvyFileCache
-    }
-    
     public void configuration(String... configs) {
         configs.each { String config ->
             configuration(config)

@@ -119,6 +119,14 @@
                     <option name="myName" value="my" />
                   </DPropertyElement>
                   <DPropertyElement>
+                    <option name="name" value="packedDependencies" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;PackedDependencyHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;PackedDependencyHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packedDependencies" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="packedDependenciesSettings" />
                     <option name="static" value="false" />
                     <option name="type" value="holygradle.dependencies.PackedDependencySettingsHandler" />
@@ -157,6 +165,14 @@
                     <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;SourceDependencyHandler&gt;" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="sourceDependencies" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="sourceOverrides" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;SourceOverrideHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;SourceOverrideHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="sourceOverrides" />
                   </DPropertyElement>
                 </set>
               </option>
