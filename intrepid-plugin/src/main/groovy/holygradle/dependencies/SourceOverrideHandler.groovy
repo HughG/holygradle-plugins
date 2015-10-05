@@ -8,11 +8,14 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 
 import java.util.regex.Matcher
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 class SourceOverrideHandler {
     private String overrideName
     private Project project
     private ModuleVersionIdentifier dependencyId = null
+    private ModuleVersionIdentifier dummyDependencyId = null
     private String dummyVersionString
     private String dependencyCoordinate
     private String sourceOverrideLocation
@@ -109,8 +112,17 @@ class SourceOverrideHandler {
             "holygradle/source_replacement/${groupName}/${dependencyName}/${dummyVersionString}"
         )
         FileHelper.ensureMkdirs(tempDir, "creating source replacement dummy file repository")
-        File dummyArtifact = new File(tempDir, "dummy_artifact.txt")
-        dummyArtifact.text = ""
+        //File dummyArtifact = new File(tempDir, "dummy_artifact-${dummyVersionString}.txt")
+        //dummyArtifact.text = ""
+
+        ZipOutputStream dummyArtifact = new ZipOutputStream(
+            new FileOutputStream(
+                new File(tempDir, "dummy_artifact-${dummyVersionString}.zip")
+            )
+        )
+        dummyArtifact.putNextEntry(new ZipEntry("file.txt"))
+        dummyArtifact.closeEntry()
+        dummyArtifact.close()
 
         def ivyFileName = "ivy-${dummyVersionString}.xml"
 
@@ -133,7 +145,13 @@ class SourceOverrideHandler {
         ivyXml.info.@organisation = groupName
         ivyXml.info.@module = dependencyName
         ivyXml.info.@revision = dummyVersionString
-        ivyXml.publications.replaceNode {}
+        ivyXml.publications.replaceNode {
+            publications() {
+                ivyXml.configurations.conf.each { conf ->
+                    artifact(name: 'dummy_artifact', type: 'zip', ext: 'zip', conf: conf.@name)
+                }
+            }
+        }
 
         // Todo: Do namespace prefixes properly
         ivyXml.dependencies.dependency.each { dep ->
@@ -182,5 +200,12 @@ class SourceOverrideHandler {
 
     public String getDependencyCoordinate() {
         dependencyId.toString()
+    }
+
+    public String getDummyDependencyCoordinate() {
+        if (dummyVersionString == null) {
+            throw new RuntimeException("You must call the sourceOverride method before requesting a dummy coordinate")
+        }
+        "${dependencyId.group}:${dependencyId.name}:${dummyVersionString}"
     }
 }

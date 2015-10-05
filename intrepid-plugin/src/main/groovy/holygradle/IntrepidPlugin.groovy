@@ -461,13 +461,14 @@ public class IntrepidPlugin implements Plugin<Project> {
         Collection<PackedDependencyHandler> packedDependencies = project.packedDependencies
         NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
 
+        // Todo: Force this to the start of the repo list
+        // Consider checking whether there are any source overrides before adding this. This will need to be done on a
+        // trigger on the container because there are no items in the list at this point.
         File tempDir = new File(
             project.buildDir,
             "holygradle/source_replacement"
         )
 
-        // Todo: Force this to the start of the repo list
-        // Consider not adding it at all if there are no source overrides
         project.repositories {
             ivy {
                 url tempDir.toURI().toURL()

@@ -199,6 +199,15 @@ class PackedDependencyHandler extends DependencyHandler {
             configuration(config)
         }
     }
+
+    // Todo: Return the handler object instead
+    public String getSourceOverride() {
+        SourceOverrideHandler override = project.sourceOverrides.find { SourceOverrideHandler handler ->
+            handler.dependencyCoordinate == getDependencyCoordinate()
+        }
+
+        return override?.sourceOverride
+    }
     
     public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
         configurations

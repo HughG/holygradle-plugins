@@ -3,6 +3,7 @@ package holygradle.unpacking
 import holygradle.Helper
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.PackedDependenciesSettingsHandler
+import holygradle.dependencies.SourceOverrideHandler
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -266,15 +267,6 @@ class UnpackModuleVersion {
         //getSelfOrAncestorPackedDependency().shouldUnpackToCache()
     }
 
-    // If true this module is using a source replacement
-    private boolean hasSourceOverride() {
-        if (packedDependency00 != null) {
-            return packedDependency00.sourceOverride != null
-        } else {
-            return false
-        }
-    }
-
     /**
      * If true, a symlink for this module should be created, to the central cache, otherwise no symlink should be
      * created.  A symlink should be created if
@@ -300,8 +292,13 @@ class UnpackModuleVersion {
     }
 
     public File getSymlinkDir(Project project) {
-        if (hasSourceOverride()) {
-            new File(packedDependency00.getSourceOverride())
+        def sourceOverrideHandler = project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
+            handler.dummyDependencyCoordinate == fullCoordinate
+        }
+        println("Finding handler for ${fullCoordinate} = ${sourceOverrideHandler}")
+
+        if (sourceOverrideHandler != null) {
+            new File(sourceOverrideHandler.sourceOverride)
         } else {
             getUnpackDir(project)
         }
