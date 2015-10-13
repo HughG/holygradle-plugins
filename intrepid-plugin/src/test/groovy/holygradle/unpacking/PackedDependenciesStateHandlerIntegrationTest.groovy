@@ -1,6 +1,6 @@
 package holygradle.unpacking
 
-import holygradle.custom_gradle.util.Symlink
+import holygradle.io.Symlink
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest

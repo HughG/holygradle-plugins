@@ -5,7 +5,7 @@ import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
-import holygradle.custom_gradle.util.Symlink
+import holygradle.io.Symlink
 import holygradle.dependencies.CollectDependenciesHelper
 import holygradle.dependencies.CollectDependenciesTask
 import holygradle.dependencies.DependenciesStateHandler

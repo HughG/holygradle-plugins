@@ -1,4 +1,4 @@
-package holygradle.custom_gradle.util
+package holygradle.io
 
 import holygradle.test.AbstractHolyGradleTest
 import org.junit.Rule

@@ -1,7 +1,7 @@
 package holygradle.unpacking
 
 import holygradle.Helper
-import holygradle.custom_gradle.util.Symlink
+import holygradle.io.Symlink
 import holygradle.io.FileHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task

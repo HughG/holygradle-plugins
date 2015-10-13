@@ -1,44 +1,17 @@
 package holygradle.custom_gradle.util
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-
+@SuppressWarnings("GroovyUnusedDeclaration")
+@Deprecated
 public class Symlink {
     public static boolean isJunctionOrSymlink(File file) throws IOException {
-        Files.isSymbolicLink(Paths.get(file.path))
+        throw new RuntimeException("holygradle.custom_gradle.util.Symlink is deprecated.  Use holygradle.io.Symlink instead.")
     }
 
     public static void delete(File link) {
-        if (isJunctionOrSymlink(link)) {
-            link.delete()
-        }
+        throw new RuntimeException("holygradle.custom_gradle.util.Symlink is deprecated.  Use holygradle.io.Symlink instead.")
     }
     
     public static void rebuild(File link, File target) {
-        File canonicalLink = link.getCanonicalFile()
-        
-        // Delete the symlink if it exists
-        if (isJunctionOrSymlink(canonicalLink)) {
-            canonicalLink.delete()
-        }
-        
-        // Make sure the parent directory exists
-        final File linkParentDir = canonicalLink.parentFile
-        if (linkParentDir != null) {
-            if (!linkParentDir.exists() && !linkParentDir.mkdirs()) {
-                throw new RuntimeException("Failed to create parent folder ${linkParentDir} for symlink ${canonicalLink.name}")
-            }
-        }
-
-        // If target is relative, createSymbolicLink will create a link relative to link so we have to calculate this
-        // (as opposed to relative to the current working directory)
-        Path re_relativized_target = canonicalLink.toPath().resolveSibling(target.toPath())
-        File re_relativized_file = new File(re_relativized_target.toString())
-
-        if (!re_relativized_file.exists()) {
-            throw new IOException("Cannot create link to non-existent target; from '${canonicalLink}' to '${target}'")
-        }
-        Files.createSymbolicLink(canonicalLink.toPath(), target.toPath())
+        throw new RuntimeException("holygradle.custom_gradle.util.Symlink is deprecated.  Use holygradle.io.Symlink instead.")
     }
 }

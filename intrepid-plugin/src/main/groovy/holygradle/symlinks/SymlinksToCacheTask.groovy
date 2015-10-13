@@ -1,6 +1,6 @@
 package holygradle.symlinks
 
-import holygradle.custom_gradle.util.Symlink
+import holygradle.io.Symlink
 import holygradle.unpacking.PackedDependenciesStateSource
 import holygradle.unpacking.UnpackModule
 import holygradle.unpacking.UnpackModuleVersion
@@ -42,7 +42,6 @@ class SymlinksToCacheTask extends DefaultTask {
             localVersionList.each { UnpackModuleVersion version ->
                 File linkDir = version.getTargetPathInWorkspace(project)
                 File targetDir = version.getUnpackDir(project)
-                SymlinkTask.checkIsSymlinkOrMissing(linkDir, targetDir)
 
                 switch (mode) {
                     case Mode.BUILD:
