@@ -98,7 +98,7 @@ class SpeedyUnpackManyTask
         }
 
         if (entry.unpackDir.exists()) {
-            if (Symlink.isJunctionOrSymlink(entry.unpackDir)) {
+            if (Symlink.isSymlink(entry.unpackDir)) {
                 logger.info "SpeedyUnpackManyTask: replacing symlink ${entry.unpackDir} with real directory"
                 FileHelper.ensureDeleteFile(entry.unpackDir)
                 FileHelper.ensureMkdirs(entry.unpackDir)

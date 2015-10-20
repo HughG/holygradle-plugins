@@ -1,26 +1,26 @@
 package holygradle.io
 
-class SymlinkTest extends LinkTestBase
+class JunctionTest extends LinkTestBase
 {
     @Override
     protected void makeLinkExternally(File link, File target) {
-        Process p = "mklink /d ${link.canonicalFile} ${target}".execute([], testDir)
+        Process p = "mklink /j ${link.canonicalFile} ${target}".execute([], testDir)
         p.consumeProcessOutput()
         p.waitFor()
     }
 
     @Override
     protected boolean isLink(File link) {
-        Symlink.isSymlink(link)
+        Junction.isJunction(link)
     }
 
     @Override
     protected void rebuild(File link, File target) {
-        Symlink.rebuild(link, target)
+        Junction.rebuild(link, target)
     }
 
     @Override
     protected void delete(File link) {
-        Symlink.delete(link)
+        Junction.delete(link)
     }
 }

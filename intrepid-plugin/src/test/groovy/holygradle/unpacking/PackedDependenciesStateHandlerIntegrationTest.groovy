@@ -68,7 +68,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
 
         [emptyConfigLibDir, extLibDir, anotherLibDir].each {
             assertTrue("File/folder for packed dep has been created at ${it}", it.exists())
-            assertTrue("Symlink to packed dep has been created at ${it}", Symlink.isJunctionOrSymlink(it))
+            assertTrue("Symlink to packed dep has been created at ${it}", Symlink.isSymlink(it))
             // The output of "list()" doesn't include "./" and "../", so "> 0" tells us it's non-empty.
             assertTrue("Symlink target folder is not empty under ${it}", it.list().length > 0)
         }
@@ -133,7 +133,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
             assertEquals(
                 "Symlink to packed dep has been created at ${file}",
                 expectSymlink,
-                file.exists() && Symlink.isJunctionOrSymlink(file)
+                file.exists() && Symlink.isSymlink(file)
             )
             if (expectSymlink) {
                 // The output of "list()" doesn't include "./" and "../", so "> 0" tells us it's non-empty.
@@ -163,7 +163,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         allPackedDepDirs.each { File file ->
             assertTrue(
                 "Symlink to packed dep has been created at ${file}",
-                file.exists() && Symlink.isJunctionOrSymlink(file)
+                file.exists() && Symlink.isSymlink(file)
             )
         }
         Path linkTarget = Files.readSymbolicLink(extLibDir.toPath())
