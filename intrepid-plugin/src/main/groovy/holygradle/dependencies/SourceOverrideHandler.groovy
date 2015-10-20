@@ -1,6 +1,8 @@
 package holygradle.dependencies
 
+import groovy.xml.MarkupBuilder
 import groovy.xml.Namespace
+import groovy.xml.StreamingMarkupBuilder
 import holygradle.Helper
 import holygradle.io.FileHelper
 import org.gradle.api.Project
@@ -19,7 +21,7 @@ class SourceOverrideHandler {
     private String dummyVersionString
     private String dependencyCoordinate
     private String sourceOverrideLocation
-    private Closure sourceOverrideIvyFile
+    private Closure<SourceOverrideHandler> sourceOverrideIvyFile
     private boolean hasCreatedDummyModule = false
 
     public static Collection<SourceOverrideHandler> createContainer(Project project) {
@@ -48,7 +50,11 @@ class SourceOverrideHandler {
     }
 
     public void sourceOverride(String override) {
-        sourceOverrideLocation = override
+        if (new File(override).isAbsolute()) {
+            sourceOverrideLocation = override
+        } else {
+            sourceOverrideLocation = new File(project.projectDir, override).canonicalPath
+        }
         dummyVersionString = Helper.convertPathToVersion(sourceOverrideLocation)
     }
 
@@ -56,49 +62,58 @@ class SourceOverrideHandler {
         sourceOverrideLocation
     }
 
-    public void ivyFileGenerator(Closure generator) {
+    public void ivyFileGenerator(Closure<SourceOverrideHandler> generator) {
         sourceOverrideIvyFile = generator
     }
 
-    public Closure getIvyFileGenerator() {
+    public Closure<SourceOverrideHandler> getIvyFileGenerator() {
         sourceOverrideIvyFile
     }
 
     private File sourceOverrideIvyFileCache = null
-    public File getIvyFile() {
+    private File sourceOverrideDependencyFileCache = null
+    public Collection<File> getIvyFile() {
 
         if (project.hasProperty("useCachedIvyFiles")) {
             println("Skipping generation of fresh ivy file")
-            return new File(sourceOverride, "build/publications/ivy/ivy.xml")
+            return [
+                new File(sourceOverride, "build/publications/ivy/ivy.xml"),
+                new File(sourceOverride, "AllDependencies.xml")
+            ]
         }
 
-        // First check the cache map
+        // First check the cache map (only the Ivy File cache, tolerate the dependency file cache being null)
         if (sourceOverrideIvyFileCache != null) {
             println("Using cached ivy file")
-            //sourceOverrideIvyFileCache = sourceOverrideIvyFileCache
         } else if (getIvyFileGenerator()) {
             println("Using custom ivy file generator code")
             def generator = getIvyFileGenerator()
-            sourceOverrideIvyFileCache = generator()
-        } else if (new File(sourceOverride, "generateIvyModuleDescriptor.bat").exists ()) {
+            (sourceOverrideIvyFileCache, sourceOverrideDependencyFileCache) = generator(this)
+        } else if (new File(sourceOverride, "generateSourceOverrideDetails.bat").exists()) {
             // Otherwise try to run a user provided Ivy file generator
             println("Using standard ivy file generator batch script")
+            println("Batch File: ${new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath}")
             project.exec {
                 workingDir sourceOverride
-                executable "generateIvyModuleDescriptor.bat"
+                executable new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath //"generateSourceOverrideDetails.bat"
             }
             sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
+            sourceOverrideDependencyFileCache = new File(sourceOverride, "AllDependencies.xml")
         } else { // Otherwise try to run gw.bat
             println("Falling back to gw.bat ivy file generation")
+            println("${new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath} not found")
+            //createSourceOverrideXml(new File(sourceOverride, "sourceOverrides.xml"))
             project.exec {
                 workingDir sourceOverride
                 executable "gw.bat"
-                args "generateIvyModuleDescriptor"
+                args "generateIvyModuleDescriptor summariseAllDependencies"
             }
             sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
+            sourceOverrideDependencyFileCache = new File(sourceOverride, "AllDependencies.xml")
         }
+        // Todo: Fail with an appropriate error message here
 
-        return sourceOverrideIvyFileCache
+        return [sourceOverrideIvyFileCache, sourceOverrideDependencyFileCache]
     }
 
     public void createDummyModuleFiles() {
@@ -106,14 +121,12 @@ class SourceOverrideHandler {
             return
         }
 
-        File ivyFile = getIvyFile()
+        def (ivyFile, dependenciesFile) = getIvyFile()
         File tempDir = new File(
             project.buildDir,
             "holygradle/source_replacement/${groupName}/${dependencyName}/${dummyVersionString}"
         )
-        FileHelper.ensureMkdirs(tempDir, "creating source replacement dummy file repository")
-        //File dummyArtifact = new File(tempDir, "dummy_artifact-${dummyVersionString}.txt")
-        //dummyArtifact.text = ""
+        FileHelper.ensureMkdirs(tempDir, "Failed to create source replacement dummy file repository")
 
         ZipOutputStream dummyArtifact = new ZipOutputStream(
             new FileOutputStream(
@@ -126,7 +139,6 @@ class SourceOverrideHandler {
 
         def ivyFileName = "ivy-${dummyVersionString}.xml"
 
-        println("Copying $ivyFile to $tempDir")
         project.copy {
             into tempDir.toString()
             from(ivyFile.parentFile.toString()) {
@@ -145,6 +157,7 @@ class SourceOverrideHandler {
         ivyXml.info.@organisation = groupName
         ivyXml.info.@module = dependencyName
         ivyXml.info.@revision = dummyVersionString
+        // Todo: Handle the case where there is no publications node
         ivyXml.publications.replaceNode {
             publications() {
                 ivyXml.configurations.conf.each { conf ->
@@ -160,6 +173,7 @@ class SourceOverrideHandler {
             }
         }
 
+        println("Writing new ivy file")
         ivyXmlFile.withWriter { writer ->
             XmlNodePrinter nodePrinter = new XmlNodePrinter(new PrintWriter(writer))
             nodePrinter.setPreserveWhitespace(true)

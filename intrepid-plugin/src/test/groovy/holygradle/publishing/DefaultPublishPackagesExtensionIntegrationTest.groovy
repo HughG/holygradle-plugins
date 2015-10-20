@@ -28,7 +28,10 @@ class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleI
             // Filter out the <info> tag which has a timestamp, therefore breaks the test
             regTestFile.withPrintWriter { w ->
                 ivyXml.eachLine { l ->
-                    if (!l.contains("publication=")) w.println(l)
+                    if (!l.contains("publication=")) {
+                        // Filter out the absolutePath tag which will change based on the checkout location
+                        w.println(l.replaceAll(/holygradle:absolutePath="(.*?)" /, ""))
+                    }
                 }
             }
             regression.checkForRegression("${testProjectDirName}_IvyXml")

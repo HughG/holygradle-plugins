@@ -85,13 +85,21 @@ class DependenciesStateHandler {
         if (forBuildscript) {
             return false
         }
-        
-        final Project moduleInBuild = project.rootProject.allprojects.find {
+
+        return findModuleInBuild(id) != null
+    }
+
+    /**
+     *
+     * @param id
+     * @return
+     */
+    public Project findModuleInBuild(ModuleVersionIdentifier id) {
+        return project.rootProject.allprojects.find {
             (it.group == id.group) &&
                 (it.name == id.name) &&
                 (it.version == id.version)
         }
-        return moduleInBuild != null
     }
 
     /**

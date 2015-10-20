@@ -3,6 +3,7 @@ package holygradle
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.source_dependencies.SourceDependencyHandler
+import org.apache.commons.lang.StringUtils
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
@@ -12,6 +13,8 @@ import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import org.gradle.testfixtures.ProjectBuilder
 
+import javax.annotation.PostConstruct
+import java.lang.reflect.Method
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -195,7 +198,33 @@ Please run the task 'fixMercurialIni'."""
 
     public static String convertPathToVersion(String path) {
         String canonicalPath = new File(path).canonicalPath
-        return canonicalPath.replaceAll(/[^a-zA-Z0-9-._+=]/, "_") // Replace any non-valid version characters with an underscore
-                            .replaceAll(/_+/, "_") // Remove any instances of multiple adjacent underscores
+        String sanitisedPath = canonicalPath.replaceAll(/[^a-zA-Z0-9-._+=]/, "_") // Replace any non-valid version characters with an underscore
+                                            .replaceAll(/_+/, "_") // Remove any instances of multiple adjacent underscores)
+
+        int maxLength = 50
+
+        // Todo: Consider adding a config flag to turn this off
+        return abbreviateMiddle(
+            sanitisedPath,
+            "...",
+            maxLength
+        )
+    }
+
+    /**
+     * This exists in StringUtils 2.5 but the version that Gradle uses is 2.4
+     */
+    public static String abbreviateMiddle(String str, String middle, int length) {
+        if (str.length() <= length ||
+            str.empty ||
+            middle.empty ||
+            middle.length() + 2 > length) {
+            return str
+        }
+
+        int firstCut = Math.floor((length - middle.length()) / 2.0)
+        int secondCut = Math.ceil((length - middle.length()) / 2.0)
+
+        return str.substring(0, firstCut) + middle + str.substring(str.length() - secondCut, str.length())
     }
 }

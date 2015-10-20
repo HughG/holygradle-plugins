@@ -1,8 +1,6 @@
 package holygradle
 
-import ch.qos.logback.core.util.FileUtil
-import groovy.xml.Namespace
-import groovy.xml.XmlUtil
+import com.google.common.io.Files
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
@@ -16,6 +14,7 @@ import holygradle.dependencies.DependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.dependencies.SourceOverrideHandler
+import holygradle.dependencies.SummariseAllDependenciesTask
 import holygradle.dependencies.ZipDependenciesTask
 import holygradle.io.FileHelper
 import holygradle.packaging.PackageArtifactHandler
@@ -27,14 +26,6 @@ import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.symlinks.SymlinksToCacheTask
 import holygradle.unpacking.*
-import org.apache.commons.io.FileUtils
-import org.apache.ivy.core.cache.DefaultRepositoryCacheManager
-import org.apache.ivy.plugins.repository.file.FileRepository
-import org.apache.maven.artifact.Artifact
-import org.apache.maven.artifact.metadata.ArtifactMetadata
-import org.apache.maven.artifact.repository.ArtifactRepository
-import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy
-import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout
 import org.gradle.api.DefaultTask
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
@@ -42,23 +33,11 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
-import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.DependencyArtifact
 import org.gradle.api.artifacts.DependencyResolutionListener
 import org.gradle.api.artifacts.DependencyResolveDetails
-import org.gradle.api.artifacts.Module
-import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.ResolvableDependencies
-import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository
-import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
-import org.gradle.api.internal.artifacts.dependencies.DefaultClientModule
-import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import org.gradle.api.internal.artifacts.repositories.DefaultFlatDirArtifactRepository
-import org.gradle.api.internal.file.BaseDirFileResolver
-import org.gradle.api.internal.file.FileResolver
+import org.gradle.api.artifacts.result.ResolvedModuleVersionResult
 import org.gradle.api.publish.PublishingExtension
-import sun.nio.fs.DefaultFileSystemProvider
 
 public class IntrepidPlugin implements Plugin<Project> {
     void apply(Project project) {
@@ -160,7 +139,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define 'publishPackages' DSL block.
         PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         project.extensions.create(
-            "publishPackages", DefaultPublishPackagesExtension, project, publishingExtension, sourceDependencies, packedDependencies
+            "publishPackages", DefaultPublishPackagesExtension, project, publishingExtension, sourceDependencies, packedDependencies, sourceOverrides
         )
         
         // Define 'sourceControl' DSL.
@@ -262,6 +241,14 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.doLast {
                 Helper.fixMercurialIni()
             }
+        }
+        SummariseAllDependenciesTask allDependenciesTask = (SummariseAllDependenciesTask)project.task(
+            "summariseAllDependencies",
+            type: SummariseAllDependenciesTask
+        ) { SummariseAllDependenciesTask it ->
+            it.group = "Dependencies"
+            it.description = "Create an XML file listing all immediate and transitive dependencies"
+            it.initialize()
         }
 
         // Lazy configuration is a "secret" internal feature for use by plugins.  If a task adds a ".ext.lazyConfiguration"
@@ -449,9 +436,8 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
         }
 
-
-
         setupSourceReplacementListener(project)
+
 
 
         timer.endBlock()
@@ -461,6 +447,9 @@ public class IntrepidPlugin implements Plugin<Project> {
         Collection<PackedDependencyHandler> packedDependencies = project.packedDependencies
         NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
 
+        // Todo: throw an exception if source overrides are defined in a non-root project. It would be nice to actually
+        // support this but we will have to walk back up the tree to do it
+
         // Todo: Force this to the start of the repo list
         // Consider checking whether there are any source overrides before adding this. This will need to be done on a
         // trigger on the container because there are no items in the list at this point.
@@ -468,6 +457,7 @@ public class IntrepidPlugin implements Plugin<Project> {
             project.buildDir,
             "holygradle/source_replacement"
         )
+        FileHelper.ensureMkdirs(tempDir)
 
         project.repositories {
             ivy {
@@ -477,8 +467,6 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         def listener = new DependencyResolutionListener() {
             void beforeResolve(ResolvableDependencies resolvableDependencies) {
-                //println "beforeResolve ${resolvableDependencies.name}: ${resolvableDependencies.dependencies*.toString()}"
-                //return
                 Configuration configuration = project.configurations.findByName(resolvableDependencies.name)
                 if (configuration == null) {
                     return
@@ -497,7 +485,50 @@ public class IntrepidPlugin implements Plugin<Project> {
                 }
             }
 
+            // Todo: Make this not run once per configuration
             void afterResolve(ResolvableDependencies dependencies) {
+                sourceOverrides.each { SourceOverrideHandler handler ->
+                    def (File ivyFile, File dependencyFile) = handler.getIvyFile()
+                    def dependencyXml = new XmlSlurper(false, false).parse(dependencyFile)
+
+                    // Compare source override full dependencies to the current dependency
+                    dependencies.resolutionResult.allModuleVersions { ResolvedModuleVersionResult module ->
+                        dependencyXml.Configuration.each { config ->
+                            config.Dependency.each { dep ->
+                                def calculatedVersion = dep.@isSource.toBoolean() ? Helper.convertPathToVersion(dep.@absolutePath.toString()) : dep.@version.toString()
+                                if (module.id.group.toString() == dep.@group.toString() &&
+                                    module.id.name.toString() == dep.@name.toString() &&
+                                    module.id.version.toString() != calculatedVersion) {
+                                    throw new RuntimeException("Module ${module.id} does not match the dependency declared in source override ${handler.name} (${dep.@group}:${dep.@name}:${calculatedVersion}). You may have to declare a matching source override in the source project.")
+                                }
+                            }
+                        }
+                    }
+
+                    // Compare source override full dependencies to each other
+                    sourceOverrides.each { SourceOverrideHandler handler2 ->
+                        def (File ivyFile2, File dependencyFile2) = handler2.getIvyFile()
+                        def dependencyXml2 = new XmlSlurper(false, false).parse(dependencyFile2)
+
+                        dependencyXml.Configuration.each { config ->
+                            config.Dependency.each { dep ->
+                                def calculatedVersion = dep.@isSource.toBoolean() ? Helper.convertPathToVersion(dep.@absolutePath.toString()) : dep.@version.toString()
+
+                                dependencyXml2.Configuration.each { config2 ->
+                                    config2.Dependency.each { dep2 ->
+                                        def calculatedVersion2 = dep2.@isSource.toBoolean() ? Helper.convertPathToVersion(dep2.@absolutePath.toString()) : dep2.@version.toString()
+
+                                        if (dep.@group.toString() == dep2.@group.toString() &&
+                                            dep.@name.toString() == dep2.@name.toString() &&
+                                            calculatedVersion != calculatedVersion2) {
+                                            throw new RuntimeException("Module in source override ${handler.name} (${dep.@group}:${dep.@name}:${calculatedVersion}) does not match module in source override ${handler2.name} (${dep2.@group}:${dep2.@name}:${calculatedVersion2}). You may have to declare a matching source override.")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

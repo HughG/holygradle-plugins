@@ -1,5 +1,6 @@
 buildscript {
-    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+	gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+	project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
 }
 gplugins.apply()
 
@@ -12,6 +13,13 @@ repositories.ivy {
     url "..\\..\\..\\testUtil\\repository\\"
 }
 
+sourceOverrides {
+    "framework" {
+        dependency "holygradle.test:example-framework:1.1"
+		sourceOverride "../source"
+    }
+}
+
 // This is testing one level of source override in a different configuration with another dependency
 // where the version differs. This should fail at symlink creation time.
 packedDependencies {
@@ -22,6 +30,5 @@ packedDependencies {
     "framework" {
         dependency "holygradle.test:example-framework:1.1"
         configuration "bar->compileVc10Debug,compileVc10Release"
-		sourceOverride "../source"
     }
 }
