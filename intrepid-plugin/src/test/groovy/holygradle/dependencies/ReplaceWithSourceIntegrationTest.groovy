@@ -85,6 +85,12 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(
+                "Could not resolve all dependencies for configuration ':bar'.",
+                "A conflict was found between the following modules:",
+                "- holygradle.test:external-lib:1.0",
+                "- holygradle.test:external-lib:1.1"
+            )
         }
     }
 
@@ -105,6 +111,12 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(
+                "Could not resolve all dependencies for configuration ':everything'.",
+                "A conflict was found between the following modules:",
+                "- holygradle.test:external-lib:1.0",
+                "- holygradle.test:external-lib:1.1"
+            )
         }
     }
 }
