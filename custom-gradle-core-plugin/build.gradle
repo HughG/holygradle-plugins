@@ -1,7 +1,3 @@
-dependencies {
-    compile group: 'net.java.dev.jna', name: 'platform', version: '3.4.0'
-}
-
 /*
     We copy the "gw.bat" to use in new wrappers from the holygradle root gw.bat.  This is because
     it would be hard to do it the other way round -- have the root batch file use one from this

@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.  
  */
-package com.sun.jna.platform.win32;
+package holygradle.jna.platform.win32;
 
 import java.awt.Rectangle;
 
@@ -18,8 +18,8 @@ import com.sun.jna.IntegerType;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
-import com.sun.jna.platform.win32.BaseTSD.LONG_PTR;
-import com.sun.jna.platform.win32.WinNT.HANDLE;
+import holygradle.jna.platform.win32.BaseTSD.LONG_PTR;
+import holygradle.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.win32.StdCallLibrary;
 
 /**
@@ -49,14 +49,28 @@ public interface WinDef extends StdCallLibrary {
      * 32-bit unsigned integer.
      */
     public static class DWORD extends IntegerType {
+        private static final int SIZE = 4;
+
         public DWORD() {
             this(0);
         }
 
         public DWORD(long value) {
-            super(4, value, true);
+            super(SIZE, value);
         }
-		
+
+        /**
+         * Change the value for this data, truncating to 32 bits as unsigned.
+         *
+         * The implementation of this method borrows the relevant parts from JNA 3.4.0's IntegerType which, compared to
+         * 3.2.7, adds support for unsigned values.
+         */
+        @Override
+        public void setValue(long value) {
+            long truncated = (int) (value & 0xFFFFFFFFL);
+            super.setValue(truncated);
+        }
+
         /**
          * Low WORD.
          * @return

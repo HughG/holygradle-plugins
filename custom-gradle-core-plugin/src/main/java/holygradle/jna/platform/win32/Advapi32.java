@@ -10,22 +10,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.  
  */
-package com.sun.jna.platform.win32;
+package holygradle.jna.platform.win32;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.WString;
-import com.sun.jna.platform.win32.WinBase.SECURITY_ATTRIBUTES;
-import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.platform.win32.WinNT.HANDLEByReference;
-import com.sun.jna.platform.win32.WinNT.PSID;
-import com.sun.jna.platform.win32.WinNT.PSIDByReference;
-import com.sun.jna.platform.win32.WinReg.HKEY;
-import com.sun.jna.platform.win32.WinReg.HKEYByReference;
-import com.sun.jna.platform.win32.Winsvc.SC_HANDLE;
-import com.sun.jna.platform.win32.Winsvc.SERVICE_STATUS;
-import com.sun.jna.platform.win32.Winsvc.SERVICE_STATUS_PROCESS;
+import holygradle.jna.platform.win32.WinBase.SECURITY_ATTRIBUTES;
+import holygradle.jna.platform.win32.WinNT.HANDLE;
+import holygradle.jna.platform.win32.WinNT.HANDLEByReference;
+import holygradle.jna.platform.win32.WinNT.PSID;
+import holygradle.jna.platform.win32.WinNT.PSIDByReference;
+import holygradle.jna.platform.win32.WinReg.HKEY;
+import holygradle.jna.platform.win32.WinReg.HKEYByReference;
+import holygradle.jna.platform.win32.Winsvc.SC_HANDLE;
+import holygradle.jna.platform.win32.Winsvc.SERVICE_STATUS;
+import holygradle.jna.platform.win32.Winsvc.SERVICE_STATUS_PROCESS;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;
 import com.sun.jna.ptr.PointerByReference;

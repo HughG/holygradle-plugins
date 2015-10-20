@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.  
  */
-package com.sun.jna.platform.win32;
+package holygradle.jna.platform.win32;
 
 import java.util.Date;
 
@@ -19,12 +19,12 @@ import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Union;
 import com.sun.jna.win32.StdCallLibrary;
-import com.sun.jna.platform.win32.BaseTSD.DWORD_PTR;
-import com.sun.jna.platform.win32.BaseTSD.ULONG_PTR;
-import com.sun.jna.platform.win32.WinDef.DWORD;
-import com.sun.jna.platform.win32.WinDef.DWORDLONG;
-import com.sun.jna.platform.win32.WinDef.WORD;
-import com.sun.jna.platform.win32.WinNT.HANDLE;
+import holygradle.jna.platform.win32.BaseTSD.DWORD_PTR;
+import holygradle.jna.platform.win32.BaseTSD.ULONG_PTR;
+import holygradle.jna.platform.win32.WinDef.DWORD;
+import holygradle.jna.platform.win32.WinDef.DWORDLONG;
+import holygradle.jna.platform.win32.WinDef.WORD;
+import holygradle.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.ptr.ByteByReference;
 
 /**

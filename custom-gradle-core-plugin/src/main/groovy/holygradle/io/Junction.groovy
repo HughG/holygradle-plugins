@@ -1,14 +1,13 @@
 package holygradle.io
 
 import com.sun.jna.Memory
-import com.sun.jna.platform.win32.Kernel32
-import com.sun.jna.platform.win32.Win32Exception
 import com.sun.jna.ptr.IntByReference
+import holygradle.jna.platform.win32.Kernel32
 import holygradle.jna.platform.win32.Ntifs
+import holygradle.jna.platform.win32.Win32Exception
+import holygradle.jna.platform.win32.WinNT
 
 import java.nio.ByteBuffer
-
-import static Kernel32.*
 
 /**
 * Utility class for managing Directory Junctions under Windows.
@@ -89,28 +88,28 @@ class Junction {
     }
 
     private static withReparsePointHandle(String path, int desiredAccess, Closure closure) {
-        HANDLE reparsePointHandle = INSTANCE.CreateFile(
+        WinNT.HANDLE reparsePointHandle = Kernel32.INSTANCE.CreateFile(
             path,
             desiredAccess,
             0,
             null,
-            OPEN_EXISTING,
-            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            Kernel32.OPEN_EXISTING,
+            Kernel32.FILE_FLAG_BACKUP_SEMANTICS | Kernel32.FILE_FLAG_OPEN_REPARSE_POINT,
             null
         )
-        if (reparsePointHandle == INVALID_HANDLE_VALUE) {
+        if (reparsePointHandle == Kernel32.INVALID_HANDLE_VALUE) {
             throwLastError()
         }
 
         try {
             closure(reparsePointHandle)
         } finally {
-            INSTANCE.CloseHandle(reparsePointHandle)
+            Kernel32.INSTANCE.CloseHandle(reparsePointHandle)
         }
     }
 
     private static boolean isMountPoint(String link) {
-        withReparsePointHandle(link, GENERIC_READ) { HANDLE reparsePointHandle ->
+        withReparsePointHandle(link, Kernel32.GENERIC_READ) { WinNT.HANDLE reparsePointHandle ->
             Memory reparseDataBuffer = new Memory(Ntifs.MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
 
             boolean succeeded = INSTANCE.DeviceIoControl(
@@ -134,7 +133,7 @@ class Junction {
     }
 
     private static void createMountPoint(String link, String target) {
-        withReparsePointHandle(link, GENERIC_READ | GENERIC_WRITE) { HANDLE reparsePointHandle ->
+        withReparsePointHandle(link, Kernel32.GENERIC_READ | Kernel32.GENERIC_WRITE) { WinNT.HANDLE reparsePointHandle ->
             use (JunctionHelperIntegerCategory) {
                 // For the SubstituteName, we use the '\\?\' prefix which disables further parsing; see
                 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
@@ -167,7 +166,7 @@ class Junction {
                 }
 
 
-                boolean succeeded = INSTANCE.DeviceIoControl(
+                boolean succeeded = Kernel32.INSTANCE.DeviceIoControl(
                     reparsePointHandle,
                     Ntifs.FSCTL_SET_REPARSE_POINT,
                     reparseDataBuffer,
@@ -185,7 +184,7 @@ class Junction {
     }
 
     private static void removeMountPoint(String link) {
-        withReparsePointHandle(link, GENERIC_READ | GENERIC_WRITE) { HANDLE reparsePointHandle ->
+        withReparsePointHandle(link, Kernel32.GENERIC_READ | Kernel32.GENERIC_WRITE) { WinNT.HANDLE reparsePointHandle ->
             Memory reparseDataBuffer = new Memory(REPARSE_DATA_HEADER_LENGTH)
             ByteBuffer reparseDataByteBuffer = reparseDataBuffer.getByteBuffer(0, REPARSE_DATA_HEADER_LENGTH)
 
@@ -196,7 +195,7 @@ class Junction {
                     .putShort((short)0) // Reserved
             }
 
-            boolean succeeded = INSTANCE.DeviceIoControl(
+            boolean succeeded = Kernel32.INSTANCE.DeviceIoControl(
                 reparsePointHandle,
                 Ntifs.FSCTL_DELETE_REPARSE_POINT,
                 reparseDataBuffer,
@@ -213,7 +212,7 @@ class Junction {
     }
 
     private static void throwLastError() {
-        throw new Win32Exception(INSTANCE.GetLastError())
+        throw new Win32Exception(Kernel32.INSTANCE.GetLastError())
     }
 
 }

@@ -10,15 +10,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  */
-package com.sun.jna.platform.win32;
+package holygradle.jna.platform.win32;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.platform.win32.WinNT.HANDLEByReference;
-import com.sun.jna.platform.win32.WinNT.LARGE_INTEGER;
-import com.sun.jna.platform.win32.WinNT.OSVERSIONINFO;
-import com.sun.jna.platform.win32.WinNT.OSVERSIONINFOEX;
+import holygradle.jna.platform.win32.WinNT.HANDLE;
+import holygradle.jna.platform.win32.WinNT.HANDLEByReference;
+import holygradle.jna.platform.win32.WinNT.LARGE_INTEGER;
+import holygradle.jna.platform.win32.WinNT.OSVERSIONINFO;
+import holygradle.jna.platform.win32.WinNT.OSVERSIONINFOEX;
 import com.sun.jna.ptr.ByReference;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.LongByReference;

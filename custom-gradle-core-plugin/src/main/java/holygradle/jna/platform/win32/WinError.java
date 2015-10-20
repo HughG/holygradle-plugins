@@ -10,9 +10,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.  
  */
-package com.sun.jna.platform.win32;
+package holygradle.jna.platform.win32;
 
-import com.sun.jna.platform.win32.WinNT.HRESULT;
+import holygradle.jna.platform.win32.WinNT.HRESULT;
 /**
  * Error code definitions for the Win32 API functions.
  * Ported from Windows SDK 6.0A
