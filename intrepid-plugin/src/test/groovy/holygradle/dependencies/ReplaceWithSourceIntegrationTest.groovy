@@ -28,8 +28,6 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        writeStubBatchFile(new File(getTestDir(), "source"))
-        writeStubBatchFile(new File(getTestDir(), "sub_source"))
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -58,7 +56,6 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        writeStubBatchFile(new File(getTestDir(), "source"))
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -85,7 +82,6 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        writeStubBatchFile(new File(getTestDir(), "source"))
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -106,20 +102,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        writeStubBatchFile(new File(getTestDir(), "source"))
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
         }
-    }
-
-    private void writeStubBatchFile(File path) {
-        File batchFile = new File(path, "generateSourceOverrideDetails.bat")
-        batchFile.text = " "
-    }
-
-    private void writeGradleBatchFile(File path) {
-        File batchFile = new File(path, "generateSourceOverrideDetails.bat")
-        batchFile.text = "${new File(distributionURI.path, "gw.bat")} summariseAllDependencies generateIvyModuleDescriptor"
     }
 }
