@@ -499,7 +499,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                                 if (module.id.group.toString() == dep.@group.toString() &&
                                     module.id.name.toString() == dep.@name.toString() &&
                                     module.id.version.toString() != calculatedVersion) {
-                                    throw new RuntimeException("Module ${module.id} does not match the dependency declared in source override ${handler.name} (${dep.@group}:${dep.@name}:${calculatedVersion}). You may have to declare a matching source override in the source project.")
+                                    throw new RuntimeException("Module '${module.id}' does not match the dependency declared in source override '${handler.name}' (${dep.@group}:${dep.@name}:${calculatedVersion}). You may have to declare a matching source override in the source project.")
                                 }
                             }
                         }
@@ -521,7 +521,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                                         if (dep.@group.toString() == dep2.@group.toString() &&
                                             dep.@name.toString() == dep2.@name.toString() &&
                                             calculatedVersion != calculatedVersion2) {
-                                            throw new RuntimeException("Module in source override ${handler.name} (${dep.@group}:${dep.@name}:${calculatedVersion}) does not match module in source override ${handler2.name} (${dep2.@group}:${dep2.@name}:${calculatedVersion2}). You may have to declare a matching source override.")
+                                            throw new RuntimeException("Module in source override '${handler.name}' (${dep.@group}:${dep.@name}:${calculatedVersion}) does not match module in source override '${handler2.name}' (${dep2.@group}:${dep2.@name}:${calculatedVersion2}). You may have to declare a matching source override.")
                                         }
                                     }
                                 }

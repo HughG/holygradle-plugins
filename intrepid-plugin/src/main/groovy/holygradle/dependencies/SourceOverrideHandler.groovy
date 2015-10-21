@@ -95,7 +95,7 @@ class SourceOverrideHandler {
             println("Batch File: ${new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath}")
             project.exec {
                 workingDir sourceOverride
-                executable new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath //"generateSourceOverrideDetails.bat"
+                executable new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath
             }
             sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
             sourceOverrideDependencyFileCache = new File(sourceOverride, "AllDependencies.xml")
@@ -105,7 +105,7 @@ class SourceOverrideHandler {
             //createSourceOverrideXml(new File(sourceOverride, "sourceOverrides.xml"))
             project.exec {
                 workingDir sourceOverride
-                executable "gw.bat"
+                executable new File(sourceOverride, "gw.bat").canonicalPath
                 args "generateIvyModuleDescriptor summariseAllDependencies"
             }
             sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")

@@ -1,0 +1,40 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+	project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
+}
+gplugins.apply()
+
+configurations {
+    foo
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+// This tests that if a custom ivy file generator exists then it is used instead of 
+// generateSourceOverrideDetails.bat or gw.bat
+sourceOverrides {
+	"ext_11" {
+		dependency "holygradle.test:external-lib:1.1"
+		sourceOverride "../source/ext-1.1-bat"
+		ivyFileGenerator { handler ->
+			File customFile = new File(handler.sourceOverride, "custom")
+			customFile.text = "PASS"
+			
+			println("+"*30)
+			println("Ivy File: ${new File(handler.sourceOverride, "build/publications/ivy/ivy.xml")}")
+			return [
+				new File(handler.sourceOverride, "build/publications/ivy/ivy.xml"),
+				new File(handler.sourceOverride, "AllDependencies.xml")
+			]
+		}
+	}
+}
+
+packedDependencies {
+	"ext_11" {
+		dependency "holygradle.test:external-lib:1.1"
+		configuration "foo->compile"
+	}
+}

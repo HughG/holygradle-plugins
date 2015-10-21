@@ -9,6 +9,7 @@ import org.junit.Test
 
 import java.nio.file.Files
 
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertTrue
@@ -19,7 +20,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         File templateDir = new File(getTestDir(), "projectAIn")
         File projectDir = new File(getTestDir(), "projectA")
         File frameworkDirectory = new File(projectDir, "framework")
-        File externalDirectory = new File(projectDir, "ext_11")
+        File externalDirectory = new File(projectDir, "external-lib")
 
         if (projectDir.exists()) {
             Symlink.delete(frameworkDirectory)
@@ -118,5 +119,100 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
                 "- holygradle.test:external-lib:1.1"
             )
         }
+    }
+
+    @Test
+    public void incompatibleTransitiveDependencies() {
+        File templateDir = new File(getTestDir(), "projectEIn")
+        File projectDir = new File(getTestDir(), "projectE")
+        File applicationDirectory = new File(projectDir, "application")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File externalDirectory = new File(projectDir, "ext_11")
+
+        if (projectDir.exists()) {
+            Symlink.delete(applicationDirectory)
+            Symlink.delete(frameworkDirectory)
+            Symlink.delete(externalDirectory)
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(
+                "Module 'holygradle.test:external-lib:D_Projects_holy-gradle-...ationTest_source_ext-1.1' does not match the dependency declared in source override 'application' (holygradle.test:external-lib:1.1). You may have to declare a matching source override in the source project."
+            )
+        }
+    }
+
+    @Test
+    public void generateFullDependenciesList() {
+        // Todo: Probably put this somewhere else
+    }
+
+    @Test
+    public void customIvyFileGenerator() {
+        File templateDir = new File(getTestDir(), "projectFIn")
+        File projectDir = new File(getTestDir(), "projectF")
+        File externalDirectory = new File(projectDir, "ext_11")
+
+        File customFile = new File(externalDirectory, "custom")
+        File sourceOverrideFile = new File(externalDirectory, "generateSourceOverrideDetails")
+        File gwFile = new File(externalDirectory, "gw")
+
+        if (projectDir.exists()) {
+            customFile.delete()
+            sourceOverrideFile.delete()
+            gwFile.delete()
+
+            Symlink.delete(externalDirectory)
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+        }
+
+        assertTrue(customFile.exists())
+        assertFalse(sourceOverrideFile.exists())
+        assertFalse(gwFile.exists())
+    }
+
+    @Test
+    public void gwBatIvyFileGeneratorFallback() {
+        File templateDir = new File(getTestDir(), "projectGIn")
+        File projectDir = new File(getTestDir(), "projectG")
+        File externalDirectory = new File(projectDir, "ext_11")
+        File gwFile = new File(externalDirectory, "gw")
+
+        if (projectDir.exists()) {
+            gwFile.delete()
+
+            Symlink.delete(externalDirectory)
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+        }
+
+        assertTrue(gwFile.exists())
+        assertTrue(gwFile.text.contains("generateIvyModuleDescriptor"))
+        assertTrue(gwFile.text.contains("summariseAllDependencies"))
+    }
+
+    @Test
+    public void noIvyFileGeneration() {
+
+    }
+
+    @Test
+    public void failsWithNoUnpackToCache() {
+
     }
 }
