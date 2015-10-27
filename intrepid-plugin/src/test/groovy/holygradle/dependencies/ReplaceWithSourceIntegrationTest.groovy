@@ -29,6 +29,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -57,6 +58,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -83,6 +85,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -109,6 +112,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -137,6 +141,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -147,8 +152,12 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
     }
 
     @Test
+    public void incompatibleSourceOverrideTransitiveDependencies() {
+    }
+
+    @Test
     public void generateFullDependenciesList() {
-        // Todo: Probably put this somewhere else
+        // Todo: Probably put this somewhere else, probably just a unit test
     }
 
     @Test
@@ -171,6 +180,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -196,6 +206,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -208,11 +219,55 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void noIvyFileGeneration() {
+        File templateDir = new File(getTestDir(), "projectHIn")
+        File projectDir = new File(getTestDir(), "projectH")
+        File externalDirectory = new File(projectDir, "ext_11")
 
+        if (projectDir.exists()) {
+            Symlink.delete(externalDirectory)
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure("No Ivy file generation available for 'ext_11'. Please ensure your source override contains a generateSourceOverrideDetails.bat, a compatible gw.bat or provide a custom generation method in your build.gradle")
+        }
     }
 
     @Test
     public void failsWithNoUnpackToCache() {
+        File templateDir = new File(getTestDir(), "projectIIn")
+        File projectDir = new File(getTestDir(), "projectI")
+        File externalDirectory = new File(projectDir, "ext_11")
 
+        if (projectDir.exists()) {
+            Symlink.delete(externalDirectory)
+            externalDirectory.delete()
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        println("%"*50)
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure("A source override can not be applied to a packed dependency with unpackToCache = false")
+        }
+    }
+
+    private void copySourceFiles() {
+        File templateDir = new File(getTestDir(), "sourceIn")
+        File sourceDir = new File(getTestDir(), "source")
+
+        if (sourceDir.exists()) {
+            FileUtils.deleteDirectory(sourceDir)
+        }
+
+        FileUtils.copyDirectory(templateDir, sourceDir)
     }
 }

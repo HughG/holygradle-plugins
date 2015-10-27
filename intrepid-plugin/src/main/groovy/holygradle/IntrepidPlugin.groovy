@@ -466,6 +466,8 @@ public class IntrepidPlugin implements Plugin<Project> {
         }
 
         def listener = new DependencyResolutionListener() {
+            private Exception beforeResolveException = null
+
             void beforeResolve(ResolvableDependencies resolvableDependencies) {
                 Configuration configuration = project.configurations.findByName(resolvableDependencies.name)
                 if (configuration == null) {
@@ -474,7 +476,13 @@ public class IntrepidPlugin implements Plugin<Project> {
 
                 // Add the version forcing bit to each configuration here
                 sourceOverrides.each { SourceOverrideHandler handler ->
-                    handler.createDummyModuleFiles()
+                    try {
+                        handler.createDummyModuleFiles()
+                    } catch (Exception e) {
+                        // Throwing in the beforeResolve handler leaves logging in a broken state so we need to catch
+                        // this exception and throw it later.
+                        beforeResolveException = e
+                    }
                     configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
                         if (details.requested.group == handler.groupName &&
                             details.requested.name == handler.dependencyName &&
@@ -487,6 +495,11 @@ public class IntrepidPlugin implements Plugin<Project> {
 
             // Todo: Make this not run once per configuration
             void afterResolve(ResolvableDependencies dependencies) {
+                if (beforeResolveException != null) {
+                    // This exception is stored from earlier and thrown here
+                    throw new RuntimeException("beforeResolve handler failed.", beforeResolveException)
+                }
+
                 sourceOverrides.each { SourceOverrideHandler handler ->
                     def (File ivyFile, File dependencyFile) = handler.getIvyFile()
                     def dependencyXml = new XmlSlurper(false, false).parse(dependencyFile)

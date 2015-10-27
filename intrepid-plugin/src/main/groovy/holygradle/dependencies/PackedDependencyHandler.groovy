@@ -1,5 +1,6 @@
 package holygradle.dependencies
 
+import org.codehaus.groovy.runtime.StackTraceUtils
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
@@ -94,6 +95,10 @@ class PackedDependencyHandler extends DependencyHandler {
                 return true
             }
         } else {
+            if (getSourceOverride() != null && !unpackToCache) {
+                throw new RuntimeException("A source override can not be applied to a packed dependency with unpackToCache = false")
+            }
+
             return unpackToCache
         }
     }
@@ -202,7 +207,11 @@ class PackedDependencyHandler extends DependencyHandler {
 
     // Todo: Return the handler object instead
     public String getSourceOverride() {
-        SourceOverrideHandler override = project.sourceOverrides.find { SourceOverrideHandler handler ->
+        if (project == null) {
+            return null;
+        }
+
+        SourceOverrideHandler override = project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
             handler.dependencyCoordinate == getDependencyCoordinate()
         }
 

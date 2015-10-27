@@ -1,0 +1,29 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+	project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
+}
+gplugins.apply()
+
+configurations {
+    foo
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+// This tests that a build fails if there is no ivy file generation method available in a source
+// override.
+sourceOverrides {
+	"ext_11" {
+		dependency "holygradle.test:external-lib:1.1"
+		sourceOverride "../source/ext-1.1-nobat"
+	}
+}
+
+packedDependencies {
+	"ext_11" {
+		dependency "holygradle.test:external-lib:1.1"
+		configuration "foo->compile"
+	}
+}
