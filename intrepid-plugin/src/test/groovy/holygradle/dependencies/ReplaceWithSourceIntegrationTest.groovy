@@ -4,14 +4,9 @@ import holygradle.custom_gradle.util.Symlink
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.apache.commons.io.FileUtils
-import org.junit.Assert
 import org.junit.Test
 
-import java.nio.file.Files
-
-import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
-import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertTrue
 
 class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest {
@@ -153,6 +148,28 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void incompatibleSourceOverrideTransitiveDependencies() {
+        File templateDir = new File(getTestDir(), "projectJIn")
+        File projectDir = new File(getTestDir(), "projectJ")
+        File applicationDirectory = new File(projectDir, "application")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File externalDirectory = new File(projectDir, "ext_11")
+
+        if (projectDir.exists()) {
+            Symlink.delete(applicationDirectory)
+            Symlink.delete(frameworkDirectory)
+            Symlink.delete(externalDirectory)
+            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(
+                "Module 'holygradle.test:external-lib:1.0' does not match the dependency declared in source override 'application' (holygradle.test:external-lib:1.1). You may have to declare a matching source override in the source project."
+            )
+        }
     }
 
     @Test
