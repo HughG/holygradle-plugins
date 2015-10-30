@@ -7,6 +7,7 @@ import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
+import org.gradle.api.artifacts.UnknownConfigurationException
 import org.gradle.api.file.*
 import org.gradle.api.initialization.Settings
 import org.gradle.api.tasks.bundling.*
@@ -43,7 +44,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         // tesks which we want to depend on won't have been created.
         project.gradle.projectsEvaluated {
             NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers =
-                project.packageArtifacts as NamedDomainObjectContainer<PackageArtifactHandler>
+                project.extensions.packageArtifacts as NamedDomainObjectContainer<PackageArtifactHandler>
             PackageArtifactHandler buildScriptHandler =
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
             buildScriptHandler.include project.buildFile.name
@@ -60,12 +61,19 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             packageArtifactHandlers.each { packArt ->
                 Task packageTask = packArt.definePackageTask(createPublishNotesTask)
-                project.artifacts.add(packArt.getConfiguration(), packageTask)
+                try {
+                    project.artifacts.add(packArt.configuration, packageTask)
+                } catch (UnknownConfigurationException e) {
+                    throw new RuntimeException(
+                        "Failed to find configuration '${packArt.configuration}' in ${project} " +
+                        "when adding packageArtifact entry '${packArt.name}'"
+                    )
+                }
                 packageEverythingTask.dependsOn(packageTask)
             }
         }
                 
-        project.packageArtifacts
+        project.extensions.packageArtifacts
     }
 
     private static Task defineCreatePublishNotesTask(Project project) {
@@ -77,7 +85,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             File buildInfoDir = new File(project.projectDir, "build_info")
 
             // Save the build directory to an extension so it can be accessed from outside
-            t.ext.buildInfoDir = buildInfoDir
+            t.ext['buildInfoDir'] = buildInfoDir
 
             t.onlyIf {
                 // Don't do anything if we are republishing, or we will end up deleting the original build_info and
@@ -306,7 +314,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         Collection<Closure> localLazyConfigurations = lazyConfigurations
 
         PackageArtifactDescriptor localRootPackageDescriptor = rootPackageDescriptor // capture private for closure
-        t.ext.lazyConfiguration = { Zip it ->
+        t.ext['lazyConfiguration'] = { Zip it ->
             // t.group = "Publishing " + project.name
             // t.classifier = name
             localLazyConfigurations.each {

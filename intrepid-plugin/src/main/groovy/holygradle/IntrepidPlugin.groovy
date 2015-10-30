@@ -1,27 +1,28 @@
 package holygradle
 
+import holygradle.artifacts.*
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.Symlink
-import holygradle.dependencies.CollectDependenciesHelper
-import holygradle.dependencies.CollectDependenciesTask
-import holygradle.dependencies.DependenciesStateHandler
-import holygradle.dependencies.DependenciesSettingsHandler
-import holygradle.dependencies.PackedDependencyHandler
-import holygradle.dependencies.PackedDependenciesSettingsHandler
-import holygradle.dependencies.ZipDependenciesTask
+import holygradle.dependencies.*
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.scm.SourceControlRepositories
-import holygradle.source_dependencies.*
+import holygradle.source_dependencies.RecursivelyFetchSourceTask
+import holygradle.source_dependencies.SourceDependenciesStateHandler
+import holygradle.source_dependencies.SourceDependencyHandler
+import holygradle.source_dependencies.SourceDependencyTaskHandler
 import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.symlinks.SymlinksToCacheTask
-import holygradle.unpacking.*
+import holygradle.unpacking.GradleZipHelper
+import holygradle.unpacking.PackedDependenciesStateHandler
+import holygradle.unpacking.SevenZipHelper
+import holygradle.unpacking.SpeedyUnpackManyTask
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -51,7 +52,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         }
     
         /**************************************
-         * Configurations
+         * Configurations and ConfigurationSets
          **************************************/
         // Mark configurations whose name begins with "private" as private in Ivy terms.
         project.configurations.whenObjectAdded((Closure){ Configuration conf ->
@@ -79,6 +80,15 @@ public class IntrepidPlugin implements Plugin<Project> {
                     }
                 }
             )
+        }
+
+        project.extensions.configurationSetTypes = project.container(ConfigurationSetType) { String name ->
+            new DefaultConfigurationSetType(name)
+        }
+        project.extensions.configurationSetTypes.addAll(DefaultVisualStudioConfigurationSetTypes.TYPES)
+
+        project.extensions.configurationSets = project.container(ConfigurationSet) { String name ->
+            new ProjectConfigurationSet(name, project)
         }
   
         /**************************************

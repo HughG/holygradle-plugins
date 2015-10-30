@@ -191,6 +191,14 @@
               <option name="myProperties">
                 <set>
                   <DPropertyElement>
+                    <option name="name" value="configurationSets" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.artifacts.ConfigurationSet&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.artifacts.ConfigurationSet&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="configurationSets" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="instructions" />
                     <option name="static" value="false" />
                     <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.credentials.InstructionsHandler&gt;" />
@@ -213,6 +221,14 @@
                     <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.packaging.PackageArtifactHandler&gt;" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="packageArtifacts" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="configurationSetTypes" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectSet&lt;holygradle.artifacts.ConfigurationSetType&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectSet&lt;holygradle.artifacts.ConfigurationSetType&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="configurationSetTypes" />
                   </DPropertyElement>
                 </set>
               </option>

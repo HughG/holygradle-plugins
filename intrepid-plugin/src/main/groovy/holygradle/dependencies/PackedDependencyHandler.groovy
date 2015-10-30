@@ -1,5 +1,9 @@
 package holygradle.dependencies
 
+import holygradle.artifacts.ConfigurationSet
+import holygradle.artifacts.ConfigurationSetType
+import holygradle.artifacts.DefaultConfigurationSet
+import holygradle.artifacts.DefaultConfigurationSetType
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
@@ -182,13 +186,14 @@ class PackedDependencyHandler extends DependencyHandler {
         Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
         configurations.addAll newConfigs
+        ModuleVersionIdentifier id = getDependencyId()
         for (conf in newConfigs) {
             String fromConf = conf.key
             String toConf = conf.value
             projectForHandler.dependencies.add(
                 fromConf,
                 new DefaultExternalModuleDependency(
-                    dependencyId.group, dependencyId.module.name, dependencyId.version, toConf
+                    id.group, id.module.name, id.version, toConf
                 )
             )
         }
@@ -199,27 +204,63 @@ class PackedDependencyHandler extends DependencyHandler {
             configuration(config)
         }
     }
-    
+
+    public void mapConfigurationSet(Map attrs, ConfigurationSet source, ConfigurationSet target) {
+        Collection<String> mappings = source.type.getMappingsTo(attrs, source, target)
+        // IntelliJ doesn't understand the spread operator very well.
+        //noinspection GroovyAssignabilityCheck
+        configuration(*mappings)
+    }
+
+    public void mapConfigurationSet(Map attrs, ConfigurationSet source, ConfigurationSetType targetType) {
+        Collection<String> mappings = source.type.getMappingsTo(attrs, source, targetType)
+        // IntelliJ doesn't understand the spread operator very well.
+        //noinspection GroovyAssignabilityCheck
+        configuration(*mappings)
+    }
+
+    public void mapConfigurationSet(ConfigurationSet source, ConfigurationSet target) {
+        mapConfigurationSet([:], source, target)
+    }
+
+    public void mapConfigurationSet(ConfigurationSet source, ConfigurationSetType targetType) {
+        mapConfigurationSet([:], source, targetType)
+    }
+
+    public void mapConfigurationSet(String source, ConfigurationSetType targetType) {
+        Collection<String> mappings = targetType.getMappingsFrom(source)
+        // IntelliJ doesn't understand the spread operator very well.
+        //noinspection GroovyAssignabilityCheck
+        configuration(*mappings)
+    }
+
     public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
         configurations
     }
-    
+
     public String getGroupName() {
-        dependencyId.group
+        getDependencyId().group
     }
     
     public String getDependencyName() {
-        dependencyId.module.name
+        getDependencyId().module.name
     }
    
     public String getVersionStr() {
-        dependencyId.version
+        getDependencyId().version
     }
     
     public String getDependencyCoordinate() {
-        dependencyId.toString()
+        getDependencyId().toString()
     }
-    
+
+    public ModuleVersionIdentifier getDependencyId() {
+        if (dependencyId == null) {
+            throw new RuntimeException("'dependency' not set for packed dependency '${name}'")
+        }
+        dependencyId
+    }
+
     public boolean pathIncludesVersionNumber() {
         targetName.contains("<version>")
     }
