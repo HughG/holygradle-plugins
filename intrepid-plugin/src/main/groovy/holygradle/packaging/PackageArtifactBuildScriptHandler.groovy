@@ -96,13 +96,13 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
     }
 
     public boolean buildScriptRequired() {
-        return [
+        return ([
             textAtTop,
             textAtBottom,
             packedDependencies,
             pinnedSourceDependencies,
             ivyRepositories
-        ].any { !it.empty } ||
+        ] as Collection[]).any { !it.empty } ||
             publishInfoSpecified()
     }
 
