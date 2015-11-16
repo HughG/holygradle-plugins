@@ -47,7 +47,7 @@ class SourceDependencyPublishingHandler {
             if (!newConfigs.empty) {
                 this.fromProject.logger.info(
                     "Not creating project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
-                        "because ${this.dependencyName} has no project file."
+                    "because ${this.dependencyName} has no project file."
                 )
             }
         } else if (!depProject.projectDir.exists()) {

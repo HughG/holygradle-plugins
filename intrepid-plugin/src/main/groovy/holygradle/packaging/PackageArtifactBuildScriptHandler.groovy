@@ -99,10 +99,10 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
         return ([
             textAtTop,
             textAtBottom,
-            packedDependencies,
             pinnedSourceDependencies,
             ivyRepositories
         ] as Collection[]).any { !it.empty } ||
+            !packedDependencies.empty ||
             publishInfoSpecified()
     }
 

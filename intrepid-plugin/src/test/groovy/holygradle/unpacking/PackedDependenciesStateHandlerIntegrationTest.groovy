@@ -59,7 +59,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         File anotherLibDir,
         File projectDir
     ) {
-        [emptyConfigLibDir, extLibDir, anotherLibDir].each { FileHelper.ensureDeleteFile(it) }
+        [emptyConfigLibDir, extLibDir, anotherLibDir].each { FileHelper.ensureDeleteDirRecursive(it) }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
@@ -120,7 +120,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         File projectDir
     ) {
         final Collection<File> allPackedDepDirs = [emptyConfigLibDir, extLibDir, anotherLibDir]
-        allPackedDepDirs.each { FileHelper.ensureDeleteFile(it) }
+        allPackedDepDirs.each { FileHelper.ensureDeleteDirRecursive(it) }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
@@ -153,7 +153,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         final File emptyConfigLibDir = new File(projectDir, "example-framework")
         final File extLibDir = new File(projectDir, "external-lib")
         final Collection<File> allPackedDepDirs = [emptyConfigLibDir, extLibDir]
-        allPackedDepDirs.each { FileHelper.ensureDeleteFile(it) }
+        allPackedDepDirs.each { FileHelper.ensureDeleteDirRecursive(it) }
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
