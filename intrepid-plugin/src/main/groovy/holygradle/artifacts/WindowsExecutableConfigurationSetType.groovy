@@ -4,15 +4,6 @@ import groovy.transform.InheritConstructors
 
 @InheritConstructors
 class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType {
-//    public WindowsExecutableConfigurationSetType(
-//        String name,
-//        List<String> platforms,
-//        List<String> configurations
-//    ) {
-//        super(name, platforms, configurations)
-//    }
-
-
     @Override
     Collection<String> getDefaultMappingsTo(
         Map attrs,

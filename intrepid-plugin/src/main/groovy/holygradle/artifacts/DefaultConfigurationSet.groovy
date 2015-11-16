@@ -114,6 +114,10 @@ class DefaultConfigurationSet implements ConfigurationSet {
         type
     }
 
+    DefaultConfigurationSetType getTypeAsDefault() {
+        type
+    }
+
     @Override
     public Map<Map<String, String>, String> getConfigurationNames() {
         synchronized (initSync) {

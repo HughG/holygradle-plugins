@@ -5,15 +5,6 @@ import holygradle.lang.NamedParameters
 
 @InheritConstructors
 class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetType {
-//    public WindowsStaticLibraryConfigurationSetType(
-//        String name,
-//        List<String> platforms,
-//        List<String> configurations
-//    ) {
-//        super(name, platforms, configurations)
-//    }
-
-
     @Override
     Collection<String> getDefaultMappingsTo(
         Map attrs,
@@ -22,7 +13,7 @@ class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetTy
     ) {
         def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
 
-        return getDefaultMappingsTo(source, target, getMappingAdder(target.type as DefaultConfigurationSetType, export))
+        return getDefaultMappingsTo(source, target, getMappingAdder(target.typeAsDefault, export))
     }
 
     @Override

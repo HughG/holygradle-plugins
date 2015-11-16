@@ -71,6 +71,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         return result
     }
 
+    @Override
     public Collection<String> getMappingsTo(
         Map attrs,
         ConfigurationSet source,
@@ -84,6 +85,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         return getDefaultMappingsTo(attrs, defaultSource, defaultTarget)
     }
 
+    @Override
     public Collection<String> getMappingsTo(
         ConfigurationSet source,
         ConfigurationSet target
@@ -91,6 +93,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         return getMappingsTo([:], source, target)
     }
 
+    @Override
     public Collection<String> getMappingsTo(
         Map attrs,
         ConfigurationSet source,
@@ -106,6 +109,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         return getDefaultMappingsTo(attrs, defaultSource, defaultTarget)
     }
 
+    @Override
     public Collection<String> getMappingsTo(
         ConfigurationSet source,
         ConfigurationSetType targetType
@@ -113,6 +117,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         return getMappingsTo([:], source, targetType)
     }
 
+    @Override
     public Collection<String> getMappingsFrom(Map attrs, String source) {
         return getDefaultMappingsTo(source, this) {
             Collection<String> mappings,
@@ -124,8 +129,30 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         }
     }
 
+    @Override
     public Collection<String> getMappingsFrom(String source) {
         return getMappingsFrom([:], source)
+    }
+
+    @Override
+    public Collection<String> getMappingsFrom(Map attrs, String source, ConfigurationSet target) {
+        final DefaultConfigurationSet defaultTarget = target as DefaultConfigurationSet
+        if (defaultTarget == null) {
+            throwForUnknownTarget(target)
+        }
+        return getDefaultMappingsTo(source, defaultTarget) {
+            Collection<String> mappings,
+            Map<String, String> binding,
+            String sourceConfigurationName,
+            String targetConfigurationName
+                ->
+                mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
+        }
+    }
+
+    @Override
+    public Collection<String> getMappingsFrom(String source, ConfigurationSet target) {
+        return getMappingsFrom([:], source, target)
     }
 
     protected Collection<String> getDefaultMappingsTo(
@@ -151,10 +178,10 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         Map<Map<String, String>, String> sourceConfigurations = source.configurationNames
         Map<Map<String, String>, String> targetConfigurations = target.configurationNames
 
+        DefaultConfigurationSetType sourceType = source.typeAsDefault
+        def sourceOptionalAxesNames = sourceType.optionalAxes.keySet()
         List<String> mappings = new ArrayList<String>(sourceConfigurations.size())
         sourceConfigurations.each { Map<String, String> binding, String sourceConfigurationName ->
-            DefaultConfigurationSetType sourceType = source.type as DefaultConfigurationSetType
-            def sourceOptionalAxesNames = sourceType.optionalAxes.keySet()
             if (!binding.keySet().any { sourceOptionalAxesNames.contains(it) }) {
                 // Don't map this; only map configurations which have all parts specified.
                 return
@@ -176,16 +203,14 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
 
     protected static final Collection<String> getDefaultMappingsTo(
         String source,
-        DefaultConfigurationSetType targetType,
+        DefaultConfigurationSet target,
         Closure maybeAddMapping
     ) {
-        DefaultConfigurationSet target = new DefaultConfigurationSet("from configuration ${source}")
-        target.type = targetType
         Map<Map<String, String>, String> targetConfigurations = target.configurationNames
 
+        def targetOptionalAxesNames = target.typeAsDefault.optionalAxes.keySet()
         List<String> mappings = new ArrayList<String>(targetConfigurations.size())
         targetConfigurations.each { Map<String, String> binding, String targetConfigurationName ->
-            def targetOptionalAxesNames = targetType.optionalAxes.keySet()
             if (!binding.keySet().any { targetOptionalAxesNames.contains(it) }) {
                 // Don't map this; only map configurations which have all parts specified.
                 return
@@ -197,8 +222,26 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         return mappings
     }
 
+    protected static final Collection<String> getDefaultMappingsTo(
+        String source,
+        DefaultConfigurationSetType targetType,
+        Closure maybeAddMapping
+    ) {
+        DefaultConfigurationSet target = new DefaultConfigurationSet("from configuration ${source}")
+        target.type = targetType
+        return getDefaultMappingsTo(source, target, maybeAddMapping)
+    }
+
     protected static final String makeMapping(String from, String to) {
         "${from}->${to}"
+    }
+
+    protected final void throwForUnknownTarget(ConfigurationSet target) {
+        throw new RuntimeException(
+            "${this.class} only supports configuration sets of class ${DefaultConfigurationSet.class} " +
+                "and configuration types of class ${WindowsConfigurationSetType.class} " +
+                "but received a target of ${target?.class}"
+        )
     }
 
     protected final void throwForUnknownTargetType(ConfigurationSetType targetType) {

@@ -101,7 +101,10 @@ class SourceDependencyPublishingHandler {
     }
 
     public void mapConfigurationSet(String source, ConfigurationSet target) {
-        mapConfigurationSet(source, target.type)
+        Collection<String> mappings = target.type.getMappingsFrom(source, target)
+        // IntelliJ doesn't understand the spread operator very well.
+        //noinspection GroovyAssignabilityCheck
+        configuration(*mappings)
     }
 
     public void mapConfigurationSet(String source, ConfigurationSetType targetType) {

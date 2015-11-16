@@ -35,4 +35,15 @@ public interface ConfigurationSetType extends Named {
     public Collection<String> getMappingsFrom(
         String source
     )
+
+    public Collection<String> getMappingsFrom(
+        Map attrs,
+        String source,
+        ConfigurationSet target
+    )
+
+    public Collection<String> getMappingsFrom(
+        String source,
+        ConfigurationSet target
+    )
 }
