@@ -62,6 +62,15 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         this.optionalAxes = optionalAxes
     }
 
+    // This is an API for use by build scripts, so ignore the "unused" warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    public DefaultConfigurationSet withPrefix(String prefix) {
+        DefaultConfigurationSet result = new DefaultConfigurationSet("${name} with prefix ${prefix}")
+        result.type(this)
+        result.prefix(prefix)
+        return result
+    }
+
     public Collection<String> getMappingsTo(
         Map attrs,
         ConfigurationSet source,

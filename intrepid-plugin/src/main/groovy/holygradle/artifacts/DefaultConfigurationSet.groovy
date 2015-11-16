@@ -196,9 +196,9 @@ class DefaultConfigurationSet implements ConfigurationSet {
     @Override
     public String toString() {
         return "DefaultConfigurationSet{" +
-            ", name='" + name + '\'' +
+            "name='" + name + '\'' +
             ", type=" + type.name +
-            "configurationNames=" + configurationNames +
+            ", configurationNames=" + getConfigurationNames() +
             '}';
     }
 }
