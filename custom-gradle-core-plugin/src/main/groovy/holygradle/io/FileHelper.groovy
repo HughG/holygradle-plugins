@@ -1,6 +1,7 @@
 package holygradle.io
 
 import groovy.io.FileVisitResult
+import holygradle.custom_gradle.util.RetryHelper
 import holygradle.custom_gradle.util.Symlink
 
 import java.nio.file.Files
@@ -38,7 +39,9 @@ class FileHelper {
                     // If it still exists, we delete it now.
                     if (f.exists()) {
                         f.writable = true
-                        Files.delete(f.toPath())
+                        RetryHelper.retry(10, 1000, null, "delete ${dir}${formatPurpose(purpose)}") {
+                            Files.delete(f.toPath())
+                        }
                     }
                     return FileVisitResult.CONTINUE
                 },

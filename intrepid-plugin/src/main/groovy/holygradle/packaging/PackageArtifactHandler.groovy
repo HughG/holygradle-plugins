@@ -2,7 +2,6 @@ package holygradle.packaging
 
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
-import holygradle.custom_gradle.util.RetryHelper
 import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.source_dependencies.SourceDependencyHandler
@@ -66,7 +65,8 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 } catch (UnknownConfigurationException e) {
                     throw new RuntimeException(
                         "Failed to find configuration '${packArt.configuration}' in ${project} " +
-                        "when adding packageArtifact entry '${packArt.name}'"
+                        "when adding packageArtifact entry '${packArt.name}'",
+                        e
                     )
                 }
                 packageEverythingTask.dependsOn(packageTask)
@@ -95,14 +95,8 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 return !republishing
             }
             t.doLast {
-                if (buildInfoDir.exists()) {
-                    RetryHelper.retry(10, 1000, logger, "delete ${buildInfoDir.name} dir") {
-                        buildInfoDir.deleteDir()
-                    }
-                }
-                RetryHelper.retry(10, 1000, logger, "create ${buildInfoDir.name} dir") {
-                    buildInfoDir.mkdir()
-                }
+                FileHelper.ensureDeleteDirRecursive(buildInfoDir)
+                FileHelper.ensureMkdirs(buildInfoDir)
 
                 String buildNumber = System.getenv("BUILD_NUMBER")
                 if (buildNumber != null) {
@@ -121,9 +115,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 addSourceRepositoryInfo(t, buildInfoDir)
                 Collection<SourceDependencyHandler> allSourceDependencies = findAllSourceDependencies(project)
                 File sourceDependenciesDir = new File(buildInfoDir, "source_dependencies")
-                RetryHelper.retry(10, 1000, project.logger, "create ${sourceDependenciesDir.name} dir") {
-                    sourceDependenciesDir.mkdir()
-                }
+                FileHelper.ensureMkdirs(sourceDependenciesDir)
                 allSourceDependencies.each { SourceDependencyHandler handler ->
                     addSourceRepositoryInfo(t, sourceDependenciesDir, handler)
                 }
@@ -192,9 +184,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 // We're adding info for a subproject source dependency, so put it in a sub-folder; in this case,
                 // baseDir = "build_info/source_dependencies"
                 sourceDepInfoDir = new File(baseDir, handler.targetName)
-                RetryHelper.retry(10, 1000, project.logger, "create ${sourceDepInfoDir.name} dir") {
-                    sourceDepInfoDir.mkdir()
-                }
+                FileHelper.ensureMkdirs(sourceDepInfoDir)
             }
 
             new File(sourceDepInfoDir, "source_url.txt").write(sourceRepo.getUrl())
