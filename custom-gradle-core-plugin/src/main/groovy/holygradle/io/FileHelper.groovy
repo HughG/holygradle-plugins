@@ -18,6 +18,7 @@ class FileHelper {
             throw new IOException("Failed to delete ${file}${formatPurpose(purpose)} because it is a directory, not a file")
         }
         try {
+            file.writable = true
             Files.delete(file.toPath())
         } catch (IOException e) {
             throw new IOException("Failed to delete ${file}${formatPurpose(purpose)}", e)
