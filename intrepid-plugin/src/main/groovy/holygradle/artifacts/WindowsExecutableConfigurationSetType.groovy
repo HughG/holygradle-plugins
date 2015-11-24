@@ -14,10 +14,12 @@ class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType 
     }
 
     @Override
-    public Collection<String> getMappingsFrom(
-        Map attrs, String source
+    protected Collection<String> getDefaultMappingsFrom(
+        Map attrs,
+        String source,
+        DefaultConfigurationSet target
     ) {
-        return getDefaultMappingsTo(source, this, getMappingAdder())
+        return getDefaultMappingsTo(source, target, getMappingAdder())
     }
 
     private static Closure getMappingAdder() {

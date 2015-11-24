@@ -17,12 +17,14 @@ class WindowsDynamicLibraryConfigurationSetType extends WindowsConfigurationSetT
     }
 
     @Override
-    public Collection<String> getMappingsFrom(
-        Map attrs, String source
+    protected Collection<String> getDefaultMappingsFrom(
+        Map attrs,
+        String source,
+        DefaultConfigurationSet target
     ) {
         def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
 
-        return getDefaultMappingsTo(source, this, getMappingAdder(this, export))
+        return getDefaultMappingsTo(source, target, getMappingAdder(this, export))
     }
 
     private static Closure getMappingAdder(DefaultConfigurationSetType targetType, boolean export) {

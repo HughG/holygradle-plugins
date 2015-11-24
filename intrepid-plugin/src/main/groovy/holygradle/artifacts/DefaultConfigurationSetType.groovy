@@ -72,7 +72,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     @Override
-    public Collection<String> getMappingsTo(
+    public final Collection<String> getMappingsTo(
         Map attrs,
         ConfigurationSet source,
         ConfigurationSet target
@@ -86,7 +86,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     @Override
-    public Collection<String> getMappingsTo(
+    public final Collection<String> getMappingsTo(
         ConfigurationSet source,
         ConfigurationSet target
     ) {
@@ -94,7 +94,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     @Override
-    public Collection<String> getMappingsTo(
+    public final Collection<String> getMappingsTo(
         Map attrs,
         ConfigurationSet source,
         ConfigurationSetType targetType
@@ -110,7 +110,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     @Override
-    public Collection<String> getMappingsTo(
+    public final Collection<String> getMappingsTo(
         ConfigurationSet source,
         ConfigurationSetType targetType
     ) {
@@ -118,8 +118,48 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     @Override
-    public Collection<String> getMappingsFrom(Map attrs, String source) {
-        return getDefaultMappingsTo(source, this) {
+    public final Collection<String> getMappingsFrom(Map attrs, String source) {
+        DefaultConfigurationSet target = new DefaultConfigurationSet("from configuration ${source}")
+        target.type = this
+        return getDefaultMappingsFrom(attrs, source, target)
+    }
+
+    @Override
+    public final Collection<String> getMappingsFrom(String source) {
+        return getMappingsFrom([:], source)
+    }
+
+    @Override
+    public final Collection<String> getMappingsFrom(Map attrs, String source, ConfigurationSet target) {
+        final DefaultConfigurationSet defaultTarget = target as DefaultConfigurationSet
+        if (defaultTarget == null) {
+            throwForUnknownTarget(target)
+        }
+        return getDefaultMappingsFrom(attrs, source, defaultTarget)
+    }
+
+    @Override
+    public final Collection<String> getMappingsFrom(String source, ConfigurationSet target) {
+        return getMappingsFrom([:], source, target)
+    }
+
+    /**
+     * This method returns a collection of configuration mapping strings of the form "a->b", mapping configurations
+     * from the {@code source} to configurations in the {@code target}, according to rules which are subclass-specific.
+     *
+     * If you override this, you should also override {@link #getDefaultMappingsFrom(java.util.Map, java.lang.String, holygradle.artifacts.DefaultConfigurationSet)}
+     *
+     * @param attrs Optional extra arguments for use by subclasses.
+     * @param source The source configuration set.
+     * @param target The target configuration set.
+     * @return
+     */
+    protected Collection<String> getDefaultMappingsTo(
+        Map attrs,
+        DefaultConfigurationSet source,
+        DefaultConfigurationSet target
+    ) {
+        return getDefaultMappingsTo(source, target) {
             Collection<String> mappings,
             Map<String, String> binding,
             String sourceConfigurationName,
@@ -129,35 +169,21 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         }
     }
 
-    @Override
-    public Collection<String> getMappingsFrom(String source) {
-        return getMappingsFrom([:], source)
-    }
+    /**
+     * This method returns a collection of configuration mapping strings of the form "a->b", mapping the {@code source}
+     * configuration to some configurations in the {@code target}, according to rules which are subclass-specific.  That
+     * means, if the source configuration is "foo" then every returned string will start with "foo->".
+     *
+     * If you override this, you should also override {@link #getDefaultMappingsTo(java.util.Map, holygradle.artifacts.DefaultConfigurationSet, holygradle.artifacts.DefaultConfigurationSet)}
 
-    @Override
-    public Collection<String> getMappingsFrom(Map attrs, String source, ConfigurationSet target) {
-        final DefaultConfigurationSet defaultTarget = target as DefaultConfigurationSet
-        if (defaultTarget == null) {
-            throwForUnknownTarget(target)
-        }
-        return getDefaultMappingsTo(source, defaultTarget) {
-            Collection<String> mappings,
-            Map<String, String> binding,
-            String sourceConfigurationName,
-            String targetConfigurationName
-                ->
-                mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
-        }
-    }
-
-    @Override
-    public Collection<String> getMappingsFrom(String source, ConfigurationSet target) {
-        return getMappingsFrom([:], source, target)
-    }
-
-    protected Collection<String> getDefaultMappingsTo(
+     * @param attrs Optional extra arguments for use by subclasses.
+     * @param source The source configuration name (not configuration set).
+     * @param target The target configuration set.
+     * @return
+     */
+    protected Collection<String> getDefaultMappingsFrom(
         Map attrs,
-        DefaultConfigurationSet source,
+        String source,
         DefaultConfigurationSet target
     ) {
         return getDefaultMappingsTo(source, target) {
@@ -220,16 +246,6 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         }
 
         return mappings
-    }
-
-    protected static final Collection<String> getDefaultMappingsTo(
-        String source,
-        DefaultConfigurationSetType targetType,
-        Closure maybeAddMapping
-    ) {
-        DefaultConfigurationSet target = new DefaultConfigurationSet("from configuration ${source}")
-        target.type = targetType
-        return getDefaultMappingsTo(source, target, maybeAddMapping)
     }
 
     protected static final String makeMapping(String from, String to) {
