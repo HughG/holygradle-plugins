@@ -44,19 +44,15 @@ class DefaultConfigurationSet implements ConfigurationSet {
     }
 
     private void addConfigurationNames(LinkedHashMap<String, List<String>> axes, Template template) {
-//        println "addConfigurationNames(${axes}, ${template})"
         int axesSize = axes.size()
         // IntelliJ mistakenly thinks this is a Set<List<List<String>>>
         //noinspection GroovyAssignabilityCheck
         Set<List<String>> allValueCombinations = Sets.cartesianProduct(axes.values().toList()*.toSet())
-//        println "  allValueCombinations = ${allValueCombinations}"
         List<String> axesKeys = axes.keySet().toList()
         for (List<String> values in allValueCombinations) {
-//            println " values ${values}"
             Map<String, String> binding = [:]
             for (int i = 0; i < axesSize; i++) {
                 binding[axesKeys[i]] = values[i]
-//                println "      binding[${axesKeys[i]}] = ${values[i]}"
             }
 
             // We clone the binding before using it as a key in configurationNames, because Template#make adds an "out"
@@ -64,7 +60,6 @@ class DefaultConfigurationSet implements ConfigurationSet {
             Map<String, String> bindingForValues = binding.clone() as Map<String, String>
             String nameForValues = template.make(binding).toString()
             configurationNames[bindingForValues] = nameForValues
-//            println "  configurationNames[${bindingForValues}] = ${nameForValues}"
         }
     }
 
@@ -74,12 +69,28 @@ class DefaultConfigurationSet implements ConfigurationSet {
     }
 
     public void prefix(String prefix) {
-        this.prefix = prefix
+        synchronized (initSync) {
+            if (!configurationNames.isEmpty()) {
+                throw new RuntimeException(
+                    "Cannot change prefix for configuration set ${name} after configuration names have been generated"
+                )
+            }
+
+            this.prefix = prefix
+        }
     }
 
     @Override
     void type(ConfigurationSetType type) {
-        setType(type)
+        synchronized (initSync) {
+            if (!configurationNames.isEmpty()) {
+                throw new RuntimeException(
+                    "Cannot change type for configuration set ${name} after configuration names have been generated"
+                )
+            }
+
+            setType(type)
+        }
     }
 
     @Override

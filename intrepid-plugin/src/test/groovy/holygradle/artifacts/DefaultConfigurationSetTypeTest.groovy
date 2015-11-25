@@ -1,8 +1,8 @@
 package holygradle.artifacts
 
 import holygradle.test.AbstractHolyGradleTest
+import org.junit.Assert
 import org.junit.Test
-import org.testng.Assert
 
 class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public static final ArrayList<String> ASPECTS = ["main", "test"]
@@ -47,7 +47,7 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public static final ArrayList<String> EXTRA_ATTRS_MAPPINGS = ["a->b", "c->d"]
 
 
-    public class TestConfigurationSetType extends DefaultConfigurationSetType {
+    public static class TestConfigurationSetType extends DefaultConfigurationSetType {
         public TestConfigurationSetType(
             String name,
             List<String> aspects,
@@ -88,9 +88,9 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     @Test
     public void testSetAxesInConstructor() {
         ConfigurationSetType type = new TestConfigurationSetType("type", ASPECTS, COLOURS)
-        Assert.assertEquals(type.name, "type", "name")
-        Assert.assertEquals(type.requiredAxes, REQUIRED_AXES, "requiredAxes")
-        Assert.assertEquals(type.optionalAxes, OPTIONAL_AXES, "optionalAxes")
+        Assert.assertEquals("name", "type", type.name)
+        Assert.assertEquals("requiredAxes", REQUIRED_AXES, type.requiredAxes)
+        Assert.assertEquals("optionalAxes", OPTIONAL_AXES, type.optionalAxes)
     }
 
     @Test
@@ -106,9 +106,9 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
                 size: ["medium", "large"]
             ]
         }
-        Assert.assertEquals(type.name, "type", "name")
-        Assert.assertEquals(type.requiredAxes, REQUIRED_AXES, "requiredAxes")
-        Assert.assertEquals(type.optionalAxes, OPTIONAL_AXES, "optionalAxes")
+        Assert.assertEquals("name", "type", type.name)
+        Assert.assertEquals("requiredAxes", REQUIRED_AXES, type.requiredAxes)
+        Assert.assertEquals("optionalAxes", OPTIONAL_AXES, type.optionalAxes)
     }
 
     @Test
@@ -118,9 +118,9 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         DefaultConfigurationSet set = type.withPrefix("foo")
 
         Assert.assertEquals(
-            set.configurationNames.values(),
             // We need an extra toString to make sure all GStrings are converted to Strings.
-            (COMMON_AND_MAIN_CONFIGURATION_NAMES.collect { "foo_${it}" })*.toString()
+            (COMMON_AND_MAIN_CONFIGURATION_NAMES.collect { "foo_${it}" })*.toString(),
+            set.configurationNames.values().toList()
         )
     }
 
@@ -134,9 +134,9 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         toSet.type(type)
 
         Assert.assertEquals(
-            type.getMappingsTo(EXTRA_ATTRS, fromSet, toSet),
             // We need an extra toString to make sure all GStrings are converted to Strings.
-            ((MAIN_CONFIGURATION_NAMES.collect { "foo_${it}->${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString()
+            ((MAIN_CONFIGURATION_NAMES.collect { "foo_${it}->${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString(),
+            type.getMappingsTo(EXTRA_ATTRS, fromSet, toSet)
         )
     }
 
@@ -147,9 +147,9 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         DefaultConfigurationSet fromSet = type.withPrefix("foo")
 
         Assert.assertEquals(
-            type.getMappingsTo(EXTRA_ATTRS, fromSet, type),
             // We need an extra toString to make sure all GStrings are converted to Strings.
-            ((MAIN_CONFIGURATION_NAMES.collect { "foo_${it}->${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString()
+            ((MAIN_CONFIGURATION_NAMES.collect { "foo_${it}->${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString(),
+            type.getMappingsTo(EXTRA_ATTRS, fromSet, type)
         )
     }
 
@@ -158,9 +158,9 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         ConfigurationSetType type = new TestConfigurationSetType("type", ASPECTS, COLOURS)
 
         Assert.assertEquals(
-            type.getMappingsFrom(EXTRA_ATTRS, "conf"),
             // We need an extra toString to make sure all GStrings are converted to Strings.
-            ((MAIN_CONFIGURATION_NAMES.collect { "conf->${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString()
+            ((MAIN_CONFIGURATION_NAMES.collect { "conf->${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString(),
+            type.getMappingsFrom(EXTRA_ATTRS, "conf")
         )
     }
 
@@ -171,9 +171,9 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         DefaultConfigurationSet toSet = type.withPrefix("foo")
 
         Assert.assertEquals(
-            type.getMappingsFrom(EXTRA_ATTRS, "conf", toSet),
             // We need an extra toString to make sure all GStrings are converted to Strings.
-            ((MAIN_CONFIGURATION_NAMES.collect { "conf->foo_${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString()
+            ((MAIN_CONFIGURATION_NAMES.collect { "conf->foo_${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString(),
+            type.getMappingsFrom(EXTRA_ATTRS, "conf", toSet)
         )
     }
 }
