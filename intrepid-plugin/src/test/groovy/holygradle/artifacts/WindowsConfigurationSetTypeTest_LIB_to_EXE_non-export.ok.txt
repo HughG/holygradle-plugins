@@ -1,0 +1,8 @@
+debugging_Win32_Release->debugging_Win32_Release
+runtime_Win32_Release->runtime_Win32_Release
+debugging_x64_Release->debugging_x64_Release
+runtime_x64_Release->runtime_x64_Release
+debugging_Win32_Debug->debugging_Win32_Debug
+runtime_Win32_Debug->runtime_Win32_Debug
+debugging_x64_Debug->debugging_x64_Debug
+runtime_x64_Debug->runtime_x64_Debug

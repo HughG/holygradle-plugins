@@ -1,7 +1,7 @@
 package holygradle.test
 
 class AbstractHolyGradleTest {
-    protected RegressionFileHelper regression
+    protected final RegressionFileHelper regression
 
     AbstractHolyGradleTest() {
         regression = new RegressionFileHelper(this)

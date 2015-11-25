@@ -1,7 +1,7 @@
 package holygradle.artifacts
 
 class DefaultWebConfigurationSetTypes {
-    public static final Collection<ConfigurationSetType> TYPES = [
+    public static final Map<String, ConfigurationSetType> TYPES = [
         new DefaultConfigurationSetType(
             "WEB_LIB",
             [
@@ -15,5 +15,5 @@ class DefaultWebConfigurationSetTypes {
                 configurations: DefaultVisualStudioConfigurationSetTypes.DEFAULT_CONFIGURATIONS
             ]
         )
-    ]
+    ].collectEntries { type -> [type.name, type] }
 }

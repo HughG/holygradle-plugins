@@ -9,7 +9,7 @@ class DefaultVisualStudioConfigurationSetTypes {
     public static final List<String> DEFAULT_PLATFORMS = [VS_PLATFORM_X64, VS_PLATFORM_WIN32]
     public static final List<String> DEFAULT_CONFIGURATIONS = [VS_CONFIGURATION_RELEASE, VS_CONFIGURATION_DEBUG]
 
-    public static final Collection<ConfigurationSetType> TYPES = [
+    public static final Map<String, ConfigurationSetType> TYPES = [
         new WindowsDynamicLibraryConfigurationSetType(
             "DLL_64",
             [VS_PLATFORM_X64],
@@ -81,5 +81,5 @@ class DefaultVisualStudioConfigurationSetTypes {
             DEFAULT_PLATFORMS,
             [VS_CONFIGURATION_RELEASE]
         ),
-    ]
+    ].collectEntries { type -> [type.name, type]}
 }

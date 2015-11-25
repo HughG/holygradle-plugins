@@ -85,8 +85,8 @@ public class IntrepidPlugin implements Plugin<Project> {
         project.extensions.configurationSetTypes = project.container(ConfigurationSetType) { String name ->
             new DefaultConfigurationSetType(name)
         }
-        project.extensions.configurationSetTypes.addAll(DefaultVisualStudioConfigurationSetTypes.TYPES)
-        project.extensions.configurationSetTypes.addAll(DefaultWebConfigurationSetTypes.TYPES)
+        project.extensions.configurationSetTypes.addAll(DefaultVisualStudioConfigurationSetTypes.TYPES.values())
+        project.extensions.configurationSetTypes.addAll(DefaultWebConfigurationSetTypes.TYPES.values())
 
         project.extensions.configurationSets = project.container(ConfigurationSet) { String name ->
             new ProjectConfigurationSet(name, project)
