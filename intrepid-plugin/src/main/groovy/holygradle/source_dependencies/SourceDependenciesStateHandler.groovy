@@ -42,7 +42,7 @@ class SourceDependenciesStateHandler {
                 // which depend on some configuration of a published source dependency project.  The keys in the
                 // sourceDependency.publishing.configurations collection are the names of configurations in the given
                 // project.
-                sourceDependency.publishing.configurations.collect(new HashSet<String>()) { it.key }
+                sourceDependency.configurations.collect(new HashSet<String>()) { it.key }
             }
         // Get a unique set of actual configuration objects.
         configurationNames = configurationNames.unique()

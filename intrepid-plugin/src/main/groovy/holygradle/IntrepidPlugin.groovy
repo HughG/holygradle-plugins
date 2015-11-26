@@ -32,6 +32,8 @@ import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
+    public static final String EVERYTHING_CONFIGURATION_NAME = "everything"
+
     void apply(Project project) {
         ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
         def timer = profilingHelper.startBlock("IntrepidPlugin#apply(${project})")
@@ -263,10 +265,11 @@ public class IntrepidPlugin implements Plugin<Project> {
          **************************************/
         
         // Define an 'everything' configuration which depends on all other configurations.
-        Configuration everythingConf = configurations.findByName("everything") ?: configurations.add("everything")
+        Configuration everythingConf =
+            configurations.findByName(EVERYTHING_CONFIGURATION_NAME) ?: configurations.add(EVERYTHING_CONFIGURATION_NAME)
         project.gradle.projectsEvaluated {
             configurations.each((Closure){ Configuration conf ->
-                if (conf.name != "everything" && conf.visible) {
+                if (conf.name != EVERYTHING_CONFIGURATION_NAME && conf.visible) {
                     everythingConf.extendsFrom conf
                 }
             })
@@ -289,30 +292,18 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // For each source dependency, create a suitable task and link it into the
                 // fetchAllDependencies task.
                 sourceDependencies.each { sourceDep ->
-                    if (sourceDep.usePublishedVersion) {
-                        String depCoord = sourceDep.getDynamicPublishedDependencyCoordinate(project)
-                        // println ":${project.name} - using published version of ${sourceDep.name} - ${depCoord}"
-                        PackedDependencyHandler packedDep = new PackedDependencyHandler(
-                            sourceDep.name,
-                            project,
-                            depCoord,
-                            sourceDep.publishingHandler.configurations
-                        )
-                        packedDependencies.add(packedDep)
-                    } else {
-                        Task fetchTask = sourceDep.createFetchTask(project, buildScriptDependencies)
-                        fetchTask.dependsOn beforeFetchSourceDependenciesTask
-                        fetchAllSourceDependenciesTask.dependsOn fetchTask
-                        fetchFirstLevelSourceDependenciesTask.dependsOn fetchTask
+                    Task fetchTask = sourceDep.createFetchTask(project, buildScriptDependencies)
+                    fetchTask.dependsOn beforeFetchSourceDependenciesTask
+                    fetchAllSourceDependenciesTask.dependsOn fetchTask
+                    fetchFirstLevelSourceDependenciesTask.dependsOn fetchTask
 
-                        // Set up build task dependencies.
-                        Project depProject = project.findProject(":${sourceDep.name}")
-                        if (depProject != null) {
-                            Map<String, Task> subBuildTasks = Helper.getProjectBuildTasks(depProject)
-                            buildTasks.each { String taskName, Task task ->
-                                if (subBuildTasks.containsKey(taskName)) {
-                                    task.dependsOn subBuildTasks[taskName]
-                                }
+                    // Set up build task dependencies.
+                    Project depProject = project.findProject(":${sourceDep.name}")
+                    if (depProject != null) {
+                        Map<String, Task> subBuildTasks = Helper.getProjectBuildTasks(depProject)
+                        buildTasks.each { String taskName, Task task ->
+                            if (subBuildTasks.containsKey(taskName)) {
+                                task.dependsOn subBuildTasks[taskName]
                             }
                         }
                     }
@@ -333,7 +324,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // Define the tasks for source-dependency projects
                 Iterable<SourceDependencyHandler> sourceDeps = Helper.getTransitiveSourceDependencies(project)
                 sourceDeps.each { sourceDep ->
-                    Project sourceDepProj = sourceDep.getSourceDependencyProject(project)
+                    Project sourceDepProj = sourceDep.getSourceDependencyProject()
                     if (sourceDepProj != null) {
                         sourceDependencyTasks.each { command ->
                             command.defineTask(sourceDepProj)

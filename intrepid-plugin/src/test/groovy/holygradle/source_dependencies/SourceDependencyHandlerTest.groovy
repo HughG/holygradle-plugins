@@ -33,32 +33,17 @@ class SourceDependencyHandlerTest extends AbstractHolyGradleTest {
         SourceDependencyHandler projectBSourceDependencyHandler = addSourceDependency(projectA, "B")
         SourceDependencyHandler projectCSourceDependencyHandler = addSourceDependency(projectA, "C")
 
-        // Should be able to find project B in both cases.
+        // Should be able to find project B.
         assertSame(
-            "Find project B SDH from root project",
+            "Find project B SDH",
             projectB,
-            projectBSourceDependencyHandler.getSourceDependencyProject(rootProject)
-        )
-        // This is a regression test.  In the earliest days of the plugins, if A had a source dependency on B, then
-        // B had to be a sub-project of A.  That hasn't been true for some time so, internally to the method under test,
-        // finding B from A needs to go via the root project.  Prior to GR #3204 it didn't.
-        assertSame(
-            "Find project B SDH from project A",
-            projectB,
-            projectBSourceDependencyHandler.getSourceDependencyProject(projectA)
+            projectBSourceDependencyHandler.getSourceDependencyProject()
         )
 
-        // Should fail to find project C in both cases.
+        // Should fail to find project C.
         assertNull(
-            "Fail to find project C SDH from root project",
-            projectCSourceDependencyHandler.getSourceDependencyProject(rootProject)
-        )
-        // This is a regression test.  In the earliest days of the plugins, if A had a source dependency on B, then
-        // B had to be a sub-project of A.  That hasn't been true for some time so, internally to the method under test,
-        // finding B from A needs to go via the root project.  Prior to GR #3204 it didn't.
-        assertNull(
-            "Fail to find project C SDH from project A",
-            projectCSourceDependencyHandler.getSourceDependencyProject(projectA)
+            "Fail to find project C SDH",
+            projectCSourceDependencyHandler.getSourceDependencyProject()
         )
 
     }

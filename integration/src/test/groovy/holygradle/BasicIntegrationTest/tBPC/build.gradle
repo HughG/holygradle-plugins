@@ -44,7 +44,7 @@ sourceDependencies {
     "other" {
         hg "https://hgserver.example-corp.com/other"
         branch = "SOME_BRANCH"
-        publishing.configuration "default"
+        configuration "default"
     }
 }
 

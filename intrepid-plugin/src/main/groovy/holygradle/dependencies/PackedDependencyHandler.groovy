@@ -1,20 +1,15 @@
 package holygradle.dependencies
 
-import holygradle.artifacts.ConfigurationSet
-import holygradle.artifacts.ConfigurationSetType
-import holygradle.artifacts.DefaultConfigurationSet
-import holygradle.artifacts.DefaultConfigurationSetType
+import holygradle.Helper
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import holygradle.Helper
 
 import java.util.regex.Matcher
 
 class PackedDependencyHandler extends DependencyHandler {
     private Project projectForHandler
-    private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
     private ModuleVersionIdentifier dependencyId = null
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
@@ -60,7 +55,7 @@ class PackedDependencyHandler extends DependencyHandler {
         this(depName, projectForHandler)
         this.projectForHandler = projectForHandler
         initialiseDependencyId(dependencyCoordinate)
-        this.configurations = configurations
+        this.configurations.addAll(configurations)
     }
     
     public PackedDependencyHandler(
@@ -181,7 +176,8 @@ class PackedDependencyHandler extends DependencyHandler {
     public void dependency(String dependencyCoordinate) {
         initialiseDependencyId(dependencyCoordinate)
     }
-        
+
+    @Override
     public void configuration(String config) {
         Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
@@ -197,52 +193,6 @@ class PackedDependencyHandler extends DependencyHandler {
                 )
             )
         }
-    }
-    
-    public void configuration(String... configs) {
-        configs.each { String config ->
-            configuration(config)
-        }
-    }
-
-    public void mapConfigurationSet(Map attrs, ConfigurationSet source, ConfigurationSet target) {
-        Collection<String> mappings = source.type.getMappingsTo(attrs, source, target)
-        // IntelliJ doesn't understand the spread operator very well.
-        //noinspection GroovyAssignabilityCheck
-        configuration(*mappings)
-    }
-
-    public void mapConfigurationSet(Map attrs, ConfigurationSet source, ConfigurationSetType targetType) {
-        Collection<String> mappings = source.type.getMappingsTo(attrs, source, targetType)
-        // IntelliJ doesn't understand the spread operator very well.
-        //noinspection GroovyAssignabilityCheck
-        configuration(*mappings)
-    }
-
-    public void mapConfigurationSet(ConfigurationSet source, ConfigurationSet target) {
-        mapConfigurationSet([:], source, target)
-    }
-
-    public void mapConfigurationSet(ConfigurationSet source, ConfigurationSetType targetType) {
-        mapConfigurationSet([:], source, targetType)
-    }
-
-    public void mapConfigurationSet(String source, ConfigurationSet target) {
-        Collection<String> mappings = target.type.getMappingsFrom(source, target)
-        // IntelliJ doesn't understand the spread operator very well.
-        //noinspection GroovyAssignabilityCheck
-        configuration(*mappings)
-    }
-    
-    public void mapConfigurationSet(String source, ConfigurationSetType targetType) {
-        Collection<String> mappings = targetType.getMappingsFrom(source)
-        // IntelliJ doesn't understand the spread operator very well.
-        //noinspection GroovyAssignabilityCheck
-        configuration(*mappings)
-    }
-
-    public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
-        configurations
     }
 
     public String getGroupName() {
