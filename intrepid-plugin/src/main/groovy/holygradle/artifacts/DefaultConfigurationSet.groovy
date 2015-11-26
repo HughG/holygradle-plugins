@@ -8,13 +8,14 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer;
 
 class DefaultConfigurationSet implements ConfigurationSet {
-    // This class uses LinkedHashMap so that the iteration order is predictable and the same as the init order.
+    private static final List<Map<String, String>> INCLUDE_ALL_BINDINGS =
+        new ArrayList<LinkedHashMap<String, String>>().asImmutable()
 
     private final String name
     private final SimpleTemplateEngine engine = new SimpleTemplateEngine()
-
     private DefaultConfigurationSetType type
     private final Object initSync = new Object()
+    // This class uses LinkedHashMap so that the iteration order is predictable and the same as the init order.
     private LinkedHashMap<Map<String, String>, String> configurationNames = new LinkedHashMap<>()
 
     String prefix
@@ -43,7 +44,11 @@ class DefaultConfigurationSet implements ConfigurationSet {
         builder.append('}')
     }
 
-    private void addConfigurationNames(LinkedHashMap<String, List<String>> axes, Template template) {
+    private void addConfigurationNames(
+        LinkedHashMap<String, List<String>> axes,
+        List<Map<String,String>> axisValueInclusionFilters,
+        Template template
+    ) {
         int axesSize = axes.size()
         // IntelliJ mistakenly thinks this is a Set<List<List<String>>>
         //noinspection GroovyAssignabilityCheck
@@ -55,12 +60,27 @@ class DefaultConfigurationSet implements ConfigurationSet {
                 binding[axesKeys[i]] = values[i]
             }
 
+            if (!shouldIncludeBinding(axisValueInclusionFilters, binding)) {
+                continue
+            }
+
             // We clone the binding before using it as a key in configurationNames, because Template#make adds an "out"
             // key which holds a PrintWriter, and we don't want that stored in our key.
             Map<String, String> bindingForValues = binding.clone() as Map<String, String>
             String nameForValues = template.make(binding).toString()
             configurationNames[bindingForValues] = nameForValues
         }
+    }
+
+    // Check whether the binding matches at least one of the inclusion filters.
+    protected boolean shouldIncludeBinding(
+        List<Map<String, String>> axisValueInclusionFilters,
+        Map<String, String> binding
+    ) {
+        return axisValueInclusionFilters.isEmpty() ||
+            axisValueInclusionFilters.any {
+                it.every { k, v -> binding[k] == v }
+            }
     }
 
     @Override
@@ -144,7 +164,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
                 }
                 appendAxesForTemplate(builder, type.requiredAxes)
                 Template requiredPlusCommonTemplate = engine.createTemplate(builder.toString() + "_common")
-                addConfigurationNames(type.requiredAxes, requiredPlusCommonTemplate)
+                addConfigurationNames(type.requiredAxes, type.commonConfigurationsSpec, requiredPlusCommonTemplate)
 
                 if (!type.optionalAxes.isEmpty()) {
                     builder.append('_')
@@ -153,7 +173,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
                     LinkedHashMap<String, List<String>> requiredPlusOptionalAxes =
                         (type.requiredAxes.clone() as LinkedHashMap<String, List<String>>)
                     requiredPlusOptionalAxes.putAll(type.optionalAxes)
-                    addConfigurationNames(requiredPlusOptionalAxes, requiredPlusOptionalTemplate)
+                    addConfigurationNames(requiredPlusOptionalAxes, INCLUDE_ALL_BINDINGS, requiredPlusOptionalTemplate)
                 }
             }
         }
@@ -185,6 +205,10 @@ class DefaultConfigurationSet implements ConfigurationSet {
         result.each { Map<String, String> binding, Configuration configuration ->
             if (binding.keySet().any { optionalAxisNames.contains(it) }) {
                 def bindingWithoutOptionalParts = binding.findAll { !optionalAxisNames.contains(it.key) }
+                if (!shouldIncludeBinding(type.commonConfigurationsSpec, bindingWithoutOptionalParts)) {
+                    return
+                }
+
                 def commonConfigurationName = nameMap[bindingWithoutOptionalParts]
                 if (commonConfigurationName == null) {
                     throw new RuntimeException(

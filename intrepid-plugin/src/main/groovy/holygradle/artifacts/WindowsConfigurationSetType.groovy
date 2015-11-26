@@ -19,5 +19,6 @@ abstract class WindowsConfigurationSetType extends DefaultConfigurationSetType {
                 configurations: configurations
             ]
         )
+        commonConfigurationsSpec([stage: _IMPORT_STAGE])
     }
 }

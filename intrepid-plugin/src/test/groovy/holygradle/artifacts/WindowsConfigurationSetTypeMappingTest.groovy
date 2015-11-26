@@ -1,9 +1,7 @@
 package holygradle.artifacts
 
+import com.google.common.collect.Sets
 import holygradle.test.AbstractHolyGradleTest
-import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
-import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -25,40 +23,61 @@ import org.junit.runners.Parameterized
  * </ul></p>
  */
 @RunWith(Parameterized.class)
-class WindowsConfigurationSetTypeTest extends AbstractHolyGradleTest {
+class WindowsConfigurationSetTypeMappingTest extends AbstractHolyGradleTest {
     private static final Map<String, ConfigurationSetType> WEB_TYPES = DefaultWebConfigurationSetTypes.TYPES
     private static final Map<String, ConfigurationSetType> VS_TYPES = DefaultVisualStudioConfigurationSetTypes.TYPES
 
-    @Parameterized.Parameters(name = "{index}: {0}")
+    @Parameterized.Parameters(name = "{index}: from {0} to {2}; export: {4}")
     public static Collection<Object[]> data() {
-        return (WEB_TYPES.values() + VS_TYPES.values()).collect { [it.name, it].toArray() }
+        def vsTypes = [VS_TYPES["LIB"], VS_TYPES["DLL"], VS_TYPES["EXE"]].toSet()
+        def vsTypeCombinations = Sets.cartesianProduct([
+            vsTypes, vsTypes, [false, true].toSet()
+        ])
+        return (
+            [
+                [WEB_TYPES["WEB_LIB"], WEB_TYPES["WEB_LIB"], null],
+            ] +
+                vsTypeCombinations
+        ).collect { from_to_export ->
+            // Add in the names, purely for ease of test naming in @Parameterized.Parameters
+            def (from, to, export) = from_to_export
+            [from.name, from, to.name, to, export]
+        }*.toArray()
     }
 
-    private final String typeName
-    private final ConfigurationSetType type
+    private final String fromTypeName
+    private final ConfigurationSetType fromType
+    private final String toTypeName
+    private final ConfigurationSetType toType
+    private final Boolean isExport // yes, no, or "not applicable"
 
-    WindowsConfigurationSetTypeTest(
-        String typeName,
-        ConfigurationSetType type
+    WindowsConfigurationSetTypeMappingTest(
+        String fromTypeName,
+        ConfigurationSetType fromType,
+        String toTypeName,
+        ConfigurationSetType toType,
+        Boolean isExport
     ) {
-        this.typeName = typeName
-        this.type = type
+        this.toTypeName = toTypeName
+        this.fromTypeName = fromTypeName
+        this.toType = toType
+        this.fromType = fromType
+        this.isExport = isExport
     }
 
     @Test
     public void testConfigurationSetType() {
-        String fileName = typeName
+        String fileName = "${fromType.name}_to_${toType.name}"
+        if (isExport != null) {
+            fileName += "_" + (isExport ? "export" : "non-export")
+        }
         DefaultConfigurationSet fromSet = new DefaultConfigurationSet(fileName)
-        fromSet.type(type)
-        Map<Map<String,String>, String> names = fromSet.configurationNames
-        Project project = ProjectBuilder.builder().build()
-        Map<Map<String, String>, Configuration> configurations = fromSet.getConfigurations(project)
+        fromSet.type(fromType)
+        Collection<String> mappings = fromSet.type.getMappingsTo(fromSet, toType, export: isExport)
 
         File regTestFile = regression.getTestFile(fileName)
         regTestFile.withPrintWriter { w ->
-            names.each { binding, name ->
-                w.println("${binding} ==> ${name} extendsFrom ${configurations[binding].extendsFrom*.name}")
-            }
+            mappings.each { m -> w.println(m) }
         }
         regression.checkForRegression(fileName)
     }

@@ -11,6 +11,8 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     private LinkedHashMap<String, List<String>> requiredAxes
     private LinkedHashMap<String, List<String>> optionalAxes
 
+    private List<Map<String, String>> commonConfigurationsSpec = new ArrayList<LinkedHashMap<String, String>>()
+
     public DefaultConfigurationSetType(
         String name
     ) {
@@ -45,7 +47,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @SuppressWarnings("GroovyUnusedDeclaration")
     public final void requiredAxes(LinkedHashMap<String, List<String>> requiredAxes) {
-        this.requiredAxes = requiredAxes
+        this.requiredAxes.putAll(requiredAxes)
     }
 
     public final LinkedHashMap<String, List<String>> getOptionalAxes() {
@@ -61,7 +63,32 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @SuppressWarnings("GroovyUnusedDeclaration")
     public final void optionalAxes(LinkedHashMap<String, List<String>> optionalAxes) {
-        this.optionalAxes = optionalAxes
+        this.optionalAxes.putAll(optionalAxes)
+    }
+
+    public void commonConfigurationsSpec(Map<String, String> ... commonConfigurationsSpec) {
+        this.commonConfigurationsSpec(commonConfigurationsSpec.toList())
+    }
+
+    public void commonConfigurationsSpec(List<Map<String, String>> commonConfigurationsSpec) {
+        if (requiredAxes.isEmpty()) {
+            throw new RuntimeException("Must set requiredAxes before setting commonConfigurationsSpec")
+        }
+        // If any of the specs have axes which are not in the required list, that's an error.
+        List<Map<String,String>> incorrectSpecs = commonConfigurationsSpec.findAll { spec ->
+            !(spec.keySet() - requiredAxes.keySet()).isEmpty()
+        }
+        if (!incorrectSpecs.isEmpty()) {
+            throw new RuntimeException(
+                "commonConfigurationsSpec axis keys must all be in the requiredAxes map, but some were not: " +
+                incorrectSpecs
+            )
+        }
+        this.commonConfigurationsSpec.addAll(commonConfigurationsSpec)
+    }
+
+    public List<Map<String, String>> getCommonConfigurationsSpec() {
+        return commonConfigurationsSpec
     }
 
     // This is an API for use by build scripts, so ignore the "unused" warning.

@@ -48,8 +48,6 @@ class DefaultConfigurationSetTest extends AbstractHolyGradleTest {
     ]
     public static final ArrayList<String> COMMON_AND_MAIN_CONFIGURATION_NAMES =
         COMMON_CONFIGURATION_NAMES + MAIN_CONFIGURATION_NAMES
-    public static final LinkedHashMap<String, String> EXTRA_ATTRS = [a: "b", c: "d"]
-    public static final ArrayList<String> EXTRA_ATTRS_MAPPINGS = ["a->b", "c->d"]
 
     private static class OtherConfigurationSetType implements ConfigurationSetType {
         @Override
@@ -172,7 +170,6 @@ class DefaultConfigurationSetTest extends AbstractHolyGradleTest {
             set.configurationNames.values().toList()
         )
     }
-
 
     @Test
     public void testNamesWithPrefix() {

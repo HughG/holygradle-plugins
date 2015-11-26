@@ -1,0 +1,4 @@
+[stage:import] ==> import_common extendsFrom []
+[stage:debugging, platforms:x64, configurations:Release] ==> debugging_x64_Release extendsFrom []
+[stage:runtime, platforms:x64, configurations:Release] ==> runtime_x64_Release extendsFrom []
+[stage:import, platforms:x64, configurations:Release] ==> import_x64_Release extendsFrom [import_common]
