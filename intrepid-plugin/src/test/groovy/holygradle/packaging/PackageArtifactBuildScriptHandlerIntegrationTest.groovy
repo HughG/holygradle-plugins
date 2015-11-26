@@ -1,6 +1,7 @@
 package holygradle.packaging
 
 import holygradle.io.FileHelper
+import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import holygradle.testUtil.HgUtil
@@ -31,32 +32,13 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
      */
     @Test
     public void testCreateBuildScriptWithPinnedSourceDependency() {
-        // Create a repo with projectA in it.  This doesn't have to be a Gradle project.
-        File projectADir = new File(getTestDir(), "projectA")
-        FileHelper.ensureDeleteDirRecursive(projectADir)
-        FileHelper.ensureMkdirs(projectADir)
-        File projectAInputDir = new File(getTestDir(), "projectAInput")
-        projectAInputDir.listFiles().each { File file ->
-            Files.copy(file.toPath(), new File(projectADir, file.name).toPath())
-        }
-
-        // Set up the project dir as a Mercurial repo.
-        Project project = ProjectBuilder.builder().withProjectDir(projectADir).build()
-        // Make the project dir into a repo, then add the extension.
-        HgUtil.hgExec(project, "init")
-
-        // Add a file.
-        HgUtil.hgExec(project, "add", "build.gradle")
-        // Set the commit message, user, and date, so that the hash will be the same every time.
-        HgUtil.hgExec(project,
-               "commit",
-               "-m", "Initial test state.",
-               "-u", "TestUser",
-               "-d", "2000-01-01"
-        )
+        File testDir = getTestDir()
+        // Create two repos with projectA in them.  This doesn't have to be a Gradle project.
+        createRepoFromProjectAInput(testDir, "projectA")
+        createRepoFromProjectAInput(testDir, "projectA2")
 
         // ProjectB, references projectA as a sourceDependency, and has a meta-package which adds that as a pinned
-        // sourceDependency.  We Run "packageEverything" for projectB, and regression-test the build.gradle of the
+        // sourceDependency.  We run "packageEverything" for projectB, and regression-test the build.gradle of the
         // meta-package.  We delete projectB's "packages" folder first, otherwise the test will always see it as up to
         // date after the first run.
         File projectBDir = new File(getTestDir(), "projectB")
@@ -85,6 +67,32 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 "Looking for source dependencies [nonExistentSourceDep], failed to find [nonExistentSourceDep]"
             )
         }
+    }
+
+    protected void createRepoFromProjectAInput(File testDir, String projectDirName) {
+        File projectADir = new File(testDir, projectDirName)
+        FileHelper.ensureDeleteDirRecursive(projectADir)
+        FileHelper.ensureMkdirs(projectADir)
+        File projectAInputDir = new File(testDir, "projectAInput")
+        projectAInputDir.listFiles().each { File file ->
+            Files.copy(file.toPath(), new File(projectADir, file.name).toPath())
+        }
+
+        // Set up the project dir as a Mercurial repo.
+        Project project = ProjectBuilder.builder().withProjectDir(projectADir).build()
+        // Make the project dir into a repo, then add the extension.
+        HgUtil.hgExec(project, "init")
+
+        // Add a file.
+        HgUtil.hgExec(project, "add", "build.gradle")
+        // Set the commit message, user, and date, so that the hash will be the same every time.
+        HgUtil.hgExec(
+            project,
+            "commit",
+            "-m", "Initial test state.",
+            "-u", "TestUser",
+            "-d", "2000-01-01"
+        )
     }
 
     @Test
@@ -176,7 +184,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 regression.replacePatterns(
                     regressionFileName, [
                         (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
-                        (~/hg "unknown@[]+"]/)     : "hg \"unknown@[snipped]\""
+                        (~/hg "unknown@[0-9a-f]+"/): "hg \"unknown@[snipped]\""
                     ]
                 )
                 regression.checkForRegression(regressionFileName)

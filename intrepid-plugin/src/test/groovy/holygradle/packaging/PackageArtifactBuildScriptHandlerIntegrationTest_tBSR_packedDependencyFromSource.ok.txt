@@ -14,8 +14,8 @@ packedDependenciesDefault {
 }
 
 packedDependencies {
-    "..\projectA" {
-        dependency "buildScriptRequired:projectA:unspecified"
+    "..\projectA2" {
+        dependency "buildScriptRequired:projectA2:unspecified"
         configuration "default"
     }
 }

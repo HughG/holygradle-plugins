@@ -429,7 +429,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     // Else if the dependency is a source dependency, get its relative path from the 
                     // gradle script's sourceDependencyHandler
                     SourceDependencyHandler sourceDep = sourceDependencies.find {
-                        ModuleVersionIdentifier latestPublishedModule = it.getLatestPublishedModule()
+                        ModuleVersionIdentifier latestPublishedModule = it.getDependencyId()
                         latestPublishedModule.getGroup() == depNode.@org && 
                         latestPublishedModule.getName() == depNode.@name &&
                         latestPublishedModule.getVersion() == depNode.@rev

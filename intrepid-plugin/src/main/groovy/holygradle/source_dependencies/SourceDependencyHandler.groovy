@@ -148,8 +148,14 @@ class SourceDependencyHandler extends DependencyHandler {
         fetchTask.initialize(sourceDependency)
         return fetchTask
     }
-    
-    public ModuleVersionIdentifier getLatestPublishedModule() {
+
+    /**
+     * Returns the module version ID of the source dependency, unless it doesn't have a Gradle project, in which case
+     * throws RuntimeException.
+     * @return The module version ID of the source dependency.
+     * @throws RuntimeException if the source dependency does not have a Gradle project.
+     */
+    public ModuleVersionIdentifier getDependencyId() {
         ModuleVersionIdentifier identifier = null
         if (configurations.size() > 0) {
             Project dependencyProject = project.rootProject.findProject(targetName)
@@ -170,12 +176,7 @@ class SourceDependencyHandler extends DependencyHandler {
     }
 
     public String getDependencyCoordinate() {
-        ModuleVersionIdentifier latest = getLatestPublishedModule()
-        if (latest == null) {
-            "${project.group}:${name} ??"
-        } else {
-            "${latest.getGroup()}:${latest.getName()}:${latest.getVersion()}"
-        }
+        return dependencyId.toString()
     }
 
     public Project getSourceDependencyProject() {
