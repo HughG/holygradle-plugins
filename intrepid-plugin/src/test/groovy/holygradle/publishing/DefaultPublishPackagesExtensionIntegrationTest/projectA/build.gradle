@@ -31,7 +31,8 @@ packageArtifacts {
 
 publishPackages {
     group "happydays"
-    nextVersionNumber "3.3.3"   
+    nextVersionNumber "3.3.3"
+    addDependencyRelativePaths = Boolean.valueOf(project.addRelativePaths)
     repositories.ivy {
         url "http://dummy_repo_url"
     }
