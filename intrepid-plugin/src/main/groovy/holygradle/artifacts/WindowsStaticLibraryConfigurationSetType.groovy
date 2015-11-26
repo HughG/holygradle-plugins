@@ -2,6 +2,7 @@ package holygradle.artifacts
 
 import groovy.transform.InheritConstructors
 import holygradle.lang.NamedParameters
+import org.gradle.api.artifacts.Configuration
 
 @InheritConstructors
 class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetType {
@@ -19,7 +20,7 @@ class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetTy
     @Override
     protected Collection<String> getDefaultMappingsFrom(
         Map attrs,
-        String source,
+        Configuration source,
         DefaultConfigurationSet target
     ) {
         def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])

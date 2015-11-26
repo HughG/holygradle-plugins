@@ -1,6 +1,9 @@
 package holygradle.artifacts
 
 import holygradle.test.AbstractHolyGradleTest
+import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Assert
 import org.junit.Test
 
@@ -78,7 +81,11 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         }
 
         @Override
-        protected Collection<String> getDefaultMappingsFrom(Map attrs, String source, DefaultConfigurationSet target) {
+        protected Collection<String> getDefaultMappingsFrom(
+            Map attrs,
+            Configuration source,
+            DefaultConfigurationSet target
+        ) {
             // An unrealistic implementation of getDefaultMappingsTo which just adds attrs as extra mappings.
             Collection<String> mappings = super.getDefaultMappingsFrom(attrs, source, target)
             return attrs.collect(mappings) { k, v -> "${k}->${v}".toString() }
@@ -156,11 +163,13 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     @Test
     public void testMappingFromConfiguration() {
         ConfigurationSetType type = new TestConfigurationSetType("type", ASPECTS, COLOURS)
+        Project project = ProjectBuilder.builder().build()
+        Configuration conf = project.configurations.create("conf")
 
         Assert.assertEquals(
             // We need an extra toString to make sure all GStrings are converted to Strings.
             ((MAIN_CONFIGURATION_NAMES.collect { "conf->${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString(),
-            type.getMappingsFrom(EXTRA_ATTRS, "conf")
+            type.getMappingsFrom(EXTRA_ATTRS, conf)
         )
     }
 
@@ -170,10 +179,13 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
 
         DefaultConfigurationSet toSet = type.withPrefix("foo")
 
+        Project project = ProjectBuilder.builder().build()
+        Configuration conf = project.configurations.create("conf")
+
         Assert.assertEquals(
             // We need an extra toString to make sure all GStrings are converted to Strings.
             ((MAIN_CONFIGURATION_NAMES.collect { "conf->foo_${it}" }) + EXTRA_ATTRS_MAPPINGS)*.toString(),
-            type.getMappingsFrom(EXTRA_ATTRS, "conf", toSet)
+            type.getMappingsFrom(EXTRA_ATTRS, conf, toSet)
         )
     }
 }

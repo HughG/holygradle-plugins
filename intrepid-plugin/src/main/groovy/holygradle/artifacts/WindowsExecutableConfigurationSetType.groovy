@@ -1,6 +1,7 @@
 package holygradle.artifacts
 
 import groovy.transform.InheritConstructors
+import org.gradle.api.artifacts.Configuration
 
 @InheritConstructors
 class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType {
@@ -16,7 +17,7 @@ class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType 
     @Override
     protected Collection<String> getDefaultMappingsFrom(
         Map attrs,
-        String source,
+        Configuration source,
         DefaultConfigurationSet target
     ) {
         return getDefaultMappingsTo(source, target, getMappingAdder())

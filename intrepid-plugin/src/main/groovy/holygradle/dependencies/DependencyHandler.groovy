@@ -4,6 +4,7 @@ import holygradle.Helper
 import holygradle.artifacts.ConfigurationSet
 import holygradle.artifacts.ConfigurationSetType
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 
 abstract class DependencyHandler {
     /**
@@ -78,14 +79,14 @@ abstract class DependencyHandler {
         configurationSet([:], source, targetType)
     }
 
-    public void configurationSet(String source, ConfigurationSet target) {
+    public void configurationSet(Configuration source, ConfigurationSet target) {
         Collection<String> mappings = target.type.getMappingsFrom(source, target)
         // IntelliJ doesn't understand the spread operator very well.
         //noinspection GroovyAssignabilityCheck
         configuration(*mappings)
     }
 
-    public void configurationSet(String source, ConfigurationSetType targetType) {
+    public void configurationSet(Configuration source, ConfigurationSetType targetType) {
         Collection<String> mappings = targetType.getMappingsFrom(source)
         // IntelliJ doesn't understand the spread operator very well.
         //noinspection GroovyAssignabilityCheck

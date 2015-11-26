@@ -1,6 +1,7 @@
 package holygradle.artifacts
 
 import holygradle.test.AbstractHolyGradleTest
+import org.gradle.api.artifacts.Configuration
 import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
@@ -72,22 +73,22 @@ class DefaultConfigurationSetTest extends AbstractHolyGradleTest {
         }
 
         @Override
-        Collection<String> getMappingsFrom(Map attrs, String source) {
+        Collection<String> getMappingsFrom(Map attrs, Configuration source) {
             return null
         }
 
         @Override
-        Collection<String> getMappingsFrom(String source) {
+        Collection<String> getMappingsFrom(Configuration source) {
             return null
         }
 
         @Override
-        Collection<String> getMappingsFrom(Map attrs, String source, ConfigurationSet target) {
+        Collection<String> getMappingsFrom(Map attrs, Configuration source, ConfigurationSet target) {
             return null
         }
 
         @Override
-        Collection<String> getMappingsFrom(String source, ConfigurationSet target) {
+        Collection<String> getMappingsFrom(Configuration source, ConfigurationSet target) {
             return null
         }
 

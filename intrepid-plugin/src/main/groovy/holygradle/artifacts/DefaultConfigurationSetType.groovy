@@ -1,5 +1,7 @@
 package holygradle.artifacts
 
+import org.gradle.api.artifacts.Configuration
+
 class DefaultConfigurationSetType implements ConfigurationSetType {
     public static final String IMPORT_STAGE = "import"
     public static final String RUNTIME_STAGE = "runtime"
@@ -118,19 +120,19 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     @Override
-    public final Collection<String> getMappingsFrom(Map attrs, String source) {
+    public final Collection<String> getMappingsFrom(Map attrs, Configuration source) {
         DefaultConfigurationSet target = new DefaultConfigurationSet("from configuration ${source}")
         target.type = this
         return getDefaultMappingsFrom(attrs, source, target)
     }
 
     @Override
-    public final Collection<String> getMappingsFrom(String source) {
+    public final Collection<String> getMappingsFrom(Configuration source) {
         return getMappingsFrom([:], source)
     }
 
     @Override
-    public final Collection<String> getMappingsFrom(Map attrs, String source, ConfigurationSet target) {
+    public final Collection<String> getMappingsFrom(Map attrs, Configuration source, ConfigurationSet target) {
         final DefaultConfigurationSet defaultTarget = target as DefaultConfigurationSet
         if (defaultTarget == null) {
             throwForUnknownTarget(target)
@@ -139,7 +141,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     @Override
-    public final Collection<String> getMappingsFrom(String source, ConfigurationSet target) {
+    public final Collection<String> getMappingsFrom(Configuration source, ConfigurationSet target) {
         return getMappingsFrom([:], source, target)
     }
 
@@ -147,7 +149,8 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      * This method returns a collection of configuration mapping strings of the form "a->b", mapping configurations
      * from the {@code source} to configurations in the {@code target}, according to rules which are subclass-specific.
      *
-     * If you override this, you should also override {@link #getDefaultMappingsFrom(java.util.Map, java.lang.String, holygradle.artifacts.DefaultConfigurationSet)}
+     * If you override this, you should also override {@link holygradle.artifacts
+     * .DefaultConfigurationSetType#getDefaultMappingsFrom(Map, Configuration, DefaultConfigurationSet)}
      *
      * @param attrs Optional extra arguments for use by subclasses.
      * @param source The source configuration set.
@@ -183,7 +186,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      */
     protected Collection<String> getDefaultMappingsFrom(
         Map attrs,
-        String source,
+        Configuration source,
         DefaultConfigurationSet target
     ) {
         return getDefaultMappingsTo(source, target) {
@@ -228,7 +231,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     }
 
     protected static final Collection<String> getDefaultMappingsTo(
-        String source,
+        Configuration source,
         DefaultConfigurationSet target,
         Closure maybeAddMapping
     ) {
@@ -242,7 +245,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
                 return
             }
 
-            maybeAddMapping(mappings, binding, source, targetConfigurationName)
+            maybeAddMapping(mappings, binding, source.name, targetConfigurationName)
         }
 
         return mappings
