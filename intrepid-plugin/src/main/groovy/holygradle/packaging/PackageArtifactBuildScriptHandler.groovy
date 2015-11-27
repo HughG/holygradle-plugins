@@ -144,8 +144,8 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
         sourceDepNames.each { String sourceDepName ->
             findSourceDependencies(project.rootProject, sourceDepName).each { SourceDependencyHandler sourceDep ->
                 if (allSourceDeps.containsKey(sourceDepName)) {
-                    int curConf = allSourceDeps[sourceDepName].configurations.size()
-                    int itConf = sourceDep.configurations.size()
+                    int curConf = allSourceDeps[sourceDepName].configurationMappings.size()
+                    int itConf = sourceDep.configurationMappings.size()
                     // NOTE 2014-09-16 HughG: This comparison is nonsense.  See GR #4824.
                     if (itConf > curConf) {
                         allSourceDeps[sourceDepName] = sourceDep

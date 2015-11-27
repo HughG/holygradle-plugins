@@ -55,7 +55,7 @@ class PackedDependencyHandler extends DependencyHandler {
         this(depName, projectForHandler)
         this.projectForHandler = projectForHandler
         initialiseDependencyId(dependencyCoordinate)
-        this.configurations.addAll(configurations)
+        this.configurationMappings.addAll(configurations)
     }
     
     public PackedDependencyHandler(
@@ -181,7 +181,7 @@ class PackedDependencyHandler extends DependencyHandler {
     public void configuration(String config) {
         Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
-        configurations.addAll newConfigs
+        configurationMappings.addAll newConfigs
         ModuleVersionIdentifier id = getDependencyId()
         for (conf in newConfigs) {
             String fromConf = conf.key

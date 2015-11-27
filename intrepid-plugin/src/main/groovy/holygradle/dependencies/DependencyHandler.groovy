@@ -21,7 +21,7 @@ abstract class DependencyHandler {
      */
     public final Project project
 
-    private final Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
+    private final Collection<AbstractMap.SimpleEntry<String, String>> configurationMappings = []
 
     public DependencyHandler(String depName) {
         this(depName, null)
@@ -37,8 +37,8 @@ abstract class DependencyHandler {
         name
     }
 
-    public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
-        configurations
+    public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurationMappings() {
+        configurationMappings
     }
 
     public String getFullTargetPathRelativeToRootProject() {

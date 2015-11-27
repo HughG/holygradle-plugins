@@ -76,7 +76,7 @@ class SourceDependencyHandler extends DependencyHandler {
     public void configuration(String config) {
         Collection<AbstractMap.SimpleEntry<String, String>> newConfigs = []
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$targetName' in 'sourceDependencies'.")
-        configurations.addAll(newConfigs)
+        configurationMappings.addAll(newConfigs)
 
         Project rootProject = project.rootProject
         Project depProject = rootProject.findProject(":${targetName}")
@@ -112,7 +112,7 @@ class SourceDependencyHandler extends DependencyHandler {
 
         // Add a mapping for "everything" lazily, i.e., only if we add any other mappings.  This makes it easy to have
         // un-published source dependencies, e.g., to just pull in some repo containing documentation.
-        if (!configurations.contains(EVERYTHING_CONFIGURATION_MAPPING)) {
+        if (!configurationMappings.contains(EVERYTHING_CONFIGURATION_MAPPING)) {
             configuration(IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME)
         }
     }
@@ -157,7 +157,7 @@ class SourceDependencyHandler extends DependencyHandler {
      */
     public ModuleVersionIdentifier getDependencyId() {
         ModuleVersionIdentifier identifier = null
-        if (configurations.size() > 0) {
+        if (configurationMappings.size() > 0) {
             Project dependencyProject = project.rootProject.findProject(targetName)
             if (dependencyProject == null) {
                 // NOTE HughG: I've made this mistake a few times when modifying the settings.gradle code, so I put

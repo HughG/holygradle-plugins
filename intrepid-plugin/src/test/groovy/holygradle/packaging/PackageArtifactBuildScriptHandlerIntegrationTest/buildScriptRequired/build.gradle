@@ -19,6 +19,10 @@ configurations {
     toProjectA2
 }
 
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
 sourceDependencies {
     // Add projectA sourceDependency, without a configuration mapping.  This means it can't be added as a packed
     // dependency in a build script.
@@ -41,7 +45,7 @@ packedDependencies {
     // unpacking, and symlinking of dependencies, just the finding of them by name in includeBuildScript.
     "../projectCDep" {    
         dependency "holygradle.test:external-lib:1.0"
-        configurations.each { configuration "${it}->testRuntime" }
+        configurations.each { configuration "${it.name}->testRuntime" }
         noCreateSymlinkToCache()
     }
 }
