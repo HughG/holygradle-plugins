@@ -1,6 +1,10 @@
 package holygradle.artifacts
 
+import org.gradle.api.Action
 import org.gradle.api.artifacts.Configuration
+import org.gradle.util.ConfigureUtil
+
+import java.util.concurrent.atomic.AtomicInteger
 
 class DefaultConfigurationSetType implements ConfigurationSetType {
     public static final String IMPORT_STAGE = "import"
@@ -8,6 +12,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     public static final String DEBUGGING_STAGE = "debugging"
 
     private final String name
+    private final AtomicInteger nextSetId = new AtomicInteger()
     private LinkedHashMap<String, List<String>> requiredAxes
     private LinkedHashMap<String, List<String>> optionalAxes
 
@@ -93,11 +98,16 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @SuppressWarnings("GroovyUnusedDeclaration")
-    public DefaultConfigurationSet withPrefix(String prefix) {
-        DefaultConfigurationSet result = new DefaultConfigurationSet("${name} with prefix ${prefix}")
+    public DefaultConfigurationSet makeSet() {
+        DefaultConfigurationSet result = new DefaultConfigurationSet("from ${name}, #${nextSetId.getAndIncrement()}")
         result.type(this)
-        result.prefix(prefix)
         return result
+    }
+
+    // This is an API for use by build scripts, so ignore the "unused" warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    public DefaultConfigurationSet makeSet(Closure configure) {
+        return ConfigureUtil.configure(configure, makeSet())
     }
 
     @Override

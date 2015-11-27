@@ -122,7 +122,7 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public void testWithPrefix() {
         ConfigurationSetType type = new TestConfigurationSetType("type", ASPECTS, COLOURS)
 
-        DefaultConfigurationSet set = type.withPrefix("foo")
+        DefaultConfigurationSet set = type.makeSet { DefaultConfigurationSet it -> it.prefix "foo" }
 
         Assert.assertEquals(
             // We need an extra toString to make sure all GStrings are converted to Strings.
@@ -135,7 +135,7 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public void testMappingSetToSet() {
         ConfigurationSetType type = new TestConfigurationSetType("type", ASPECTS, COLOURS)
 
-        DefaultConfigurationSet fromSet = type.withPrefix("foo")
+        DefaultConfigurationSet fromSet = type.makeSet { DefaultConfigurationSet it -> it.prefix "foo" }
 
         DefaultConfigurationSet toSet = new DefaultConfigurationSet("testConfSet")
         toSet.type(type)
@@ -151,7 +151,7 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public void testMappingSetToSetType() {
         ConfigurationSetType type = new TestConfigurationSetType("type", ASPECTS, COLOURS)
 
-        DefaultConfigurationSet fromSet = type.withPrefix("foo")
+        DefaultConfigurationSet fromSet = type.makeSet { DefaultConfigurationSet it -> it.prefix "foo" }
 
         Assert.assertEquals(
             // We need an extra toString to make sure all GStrings are converted to Strings.
@@ -177,7 +177,7 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public void testMappingFromConfigurationToSet() {
         ConfigurationSetType type = new TestConfigurationSetType("type", ASPECTS, COLOURS)
 
-        DefaultConfigurationSet toSet = type.withPrefix("foo")
+        DefaultConfigurationSet toSet = type.makeSet { DefaultConfigurationSet it -> it.prefix "foo" }
 
         Project project = ProjectBuilder.builder().build()
         Configuration conf = project.configurations.create("conf")
