@@ -173,11 +173,6 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
     }
 
     @Test
-    public void generateFullDependenciesList() {
-        // Todo: Probably put this somewhere else, probably just a unit test
-    }
-
-    @Test
     public void customIvyFileGenerator() {
         File templateDir = new File(getTestDir(), "projectFIn")
         File projectDir = new File(getTestDir(), "projectF")
@@ -275,6 +270,16 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure("A source override can not be applied to a packed dependency with unpackToCache = false")
         }
+    }
+
+    @Test
+    public void cantPublishWithSourceOverrides() {
+        // Todo
+    }
+
+    @Test
+    public void overrideIsNotAPackedDependency() {
+        // Todo: Decide what to do in this case
     }
 
     private void copySourceFiles() {

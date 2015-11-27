@@ -213,6 +213,7 @@ module instead.
 when multiple workspaces have the same dependencies.
 ** Explicit creation of extra symlinks within workspace if required.
 ** Control of folder naming to allow multiple versions of the same component.
+** Overriding a packed dependency to use an existing source project on disk instead.
 * Publishing
 ** Creating "gloss:package[]d artifacts" (that is, ZIP files).
 ** Uploading to gloss:ivy[] format repository.
