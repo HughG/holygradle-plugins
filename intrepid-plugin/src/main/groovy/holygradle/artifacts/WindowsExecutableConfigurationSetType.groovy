@@ -11,7 +11,7 @@ class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType 
         DefaultConfigurationSet source,
         DefaultConfigurationSet target
     ) {
-        return getDefaultMappingsTo(source, target, getMappingAdder())
+        return getDefaultMappingsTo(source, target, getMappingAdder(target.typeAsDefault))
     }
 
     @Override
@@ -20,10 +20,12 @@ class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType 
         Configuration source,
         DefaultConfigurationSet target
     ) {
-        return getDefaultMappingsTo(source, target, getMappingAdder())
+        return getDefaultMappingsTo(source, target, getMappingFromSingleConfigurationAdder(false))
     }
 
-    private static Closure getMappingAdder() {
+    private static Closure getMappingAdder(
+        DefaultConfigurationSetType targetType
+    ) {
         return {
             Collection<String> mappings,
             Map<String, String> binding,
@@ -31,8 +33,22 @@ class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType 
             String targetConfigurationName
              ->
             if (binding['stage'] == IMPORT_STAGE) {
-                // Don't link import, because the source, being an executable or plugin DLL, will not be imported by
-                // anything, so its import configurations should be empty.
+                switch (targetType.class) {
+                    case WindowsDynamicLibraryConfigurationSetType.class:
+                    case WindowsStaticLibraryConfigurationSetType.class:
+                        // Don't link import to a public configuration, because the source type, being an executable or
+                        // plugin DLL (that is, an instance of this class), will not be imported by anything, so its
+                        // import configurations should be empty.
+                        mappings << makeMapping(PRIVATE_BUILD_CONFIGURATION_NAME, targetConfigurationName)
+                        break;
+                    case WindowsExecutableConfigurationSetType.class:
+                        // Don't link import because the target, being an executable or plugin DLL, should have empty
+                        // import configurations.
+                        break;
+                    default:
+                        throwForUnknownTargetType(targetType)
+                        break;
+                }
             } else {
                 mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
             }

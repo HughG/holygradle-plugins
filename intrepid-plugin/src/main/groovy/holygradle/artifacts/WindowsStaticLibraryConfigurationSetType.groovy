@@ -25,10 +25,13 @@ class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetTy
     ) {
         def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
 
-        return getDefaultMappingsTo(source, target, getMappingAdder(this, export))
+        return getDefaultMappingsTo(source, target, getMappingFromSingleConfigurationAdder(export))
     }
 
-    private static Closure getMappingAdder(DefaultConfigurationSetType targetType, boolean export) {
+    private Closure getMappingAdder(
+        DefaultConfigurationSetType targetType,
+        boolean export
+    ) {
         return {
             Collection<String> mappings,
             Map<String, String> binding,
@@ -38,9 +41,11 @@ class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetTy
             if (binding['stage'] == IMPORT_STAGE) {
                 switch (targetType.class) {
                     case WindowsDynamicLibraryConfigurationSetType.class:
-                        // Link import iff export == true
+                        // Link import to a public config iff export == true
                         if (export) {
                             mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
+                        } else {
+                            mappings << makeMapping(PRIVATE_BUILD_CONFIGURATION_NAME, targetConfigurationName)
                         }
                         break;
                     case WindowsStaticLibraryConfigurationSetType.class:
@@ -48,7 +53,8 @@ class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetTy
                         mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
                         break;
                     case WindowsExecutableConfigurationSetType.class:
-                        // Don't link import
+                        // Don't link import because the target, being an executable or plugin DLL, should have empty
+                        // import configurations.
                         break;
                     default:
                         throwForUnknownTargetType(targetType)

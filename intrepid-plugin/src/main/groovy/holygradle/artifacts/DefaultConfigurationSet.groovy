@@ -188,8 +188,9 @@ class DefaultConfigurationSet implements ConfigurationSet {
         def nameMap = getConfigurationNames()
         // Create all the configurations.
         nameMap.values().each { name ->
-            if (!configurations.findByName(name)) {
-                configurations.add(name)
+            Configuration conf = configurations.findByName(name) ?: configurations.add(name)
+            if (type.nonVisibleConfigurations.contains(name)) {
+                conf.visible = false
             }
         }
 

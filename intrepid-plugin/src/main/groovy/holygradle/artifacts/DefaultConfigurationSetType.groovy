@@ -1,6 +1,5 @@
 package holygradle.artifacts
 
-import org.gradle.api.Action
 import org.gradle.api.artifacts.Configuration
 import org.gradle.util.ConfigureUtil
 
@@ -10,18 +9,20 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     public static final String IMPORT_STAGE = "import"
     public static final String RUNTIME_STAGE = "runtime"
     public static final String DEBUGGING_STAGE = "debugging"
+    public static final String PRIVATE_BUILD_CONFIGURATION_NAME = "build"
 
     private final String name
     private final AtomicInteger nextSetId = new AtomicInteger()
     private LinkedHashMap<String, List<String>> requiredAxes
     private LinkedHashMap<String, List<String>> optionalAxes
+    private LinkedHashSet<String> nonVisibleConfigurations
 
     private List<Map<String, String>> commonConfigurationsSpec = new ArrayList<LinkedHashMap<String, String>>()
 
     public DefaultConfigurationSetType(
         String name
     ) {
-        this(name, new LinkedHashMap<String, List<String>>(), new LinkedHashMap<String, List<String>>())
+        this(name, [:], [:], new LinkedHashSet<String>())
     }
 
     public DefaultConfigurationSetType(
@@ -29,9 +30,20 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         LinkedHashMap<String, List<String>> requiredAxes,
         LinkedHashMap<String, List<String>> optionalAxes
     ) {
+        this(name, requiredAxes, optionalAxes, new LinkedHashSet<String>())
+    }
+
+    public DefaultConfigurationSetType(
+        String name,
+        LinkedHashMap<String, List<String>> requiredAxes,
+        LinkedHashMap<String, List<String>> optionalAxes,
+        LinkedHashSet<String> nonVisibleConfigurations
+    ) {
         this.name = name
         this.requiredAxes = requiredAxes
         this.optionalAxes = optionalAxes
+        this.nonVisibleConfigurations = nonVisibleConfigurations
+        this.nonVisibleConfigurations << PRIVATE_BUILD_CONFIGURATION_NAME
     }
 
     @Override
@@ -69,6 +81,22 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     @SuppressWarnings("GroovyUnusedDeclaration")
     public final void optionalAxes(LinkedHashMap<String, List<String>> optionalAxes) {
         this.optionalAxes.putAll(optionalAxes)
+    }
+
+    public final LinkedHashSet<String> getNonVisibleConfigurations() {
+        return nonVisibleConfigurations
+    }
+
+    // This is an API for use by build scripts, so ignore the "unused" warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    public final void setNonVisibleConfigurations(LinkedHashSet<String> nonVisibleConfigurations) {
+        this.nonVisibleConfigurations = nonVisibleConfigurations
+    }
+
+    // This is an API for use by build scripts, so ignore the "unused" warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    public final void nonVisibleConfigurations(Set<String> nonVisibleConfigurations) {
+        this.nonVisibleConfigurations.addAll(nonVisibleConfigurations)
     }
 
     public void commonConfigurationsSpec(Map<String, String> ... commonConfigurationsSpec) {
@@ -330,6 +358,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
             "name='" + name + '\'' +
             ", requiredAxes=" + requiredAxes +
             ", optionalAxes=" + optionalAxes +
+            ", nonVisibleConfigurations=" + nonVisibleConfigurations +
             '}';
     }
 }
