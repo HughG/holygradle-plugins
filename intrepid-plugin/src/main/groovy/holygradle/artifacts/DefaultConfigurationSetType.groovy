@@ -1,5 +1,6 @@
 package holygradle.artifacts
 
+import holygradle.lang.NamedParameters
 import org.gradle.api.artifacts.Configuration
 import org.gradle.util.ConfigureUtil
 
@@ -227,14 +228,9 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         DefaultConfigurationSet source,
         DefaultConfigurationSet target
     ) {
-        return getDefaultMappingsTo(source, target) {
-            Collection<String> mappings,
-            Map<String, String> binding,
-            String sourceConfigurationName,
-            String targetConfigurationName
-             ->
-            mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
-        }
+        def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
+
+        return getDefaultMappingsTo(source, target, getMappingAdder(export))
     }
 
     /**
@@ -254,14 +250,9 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         Configuration source,
         DefaultConfigurationSet target
     ) {
-        return getDefaultMappingsTo(source, target) {
-            Collection<String> mappings,
-            Map<String, String> binding,
-            String sourceConfigurationName,
-            String targetConfigurationName
-             ->
-            mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
-        }
+        def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
+
+        return getDefaultMappingsTo(source, target, getMappingAdder(export))
     }
 
     protected static final Collection<String> getDefaultMappingsTo(
@@ -318,6 +309,25 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
 
     protected static final String makeMapping(String from, String to) {
         "${from}->${to}"
+    }
+
+    protected static Closure getMappingAdder(
+        boolean export
+    ) {
+        return {
+            Collection<String> mappings,
+            Map<String, String> binding,
+            String sourceConfigurationName,
+            String targetConfigurationName
+             ->
+            if (binding['stage'] == IMPORT_STAGE) {
+                // Link import to a public config iff export == true
+                String sourceName = export ? sourceConfigurationName : PRIVATE_BUILD_CONFIGURATION_NAME
+                mappings << makeMapping(sourceName, targetConfigurationName)
+            } else {
+                mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
+            }
+        }
     }
 
     protected final void throwForUnknownTarget(ConfigurationSet target) {

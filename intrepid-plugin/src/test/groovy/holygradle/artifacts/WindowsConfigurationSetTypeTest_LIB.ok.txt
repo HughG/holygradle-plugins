@@ -1,13 +1,390 @@
-[stage:import] ==> import_common extendsFrom []
-[stage:debugging, platforms:Win32, configurations:Release] ==> debugging_Win32_Release extendsFrom []
-[stage:runtime, platforms:Win32, configurations:Release] ==> runtime_Win32_Release extendsFrom []
-[stage:import, platforms:Win32, configurations:Release] ==> import_Win32_Release extendsFrom [import_common]
-[stage:debugging, platforms:x64, configurations:Release] ==> debugging_x64_Release extendsFrom []
-[stage:runtime, platforms:x64, configurations:Release] ==> runtime_x64_Release extendsFrom []
-[stage:import, platforms:x64, configurations:Release] ==> import_x64_Release extendsFrom [import_common]
-[stage:debugging, platforms:Win32, configurations:Debug] ==> debugging_Win32_Debug extendsFrom []
-[stage:runtime, platforms:Win32, configurations:Debug] ==> runtime_Win32_Debug extendsFrom []
-[stage:import, platforms:Win32, configurations:Debug] ==> import_Win32_Debug extendsFrom [import_common]
-[stage:debugging, platforms:x64, configurations:Debug] ==> debugging_x64_Debug extendsFrom []
-[stage:runtime, platforms:x64, configurations:Debug] ==> runtime_x64_Debug extendsFrom []
-[stage:import, platforms:x64, configurations:Debug] ==> import_x64_Debug extendsFrom [import_common]
+[stage:import] ==> import_common (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:debugging, platforms:Win32, configurations:Release] ==> debugging_Win32_Release (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:runtime, platforms:Win32, configurations:Release] ==> runtime_Win32_Release (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:import, platforms:Win32, configurations:Release] ==> import_Win32_Release (visible = true) extendsFrom [import_common]
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:debugging, platforms:x64, configurations:Release] ==> debugging_x64_Release (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:runtime, platforms:x64, configurations:Release] ==> runtime_x64_Release (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:import, platforms:x64, configurations:Release] ==> import_x64_Release (visible = true) extendsFrom [import_common]
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:debugging, platforms:Win32, configurations:Debug] ==> debugging_Win32_Debug (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:runtime, platforms:Win32, configurations:Debug] ==> runtime_Win32_Debug (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:import, platforms:Win32, configurations:Debug] ==> import_Win32_Debug (visible = true) extendsFrom [import_common]
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:debugging, platforms:x64, configurations:Debug] ==> debugging_x64_Debug (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:runtime, platforms:x64, configurations:Debug] ==> runtime_x64_Debug (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+
+[stage:import, platforms:x64, configurations:Debug] ==> import_x64_Debug (visible = true) extendsFrom [import_common]
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+exampleSourceConf->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+exampleSourceConf->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+exampleSourceConf->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+exampleSourceConf->import_x64_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Win32_Release
+exampleSourceConf->runtime_Win32_Release
+build->import_Win32_Release
+exampleSourceConf->debugging_x64_Release
+exampleSourceConf->runtime_x64_Release
+build->import_x64_Release
+exampleSourceConf->debugging_Win32_Debug
+exampleSourceConf->runtime_Win32_Debug
+build->import_Win32_Debug
+exampleSourceConf->debugging_x64_Debug
+exampleSourceConf->runtime_x64_Debug
+build->import_x64_Debug
+

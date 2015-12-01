@@ -1,7 +1,126 @@
-[stage:import] ==> import_common extendsFrom []
-[stage:debugging, configurations:Release] ==> debugging_Release extendsFrom []
-[stage:runtime, configurations:Release] ==> runtime_Release extendsFrom []
-[stage:import, configurations:Release] ==> import_Release extendsFrom [import_common]
-[stage:debugging, configurations:Debug] ==> debugging_Debug extendsFrom []
-[stage:runtime, configurations:Debug] ==> runtime_Debug extendsFrom []
-[stage:import, configurations:Debug] ==> import_Debug extendsFrom [import_common]
+[stage:import] ==> import_common (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:debugging, configurations:Release] ==> debugging_Release (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:runtime, configurations:Release] ==> runtime_Release (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:import, configurations:Release] ==> import_Release (visible = true) extendsFrom [import_common]
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:debugging, configurations:Debug] ==> debugging_Debug (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:runtime, configurations:Debug] ==> runtime_Debug (visible = true) extendsFrom []
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:import, configurations:Debug] ==> import_Debug (visible = true) extendsFrom [import_common]
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+

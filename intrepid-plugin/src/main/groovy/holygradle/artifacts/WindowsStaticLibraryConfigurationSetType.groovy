@@ -25,7 +25,7 @@ class WindowsStaticLibraryConfigurationSetType extends WindowsConfigurationSetTy
     ) {
         def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
 
-        return getDefaultMappingsTo(source, target, getMappingFromSingleConfigurationAdder(export))
+        return getDefaultMappingsTo(source, target, getMappingAdder(export))
     }
 
     private Closure getMappingAdder(

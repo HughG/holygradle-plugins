@@ -53,11 +53,22 @@ class WindowsConfigurationSetTypeTest extends AbstractHolyGradleTest {
         Map<Map<String,String>, String> names = fromSet.configurationNames
         Project project = ProjectBuilder.builder().build()
         Map<Map<String, String>, Configuration> configurations = fromSet.getConfigurations(project)
+        Configuration exampleSourceConf = project.configurations.create("exampleSourceConf")
+        Collection<String> mappingsExport = fromSet.type.getMappingsFrom(exampleSourceConf, export: true)
+        Collection<String> mappingsNonExport = fromSet.type.getMappingsFrom(exampleSourceConf)
 
         File regTestFile = regression.getTestFile(fileName)
         regTestFile.withPrintWriter { w ->
             names.each { binding, name ->
-                w.println("${binding} ==> ${name} extendsFrom ${configurations[binding].extendsFrom*.name}")
+                Configuration configuration = configurations[binding]
+                w.println("${binding} ==> ${name} (visible = ${configuration.visible}) extendsFrom ${configuration.extendsFrom*.name}")
+                w.println()
+                w.println("Mappings from a single config (with export)")
+                mappingsExport.each { m -> w.println(m) }
+                w.println()
+                w.println("Mappings from a single config (non-export)")
+                mappingsNonExport.each { m -> w.println(m) }
+                w.println()
             }
         }
         regression.checkForRegression(fileName)

@@ -21,23 +21,4 @@ abstract class WindowsConfigurationSetType extends DefaultConfigurationSetType {
         )
         commonConfigurationsSpec([stage: _IMPORT_STAGE])
     }
-
-    protected static Closure getMappingFromSingleConfigurationAdder(
-        boolean export
-    ) {
-        return {
-            Collection<String> mappings,
-            Map<String, String> binding,
-            String sourceConfigurationName,
-            String targetConfigurationName
-             ->
-            if (binding['stage'] == IMPORT_STAGE) {
-                // Link import to a public config iff export == true
-                String sourceName = export ? sourceConfigurationName : PRIVATE_BUILD_CONFIGURATION_NAME
-                mappings << makeMapping(sourceName, targetConfigurationName)
-            } else {
-                mappings << makeMapping(sourceConfigurationName, targetConfigurationName)
-            }
-        }
-    }
 }

@@ -20,7 +20,7 @@ class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType 
         Configuration source,
         DefaultConfigurationSet target
     ) {
-        return getDefaultMappingsTo(source, target, getMappingFromSingleConfigurationAdder(false))
+        return getDefaultMappingsTo(source, target, getMappingAdder(false))
     }
 
     private static Closure getMappingAdder(
