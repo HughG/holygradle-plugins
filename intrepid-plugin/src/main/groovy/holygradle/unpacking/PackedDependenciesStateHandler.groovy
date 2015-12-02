@@ -121,7 +121,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
                 return new ResolvedDependenciesVisitor.VisitChoice(
                     isNewNonBuildModuleConfiguration,
-                    isNewModuleConfiguration
+                    isNewNonBuildModuleConfiguration
                 )
             },
             { ResolvedDependency resolvedDependency ->
@@ -158,7 +158,6 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
                 } else {
-                    System.out.println("collectUnpackModules in ${project}: seeking packed dep for ${id}")
                     // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
                     // dependency is a transitive dependency, "thisPackedDep" will be null.
                     PackedDependencyHandler thisPackedDep = packedDependencies.find {
@@ -166,7 +165,6 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         // multiple versions were requested in the dependency graph.  In that case, we still want to
                         // regard this packed dependency as mapping to the given UnpackModuleVersion, i.e., to the
                         // resolved dependency version.
-                        System.out.println("  collectUnpackModules: trying ${it.name} (${it.dependencyId})")
                         return (it.groupName == id.group) &&
                             (it.dependencyName == id.name)
                     }
