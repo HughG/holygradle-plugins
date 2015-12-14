@@ -2,6 +2,7 @@ package holygradle.artifacts
 
 import com.google.common.collect.Sets
 import holygradle.test.AbstractHolyGradleTest
+import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -32,10 +33,11 @@ class WindowsConfigurationSetTypeMappingTest extends AbstractHolyGradleTest {
         def vsTypes = [VS_TYPES["LIB"], VS_TYPES["DLL"], VS_TYPES["EXE"]].toSet()
         def vsTypeCombinations = Sets.cartesianProduct([
             vsTypes, vsTypes, [false, true].toSet()
-        ])
+        ]).toList()
         return (
             [
-                [WEB_TYPES["WEB_LIB"], WEB_TYPES["WEB_LIB"], null],
+                [WEB_TYPES["WEB_LIB"], WEB_TYPES["WEB_LIB"], false],
+                [WEB_TYPES["WEB_LIB"], WEB_TYPES["WEB_LIB"], true],
             ] +
                 vsTypeCombinations
         ).collect { from_to_export ->
@@ -73,7 +75,21 @@ class WindowsConfigurationSetTypeMappingTest extends AbstractHolyGradleTest {
         }
         DefaultConfigurationSet fromSet = new DefaultConfigurationSet(fileName)
         fromSet.type(fromType)
-        Collection<String> mappings = fromSet.type.getMappingsTo(fromSet, toType, export: isExport)
+        Collection<String> mappings
+        if (fromType instanceof WindowsExecutableConfigurationSetType &&
+            isExport
+        ) {
+            try {
+                fromSet.type.getMappingsTo(fromSet, toType, export: isExport)
+
+                // Shouldn't get here, because getMappingsTo should throw.
+                Assert.fail("getMappingsTo should throw for EXE module with 'export: true'")
+            } catch (IllegalArgumentException expected) {
+                mappings = [expected.message]
+            }
+        } else {
+            mappings = fromSet.type.getMappingsTo(fromSet, toType, export: isExport)
+        }
 
         File regTestFile = regression.getTestFile(fileName)
         regTestFile.withPrintWriter { w ->

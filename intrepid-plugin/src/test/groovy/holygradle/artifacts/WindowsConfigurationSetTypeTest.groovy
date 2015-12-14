@@ -54,7 +54,9 @@ class WindowsConfigurationSetTypeTest extends AbstractHolyGradleTest {
         Project project = ProjectBuilder.builder().build()
         Map<Map<String, String>, Configuration> configurations = fromSet.getConfigurations(project)
         Configuration exampleSourceConf = project.configurations.create("exampleSourceConf")
-        Collection<String> mappingsExport = fromSet.type.getMappingsFrom(exampleSourceConf, export: true)
+        Collection<String> mappingsExport = (fromSet.type instanceof WindowsExecutableConfigurationSetType) ?
+            ["N/A"] :
+            fromSet.type.getMappingsFrom(exampleSourceConf, export: true)
         Collection<String> mappingsNonExport = fromSet.type.getMappingsFrom(exampleSourceConf)
 
         File regTestFile = regression.getTestFile(fileName)

@@ -8,19 +8,33 @@ class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType 
     @Override
     Collection<String> getDefaultMappingsTo(
         Map attrs,
+        Map parameterSpecs,
         DefaultConfigurationSet source,
         DefaultConfigurationSet target
     ) {
+        checkNoExport(attrs)
+
         return getDefaultMappingsTo(source, target, getMappingAdder(target.typeAsDefault))
     }
 
     @Override
     protected Collection<String> getDefaultMappingsFrom(
         Map attrs,
+        Map parameterSpecs,
         Configuration source,
         DefaultConfigurationSet target
     ) {
-        return getDefaultMappingsTo(source, target, getMappingAdder(false))
+        checkNoExport(attrs)
+
+        return super.getDefaultMappingsFrom(attrs, parameterSpecs, source, target)
+    }
+
+    private void checkNoExport(Map attrs) {
+        if (attrs.containsKey("export") && attrs["export"]) {
+            throw new IllegalArgumentException(
+                "The named argument 'export' cannot be true for configuration set type ${name}"
+            )
+        }
     }
 
     private static Closure getMappingAdder(

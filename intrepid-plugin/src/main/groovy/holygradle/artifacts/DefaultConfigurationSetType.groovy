@@ -150,7 +150,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         if (defaultSource == null || defaultTarget == null) {
             throwForUnknownTypes(source, target)
         }
-        return getDefaultMappingsTo(attrs, defaultSource, defaultTarget)
+        return getDefaultMappingsTo(attrs, [:], defaultSource, defaultTarget)
     }
 
     @Override
@@ -174,7 +174,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         }
         DefaultConfigurationSet defaultTarget = new DefaultConfigurationSet("from configuration set ${source.name}")
         defaultTarget.type = targetType
-        return getDefaultMappingsTo(attrs, defaultSource, defaultTarget)
+        return getDefaultMappingsTo(attrs, [:], defaultSource, defaultTarget)
     }
 
     @Override
@@ -189,7 +189,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     public final Collection<String> getMappingsFrom(Map attrs, Configuration source) {
         DefaultConfigurationSet target = new DefaultConfigurationSet("from configuration ${source}")
         target.type = this
-        return getDefaultMappingsFrom(attrs, source, target)
+        return getDefaultMappingsFrom(attrs, [:], source, target)
     }
 
     @Override
@@ -203,7 +203,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         if (defaultTarget == null) {
             throwForUnknownTarget(target)
         }
-        return getDefaultMappingsFrom(attrs, source, defaultTarget)
+        return getDefaultMappingsFrom(attrs, [:], source, defaultTarget)
     }
 
     @Override
@@ -225,10 +225,11 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      */
     protected Collection<String> getDefaultMappingsTo(
         Map attrs,
+        Map parameterSpecs,
         DefaultConfigurationSet source,
         DefaultConfigurationSet target
     ) {
-        def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
+        def (boolean export) = NamedParameters.checkAndGet(attrs, [export: false] + parameterSpecs)
 
         return getDefaultMappingsTo(source, target, getMappingAdder(export))
     }
@@ -238,7 +239,8 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      * configuration to some configurations in the {@code target}, according to rules which are subclass-specific.  That
      * means, if the source configuration is "foo" then every returned string will start with "foo->".
      *
-     * If you override this, you should also override {@link #getDefaultMappingsTo(java.util.Map, holygradle.artifacts.DefaultConfigurationSet, holygradle.artifacts.DefaultConfigurationSet)}
+     * If you override this, you should also override {@link holygradle.artifacts
+     * .DefaultConfigurationSetType#getDefaultMappingsTo(Map, Map, DefaultConfigurationSet, DefaultConfigurationSet)}
 
      * @param attrs Optional extra arguments for use by subclasses.
      * @param source The source configuration name (not configuration set).
@@ -247,10 +249,11 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      */
     protected Collection<String> getDefaultMappingsFrom(
         Map attrs,
+        Map parameterSpecs,
         Configuration source,
         DefaultConfigurationSet target
     ) {
-        def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
+        def (boolean export) = NamedParameters.checkAndGet(attrs, [export: false] + parameterSpecs)
 
         return getDefaultMappingsTo(source, target, getMappingAdder(export))
     }

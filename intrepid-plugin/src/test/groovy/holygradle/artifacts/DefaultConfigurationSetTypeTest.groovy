@@ -1,5 +1,6 @@
 package holygradle.artifacts
 
+import holygradle.lang.NamedParameters
 import holygradle.test.AbstractHolyGradleTest
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -47,6 +48,10 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public static final ArrayList<String> COMMON_AND_MAIN_CONFIGURATION_NAMES =
         COMMON_CONFIGURATION_NAMES + MAIN_CONFIGURATION_NAMES
     public static final LinkedHashMap<String, String> EXTRA_ATTRS = [a: "b", c: "d"]
+    public static final LinkedHashMap<String, String> EXTRA_ATTR_PARAMETER_SPECS = [
+        a: NamedParameters.NO_DEFAULT,
+        c: NamedParameters.NO_DEFAULT
+    ]
     public static final ArrayList<String> EXTRA_ATTRS_MAPPINGS = ["a->b", "c->d"]
 
 
@@ -71,23 +76,19 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
 
         @Override
         protected Collection<String> getDefaultMappingsTo(
-            Map attrs,
-            DefaultConfigurationSet source,
-            DefaultConfigurationSet target
+            Map attrs, Map parameterSpecs, DefaultConfigurationSet source, DefaultConfigurationSet target
         ) {
             // An unrealistic implementation of getDefaultMappingsTo which just adds attrs as extra mappings.
-            Collection<String> mappings = super.getDefaultMappingsTo(attrs, source, target)
+            Collection<String> mappings = super.getDefaultMappingsTo(attrs, EXTRA_ATTR_PARAMETER_SPECS, source, target)
             return attrs.collect(mappings) { k, v -> "${k}->${v}".toString() }
         }
 
         @Override
         protected Collection<String> getDefaultMappingsFrom(
-            Map attrs,
-            Configuration source,
-            DefaultConfigurationSet target
+            Map attrs, Map parameterSpecs, Configuration source, DefaultConfigurationSet target
         ) {
             // An unrealistic implementation of getDefaultMappingsTo which just adds attrs as extra mappings.
-            Collection<String> mappings = super.getDefaultMappingsFrom(attrs, source, target)
+            Collection<String> mappings = super.getDefaultMappingsFrom(attrs, EXTRA_ATTR_PARAMETER_SPECS, source, target)
             return attrs.collect(mappings) { k, v -> "${k}->${v}".toString() }
         }
     }

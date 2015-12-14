@@ -1,12 +1,7 @@
 [stage:import] ==> import_common (visible = true) extendsFrom []
 
 Mappings from a single config (with export)
-exampleSourceConf->debugging_x64_Release
-exampleSourceConf->runtime_x64_Release
-build->import_x64_Release
-exampleSourceConf->debugging_x64_Debug
-exampleSourceConf->runtime_x64_Debug
-build->import_x64_Debug
+N/A
 
 Mappings from a single config (non-export)
 exampleSourceConf->debugging_x64_Release
@@ -19,12 +14,7 @@ build->import_x64_Debug
 [stage:debugging, platforms:x64, configurations:Release] ==> debugging_x64_Release (visible = true) extendsFrom []
 
 Mappings from a single config (with export)
-exampleSourceConf->debugging_x64_Release
-exampleSourceConf->runtime_x64_Release
-build->import_x64_Release
-exampleSourceConf->debugging_x64_Debug
-exampleSourceConf->runtime_x64_Debug
-build->import_x64_Debug
+N/A
 
 Mappings from a single config (non-export)
 exampleSourceConf->debugging_x64_Release
@@ -37,12 +27,7 @@ build->import_x64_Debug
 [stage:runtime, platforms:x64, configurations:Release] ==> runtime_x64_Release (visible = true) extendsFrom []
 
 Mappings from a single config (with export)
-exampleSourceConf->debugging_x64_Release
-exampleSourceConf->runtime_x64_Release
-build->import_x64_Release
-exampleSourceConf->debugging_x64_Debug
-exampleSourceConf->runtime_x64_Debug
-build->import_x64_Debug
+N/A
 
 Mappings from a single config (non-export)
 exampleSourceConf->debugging_x64_Release
@@ -55,12 +40,7 @@ build->import_x64_Debug
 [stage:import, platforms:x64, configurations:Release] ==> import_x64_Release (visible = true) extendsFrom [import_common]
 
 Mappings from a single config (with export)
-exampleSourceConf->debugging_x64_Release
-exampleSourceConf->runtime_x64_Release
-build->import_x64_Release
-exampleSourceConf->debugging_x64_Debug
-exampleSourceConf->runtime_x64_Debug
-build->import_x64_Debug
+N/A
 
 Mappings from a single config (non-export)
 exampleSourceConf->debugging_x64_Release
@@ -73,12 +53,7 @@ build->import_x64_Debug
 [stage:debugging, platforms:x64, configurations:Debug] ==> debugging_x64_Debug (visible = true) extendsFrom []
 
 Mappings from a single config (with export)
-exampleSourceConf->debugging_x64_Release
-exampleSourceConf->runtime_x64_Release
-build->import_x64_Release
-exampleSourceConf->debugging_x64_Debug
-exampleSourceConf->runtime_x64_Debug
-build->import_x64_Debug
+N/A
 
 Mappings from a single config (non-export)
 exampleSourceConf->debugging_x64_Release
@@ -91,12 +66,7 @@ build->import_x64_Debug
 [stage:runtime, platforms:x64, configurations:Debug] ==> runtime_x64_Debug (visible = true) extendsFrom []
 
 Mappings from a single config (with export)
-exampleSourceConf->debugging_x64_Release
-exampleSourceConf->runtime_x64_Release
-build->import_x64_Release
-exampleSourceConf->debugging_x64_Debug
-exampleSourceConf->runtime_x64_Debug
-build->import_x64_Debug
+N/A
 
 Mappings from a single config (non-export)
 exampleSourceConf->debugging_x64_Release
@@ -109,12 +79,7 @@ build->import_x64_Debug
 [stage:import, platforms:x64, configurations:Debug] ==> import_x64_Debug (visible = true) extendsFrom [import_common]
 
 Mappings from a single config (with export)
-exampleSourceConf->debugging_x64_Release
-exampleSourceConf->runtime_x64_Release
-build->import_x64_Release
-exampleSourceConf->debugging_x64_Debug
-exampleSourceConf->runtime_x64_Debug
-build->import_x64_Debug
+N/A
 
 Mappings from a single config (non-export)
 exampleSourceConf->debugging_x64_Release
