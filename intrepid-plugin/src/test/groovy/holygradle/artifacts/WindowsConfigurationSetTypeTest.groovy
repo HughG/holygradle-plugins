@@ -64,6 +64,7 @@ class WindowsConfigurationSetTypeTest extends AbstractHolyGradleTest {
             names.each { binding, name ->
                 Configuration configuration = configurations[binding]
                 w.println("${binding} ==> ${name} (visible = ${configuration.visible}) extendsFrom ${configuration.extendsFrom*.name}")
+                w.println("description: ${configuration.description}")
                 w.println()
                 w.println("Mappings from a single config (with export)")
                 mappingsExport.each { m -> w.println(m) }

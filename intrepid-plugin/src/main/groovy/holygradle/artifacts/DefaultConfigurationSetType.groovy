@@ -7,6 +7,7 @@ import org.gradle.util.ConfigureUtil
 import java.util.concurrent.atomic.AtomicInteger
 
 class DefaultConfigurationSetType implements ConfigurationSetType {
+    public static final String STAGE_AXIS_NAME = "stage"
     public static final String IMPORT_STAGE = "import"
     public static final String RUNTIME_STAGE = "runtime"
     public static final String DEBUGGING_STAGE = "debugging"
@@ -137,6 +138,27 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     @SuppressWarnings("GroovyUnusedDeclaration")
     public DefaultConfigurationSet makeSet(Closure configure) {
         return ConfigureUtil.configure(configure, makeSet())
+    }
+
+    public String getDescriptionForBinding(Map<String, String> binding) {
+        String stage = binding[STAGE_AXIS_NAME]
+        Map bindingWithoutStage = binding.findAll { k, v -> k != STAGE_AXIS_NAME }
+        String restOfBindingDescription = (bindingWithoutStage.isEmpty()
+            ? ", common to all values of ${optionalAxes.keySet()}"
+            : ", with ${bindingWithoutStage.toMapString()}"
+        )
+        return "Files for the ${stage} stage of development${restOfBindingDescription}."
+    }
+
+    public String getDescriptionForNonVisibleConfiguration(String name) {
+        switch (name) {
+            case PRIVATE_BUILD_CONFIGURATION_NAME:
+                "Private configuration for files needed to build this module, but not needed for other modules to use it.";
+                break
+            default:
+                null
+                break;
+        }
     }
 
     @Override

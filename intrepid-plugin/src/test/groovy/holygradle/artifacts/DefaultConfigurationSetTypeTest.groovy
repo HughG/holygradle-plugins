@@ -48,7 +48,7 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public static final ArrayList<String> COMMON_AND_MAIN_CONFIGURATION_NAMES =
         COMMON_CONFIGURATION_NAMES + MAIN_CONFIGURATION_NAMES
     public static final LinkedHashMap<String, String> EXTRA_ATTRS = [a: "b", c: "d"]
-    public static final LinkedHashMap<String, String> EXTRA_ATTR_PARAMETER_SPECS = [
+    public static final LinkedHashMap<String, Object> EXTRA_ATTR_PARAMETER_SPECS = [
         a: NamedParameters.NO_DEFAULT,
         c: NamedParameters.NO_DEFAULT
     ]

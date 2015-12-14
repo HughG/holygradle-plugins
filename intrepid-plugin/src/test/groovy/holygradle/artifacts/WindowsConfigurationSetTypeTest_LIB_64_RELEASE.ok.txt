@@ -1,4 +1,5 @@
 [stage:import] ==> import_common (visible = true) extendsFrom []
+description: Files for the import stage of development, common to all values of [Platform, Configuration]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.LIB_64_RELEASE' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_x64_Release
@@ -10,7 +11,8 @@ exampleSourceConf->debugging_x64_Release
 exampleSourceConf->runtime_x64_Release
 build->import_x64_Release
 
-[stage:debugging, platforms:x64, configurations:Release] ==> debugging_x64_Release (visible = true) extendsFrom []
+[stage:debugging, Platform:x64, Configuration:Release] ==> debugging_x64_Release (visible = true) extendsFrom []
+description: Files for the debugging stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.LIB_64_RELEASE' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_x64_Release
@@ -22,7 +24,8 @@ exampleSourceConf->debugging_x64_Release
 exampleSourceConf->runtime_x64_Release
 build->import_x64_Release
 
-[stage:runtime, platforms:x64, configurations:Release] ==> runtime_x64_Release (visible = true) extendsFrom []
+[stage:runtime, Platform:x64, Configuration:Release] ==> runtime_x64_Release (visible = true) extendsFrom []
+description: Files for the runtime stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.LIB_64_RELEASE' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_x64_Release
@@ -34,7 +37,8 @@ exampleSourceConf->debugging_x64_Release
 exampleSourceConf->runtime_x64_Release
 build->import_x64_Release
 
-[stage:import, platforms:x64, configurations:Release] ==> import_x64_Release (visible = true) extendsFrom [import_common]
+[stage:import, Platform:x64, Configuration:Release] ==> import_x64_Release (visible = true) extendsFrom [import_common]
+description: Files for the import stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.LIB_64_RELEASE' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_x64_Release
