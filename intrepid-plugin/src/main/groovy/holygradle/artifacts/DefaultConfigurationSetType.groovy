@@ -7,6 +7,7 @@ import org.gradle.util.ConfigureUtil
 import java.util.concurrent.atomic.AtomicInteger
 
 class DefaultConfigurationSetType implements ConfigurationSetType {
+    public static final String STAGE_AXIS_NAME = "stage"
     public static final String IMPORT_STAGE = "import"
     public static final String RUNTIME_STAGE = "runtime"
     public static final String DEBUGGING_STAGE = "debugging"
@@ -139,6 +140,27 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         return ConfigureUtil.configure(configure, makeSet())
     }
 
+    public String getDescriptionForBinding(Map<String, String> binding) {
+        String stage = binding[STAGE_AXIS_NAME]
+        Map bindingWithoutStage = binding.findAll { k, v -> k != STAGE_AXIS_NAME }
+        String restOfBindingDescription = (bindingWithoutStage.isEmpty()
+            ? ", common to all values of ${optionalAxes.keySet()}"
+            : ", with ${bindingWithoutStage.toMapString()}"
+        )
+        return "Files for the ${stage} stage of development${restOfBindingDescription}."
+    }
+
+    public String getDescriptionForNonVisibleConfiguration(String name) {
+        switch (name) {
+            case PRIVATE_BUILD_CONFIGURATION_NAME:
+                "Private configuration for files needed to build this module, but not needed for other modules to use it.";
+                break
+            default:
+                null
+                break;
+        }
+    }
+
     @Override
     public final Collection<String> getMappingsTo(
         Map attrs,
@@ -150,7 +172,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         if (defaultSource == null || defaultTarget == null) {
             throwForUnknownTypes(source, target)
         }
-        return getDefaultMappingsTo(attrs, defaultSource, defaultTarget)
+        return getDefaultMappingsTo(attrs, [:], defaultSource, defaultTarget)
     }
 
     @Override
@@ -174,7 +196,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         }
         DefaultConfigurationSet defaultTarget = new DefaultConfigurationSet("from configuration set ${source.name}")
         defaultTarget.type = targetType
-        return getDefaultMappingsTo(attrs, defaultSource, defaultTarget)
+        return getDefaultMappingsTo(attrs, [:], defaultSource, defaultTarget)
     }
 
     @Override
@@ -189,7 +211,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     public final Collection<String> getMappingsFrom(Map attrs, Configuration source) {
         DefaultConfigurationSet target = new DefaultConfigurationSet("from configuration ${source}")
         target.type = this
-        return getDefaultMappingsFrom(attrs, source, target)
+        return getDefaultMappingsFrom(attrs, [:], source, target)
     }
 
     @Override
@@ -203,7 +225,7 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         if (defaultTarget == null) {
             throwForUnknownTarget(target)
         }
-        return getDefaultMappingsFrom(attrs, source, defaultTarget)
+        return getDefaultMappingsFrom(attrs, [:], source, defaultTarget)
     }
 
     @Override
@@ -225,10 +247,11 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      */
     protected Collection<String> getDefaultMappingsTo(
         Map attrs,
+        Map parameterSpecs,
         DefaultConfigurationSet source,
         DefaultConfigurationSet target
     ) {
-        def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
+        def (boolean export) = NamedParameters.checkAndGet(attrs, [export: false] + parameterSpecs)
 
         return getDefaultMappingsTo(source, target, getMappingAdder(export))
     }
@@ -238,7 +261,8 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      * configuration to some configurations in the {@code target}, according to rules which are subclass-specific.  That
      * means, if the source configuration is "foo" then every returned string will start with "foo->".
      *
-     * If you override this, you should also override {@link #getDefaultMappingsTo(java.util.Map, holygradle.artifacts.DefaultConfigurationSet, holygradle.artifacts.DefaultConfigurationSet)}
+     * If you override this, you should also override {@link holygradle.artifacts
+     * .DefaultConfigurationSetType#getDefaultMappingsTo(Map, Map, DefaultConfigurationSet, DefaultConfigurationSet)}
 
      * @param attrs Optional extra arguments for use by subclasses.
      * @param source The source configuration name (not configuration set).
@@ -247,10 +271,11 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
      */
     protected Collection<String> getDefaultMappingsFrom(
         Map attrs,
+        Map parameterSpecs,
         Configuration source,
         DefaultConfigurationSet target
     ) {
-        def (boolean export) = NamedParameters.checkAndGet(attrs, [['export', false]])
+        def (boolean export) = NamedParameters.checkAndGet(attrs, [export: false] + parameterSpecs)
 
         return getDefaultMappingsTo(source, target, getMappingAdder(export))
     }

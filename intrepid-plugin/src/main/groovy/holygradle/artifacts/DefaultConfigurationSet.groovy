@@ -173,16 +173,33 @@ class DefaultConfigurationSet implements ConfigurationSet {
         configurationNames
     }
 
+    public String getDescriptionForBinding(Map<String, String> binding) {
+        String typeDescription = type.getDescriptionForBinding(binding)
+        String addPrefixDescription = (prefix == null) ? "" : ".makeSet { prefix '${prefix}' }"
+        String setDescription = "configurationSets.${type.name}"
+        String mappingDescription = "configurationSet ..., ${setDescription}${addPrefixDescription}"
+        return typeDescription +
+            " You can use this with the Holy Gradle by adding '${mappingDescription}' " +
+            "to the packedDependencies entry for this module in your project, " +
+            "where '...' is a configuration or configurationSet in your project."
+    }
+
     @Override
     public Map<Map<String, String>, Configuration> getConfigurations(Project project) {
         ConfigurationContainer configurations = project.configurations
         // Explicitly call #getConfigurationNames here to make sure the names are lazily filled in.
         def nameMap = getConfigurationNames()
-        // Create all the configurations.
-        nameMap.values().each { name ->
+        // Create all the configurations for the axis bindings.
+        nameMap.each { binding, name ->
             Configuration conf = configurations.findByName(name) ?: configurations.add(name)
-            if (type.nonVisibleConfigurations.contains(name)) {
-                conf.visible = false
+            conf.description = getDescriptionForBinding(binding)
+        }
+        // Also "secretly" create the non-visible configurations, if they don't already exist -- but don't return them.
+        type.nonVisibleConfigurations.each { name ->
+            Configuration conf = configurations.findByName(name) ?: configurations.add(name)
+            conf.visible = false
+            if (conf.description == null) {
+                conf.description = type.getDescriptionForNonVisibleConfiguration(name)
             }
         }
 
@@ -223,7 +240,6 @@ class DefaultConfigurationSet implements ConfigurationSet {
 
         return result
     }
-
 
     @Override
     public String toString() {
