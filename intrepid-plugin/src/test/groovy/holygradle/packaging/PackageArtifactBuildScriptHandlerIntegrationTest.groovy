@@ -139,8 +139,10 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
+        // Expect this to fail due to source dependencies.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
         }
 
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
@@ -183,9 +185,9 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 }
                 regression.replacePatterns(
                     regressionFileName, [
-                        (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
-                        (~/hg "unknown@[0-9a-f]+"/): "hg \"unknown@[snipped]\""
-                    ]
+                    (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
+                    (~/hg "unknown@[0-9a-f]+"/): "hg \"unknown@[snipped]\""
+                ]
                 )
                 regression.checkForRegression(regressionFileName)
             } catch (AssertionError e) {

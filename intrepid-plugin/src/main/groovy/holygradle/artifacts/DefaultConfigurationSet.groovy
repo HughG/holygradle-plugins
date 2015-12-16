@@ -31,16 +31,8 @@ class DefaultConfigurationSet implements ConfigurationSet {
             return
         }
 
-        boolean isFirst = true
-        for (String axis in axes.keySet()) {
-            if (isFirst) {
-                builder.append('\${')
-                isFirst = false
-            } else {
-                builder.append('}_\${')
-            }
-            builder.append(axis)
-        }
+        builder.append('\${')
+        builder.append(axes.keySet().join('}_\${'))
         builder.append('}')
     }
 
