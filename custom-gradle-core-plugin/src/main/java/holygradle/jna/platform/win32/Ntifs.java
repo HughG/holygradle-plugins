@@ -7,8 +7,6 @@ import com.sun.jna.win32.W32APIOptions;
  * JNA interface for necessary parts of Ntifs.h.
  */
 public interface Ntifs {
-    Ntifs INSTANCE = (Ntifs)Native.loadLibrary("Ntifs", Ntifs.class, W32APIOptions.UNICODE_OPTIONS);
-
     int FSCTL_SET_REPARSE_POINT = 0x000900A4;
     int FSCTL_GET_REPARSE_POINT = 0x000900A8;
     int FSCTL_DELETE_REPARSE_POINT = 0x000900AC;

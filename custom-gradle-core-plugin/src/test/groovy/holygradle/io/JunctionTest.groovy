@@ -4,7 +4,7 @@ class JunctionTest extends LinkTestBase
 {
     @Override
     protected void makeLinkExternally(File link, File target) {
-        Process p = "mklink /j ${link.canonicalFile} ${target}".execute([], testDir)
+        Process p = "cmd /c mklink /J ${link.canonicalPath} ${target.canonicalPath}".execute([], testDir)
         p.consumeProcessOutput()
         p.waitFor()
     }

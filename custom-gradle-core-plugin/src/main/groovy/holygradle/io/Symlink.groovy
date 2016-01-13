@@ -30,12 +30,11 @@ public class Symlink {
 
         // If [target] is relative, we want createSymbolicLink to create a link relative to [link] (as opposed to
         // relative to the current working directory) so we have to calculate this.
-        File targetAsAbsoluteOrRelativeToLink = canonicalLink.toPath().resolveSibling(target.toPath()).toFile()
-
-        if (!targetAsAbsoluteOrRelativeToLink.exists()) {
+        File targetAsAbsoluteOrRelativeToLink = canonicalLink.parentFile.toPath().relativize(target.canonicalFile.toPath()).toFile()
+        if (!target.exists()) {
             throw new IOException("Cannot create link to non-existent target: from '${canonicalLink}' to '${target}'")
         }
-        Files.createSymbolicLink(canonicalLink.toPath(), target.toPath())
+        Files.createSymbolicLink(canonicalLink.toPath(), targetAsAbsoluteOrRelativeToLink.toPath())
     }
 
     /**

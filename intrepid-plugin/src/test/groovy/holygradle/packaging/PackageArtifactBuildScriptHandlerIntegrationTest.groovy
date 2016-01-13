@@ -1,6 +1,7 @@
 package holygradle.packaging
 
 import holygradle.io.FileHelper
+import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import holygradle.testUtil.HgUtil
@@ -133,6 +134,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
         }
 
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->

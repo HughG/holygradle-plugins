@@ -54,11 +54,16 @@ class Junction {
     public static void rebuild(File link, File target) {
         checkIsJunctionOrMissing(link)
 
+        // Directory junctions can be created to non-existent targets but it breaks stuff so disallow it
+        if (!target.exists()) {
+            throw new IOException("Cannot create link to non-existent target")
+        }
+
         // For simplicity in any error reporting, use the canonical path for the link.
         link = link.canonicalFile
         // Directory junction targets must be absolute paths
         target = target.absoluteFile
-        FileHelper.ensureMkdirs(link.parentFile, "for directory junction to '${target}'")
+        FileHelper.ensureMkdirs(link, "for directory junction to '${target}'")
         createMountPoint(link.path, target.canonicalPath)
     }
 
@@ -83,6 +88,7 @@ class Junction {
             for (int i = 0; i < size; ++i) {
                 this.putChar(s.charAt(i))
             }
+            this.putChar('\0' as char)
             return this
         }
     }
@@ -112,7 +118,7 @@ class Junction {
         withReparsePointHandle(link, Kernel32.GENERIC_READ) { WinNT.HANDLE reparsePointHandle ->
             Memory reparseDataBuffer = new Memory(Ntifs.MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
 
-            boolean succeeded = INSTANCE.DeviceIoControl(
+            boolean succeeded = Kernel32.INSTANCE.DeviceIoControl(
                 reparsePointHandle,
                 Ntifs.FSCTL_GET_REPARSE_POINT,
                 null,
@@ -138,14 +144,14 @@ class Junction {
                 // For the SubstituteName, we use the '\\?\' prefix which disables further parsing; see
                 // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
                 String printName = target
-                String substituteName = "\\\\?\\" + target
+                String substituteName = "\\??\\" + target + "\\"
 
-                short pathBufferLength = (substituteName.size() + printName.size()).characterLengthAsBytes().asShortSafely()
+                short pathBufferLength = (substituteName.size() + 1 + printName.size() + 1).characterLengthAsBytes().asShortSafely()
                 short mountPointReparseBufferLength = (MOUNT_POINT_REPARSE_BUFFER_HEADER_LENGTH + pathBufferLength).asShortSafely()
                 short reparseDataBufferLength = REPARSE_DATA_HEADER_LENGTH + mountPointReparseBufferLength
                 short substituteNameOffset = 0
                 short substituteNameLength = (substituteName.size().characterLengthAsBytes()).asShortSafely()
-                short printNameOffset = substituteNameLength
+                short printNameOffset = (substituteNameLength + 1.characterLengthAsBytes()).asShortSafely()
                 short printNameLength = (printName.size().characterLengthAsBytes()).asShortSafely()
                 Memory reparseDataBuffer = new Memory(reparseDataBufferLength)
                 ByteBuffer reparseDataByteBuffer = reparseDataBuffer.getByteBuffer(0, reparseDataBufferLength)
@@ -164,7 +170,6 @@ class Junction {
                         .putString(substituteName)
                         .putString(printName)
                 }
-
 
                 boolean succeeded = Kernel32.INSTANCE.DeviceIoControl(
                     reparsePointHandle,

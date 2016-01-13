@@ -4,7 +4,7 @@ class SymlinkTest extends LinkTestBase
 {
     @Override
     protected void makeLinkExternally(File link, File target) {
-        Process p = "mklink /d ${link.canonicalFile} ${target}".execute([], testDir)
+        Process p = "cmd /c mklink /d ${link.canonicalFile} ${target}".execute([], testDir)
         p.consumeProcessOutput()
         p.waitFor()
     }
