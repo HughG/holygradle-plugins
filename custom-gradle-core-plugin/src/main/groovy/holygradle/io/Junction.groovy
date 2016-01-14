@@ -8,6 +8,7 @@ import holygradle.jna.platform.win32.Win32Exception
 import holygradle.jna.platform.win32.WinNT
 
 import java.nio.ByteBuffer
+import java.nio.file.Path
 
 /**
 * Utility class for managing Directory Junctions under Windows.
@@ -24,6 +25,8 @@ class Junction {
         SIZEOF_USHORT + // SubstituteNameLength
         SIZEOF_USHORT + // PrintNameOffset
         SIZEOF_USHORT // PrintNameLength
+
+    public static final int NOT_A_REPARSE_POINT = 0x00001126
 
     public static boolean isJunction(File file) {
         return file.isDirectory() && isMountPoint(file.path)
@@ -67,10 +70,95 @@ class Junction {
         createMountPoint(link.path, target.canonicalPath)
     }
 
+    public static File getTarget(Path link) {
+        withReparsePointHandle(link.toString(), Kernel32.GENERIC_READ) { WinNT.HANDLE reparsePointHandle ->
+            Memory reparseDataBuffer = new Memory(Ntifs.MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
+
+            boolean succeeded = Kernel32.INSTANCE.DeviceIoControl(
+                reparsePointHandle,
+                Ntifs.FSCTL_GET_REPARSE_POINT,
+                null,
+                0,
+                reparseDataBuffer,
+                Ntifs.MAXIMUM_REPARSE_DATA_BUFFER_SIZE,
+                new IntByReference(),
+                null
+            )
+
+            if (!succeeded) {
+                throwLastError()
+            }
+
+            ByteBuffer reparseDataByteBuffer = reparseDataBuffer.getByteBuffer(0, Ntifs.MAXIMUM_REPARSE_DATA_BUFFER_SIZE) // just the tag
+            int reparseTag = reparseDataByteBuffer.getInt()
+
+            if (reparseTag == Ntifs.IO_REPARSE_TAG_MOUNT_POINT) {
+                reparseDataByteBuffer.getShort() // Skip the data length
+                reparseDataByteBuffer.getShort() // Skip the reserved data
+
+                int nameOffset = reparseDataByteBuffer.getShort()
+                int nameLength = reparseDataByteBuffer.getShort()
+
+                reparseDataByteBuffer.getShort() // Skip the print name offset
+                reparseDataByteBuffer.getShort() // Skip the print name length
+
+                // Move to the start of name
+                for (int i = 0; i < nameOffset; i++) {
+                    reparseDataByteBuffer.get()
+                }
+
+                String result = "";
+
+                use(JunctionHelperIntegerCategory) {
+                    // Read the bytes
+                    for (int i = 0; i < nameLength.bytesAsCharacterLength(); i++) {
+                        result += reparseDataByteBuffer.getChar()
+                    }
+                }
+
+                // Strip the starting \??\ if it exists
+                return new File(result - '\\??\\')
+            } else if (reparseTag == Ntifs.IO_REPARSE_TAG_SYMLINK) {
+                reparseDataByteBuffer.getShort() // Skip the data length
+                reparseDataByteBuffer.getShort() // Skip the reserved data
+
+                int nameOffset = reparseDataByteBuffer.getShort()
+                int nameLength = reparseDataByteBuffer.getShort()
+
+                reparseDataByteBuffer.getShort() // Skip the print name offset
+                reparseDataByteBuffer.getShort() // Skip the print name length
+                reparseDataByteBuffer.getLong() // Skip the flags
+
+                // Move to the start of name
+                for (int i = 0; i < nameOffset; i++) {
+                    reparseDataByteBuffer.get()
+                }
+
+                String result;
+
+                use (JunctionHelperIntegerCategory) {
+                    // Read the bytes
+                    for (int i = 0; i < nameLength.bytesAsCharacterLength(); i++) {
+                        result += reparseDataByteBuffer.getChar()
+                    }
+                }
+
+                println("Path: ${result}")
+                return new File(result)
+            } else {
+                throw new RuntimeException("File ${link} is not a directory junction or a symlink")
+            }
+        }
+    }
+
     @Category(Integer)
     static class JunctionHelperIntegerCategory {
         public int characterLengthAsBytes() {
             this * Character.SIZE / Byte.SIZE
+        }
+
+        public int bytesAsCharacterLength() {
+            this / (Character.SIZE / Byte.SIZE)
         }
 
         public short asShortSafely() {
@@ -128,13 +216,18 @@ class Junction {
                 new IntByReference(),
                 null
             )
-            if (!succeeded) {
-                throwLastError()
+
+            if (succeeded) {
+                ByteBuffer reparseDataByteBuffer = reparseDataBuffer.getByteBuffer(0, SIZEOF_ULONG) // just the tag
+                int reparseTag = reparseDataByteBuffer.getInt()
+                return (reparseTag == Ntifs.IO_REPARSE_TAG_MOUNT_POINT)
             }
 
-            ByteBuffer reparseDataByteBuffer = reparseDataBuffer.getByteBuffer(0, SIZEOF_ULONG) // just the tag
-            int reparseTag = reparseDataByteBuffer.getInt()
-            return (reparseTag == Ntifs.IO_REPARSE_TAG_MOUNT_POINT)
+            if (Kernel32.INSTANCE.GetLastError().intValue() == Junction.NOT_A_REPARSE_POINT) {
+                return false
+            }
+
+            throwLastError()
         }
     }
 

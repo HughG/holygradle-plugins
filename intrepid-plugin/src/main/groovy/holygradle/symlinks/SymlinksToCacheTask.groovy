@@ -1,6 +1,7 @@
 package holygradle.symlinks
 
 import holygradle.io.Symlink
+import holygradle.io.Junction
 import holygradle.unpacking.PackedDependenciesStateSource
 import holygradle.unpacking.UnpackModule
 import holygradle.unpacking.UnpackModuleVersion
@@ -45,10 +46,10 @@ class SymlinksToCacheTask extends DefaultTask {
 
                 switch (mode) {
                     case Mode.BUILD:
-                        Symlink.rebuild(linkDir, targetDir)
+                        Junction.rebuild(linkDir, targetDir)
                         break;
                     case Mode.CLEAN:
-                        Symlink.delete(linkDir)
+                        Junction.delete(linkDir)
                         break;
                     default:
                         throw new IllegalStateException("Unknown SymlinksToCacheTask mode ${mode}")

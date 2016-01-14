@@ -13,6 +13,7 @@ public interface Ntifs {
 
     // Should be in JNA's WinNT class, but isn't, at JNA 3.4.0
     int IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003;
+    int IO_REPARSE_TAG_SYMLINK = 0xA000000C;
 
     // Should probably be in some JNA class, but I couldn't find it.
     int MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16 * 1024;

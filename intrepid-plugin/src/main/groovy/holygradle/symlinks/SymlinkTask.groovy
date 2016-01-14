@@ -1,6 +1,7 @@
 package holygradle.symlinks
 
 import holygradle.io.Symlink
+import holygradle.io.Junction
 import org.gradle.api.DefaultTask
 
 class SymlinkTask extends DefaultTask {
@@ -10,7 +11,7 @@ class SymlinkTask extends DefaultTask {
         Map<File, File> localEntries = entries // capture private for closure
         doFirst {
             localEntries.each { File linkDir, File targetDir ->
-                Symlink.rebuild(linkDir, targetDir)
+                Junction.rebuild(linkDir, targetDir)
             }
         }
     }
