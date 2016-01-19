@@ -29,7 +29,7 @@ executions {
      *
      * You may need to change the list of {@code groups:} below to suit your local setup.
      *
-     * curl -u username:password "http://localhost:8081/artifactory/api/plugins/execute/storageSummary?params=Content-Tyoe=text/xml"
+     * curl -u username:password "http://localhost:8081/artifactory/api/plugins/execute/storageSummary?params=Content-Type=text/xml"
      */
     storageSummary(httpMethod: 'GET', groups: ["readers"].toSet()) { Map params ->
         try {
@@ -45,7 +45,7 @@ executions {
                 userVisibleRepoStats
             )
             addStatsForUserVisibleRepos(
-                repositories.getRemoteRepositories(),
+                repositories.getRemoteRepositories().collect { "${it}-cache" },
                 allRepoStats,
                 userVisibleRepoStats
             )
@@ -109,12 +109,12 @@ class RepoStats {
         return String.format('%.2f', percentage)
     }
 
-    public long getSizeInMegabytes() {
-        return size / 1024
+    public double getSizeInMegabytes() {
+        return roundToTwoDecimalPlaces(size / 1024.0d)
     }
 
-    public long getSizeInGigabytes() {
-        return sizeInMegabytes / 1024
+    public double getSizeInGigabytes() {
+        return roundToTwoDecimalPlaces(sizeInMegabytes / 1024.0d)
     }
 
     public RepoStats plus(RepoStats other) {
@@ -123,6 +123,10 @@ class RepoStats {
 
     public RepoStats minus(RepoStats other) {
         return new RepoStats(name, count - other.count, size - other.size)
+    }
+
+    private static double roundToTwoDecimalPlaces(double value) {
+        Math.round(value*100)/100.0d
     }
 }
 
