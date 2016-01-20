@@ -137,8 +137,17 @@ class DefaultConfigurationSet implements ConfigurationSet {
         type
     }
 
-    DefaultConfigurationSetType getTypeAsDefault() {
+    public final DefaultConfigurationSetType getTypeAsDefault() {
         type
+    }
+
+    // This is an API for use by build scripts, so ignore the "unused" warning.
+    @SuppressWarnings("GroovyUnusedDeclaration")
+    public final LinkedHashMap<String, List<String>> getAxes() {
+        // Can't just use "+" here because it doesn't return LinkedHashMap.
+        def result = new LinkedHashMap<String, List<String>>(type.requiredAxes)
+        result.putAll(type.optionalAxes)
+        return result
     }
 
     @Override

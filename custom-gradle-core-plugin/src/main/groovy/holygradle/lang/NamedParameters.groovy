@@ -3,7 +3,7 @@ package holygradle.lang
 public class NamedParameters {
     /**
      * This object should be used as the value for a key in the {@code parameterSpecs} passed to
-     * {@link #checkAndGet(java.util.Map, java.util.List)} to specify that a named argument is allowed but has no
+     * {@link #checkAndGet(java.util.Map, java.util.Map)} to specify that a named argument is allowed but has no
      * default.  This allows {@code null} to be a valid default value.
      */
     public static final Object NO_DEFAULT = new Object()

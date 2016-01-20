@@ -108,6 +108,7 @@ class DefaultConfigurationSetTest extends AbstractHolyGradleTest {
         set.type(type)
         Assert.assertEquals("Check type is initialised", type, set.type)
         Assert.assertEquals("Check type is available as DefaultConfigurationSetType", type, set.typeAsDefault)
+        Assert.assertEquals("Check axes match type axes", type.axes, set.axes)
 
         Assert.assertNull("Check prefix is not initialised", set.prefix)
         set.prefix("prefix")

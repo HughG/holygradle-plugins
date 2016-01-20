@@ -99,6 +99,7 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         Assert.assertEquals("name", "type", type.name)
         Assert.assertEquals("requiredAxes", REQUIRED_AXES, type.requiredAxes)
         Assert.assertEquals("optionalAxes", OPTIONAL_AXES, type.optionalAxes)
+        Assert.assertEquals("axes", type.requiredAxes + type.optionalAxes, type.axes)
     }
 
     @Test
