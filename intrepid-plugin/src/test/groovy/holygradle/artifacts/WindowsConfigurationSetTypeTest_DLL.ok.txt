@@ -1,5 +1,5 @@
 [stage:import] ==> import_common (visible = true) extendsFrom []
-description: Files for the import stage of development, common to all values of [Platform, Configuration]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the import stage of development, common to all values of [Platform, Configuration]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -30,7 +30,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:debugging, Platform:Win32, Configuration:Release] ==> debugging_Win32_Release (visible = true) extendsFrom []
-description: Files for the debugging stage of development, with [Platform:Win32, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the debugging stage of development, with [Platform:Win32, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -61,7 +61,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:runtime, Platform:Win32, Configuration:Release] ==> runtime_Win32_Release (visible = true) extendsFrom []
-description: Files for the runtime stage of development, with [Platform:Win32, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the runtime stage of development, with [Platform:Win32, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -92,7 +92,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:import, Platform:Win32, Configuration:Release] ==> import_Win32_Release (visible = true) extendsFrom [import_common]
-description: Files for the import stage of development, with [Platform:Win32, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the import stage of development, with [Platform:Win32, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -123,7 +123,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:debugging, Platform:x64, Configuration:Release] ==> debugging_x64_Release (visible = true) extendsFrom []
-description: Files for the debugging stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the debugging stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -154,7 +154,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:runtime, Platform:x64, Configuration:Release] ==> runtime_x64_Release (visible = true) extendsFrom []
-description: Files for the runtime stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the runtime stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -185,7 +185,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:import, Platform:x64, Configuration:Release] ==> import_x64_Release (visible = true) extendsFrom [import_common]
-description: Files for the import stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the import stage of development, with [Platform:x64, Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -216,7 +216,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:debugging, Platform:Win32, Configuration:Debug] ==> debugging_Win32_Debug (visible = true) extendsFrom []
-description: Files for the debugging stage of development, with [Platform:Win32, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the debugging stage of development, with [Platform:Win32, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -247,7 +247,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:runtime, Platform:Win32, Configuration:Debug] ==> runtime_Win32_Debug (visible = true) extendsFrom []
-description: Files for the runtime stage of development, with [Platform:Win32, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the runtime stage of development, with [Platform:Win32, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -278,7 +278,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:import, Platform:Win32, Configuration:Debug] ==> import_Win32_Debug (visible = true) extendsFrom [import_common]
-description: Files for the import stage of development, with [Platform:Win32, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the import stage of development, with [Platform:Win32, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -309,7 +309,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:debugging, Platform:x64, Configuration:Debug] ==> debugging_x64_Debug (visible = true) extendsFrom []
-description: Files for the debugging stage of development, with [Platform:x64, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the debugging stage of development, with [Platform:x64, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -340,7 +340,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:runtime, Platform:x64, Configuration:Debug] ==> runtime_x64_Debug (visible = true) extendsFrom []
-description: Files for the runtime stage of development, with [Platform:x64, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the runtime stage of development, with [Platform:x64, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
@@ -371,7 +371,7 @@ exampleSourceConf->runtime_x64_Debug
 build->import_x64_Debug
 
 [stage:import, Platform:x64, Configuration:Debug] ==> import_x64_Debug (visible = true) extendsFrom [import_common]
-description: Files for the import stage of development, with [Platform:x64, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+description: Files for the import stage of development, with [Platform:x64, Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationSet ..., configurationSets.DLL' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
 
 Mappings from a single config (with export)
 exampleSourceConf->debugging_Win32_Release
