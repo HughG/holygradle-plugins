@@ -22,6 +22,12 @@ import org.artifactory.repo.RepoPathFactory
  */
 
 executions {
+    // NOTE 2016-01-20 HughG: I want to read the set of groups from a file, but the plugin API gives me no way to
+    // get the plugin directory or something like that.  From experimenation, the current directory when the
+    // "executions" block is executed is the "bin" folder of the installation.
+    final File ARTIFACTORY_ROOT = new File("..")
+    final Set PLUGIN_GROUPS = new File(ARTIFACTORY_ROOT, "etc/plugins/storageSummary.groups.txt").readLines().toSet()
+
     /**
      * This execution is named 'storageSummary' and it can be invoked via the usual Artifactory REST API.
      * The expected (and mandatory) parameter is MIME-style 'Content-Type' describing the format in which to return the
@@ -31,7 +37,7 @@ executions {
      *
      * curl -u username:password "http://localhost:8081/artifactory/api/plugins/execute/storageSummary?params=Content-Type=text/xml"
      */
-    storageSummary(httpMethod: 'GET', groups: ["readers"].toSet()) { Map params ->
+    storageSummary(httpMethod: 'GET', groups: PLUGIN_GROUPS) { Map params ->
         try {
             status = 200
 
