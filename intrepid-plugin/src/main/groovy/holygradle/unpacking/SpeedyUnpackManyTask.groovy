@@ -1,9 +1,8 @@
 package holygradle.unpacking
 
 import holygradle.Helper
-import holygradle.io.Junction
-import holygradle.io.Symlink
 import holygradle.io.FileHelper
+import holygradle.io.Link
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -99,7 +98,7 @@ class SpeedyUnpackManyTask
         }
 
         if (entry.unpackDir.exists()) {
-            if (Junction.isJunction(entry.unpackDir)) {
+            if (Link.isLink(entry.unpackDir)) {
                 logger.info "SpeedyUnpackManyTask: replacing symlink ${entry.unpackDir} with real directory"
                 FileHelper.ensureDeleteFile(entry.unpackDir)
                 FileHelper.ensureMkdirs(entry.unpackDir)

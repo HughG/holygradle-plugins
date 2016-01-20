@@ -1,7 +1,6 @@
 package holygradle.unpacking
 
-import holygradle.io.Junction
-import holygradle.io.Symlink
+import holygradle.io.Link
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
@@ -69,7 +68,7 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
 
         [emptyConfigLibDir, extLibDir, anotherLibDir].each {
             assertTrue("File/folder for packed dep has been created at ${it}", it.exists())
-            assertTrue("Symlink to packed dep has been created at ${it}", Junction.isJunction(it))
+            assertTrue("Symlink to packed dep has been created at ${it}", Link.isLink(it))
             // The output of "list()" doesn't include "./" and "../", so "> 0" tells us it's non-empty.
             assertTrue("Symlink target folder is not empty under ${it}", it.list().length > 0)
         }
@@ -132,13 +131,13 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
         allPackedDepDirs.each { File file ->
             final boolean expectSymlink = symlinkPackedDepDirs.contains(file)
             assertEquals(
-                "Symlink to packed dep has been created at ${file}",
+                "Link to packed dep has been created at ${file}",
                 expectSymlink,
-                file.exists() && Junction.isJunction(file)
+                file.exists() && Link.isLink(file)
             )
             if (expectSymlink) {
                 // The output of "list()" doesn't include "./" and "../", so "> 0" tells us it's non-empty.
-                assertTrue("Symlink target folder is not empty under ${file}", file.list().length > 0)
+                assertTrue("Link target folder is not empty under ${file}", file.list().length > 0)
             }
         }
     }
@@ -163,12 +162,12 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
 
         allPackedDepDirs.each { File file ->
             assertTrue(
-                "Symlink to packed dep has been created at ${file}",
-                file.exists() && Junction.isJunction(file)
+                "Link to packed dep has been created at ${file}",
+                file.exists() && Link.isLink(file)
             )
         }
 
-        Path linkTarget = Junction.getTarget(extLibDir.toPath()).toPath()
+        Path linkTarget = Link.getTarget(extLibDir).toPath()
         println "linkTarget = ${linkTarget}"
         assertThat(linkTarget.toString(), endsWith("\\external-lib-1.1"))
     }

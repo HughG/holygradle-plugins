@@ -5,8 +5,6 @@ import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
-import holygradle.io.Junction
-import holygradle.io.Symlink
 import holygradle.dependencies.CollectDependenciesHelper
 import holygradle.dependencies.CollectDependenciesTask
 import holygradle.dependencies.DependenciesStateHandler
@@ -14,6 +12,7 @@ import holygradle.dependencies.DependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.dependencies.ZipDependenciesTask
+import holygradle.io.Link
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
@@ -348,7 +347,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                     final File targetDir = new File(project.projectDir, it.targetPath)
                     rebuildSymlinksTask.addLink(linkDir, targetDir)
                     deleteSymlinksTask.doLast {
-                        Junction.delete(linkDir)
+                        Link.delete(linkDir)
                     }
                 }
             }

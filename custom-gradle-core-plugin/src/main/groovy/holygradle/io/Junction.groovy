@@ -118,35 +118,8 @@ class Junction {
 
                 // Strip the starting \??\ if it exists
                 return new File(result - '\\??\\')
-            } else if (reparseTag == Ntifs.IO_REPARSE_TAG_SYMLINK) {
-                reparseDataByteBuffer.getShort() // Skip the data length
-                reparseDataByteBuffer.getShort() // Skip the reserved data
-
-                int nameOffset = reparseDataByteBuffer.getShort()
-                int nameLength = reparseDataByteBuffer.getShort()
-
-                reparseDataByteBuffer.getShort() // Skip the print name offset
-                reparseDataByteBuffer.getShort() // Skip the print name length
-                reparseDataByteBuffer.getLong() // Skip the flags
-
-                // Move to the start of name
-                for (int i = 0; i < nameOffset; i++) {
-                    reparseDataByteBuffer.get()
-                }
-
-                String result;
-
-                use (JunctionHelperIntegerCategory) {
-                    // Read the bytes
-                    for (int i = 0; i < nameLength.bytesAsCharacterLength(); i++) {
-                        result += reparseDataByteBuffer.getChar()
-                    }
-                }
-
-                println("Path: ${result}")
-                return new File(result)
             } else {
-                throw new RuntimeException("File ${link} is not a directory junction or a symlink")
+                throw new RuntimeException("File ${link} is not a directory junction")
             }
         }
     }
