@@ -1,5 +1,4 @@
 include::stdattr.ascinc[]
-include::stdattr.ascinc[]
 
 = Glossary
 
@@ -37,9 +36,24 @@ Artifactory.  Glossary entries may link to other pages for more information.
     gloss:groovy[] programmers use closures in creating gloss:dsl[]s.  Closures also exist in C++11,
     Java, Python, and many other languages.
 [[gloss-configuration]] configuration::
-    A configuration is a "part" or "slice" of a gloss:module[] which can be used separately from
-    other parts.  Each configuration in a module has its own gloss:dependencies[], and its own
-    collection of gloss:artifact[]s.
+    A configuration is gloss:gradle[] concept meaning a "part" or "slice" of a gloss:module[] which
+    can be used separately from other parts.  Each configuration in a module has its own
+    gloss:dependencies[], and its own collection of gloss:artifact[]s.
+[[gloss-configuration-set]] configuration set::
+    A configuration set is a gloss:holygradle[] concept: a class of object which creates and
+    references a number of gloss:configuration[]s which are related in some way.  For example,
+    unlike JVM-based code, native applications often vary by platform, build setup (Debug or
+    Release), etc.--as reflected in the C/C\++ "model" in newer versions of Gradle--and it is
+    natural to map these to separate Gradle configurations.  The gloss:configuration-set-type[] of
+    the configuration set determines the relationships within and across modules, and partly
+    determines their names.  The  configuration set itself may modify the names so that a module can
+    contain more than one configuration set of the same type -- for example, if a single module
+    packages matched client and server libraries.
+[[gloss-configuration-set-type]] configuration set type::
+    A configuration set type is a gloss:holygradle[] concept: a class of object which defines a
+    specific set of relationships between gloss:configuration[]s in a gloss:configuration-set[],
+    defines how to map them to corresponding configurations in another module, and includes some
+    kind of template or pattern for naming them.
 [[gloss-dependency]] dependency::
     Some software gloss:module[] B is said to be a dependency of module A if A needs ("depends 
     on") B in some way.  Module B might be needed only when building A, or it might be needed to 
@@ -69,7 +83,7 @@ Artifactory.  Glossary entries may link to other pages for more information.
 [source,groovy]
 ----
 configurations {
-    privateBuild
+    build
 }
 ----
 +
@@ -78,7 +92,7 @@ is understood as
 [source,groovy]
 ----
 configurations({ ConfigurationHandler c ->
-    c.privateBuild; // creates new Configuration and assigns it to new property "privateBuild"
+    c.build; // creates new Configuration and assigns it to new property "build"
 });
 ----
 
@@ -142,7 +156,7 @@ configurations({ ConfigurationHandler c ->
     gloss:gradle-distribution[].  See http://www.gradle.org/docs/1.4/userguide/userguide_single.html#init_scripts for more detail.
     The gloss:holygradle[] init script can be seen by running +gw openInitScript+.
 [[gloss-ivy]] Ivy::
-    A gloss:dependency-management[] tool written in Java, which works stand-alone or with link: 
+    A gloss:dependency-management[] tool written in Java, which works stand-alone or with
     https://ant.apache.org/[Apache Ant].  gloss:gradle[] shares many concepts with Ivy, and 
     produces the same gloss:ivy-xml[] files to describe the gloss:module[]s it publishes.
 [[gloss-ivy-xml]] ivy.xml::
@@ -262,8 +276,8 @@ history of a set of related files.
     add or remove dependencies of its own, or change their versions.  If the same module is used in
     more than one place in the dependency graph with different versions, gloss:gradle[] normally
     picks the "newest" one.  For safety, the gloss:holygradle[] by default raises an error if there
-    is any conflict, because it is intended for use with C++ libraries, and it is not as easy to
-    replace versions of a library in C++ as in Java.  Note that, although the version may look like
+    is any conflict, because it is intended for use with C\++ libraries, and it is not as easy to
+    replace versions of a library in C\++ as in Java.  Note that, although the version may look like
     "+1.2.3+" it is just treated as a string, to determine which is newer -- so, for example,
     "+1.2.11+" is less/older than "+1.2.3+".  Therefore we recommend always specifying exact
     versions.
