@@ -1,6 +1,7 @@
 package holygradle.io
 
 import java.nio.file.Files
+import org.gradle.api.logging.Logger
 
 /**
  * Utility class for abstracting Symlinks and Directory Junctions
@@ -24,30 +25,24 @@ class Link {
         )
     }
 
-    public static void rebuild(File link, File target) {
+    public static void rebuild(File link, File target, Logger logger) {
         // Delete the link first in case it already exists as the wrong type
         delete(link)
 
         // Try to build as a directory junction first
-        Exception junctionError
         try {
             Junction.rebuild(link, target)
-            return
         } catch (Exception e) {
-            junctionError = e
-        }
+            logger?.debug("Failed to create a directory junction from ${link} to ${target}. Falling back to symlinks.", e)
 
-        // If that fails, fall back to symlinks
-        Exception symlinkError
-        try {
-            Symlink.rebuild(link, target)
-            return
-        } catch (Exception e) {
-            symlinkError = e
+            // If that fails, fall back to symlinks
+            try {
+                Symlink.rebuild(link, target)
+            } catch (Exception e2) {
+                logger?.error("Directory junction and symlink creation failed.")
+                throw e2
+            }
         }
-
-        throw new RuntimeException("Directory Junction creation failed with error ${junctionError.message}.\r\n" +
-                                   "Symlink creation failed with error ${symlinkError.message}.")
     }
 
     public static File getTarget(File link) {
@@ -65,6 +60,8 @@ class Link {
             symlinkAction(link)
         } else if (Junction.isJunction(link)) {
             junctionAction(link)
+        } else {
+            throw new RuntimeException("${link} is not a symlink or a directory junction.")
         }
     }
 }
