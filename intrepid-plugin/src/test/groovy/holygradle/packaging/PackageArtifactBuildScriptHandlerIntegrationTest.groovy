@@ -135,6 +135,8 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
     @Test
     public void testBuildScriptRequired() {
         File projectCDir = new File(getTestDir(), "buildScriptRequired")
+        FileHelper.ensureDeleteFile(new File(projectCDir, "settings.gradle"))
+        FileHelper.ensureDeleteFile(new File(projectCDir, "settings-subprojects.txt"))
         File projectCPackagesDir = new File(projectCDir, "packages")
         FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
@@ -185,9 +187,9 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
                 }
                 regression.replacePatterns(
                     regressionFileName, [
-                    (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
-                    (~/hg "unknown@[0-9a-f]+"/): "hg \"unknown@[snipped]\""
-                ]
+                        (~/gplugins.use "(.*):.*"/): "gplugins.use \"\$1:dummy\"",
+                        (~/hg "unknown@[0-9a-f]+"/): "hg \"unknown@[snipped]\""
+                    ]
                 )
                 regression.checkForRegression(regressionFileName)
             } catch (AssertionError e) {
