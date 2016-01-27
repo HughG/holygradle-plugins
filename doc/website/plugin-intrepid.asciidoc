@@ -13,6 +13,8 @@ This is a custom plugin for Gradle for retrieving source-code dependencies and o
 
 * Default dependency settings
 ** Fail on version conflict by default (configurable)
+* Configurations
+** Create sets of related configurations following standard patterns.
 * Source code dependencies
 ** Retrieving source code repositories from SVN and Mercurial
 ** Caching credentials for SVN and Mercurial
@@ -81,8 +83,8 @@ packedDependencies {
         // does not use the same configuration naming scheme, so we can't map to a
         // configurationSetType.
         def testRuntimeConfs = configurationSets.test.configurationNamesMap.findAll { k, v ->
-	    k[stage] == 'runtime'
-	}
+            k[stage] == 'runtime'
+        }
         configuration "${testRuntimeConfs.join(',')}->bin"
         unpackToCache = false
     }
@@ -122,8 +124,9 @@ This script does the following:
 * Makes use of a specific version of the intrepid plugin.
 * Describes which repository to use for satisfying dependencies, including credentials.
 * Defines
-* link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#configurations[configurations]
-* for this module using the [TODO" link to configurationSets] DSL.
+link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#configurations[configurations]
+for this module using the <<_configurationSets>> DSL, suitable for this module packaging a DLL, and
+having unit test executables which may have different dependencies.
 * Defines 'framework' as a source code dependency:
 ** When dependencies are fetched, an SVN checkout operation will fetch the 'framework' source code
 to '<workspace>/framework'. 
@@ -218,6 +221,38 @@ When published, the Ivy module description for this example module will look lik
 == DSL Guide
 
 The intrepid plugin adds several domain-specific-language (DSL) elements.
+
+[[_repositories]]
+=== repositories
+
+This DSL element isn't actually part of the +intrepid+ plugin, but will likely need to be configured
+in your build script, and usually appears near the top of the file.  (See
+http://www.gradle.org/docs/1.4/userguide/userguide_single.html#N10607[repositories] in the Gradle
+documentation.) This element should be placed in the root of your build script--that means, outside of any
+other DSL elements such as <<_sourceDependencies>>). For example:
+
+[source,groovy]
+----
+repositories.ivy {
+    url "http://artifactory-server/artifactory/my-repo"
+    credentials {
+        username "user"
+        password "password"
+    }
+}
+----
+
+This +repositories+ block will configure <<_sourceDependencies>> and <<_packedDependencies>>. You can configure it using any of the methods in methods in the [link:http://gradle.org/docs/1.4/javadoc/org/gradle/api/artifacts/dsl/RepositoryHandler.html[RepositoryHandler] (e.g. Maven, Ivy or file-system) but the publishing of packages using +intrepid+ only supports Ivy so you'll probably only have artifacts available in an Ivy repository.
+
+[[_configurationSetTypes]]
+=== configurationSetTypes
+
+TODO: doc
+
+[[_configurationSets]]
+=== configurationSets
+
+TODO: doc
 
 === dependenciesSettings
 
@@ -823,6 +858,7 @@ This method adds a line of text to the text file.
 
 -> Call this method any number of times.
 
+[[_includeBuildScript]]
 ==== includeBuildScript
 
 This extension allows you to dynamically create a build script to be included in the package. There is support for taking the +sourceDependencies+ already defined and converting them to pinned source dependencies or to +packedDependencies+. This facilitates the creation of source and binary 'meta-packages' for releases.
@@ -872,6 +908,7 @@ appear at the top of the build script. Otherwise it will appear at the bottom.
 
 -> Call this method any number of times.
 
+[[_addPinnedSourceDependency]]
 ===== addPinnedSourceDependency
 
 This method allows you to select source dependencies to be included in the generated build script, pinned to the current source-control revision.
@@ -891,7 +928,7 @@ gradle.projectsEvaluated {
 }
 ----
 
-
+[[_addPackedDependency]]
 ===== addPackedDependency
 
 This method allows you to specify dependencies to be included in the generated build script as +packedDependencies+ i.e. to retrieve pre-built artifacts instead of the source code repository.
@@ -999,6 +1036,8 @@ this page.  That example shows how to set the version from an environment variab
 
 ==== group
 
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
+
 This method defines the group name for the published artifacts. It will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->organisation` attribute in the module descriptor above. The group is often based on the name of the organisation, and helps to disambiguate modules with the same name from different organisations.
 
 Calling this method has the same effect as setting the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html#org.gradle.api.Project:group[group] property on the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html[Project].
@@ -1007,6 +1046,8 @@ Calling this method has the same effect as setting the link:http://gradle.org/do
 
 [[_nextVersionNumber]]
 ==== nextVersionNumber
+
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
 
 This method defines the version number for the published artifacts. This will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->revision` attribute in the module descriptor above.
 
@@ -1019,6 +1060,8 @@ Calling this method has the same effect as setting the link:http://gradle.org/do
 [[_nextVersionNumberAutoIncrementFile]]
 ==== nextVersionNumberAutoIncrementFile
 
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
+
 This method has the same effect as <<_nextVersionNumber>> with a few important differences:
 
 * the single string parameter defines a relative path to a file containing the next version number
@@ -1028,6 +1071,8 @@ This method has the same effect as <<_nextVersionNumber>> with a few important d
 
 [[_nextVersionNumberEnvironmentVariable]]
 ==== nextVersionNumberEnvironmentVariable
+
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
 
 This method has the same effect as <<_nextVersionNumber>> except that the single string parameter defines the name of an environment variable which contains the version number. This may be useful if, for example, your autobuild already has a notion of version number and is invoking the +publish+ task.
 
@@ -1051,28 +1096,6 @@ repositories.ivy {
 ----
 
 If your repository supports anonymous publishing (which is not recommended) then you could omit the +credentials+ section. Note that it is recommended that you use the link:plugin-my-credentials.html[] rather than hard-coding credentials.
-
-[[_repositories]]
-=== repositories
-
-This DSL element isn't actually part of the +intrepid+ plugin, but will likely need to be configured
-in your build script (see
-http://www.gradle.org/docs/1.4/userguide/userguide_single.html#N10607[repositories] in the Gradle
-documentation.) This element should be placed in the root of your build script (i.e. outside of any
-other DSL elements such as <<_sourceDependencies>>). For example:
-
-[source,groovy]
-----
-repositories.ivy {
-    url "http://artifactory-server/artifactory/my-repo"
-    credentials {
-        username "user"
-        password "password"
-    }
-}
-----
-
-This +repositories+ block will configure <<_sourceDependencies>> and <<_packedDependencies>>. You can configure it using any of the methods in methods in the [link:http://gradle.org/docs/1.4/javadoc/org/gradle/api/artifacts/dsl/RepositoryHandler.html[RepositoryHandler] (e.g. Maven, Ivy or file-system) but the publishing of packages using +intrepid+ only supports Ivy so you'll probably only have artifacts available in an Ivy repository.
 
 == Tasks
 
@@ -1180,7 +1203,7 @@ This task will navigate through all of the project's dependencies. This includes
 dependencies. A folder named +local_artifacts+ will be created. Ivy and Maven style dependencies
 will be placed in their respective subfolders. Source dependencies will be summarised in a
 "build_info" folder but the source itself will not be included. Finally, the +custom-gradle+
-gloss:gradle-distribution[] used by the gloss:holygrade[]'s gloss:gradle-wrapper[] will be placed in
+gloss:gradle-distribution[] used by the gloss:holygradle[]'s gloss:gradle-wrapper[] will be placed in
 its own subfolder.
 
 The result is a directory which contains all packed dependencies. This is useful for pre-fetching
@@ -1266,7 +1289,7 @@ WARNING: Previous versions of the gloss:holygradle[] allowed published packed de
 transitive dependencies should appear at some other relative location.  This feature is deprecated and will be removed
 in future.  See <<useRelativePathFromIvyXml>>.
 
-==== Ivy files
+=== Ivy files
 
 WARNING: This feature is deprecated and will be removed in future.  See <<useRelativePathFromIvyXml>>.
 

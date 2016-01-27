@@ -125,10 +125,16 @@ for (local in [false, true]) {
         into websiteOutputDir
         include "asciidoc/**"
         include "files/**"
+        exclude "files/examples/*/.gradle/**"
+        exclude "files/examples/*/dep/**"
+        exclude "files/examples/*/gradle/**"
         include "images/**"
         if (local) {
             it.include "local/asciidoc/**"
             it.include "local/files/**"
+            it.exclude "local/files/examples/*/.gradle/**"
+            it.exclude "local/files/examples/*/dep/**"
+            it.exclude "local/files/examples/*/gradle/**"
             it.include "local/images/**"
         }
     }
