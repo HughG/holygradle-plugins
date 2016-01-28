@@ -40,20 +40,20 @@ Artifactory.  Glossary entries may link to other pages for more information.
     can be used separately from other parts.  Each configuration in a module has its own
     gloss:dependencies[], and its own collection of gloss:artifact[]s.
 [[gloss-configuration-set]] configuration set::
-    A configuration set is a gloss:holygradle[] concept: a class of object which creates and
-    references a number of gloss:configuration[]s which are related in some way.  For example,
-    unlike JVM-based code, native applications often vary by platform, build setup (Debug or
-    Release), etc.--as reflected in the C/C\++ "model" in newer versions of Gradle--and it is
-    natural to map these to separate Gradle configurations.  The gloss:configuration-set-type[] of
-    the configuration set determines the relationships within and across modules, and partly
-    determines their names.  The  configuration set itself may modify the names so that a module can
-    contain more than one configuration set of the same type -- for example, if a single module
-    packages matched client and server libraries.
+    A configuration set is a gloss:holygradle[] concept: an object which creates and references a
+    number of gloss:configuration[]s which are related in some way.  For example, unlike JVM-based
+    code, native applications often vary by platform, build setup (Debug or Release), etc.{empty}--as
+    reflected in the C/C++ "model" in newer versions of Gradle--and it is natural to map these to
+    separate Gradle configurations.  The gloss:configuration-set-type[] of the configuration set
+    determines the relationships within and across modules, and partly determines their names.  The
+    configuration set itself may modify the names so that a module can contain more than one
+    configuration set of the same type--for example, if a single module packages matched client and
+    server libraries.
 [[gloss-configuration-set-type]] configuration set type::
-    A configuration set type is a gloss:holygradle[] concept: a class of object which defines a
-    specific set of relationships between gloss:configuration[]s in a gloss:configuration-set[],
-    defines how to map them to corresponding configurations in another module, and includes some
-    kind of template or pattern for naming them.
+    A configuration set type is a gloss:holygradle[] concept: an object which defines a specific set
+    of relationships between gloss:configuration[]s in a gloss:configuration-set[], defines how to
+    map them to corresponding configurations in another module, and includes some kind of template
+    or pattern for naming them.
 [[gloss-dependency]] dependency::
     Some software gloss:module[] B is said to be a dependency of module A if A needs ("depends 
     on") B in some way.  Module B might be needed only when building A, or it might be needed to 

@@ -125,8 +125,8 @@ This script does the following:
 * Describes which repository to use for satisfying dependencies, including credentials.
 * Defines
 link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#configurations[configurations]
-for this module using the <<_configurationSets>> DSL, suitable for this module packaging a DLL, and
-having unit test executables which may have different dependencies.
+for this module using the <<_configurationSets>> gloss:dsl[], suitable for this module packaging a
+DLL, and having unit test executables which may have different dependencies.
 * Defines 'framework' as a source code dependency:
 ** When dependencies are fetched, an SVN checkout operation will fetch the 'framework' source code
 to '<workspace>/framework'. 
@@ -220,7 +220,7 @@ When published, the Ivy module description for this example module will look lik
 
 == DSL Guide
 
-The intrepid plugin adds several domain-specific-language (DSL) elements.
+The intrepid plugin adds several gloss:domain-specific-language[] (DSL) elements.
 
 [[_repositories]]
 === repositories
@@ -242,15 +242,341 @@ repositories.ivy {
 }
 ----
 
-This +repositories+ block will configure <<_sourceDependencies>> and <<_packedDependencies>>. You can configure it using any of the methods in methods in the [link:http://gradle.org/docs/1.4/javadoc/org/gradle/api/artifacts/dsl/RepositoryHandler.html[RepositoryHandler] (e.g. Maven, Ivy or file-system) but the publishing of packages using +intrepid+ only supports Ivy so you'll probably only have artifacts available in an Ivy repository.
+This +repositories+ block will configure <<_sourceDependencies>> and <<_packedDependencies>>. You can configure it using any of the methods in methods in the Gradle link:http://gradle.org/docs/1.4/javadoc/org/gradle/api/artifacts/dsl/RepositoryHandler.html[RepositoryHandler] (e.g. Maven, Ivy or file-system) but the publishing of packages using +intrepid+ only supports Ivy so you'll probably only have artifacts available in an Ivy repository.
 
 [[_configurationSetTypes]]
 === configurationSetTypes
 
-TODO: doc
+This DSL block is used in combination with the <<_configurationSets>> block to provide a convenient way to define
+several related gloss:configuration[]s in your project, and their mapping to configurations in other modules, following
+common patterns.  For background information about configurations and configuration mapping, see the
+link:overview.html#_gradle_module_concepts[] overview and the link:workflows.html#_configurations[] section of the
+link:workflows.html[] page.
+
+A gloss:configuration-set-type[] defines a pattern for related named configurations and a pattern for mapping those
+configurations to corresponding configurations in other modules for <<_packedDependencies>> and <<_sourceDependencies>>.
+(A gloss:configuration-set[] actually creates those configurations in a project, optionally extending the naming
+pattern, so that a project can have several different parts following the same pattern--for example, client and server
+executables.)
+
+Often you will not need to use this block in your build file, because the gloss:holygradle[] automatically adds several
+configuration set types which are commonly useful for web and Windows native applications.  You can however remove or
+replace those types or add your own.
+
+TIP: You can print a given configuration set type such as +configurationSetTypes.LIB+ using the normal Groovy +println+
+method to see information about what it defines.
+
+==== Pre-defined Configuration Set Types
+
+This section describes the types pre-defined by the Holy Gradle.
+
+===== Naming Pattern
+
+The naming pattern is based on the idea that there are several concepts relevant to the files which make up a
+typical non-Java module.  One word is used for each such concept or "axis" and, unlike Java which uses +camelCaseWords+,
+the axes are separated by underscores.  This is so that it is easy for non-Java build tools to construct
+configuration names from pieces; but +camelCase+ may be used within the value for some axis.
+
+Some axes are optional, and the Platform and Configuration axes also have a "combined" value `common`, for files such as
+C++ headers, which are the same across Platform and Configuration.
+
+// NOTE: Need leading {empty} here so that the '[]' aren't interpreted as paragraph styles.  Can't use leading space
+// or it's interpreted as literal text and comes out all monospace.  Also need custom {undsc} attribute and double (as
+// opposed to single) quotes to get formatting right.
+====
+{empty}[_Testing_ "+{undsc}+"] +
+{empty}[_Subcomponent_ "+{undsc}+"] +
+{empty} _Stage_ +
+{empty}[ { ["+{undsc}+" _Platform_] ["+{undsc}+" _BuildType_] | "+{undsc}common+" } ]
+====
+
+For example, `import_x64_Release`, or `test_server_runtime_x64_Release`.
+
+Testing::
+    This axis is related to the testing of the module:
++
+* No value for this axis means the configuration covers the default, production use of the module.
+* +test+: Parts used for unit testing the module.
+* +integTest+: Parts used for integration testing of the module.
+
+Subcomponent::
+    This axis indicates that your module contains several separate parts, for example matching +client+ and +server+
+libraries.  There are no suggested standard values--you can use any word which describes the subcomponent.  If you
+need more than one work, use +camelCase+.
+Stage::
+    This refers to stages of the software lifecycle.
++
+* `import`: Files needed from module when you want to build some other module which uses it.
+* `runtime`: Files needed from the module at runtime.
+* `debugging`: Files only needed if/when you want to debug a running application (or a crash dump).
+
+Platform::
+    This axis covers the Visual Studio / MSBuild "Platform": "Win32" or "x64".  Non-C++ and other platform-neutral
+modules would omit this axis.
+Configuration::
+    For modules built with Visual Studio / MSBuild, this covers the "Configuration": "Debug" or "Release".  Non-C++
+modules will usually still include this axis; for example, a JavaScript library would have minified JS in its
+"Release" built type, whereas "Debug" would have the non-minified JS.
+
+These configuration set types also define a private configuration called +build+.  Its purpose is to map to
+configurations in other modules in cases where those files are needed to build this module, but are not needed by
+other modules which use this one.  Typically it maps to
+
+* build tools;
+* `import_*_*` in other modules, if the interface of that module should _not_ be exposed from this module.
+
+===== Default Visual Studio Types
+
+There are several configuration set types for Visual Studio solutions which are mainly C++-style projects.  These
+types have a naming pattern which defines the _Stage_, _Platform_, and _Configuration_ axes; the _Testing_ and
+_Subcomponent_ axes can be added by a specific configuration set.
+
+* LIB: static libraries, or similar things which do not themselves have runtime files.
+
+* DLL: dynamic libraries, or similar things which have runtime files and are used by other libraries or executables
+
+* EXE: dynamic libraries, or similar things which have runtime files and are executable themselves, instead of being
+used by other modules.
+
+These configuration set types define configuration name parts, "extends from" relationships, and contents as follows.
+
+[options="header",cols="2,1,3"]
+|====
+|Name |Extends |Contains
+
+|`build`
+|nothing
+|nothing, because this configuration is private
+
+|`import_common`
+|nothing
+|Platform- and Configuration-independent files which other modules need to build against this one.
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Debug` +
+`import_Win32_Release`
+|`import_common`
+|Platform- and Configuration-specific files which other modules need to build against this one.
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Debug` +
+`runtime_Win32_Release`
+|nothing
+|Platform- and Configuration-specific files which other modules need at runtime to use this one.
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Debug` +
+`debugging_Win32_Release`
+|nothing
+|Platform- and Configuration-specific files which other modules need to debug against this one.
+
+|====
+
+===== LIB
+
+This type is for static libraries built with the typical Visual Studio +Platform+ values of +x64+ and +Win32+,
+and +Configuration+ values of +Debug+ and +Release+.  There are also types called
+
+* `LIB_RELEASE`, which does not include any of the names with `Debug` in them;
+* `LIB_64`, which does not include any of the names with `Win32` in them;
+* `LIB_64_RELEASE`, which does not include any of the names with `Win32` or `Debug` in them.
+
+The configurations are intended to contain the following kinds of files when your module is published, as controlled by
+the <<_packageArtifacts>> block.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+a|For a Windows static library, this configuration might include
+
+* header files
+* Visual Studio property sheets (for setting up include/link paths)
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Debug` +
+`import_Win32_Release`
+|`.lib` files, and also `.pdb` files (because PDBs for static libraries are linked into the PDBs for DLLs/EXEs which
+use them, and are not needed at debugging time)
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Debug` +
+`runtime_Win32_Release`
+|nothing
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Debug` +
+`debugging_Win32_Release`
+|nothing
+
+|====
+
+===== DLL
+
+This type is for dynamic libraries built with the typical Visual Studio +Platform+ values of +x64+ and +Win32+,
+and +Configuration+ values of +Debug+ and +Release+.  There are also types called
+
+* `DLL_RELEASE`, which does not include any of the names with `Debug` in them;
+* `DLL_64`, which does not include any of the names with `Win32` in them;
+* `DLL_64_RELEASE`, which does not include any of the names with `Win32` or `Debug` in them.
+
+These types are also suitable for executables which are used like libraries, in that your module needs some kind of
+header to use them and/or they are not run independently.  For example, COM singletons are build as EXEs but can be
+used by libraries, which need "+.idl+" files to access them.  The configurations are intended to contain the
+following kinds of files when your module is published, as controlled by the <<_packageArtifacts>> block.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+a|For a Windows dynamic library, this configuration might include
+
+* header files
+* +.idl+ files
+* Visual Studio property sheets (for setting up include/link paths)
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Debug` +
+`import_Win32_Release`
+|`.lib` files
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Debug` +
+`runtime_Win32_Release`
+|`.dll` files, and any `.exe` or other "plugin-style" executable files
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Debug` +
+`debugging_Win32_Release`
+|`.pdb` files
+
+|====
+
+===== EXE
+
+This type is for executables built with the typical Visual Studio +Platform+ values of +x64+ and +Win32+, and
++Configuration+ values of +Debug+ and +Release+.  There are also types called
+
+* `EXE_RELEASE`, which does not include any of the names with `Debug` in them;
+* `EXE_64`, which does not include any of the names with `Win32` in them;
+* `EXE_64_RELEASE`, which does not include any of the names with `Win32` or `Debug` in them.
+
+These types are also suitable for executables which are used like libraries, in that your module needs some kind of
+header to use them and/or they are not run independently.  For example, COM singletons are build as EXEs but can be
+used by libraries, which need "+.idl+" files to access them.  The configurations are intended to contain the
+following kinds of files when your module is published, as controlled by the <<_packageArtifacts>> block.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+|nothing
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Debug` +
+`import_Win32_Release`
+|nothing
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Debug` +
+`runtime_Win32_Release`
+|`.exe` files
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Debug` +
+`debugging_Win32_Release`
+|`.pdb` files
+
+|====
+
+===== Configuration Mapping Rules
+
+These configuration set types can be passed to the +configurationSet+ method of <<_sourceDependencies>>
+(<<_sourceDependencies_configurationSet>>) or <<_packedDependencies>> (<<_packedDependencies_configurationSet>>)
+and the Holy Gradle will automatically create mappings between configurations, according to the following rules.
+
+* The `runtime_*_*` and `debugging_*_*` configurations in a dependency are always mapped from the corresponding
+configurations in this module.  That is, `runtime_Win32_Debug->runtime_Win32_Debug`,
+`runtime_Win32_Release->runtime_Win32_Release`, and so on.  This is true even for static libraries because they
+can have runtime dependencies on DLLs.
+
+* The `import_common` configuration does not need to be mapped between modules because other modules are only
+expected to use the `import_*_*` configurations (`import_Win32_Debug` and so on), and those configurations will
+include everything in the other module's `import_common`, because each `import_*_*` configuration extends
+`import_common`.
+
+* The `import_*_*` configurations in a dependency may be
+
+** mapped from the corresponding public configurations in this module (`import_x64_Release->import_x64_Release`
+and so on) if
+
+*** either the interfaces of that module should be exposed from this module;
+
+*** or both this module and the dependency are static libraries, because in that case another module which links
+against this one will also have to link against the dependency;
+
+** mapped from the private `build` configurations in this module (`build->import_x64_Release` and so on) if the
+interfaces of that module should be encapsulated within this module;
+
+** not mapped at all, if the dependency is an EXE-style module, because they do not have build-time interfaces.
+
+The rule for the `import_*_*` configurations can also be represented by the following table.  The From/To columns
+are the configuration set type for the source and destination of the mapping.  The `export:` column indicates
+what value for that option (default +false+) is passed to the +configurationSet+ method of +sourceDependencies+
+++_packedDependencies++.
+
+[width="75%",cols="1,1,1,2",options="header"]
+|====
+|From |To |`export:` |Map to `import_*_*`?
+
+.5+|LIB .2+|LIB |`false` |from same
+|`true` |from same
+.2+|DLL |`false` |from `build`
+|`true` |from same
+|EXE |n/a |no
+.5+|DLL .2+|LIB |`false` |from `build`
+|`true` |from same
+.2+|DLL |`false` |from `build`
+|`true` |from same
+|EXE |n/a |no
+.3+|EXE |LIB |n/a |no
+|DLL |n/a |no
+|EXE |n/a |no
+
+|====
 
 [[_configurationSets]]
 === configurationSets
+
+This DSL block is used in combination with the <<_configurationSetTypes>> block to provide a convenient way to define
+several related gloss:configuration[]s in your project, and their mapping to configurations in other modules, following
+common patterns.  For background information about configurations and configuration mapping, see the
+link:overview.html#_gradle_module_concepts[] overview and the link:workflows.html#_configurations[] section of the
+link:workflows.html page
 
 TODO: doc
 
@@ -354,22 +680,28 @@ sourceDependencies {
 }
 ----
 
+[[_sourceDependencies_configuration]]
 ==== configuration
 
 This method defines the configuration mapping for the dependency - see the +<dependency
 ... conf="..."/>+ attribute in the example module descriptor above.
 
-TODO: link to overview on configuration mapping.
+More details on extending configurations, and mapping sets of related configurations between modules,
+can be found in the link:workflows.html#_configurations[] section of the link:workflows.html page.
 
 You can pass any number of string parameters to this method, or call the method multiple times.
 
 -> Call this method at least once.
 
+[[_sourceDependencies_configurationSet]]
+==== configurationSet
+
+TODO: doc
 
 [[_publishing]]
 ==== publishing
 
-WARNING: This block is deprecated as of version 7.7.0 [TODO: link], and will be removed in a future
+WARNING: This block is deprecated as of version link:release_notes.html#_7_7_0[], and will be removed in a future
 version of the Holy Gradle.
 
 This is like a struct which groups together a few different configuration options relating to how the source-code dependency will be referenced (in the Ivy module descriptor XML) when the consumer module is published.  The consumer module can be published as depending on the published output of a source-code dependency.
@@ -553,6 +885,7 @@ WARNING: Floating version numbers (e.g. +1.2.++) are supported. (See link:http:/
 
 -> Call this method exactly once.
 
+[[_packedDependencies_configuration]]
 ==== configuration
 
 This method defines the mappings **from** configurations in this module **to** configurations in the dependency module. These mappings will be included in the module descriptor when this module is published. The **to** configurations also determine which packages from the dependency artifact will be fetched and unpacked.
@@ -587,6 +920,9 @@ Here are some examples of string parameters passed to the +configuration+ method
 * configuration mapping from "bb" to "dd"
 
 -> Call this method at least once.
+
+[[_packedDependencies_configurationSet]]
+==== configurationSet
 
 ===== Private dependencies
 

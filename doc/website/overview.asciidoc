@@ -196,7 +196,8 @@ digraph {
 }
 --
 
-TODO: Link to reference page on extending configurations.
+More details on extending configurations, and mapping sets of related configurations between modules,
+can be found in the link:workflows.html#_configurations[] section of the link:workflows.html page.
 
 == Artifactory
 
