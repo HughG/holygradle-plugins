@@ -16,8 +16,6 @@ class DefaultWebConfigurationSetTypes {
             ]
         )
     ].collectEntries { type ->
-        // Modify the type before we collect it.
-        type.commonConfigurationsSpec([stage: DefaultConfigurationSetType.IMPORT_STAGE])
         // Collect a name -> value entry
         [type.name, type]
     }

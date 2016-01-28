@@ -323,7 +323,7 @@ configurations in other modules in cases where those files are needed to build t
 other modules which use this one.  Typically it maps to
 
 * build tools;
-* `import_*_*` in other modules, if the interface of that module should _not_ be exposed from this module.
+* `import_*` in other modules, if the interface of that module should _not_ be exposed from this module.
 
 ===== Default Visual Studio Types
 
@@ -354,22 +354,22 @@ These configuration set types define configuration name parts, "extends from" re
 
 |`import_x64_Release` +
 `import_x64_Debug` +
-`import_Win32_Debug` +
-`import_Win32_Release`
+`import_Win32_Release` +
+`import_Win32_Debug`
 |`import_common`
 |Platform- and Configuration-specific files which other modules need to build against this one.
 
 |`runtime_x64_Release` +
 `runtime_x64_Debug` +
-`runtime_Win32_Debug` +
-`runtime_Win32_Release`
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
 |nothing
 |Platform- and Configuration-specific files which other modules need at runtime to use this one.
 
 |`debugging_x64_Release` +
 `debugging_x64_Debug` +
-`debugging_Win32_Debug` +
-`debugging_Win32_Release`
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
 |nothing
 |Platform- and Configuration-specific files which other modules need to debug against this one.
 
@@ -402,21 +402,21 @@ a|For a Windows static library, this configuration might include
 
 |`import_x64_Release` +
 `import_x64_Debug` +
-`import_Win32_Debug` +
-`import_Win32_Release`
+`import_Win32_Release` +
+`import_Win32_Debug`
 |`.lib` files, and also `.pdb` files (because PDBs for static libraries are linked into the PDBs for DLLs/EXEs which
 use them, and are not needed at debugging time)
 
 |`runtime_x64_Release` +
 `runtime_x64_Debug` +
-`runtime_Win32_Debug` +
-`runtime_Win32_Release`
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
 |nothing
 
 |`debugging_x64_Release` +
 `debugging_x64_Debug` +
-`debugging_Win32_Debug` +
-`debugging_Win32_Release`
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
 |nothing
 
 |====
@@ -451,20 +451,20 @@ a|For a Windows dynamic library, this configuration might include
 
 |`import_x64_Release` +
 `import_x64_Debug` +
-`import_Win32_Debug` +
-`import_Win32_Release`
+`import_Win32_Release` +
+`import_Win32_Debug`
 |`.lib` files
 
 |`runtime_x64_Release` +
 `runtime_x64_Debug` +
-`runtime_Win32_Debug` +
-`runtime_Win32_Release`
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
 |`.dll` files, and any `.exe` or other "plugin-style" executable files
 
 |`debugging_x64_Release` +
 `debugging_x64_Debug` +
-`debugging_Win32_Debug` +
-`debugging_Win32_Release`
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
 |`.pdb` files
 
 |====
@@ -495,21 +495,95 @@ following kinds of files when your module is published, as controlled by the <<_
 
 |`import_x64_Release` +
 `import_x64_Debug` +
-`import_Win32_Debug` +
-`import_Win32_Release`
+`import_Win32_Release` +
+`import_Win32_Debug`
 |nothing
 
 |`runtime_x64_Release` +
 `runtime_x64_Debug` +
-`runtime_Win32_Debug` +
-`runtime_Win32_Release`
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
 |`.exe` files
 
 |`debugging_x64_Release` +
 `debugging_x64_Debug` +
-`debugging_Win32_Debug` +
-`debugging_Win32_Release`
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
 |`.pdb` files
+
+|====
+
+===== Default Web Types
+
+There is currently only one configuration set type intended for web applications.  The naming pattern defines the _Stage_ and _Configuration_ axes, and omits the _Platform_ axis; the _Testing_ and
+_Subcomponent_ axes can be added by a specific configuration set.
+
+* WEB_LIB: web application components, for use as part of a larger application, containing JavaScript, HTML, CSS and
+related files.
+
+This configuration set type defines configuration name parts, "extends from" relationships, and contents as follows.
+
+[options="header",cols="2,1,3"]
+|====
+|Name |Extends |Contains
+
+|`build`
+|nothing
+|nothing, because this configuration is private
+
+|`import_common`
+|nothing
+|Configuration-independent files which other modules need to build against this one.
+
+|`import_Release` +
+`import_Debug`
+|`import_common`
+|Configuration-specific files which other modules need to build against this one.
+
+|`runtime_Release` +
+`runtime_Debug`
+|nothing
+|Configuration-specific files which other modules need at runtime to use this one.
+
+|`debugging_Release` +
+`debugging_Debug`
+|nothing
+|Configuration-specific files which other modules need to debug against this one.
+
+|====
+
+===== WEB_LIB
+
+This type is for web application components, for use as part of a larger application, containing JavaScript, HTML,
+CSS and related files.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+|Build scripts or other files which other modules need to build against this one.
+
+|`import_Release` +
+`import_Debug`
+|Configuration-specific build scripts or files which other modules need to build against this one.
+
+|`runtime_common`
+|HTML and/or similar content which does _not_ differ between Release (minified) and Debug (non-minified).
+
+|`runtime_Release` +
+`runtime_Debug`
+|JavaScript, CSS, XSLT, and/or similar content which differs between Release (minified) and Debug (non-minified).
+
+|`debugging_common`
+|Debugging support files which do _not_ differ between Release (minified) and Debug (non-minified).
+
+|`debugging_Release` +
+`debugging_Debug`
+|Source maps and/or other debugging support files which differ between Release (minified) and Debug (non-minified).
 
 |====
 
@@ -519,17 +593,17 @@ These configuration set types can be passed to the +configurationSet+ method of 
 (<<_sourceDependencies_configurationSet>>) or <<_packedDependencies>> (<<_packedDependencies_configurationSet>>)
 and the Holy Gradle will automatically create mappings between configurations, according to the following rules.
 
-* The `runtime_*_*` and `debugging_*_*` configurations in a dependency are always mapped from the corresponding
+* The `runtime_*` and `debugging_*` configurations in a dependency are always mapped from the corresponding
 configurations in this module.  That is, `runtime_Win32_Debug->runtime_Win32_Debug`,
 `runtime_Win32_Release->runtime_Win32_Release`, and so on.  This is true even for static libraries because they
 can have runtime dependencies on DLLs.
 
 * The `import_common` configuration does not need to be mapped between modules because other modules are only
-expected to use the `import_*_*` configurations (`import_Win32_Debug` and so on), and those configurations will
-include everything in the other module's `import_common`, because each `import_*_*` configuration extends
+expected to use the `import_*` configurations (`import_Win32_Debug` and so on), and those configurations will
+include everything in the other module's `import_common`, because each `import_*` configuration extends
 `import_common`.
 
-* The `import_*_*` configurations in a dependency may be
+* The `import_*` configurations in a dependency may be
 
 ** mapped from the corresponding public configurations in this module (`import_x64_Release->import_x64_Release`
 and so on) if
@@ -544,14 +618,14 @@ interfaces of that module should be encapsulated within this module;
 
 ** not mapped at all, if the dependency is an EXE-style module, because they do not have build-time interfaces.
 
-The rule for the `import_*_*` configurations can also be represented by the following table.  The From/To columns
+The rule for the `import_*` configurations can also be represented by the following table.  The From/To columns
 are the configuration set type for the source and destination of the mapping.  The `export:` column indicates
 what value for that option (default +false+) is passed to the +configurationSet+ method of +sourceDependencies+
 ++_packedDependencies++.
 
-[width="75%",cols="1,1,1,2",options="header"]
+[width="60%",cols="1,1,1,2",options="header"]
 |====
-|From |To |`export:` |Map to `import_*_*`?
+|From |To |`export:` |Map to `import_*`?
 
 .5+|LIB .2+|LIB |`false` |from same
 |`true` |from same
@@ -569,6 +643,12 @@ what value for that option (default +false+) is passed to the +configurationSet+
 
 |====
 
+==== User-defined Configuration Set Types
+
+It is possible to define your own configuration set types, though the ways of doing this are currently not documented.
+Please look at the source for the interfaces +ConfigurationSetType+ and +ConfigurationSet+, and the classes which
+implement them.
+
 [[_configurationSets]]
 === configurationSets
 
@@ -576,14 +656,116 @@ This DSL block is used in combination with the <<_configurationSetTypes>> block 
 several related gloss:configuration[]s in your project, and their mapping to configurations in other modules, following
 common patterns.  For background information about configurations and configuration mapping, see the
 link:overview.html#_gradle_module_concepts[] overview and the link:workflows.html#_configurations[] section of the
-link:workflows.html page
+link:workflows.html[] page
 
-TODO: doc
+You will commonly use this block in your +build.gradle+ file although it is not required: you can define individual
+configurations yourself, but the configuration mapping in source and packed dependency definitions may be more verbose.
+You can also define both configuration sets and individual configurations.
+
+This is a container for configuration set objects. The first level below +configurationSets+ defines the names of the individual configuration sets.  The name of the set is only used to refer to this set elsewhere in the build script; it does not automatically appear in the configuration names.  For example:
+
+[source,groovy]
+----
+configurationSets {
+    main {
+        type configurationSetTypes.DLL_64
+    }
+    test {
+        prefix "test"
+        type configurationSetTypes.EXE_64
+    }
+}
+----
+
+The above example is equivalent to a +configurations+ block like the following.
+
+[source,groovy]
+----
+configuration {
+    // "main" configuration set
+    build { visible = false }
+    import_common
+    import_x64_Release.extendsFrom import_common
+    import_x64_Debug.extendsFrom import_common
+    // ...
+    runtime_x64_Release
+    // ...
+    debugging_x64_Release
+    // ...
+
+    // "test" configuration set
+    test_build { visible = false }
+    test_import_common
+    test_import_x64_Release.extendsFrom import_common
+    test_import_x64_Debug.extendsFrom import_common
+    // ...
+    test_runtime_x64_Release
+    // ...
+    test_debugging_x64_Release
+    // ...
+}
+----
+
+[[_configurationSets_type]]
+==== type
+
+This method takes one parameter, the configuration set type for this configuration set.  For the pre-defined types,
+the names of the configurations in the set will be those from the type, with the <<_configurationSets_prefix>> added at
+the beginning.
+
+-> You must call this method exacly once.
+
+
+[[_configurationSets_prefix]]
+==== prefix
+
+This method takes one parameter, a string prefix to be added to all names from the <<_configurationSets_type>>.  If this
+method is not called for a configuration set, the names from its type will be used directly.  If you have more than one
+configuration set of the same or similar types in your build script, you will probably have to use a prefix on all but
+one of them to avoid configuration name overlaps.
+
+-> Call this method at most once.
+
+[[_configurationSets_configurationSet]]
+==== Configuration Set Methods
+
+Configuration sets themselves have methods which may be useful in your build script.
+
+[[_configurationSets_configurationSet_type]]
+===== type
+
+This property returns the configuration set type for this set.
+
+[[_configurationSets_configurationSet_axes]]
+===== axes
+
+This property returns a map with
+
+* keys which are the names of each axis used in the configuration set type; and
+* values which are the set of values for that axis defined by the type.
+
+[[_configurationSets_configurationSet_configurationNames]]
+===== configurationNames
+
+This property returns a map with
+
+* keys which are maps of name-value pairs for each axis used in the configuration set type; and
+* values which are the names of the corresponding configuration defined by this set.
+
+[[_configurationSets_configurationSet_getConfigurations]]
+===== getConfigurations
+
+This method takes a Gradle https://docs.gradle.org/1.4/javadoc/index.html?org/gradle/api/Project.html[Project] object,
+creates the +Configuration+ objects for the names defined by this set (if they do not already exist), and returns a map
+with
+
+* keys which are maps of name-value pairs for each axis used in the configuration set type; and
+* values which are the corresponding +Configuration+ objects in the given +Project+.
+
 
 === dependenciesSettings
 
 This object has settings which apply to all dependencies.
-
 
 [source,groovy]
 ----
