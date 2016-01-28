@@ -865,20 +865,220 @@ sourceDependencies {
 [[_sourceDependencies_configuration]]
 ==== configuration
 
-This method defines the configuration mapping for the dependency - see the +<dependency
-... conf="..."/>+ attribute in the example module descriptor above.
+This method defines the configuration mapping for the dependency - see the +<dependency ... conf="..."/>+ attribute
+in the example module descriptor above.  Mappings are defined _from_ configurations in this module _to_
+configurations in the dependency module. These mappings will be included in the module descriptor when this module is
+published. The "to" configurations also determine which packaged artifacts from the dependency module will be fetched
+and unpacked.
 
 More details on extending configurations, and mapping sets of related configurations between modules,
 can be found in the link:workflows.html#_configurations[] section of the link:workflows.html page.
 
 You can pass any number of string parameters to this method, or call the method multiple times.
 
--> Call this method at least once.
+You can also not call this method, in which case the source will be checked out but its Gradle project configurations
+will not be linked to the configurations of this module and, when this module is published, it will have no
+dependency on any module which may be defined in the checked-out repository.  This can be useful if, for example,
+
+* you want to join multiple source repositories into one published module;
+* your main source is in a Mercurial repo but you also have large binary files in a Subversion repo, such as
+Word documents.
+
+Here are some examples of string parameters passed to the +configuration+ method and the resulting mappings:
+
+===== +"my-config"+
+
+* configuration mapping from "my-config" to "my-config"
+
+===== `"foo->bar"`
+
+* configuration mapping from "foo" to "bar"
+
+===== `"foo->bar,far"`
+
+* configuration mapping from "foo" to "bar"
+* configuration mapping from "foo" to "far"
+
+===== `"aa,bb->cc"`
+
+* configuration mapping from "aa" to "cc"
+* configuration mapping from "bb" to "cc"
+
+===== `"aa,bb->cc,dd"`
+
+* configuration mapping from "aa" to "cc"
+* configuration mapping from "aa" to "dd"
+* configuration mapping from "bb" to "cc"
+* configuration mapping from "bb" to "dd"
+
+-> Call this method and/or <<_sourceDependencies_configurationSet>> at least once, usually.
 
 [[_sourceDependencies_configurationSet]]
 ==== configurationSet
 
-TODO: doc
+This method creates multiple configuration mappings from this module to a source dependency module, based on the
+names defined by configuration sets and configuration set types, and any specific mapping rules implemented by the
+types.
+
+The method takes two main arguments:
+
+* the source, which can be a +ConfigurationSet+ or a Gradle +Configuration+ in this module; and
+* the target, which can be a +ConfigurationSetType+ or a +ConfigurationSet+ which matches the dependency module.
+
+If the source is a +ConfigurationSet+, then the optional "+export:+" boolean argument can be passed, which affects the
+mapping of `import_*` configurations (see <<_configuration_mapping_rules>>).
+
+The Holy Gradle does not check that the type for the target is correct.  You may be able to get documentation
+for a dependency, or work out which mapping to use by looking at its package contents or the gloss:ivy-xml[].  From
+version link:release_notes.html#_7_7_2[] the +description+ for each configuration in a configuration set contains a
+hint about how to use it.
+
+-> Call this method and/or <<_sourceDependencies_configuration>> at least once, usually.
+
+Following are some examples of parameters passed to the +configurationSet+ method and the resulting mappings.  They
+assume the following configuration sets in both this module and the target.
+
+[source,groovy]
+----
+configurationSets {
+    main {
+        type configurationSetTypes.DLL_64
+    }
+    extra {
+        prefix "extra"
+        type configurationSetTypes.DLL_64
+    }
+}
+----
+
+===== +ConfigurationSet+ to +ConfigurationSetType+
+
+This is the most common usage, where this module has one or more configuration sets, and the target configuration set
+in the dependency module does not have a prefix.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->import_x64_Release`
+* `build->import_x64_Debug`
+* `runtime_x64_Release->runtime_x64_Release`
+* `runtime_x64_Debug->runtime_x64_Debug`
+* `debugging_x64_Release->debugging_x64_Release`
+* `debugging_x64_Debug->debugging_x64_Debug`
+
+If the export flag is set:
+
+[source,groovy]
+----
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64, export: true
+----
+
+then the import mappings change as follows:
+
+* `import_x64_Release->import_x64_Release`
+* `import_x64_Debug->import_x64_Debug`
+
+===== +ConfigurationSet+ to +ConfigurationSet+
+
+This version is used when the target configuration set has a prefix.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64.makeSet { prefix "extra" }
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->extra_import_x64_Release`
+* `build->extra_import_x64_Debug`
+* `runtime_x64_Release->extra_runtime_x64_Release`
+* `runtime_x64_Debug->extra_runtime_x64_Debug`
+* `debugging_x64_Release->extra_debugging_x64_Release`
+* `debugging_x64_Debug->extra_debugging_x64_Debug`
+
+If the export flag is set:
+
+[source,groovy]
+----
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64.makeSet { prefix "extra" }, export: true
+----
+
+then the import mappings change as follows:
+
+* `import_x64_Release->extra_import_x64_Release`
+* `import_x64_Debug->extra_import_x64_Debug`
+
+===== +Configuration+ to +ConfigurationSetType+
+
+This version can be used when you want to map to several configurations of a target module from one configuration of
+this module.  A common use for this would be to add a dependency on some build helper tool, from this module's
++build+ configuration.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurations.build, configurationSetTypes.DLL_64_RELEASE
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->import_x64_Release`
+* `build->import_x64_Debug`
+* `build->runtime_x64_Release`
+* `build->runtime_x64_Debug`
+* `build->debugging_x64_Release`
+* `build->debugging_x64_Debug`
+
+When the source is a +Configuration+ rather than a +ConfigurationSet+, the export flag is not applicable.
+
+===== +Configuration+ to +ConfigurationSetType+
+
+This version can be used when you want to map to several configurations of a target module from one configuration of
+this module, and those configurations have a prefix.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurations.build, configurationSetTypes.DLL_64_RELEASE.makeSet { prefix "extra" }
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->extra_import_x64_Release`
+* `build->extra_import_x64_Debug`
+* `build->extra_runtime_x64_Release`
+* `build->extra_runtime_x64_Debug`
+* `build->extra_debugging_x64_Release`
+* `build->extra_debugging_x64_Debug`
+
+Again, the the export flag is not applicable because the source is a +Configuration+ rather than a +ConfigurationSet+.
+
+WARNING: For source dependencies, you might try to reference a configuration set object from the dependency module's
+Gradle project as the target for a mapping, rather than creating one with +ConfigurationSetType#makeSet+.  However, it
+is difficult to make this work in all cases; for example, if running +gw fetchAllDependencies+ from a clean checkout,
+the source for the dependency project may not exist yet.
 
 [[_publishing]]
 ==== publishing
@@ -1000,7 +1200,6 @@ This method returns a boolean indicating whether the source control repository/c
 
 This is a container for packed dependency objects. The first level below +packedDependencies+ defines the names of the individual dependencies e.g.
 
-
 [source,groovy]
 ----
 packedDependencies {
@@ -1011,8 +1210,8 @@ packedDependencies {
     "NUnit <version>" {
         dependency "org.nunit:NUnit:2.5.+"
         def testRuntimeConfs = configurationSets.test.configurationNamesMap.findAll { k, v ->
-	    k[stage] == 'runtime'
-	}
+            k[stage] == 'runtime'
+        }
         configuration "${testRuntimeConfs.join(',')}->bin"
         unpackToCache = false
     }
@@ -1070,41 +1269,20 @@ WARNING: Floating version numbers (e.g. +1.2.++) are supported. (See link:http:/
 [[_packedDependencies_configuration]]
 ==== configuration
 
-This method defines the mappings **from** configurations in this module **to** configurations in the dependency module. These mappings will be included in the module descriptor when this module is published. The **to** configurations also determine which packages from the dependency artifact will be fetched and unpacked.
+This method works the same as <<_sourceDependencies_configuration>> for +sourceDependencies+.  You will normally call
+this method or +configurationSet+ at least once for a packed dependency, otherwise no packed artifacts will be fetched
+and unzipped.
 
-You can pass any number of string parameters to this method, or call the method multiple times.
-
-Here are some examples of string parameters passed to the +configuration+ method and the resulting mappings:
-
-===== +"my-config"+
-
-* configuration mapping from "my-config" to "my-config"
-
-===== `"foo->bar"`
-
-* configuration mapping from "foo" to "bar"
-
-===== `"foo->bar,far"`
-
-* configuration mapping from "foo" to "bar"
-* configuration mapping from "foo" to "far"
-
-===== `"aa,bb->cc"`
-
-* configuration mapping from "aa" to "cc"
-* configuration mapping from "bb" to "cc"
-
-===== `"aa,bb->cc,dd"`
-
-* configuration mapping from "aa" to "cc"
-* configuration mapping from "aa" to "dd"
-* configuration mapping from "bb" to "cc"
-* configuration mapping from "bb" to "dd"
-
--> Call this method at least once.
+-> Call this method and/or <<_packedDependencies_configurationSet>> at least once, usually.
 
 [[_packedDependencies_configurationSet]]
 ==== configurationSet
+
+This method works the same as <<_sourceDependencies_configurationSet>> for +sourceDependencies+.  You will normally call
+this method or +configuration+ at least once for a packed dependency, otherwise no packed artifacts will be fetched and
+unzipped.
+
+-> Call this method and/or <<_packedDependencies_configuration>> at least once, usually.
 
 ===== Private dependencies
 
