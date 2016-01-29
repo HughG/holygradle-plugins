@@ -29,6 +29,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "link_to_existing")
         File existingDir = new File(testDir, "existing_folder")
         if (link.exists()) {
+            Link.delete(link)
             FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
@@ -48,6 +49,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "link_to_existing")
         File existingDir = new File(testDir, "existing_folder")
         if (link.exists()) {
+            Link.delete(link)
             FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
@@ -66,6 +68,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "link_to_existing")
         File existingDir = new File("../${testDir.name}/existing_folder")
         if (link.exists()) {
+            Link.delete(link)
             FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
@@ -89,13 +92,14 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "link_to_missing")
         File missingDir = new File(testDir, "missing_folder")
         if (link.exists()) {
+            Link.delete(link)
             FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (missingDir.exists()) {
             fail("Test pre-condition: '${missingDir}' should not exist")
         }
         // File deletion seems to happen after the JDK method returns, sometimes, so check until it's really gone.
-        RetryHelper.retry(10, 1000, "Check ${missingDir.name} dir was really deleted") {
+        RetryHelper.retry(10, 1000, null, "Check ${missingDir.name} dir was really deleted") {
             !missingDir.exists()
         }
 
@@ -112,6 +116,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "link_to_existing")
         File existingDir = new File(testDir, "existing_folder")
         if (link.exists()) {
+            Link.delete(link)
             FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
@@ -138,6 +143,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "link_to_existing")
         File existingDir = new File(testDir, "existing_folder")
         if (link.exists()) {
+            Link.delete(link)
             FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
@@ -147,7 +153,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         rebuild(link, existingDir)
         FileHelper.ensureDeleteDirRecursive(existingDir, "for test setup")
         // File deletion seems to happen after the JDK method returns, sometimes, so check until it's really gone.
-        RetryHelper.retry(10, 1000, "Check ${existingDir.name} dir was really deleted") {
+        RetryHelper.retry(10, 1000, null, "Check ${existingDir.name} dir was really deleted") {
             !existingDir.exists()
         }
 

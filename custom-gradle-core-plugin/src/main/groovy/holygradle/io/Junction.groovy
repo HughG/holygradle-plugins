@@ -29,7 +29,7 @@ class Junction {
     public static final int NOT_A_REPARSE_POINT = 0x00001126
 
     public static boolean isJunction(File file) {
-        return file.isDirectory() && isMountPoint(file.path)
+        return file.isDirectory() && isMountPoint(file)
     }
 
     /**
@@ -49,8 +49,12 @@ class Junction {
         checkIsJunctionOrMissing(link)
 
         if (isJunction(link)) {
-            removeMountPoint(link.path)
-            link.delete()
+            removeMountPoint(link.canonicalPath)
+
+            // Delete the mount point if the directory is empty
+            if (link.isDirectory() && link.list().length == 0) {
+                link.delete()
+            }
         }
     }
 
@@ -175,8 +179,9 @@ class Junction {
         }
     }
 
-    private static boolean isMountPoint(String link) {
-        withReparsePointHandle(link, Kernel32.GENERIC_READ) { WinNT.HANDLE reparsePointHandle ->
+    private static boolean isMountPoint(File link) {
+        String path = "\\\\?\\" + link.canonicalPath
+        withReparsePointHandle(path, Kernel32.FILE_READ_ATTRIBUTES) { WinNT.HANDLE reparsePointHandle ->
             Memory reparseDataBuffer = new Memory(Ntifs.MAXIMUM_REPARSE_DATA_BUFFER_SIZE)
 
             boolean succeeded = Kernel32.INSTANCE.DeviceIoControl(

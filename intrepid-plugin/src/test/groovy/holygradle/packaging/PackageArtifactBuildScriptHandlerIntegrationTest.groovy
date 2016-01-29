@@ -139,10 +139,8 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
-        // Expect this to fail due to source dependencies.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
         }
 
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->

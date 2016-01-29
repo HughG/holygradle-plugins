@@ -18,16 +18,20 @@ class Link {
     }
 
     public static void delete(File link) {
-        linkTypeHelper(
-            link,
-            { File l -> Symlink.delete(l) },
-            { File l -> Junction.delete(l) }
-        )
+        if (link.exists()) {
+            linkTypeHelper(
+                link,
+                { File l -> Symlink.delete(l) },
+                { File l -> Junction.delete(l) }
+            )
+        }
     }
 
     public static void rebuild(File link, File target, Logger logger) {
         // Delete the link first in case it already exists as the wrong type
-        delete(link)
+        if (isLink(link)) {
+            delete(link)
+        }
 
         // Try to build as a directory junction first
         try {

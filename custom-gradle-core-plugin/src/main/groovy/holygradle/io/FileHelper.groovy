@@ -48,7 +48,8 @@ class FileHelper {
                 postRoot: true,
                 visitRoot: true,
             ) { File f ->
-                if (Symlink.isJunctionOrSymlink(f) || !f.isDirectory()) {
+                println(f.absolutePath)
+                if (Link.isLink(f) || !f.isDirectory()) {
                     f.writable = true
                     Files.delete(f.toPath())
                 }
