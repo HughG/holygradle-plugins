@@ -1,0 +1,127 @@
+/* To publish the first release of this module, follow these steps.
+ *
+ * - Read [[WEBSITE_ROOT]]/workflows.html#_packaging_third_party_dependencies
+ *   if you are not familiar with publishing third-party modules.
+ *
+ * - Change the text below, in the comments and the code, to match the library or tool you are
+ *   publishing.  For example, to publish boost, you might change the group to 'org.boost' and
+ *   change all 'some-lib' to 'boost'.
+ *
+ * - Decide whether the set of configurations is suitable for your module, and change them if not.
+ *   See [[WEBSITE_ROOT]]/plugin-intrepid.html#_pre_defined_configuration_set_types and
+ *   [[WEBSITE_ROOT]]/plugin-intrepid.html#_configurationSets for suggested configurations.
+ *
+ * - Check that the packageArtifacts block is including the correct files for each artifact.  You
+ *   can run 'gw packageEverything' to create the ZIP files (in the 'packages' folder) without
+ *   publishing them, so you can check them.
+ *
+ * - Fill in the license and description at the bottom.
+ *
+ * - Delete this comment.
+ */
+
+/* To publish a new release of this module, follow these steps.
+ *
+ * - Update the 'pluginVersion' below to the latest version.
+ *
+ * - Place this file in a folder called 'some-lib' along with the latest gradle wrapper.
+ *
+ * - Put the unzipped SomeLib SDK in a subfolder called 'some-lib'.
+ *
+ * - Paste the version number below appending _1 if it's the first time you've packaged that version,
+ *   _[2..n] if it's a subsequent repackage of the same version.
+ *
+ * - Run 'gw -PpublishUrl=https://YOUR_SERVER_HOSTNAME/artifactory/YOUR_TEAM-integration-local publish'.
+ *
+ * - Ask for external review of the published package.  Also test building another project which
+ *   uses it.
+ *
+ * - If appropriate copy or move the published package to a repository which is shared between teams.
+ */
+
+buildscript {
+    def pluginVersion = '7.7.1'
+    gplugins.use "intrepid:${pluginVersion}"
+    gplugins.use "my-credentials:${pluginVersion}"
+}
+gplugins.apply()
+
+group = "com.something"
+// Change this line each time you make a new publishing of the same original version.
+version = "2.1.0_1"
+
+// See [[WEBSITE_ROOT]]/intrepid-plugin.html#_configurationSets
+// and [[WEBSITE_ROOT]]/workflows.html#_determine_outputs
+configurationSets {
+    main {
+        type configurationSetTypes.DLL
+    }
+}
+
+// See [[WEBSITE_ROOT]]/plugin-intrepid.html#_packageArtifacts
+// and [[WEBSITE_ROOT]]/workflows.html#_package_third_party_dependency_files
+packageArtifacts { packArts ->
+    import_common {
+        from "some-lib/include"
+        to "."
+        include "include/**" // '**' means 'all files and folders inside this'
+    }
+
+    configurationSets.main.typeAsDefault.optionalAxes["Platform"].each { vsPlatform ->
+        def p = vsPlatform[-2..-1] // last two characters: "64" or "32"
+        configurationSets.main.typeAsDefault.optionalAxes["Configuration"].each { vsConfiguration ->
+            def c = vsConfiguration[0].toLowerCase() // "r" for Release, "d" for Debug
+
+            packArts."import_${vsPlatform}_${vsConfiguration}" {
+                from "some-lib/"
+                to "."
+                include "${vsPlatform}/${vsConfiguration}/somelib_vc12_u${c}${p}.lib"
+            }
+            packArts."runtime_${vsPlatform}_${vsConfiguration}" {
+                from "some-lib/"
+                to "."
+                include "${vsPlatform}/${vsConfiguration}/somelib_vc12_u${c}${p}.dll"
+            }
+
+            packArts."debugging_${vsPlatform}_${vsConfiguration}" {
+                from "some-lib/"
+                to "."
+                include "${vsPlatform}/${vsConfiguration}/somelib_vc12_u${c}${p}.pdb"
+            }
+        }
+    }
+}
+
+// See [[WEBSITE_ROOT]]/plugin-intrepid.html#_publishPackages
+// and [[WEBSITE_ROOT]]/workflows.html#_publish_third_party_dependency_module
+publishPackages {
+    repositories.ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url (
+            project.hasProperty('publishUrl') ?
+                project.property('publishUrl') :
+                "http://YOU_MUST_PROVIDE_THE_PUBLISH_URL"
+        )
+    }
+}
+
+// See [[WEBSITE_ROOT]]/workflows.html#_add_third_party_license_information
+publishing {
+    publications.ivy.descriptor.withXml {
+        Node infoNode = asNode().info[0]
+   
+        Node licenseNode = infoNode.appendNode("license")
+        licenseNode.@name = "Some Software License for SomeLib"
+        licenseNode.@url = "http://www.something.com/license"
+         
+        String description = """
+This is a package of SomeLib 2.1.0, a library for something-or-other.
+More information about the SDK can be found at http://docs.something.com/some-lib/2-1-0/ ."""
+  
+        Node descriptionNode = infoNode.appendNode("description", description)
+        descriptionNode.@homepage = "http://docs.something.com/some-lib/2-1-0/"
+    }
+}

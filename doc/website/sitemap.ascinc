@@ -4,6 +4,8 @@
 The Holy Gradle
 and Artifactory
 </div>
+version 7.7.1
+<hr />
 <ul>
     <li><a href="index.html">Home</a></li>
     <li><p>Getting Started</p>
@@ -23,6 +25,7 @@ and Artifactory
 -->
     <li><a href="workflows.html">Workflows</a></li>
     <li><a href="workflows_admin.html">Workflows for Admins</a></li>
+    <li><a href="examples.html">Examples</a></li>
     <li><!--<a href="reference.html"></a>--><p>Reference</p>
         <ul>
             <li><a href="plugins.html"></a></li>

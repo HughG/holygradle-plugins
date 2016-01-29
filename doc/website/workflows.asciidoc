@@ -701,9 +701,12 @@ the +build.gradle+ file to tell Gradle where to publish to, including appropriat
 
 [source, groovy]
 ----
+group = "com.example-corp.example-team"
+version = version = System.getenv("NEXT_VERSION_NUMBER") ?: Project.DEFAULT_VERSION
+
+// ...
+
 publishPackages {
-    group "com.example-corp.example-team"
-    nextVersionNumberEnvironmentVariable "NEXT_VERSION_NUMBER"
     repositories.ivy {
         credentials {
             username my.username("Artifactory")
@@ -991,8 +994,7 @@ is to check versions and create symlinks.
 Sometimes you may want to use a third-party library or build tool as a dependency, but find that it
 is not already available as an intrepid-style packed dependency in any suitable Artifactory
 repository.  This section describes how you can package it up yourself.  You can also download an
-example build file,
-+link:files/third-party-example/third-party-example.gradle[third-party-example.gradle]+.
+example link:files/examples/third-party/build.gradle[build script].
 
 ==== Using Source Versus Repackaging A Distribution
 
@@ -1229,9 +1231,12 @@ and a +build.gradle+ containing the following:
 
 [source,groovy]
 ----
+group = "com.example-corp"
+version = "0.6.0-rc2_1"
+
+// ...
+
 publishPackages {
-    group "com.example-corp"
-    nextVersionNumber "0.6.0-rc2_1"
     repositories.ivy {
         credentials {
             username my.username("Artifactory")

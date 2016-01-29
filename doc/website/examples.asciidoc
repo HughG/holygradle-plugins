@@ -1,0 +1,13 @@
+include::stdattr.ascinc[]
+
+= Support
+
+include::sitemap.ascinc[]
+
+== Basic Examples
+
+Following are some basic example gloss:holygradle[] build scripts.
+
+link:files/examples/third-party/build.gradle[Packaging Third-Party Dependencies]
+
+include::{localDoc}/examples.ascinc[]
