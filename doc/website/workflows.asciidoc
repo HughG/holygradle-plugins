@@ -53,14 +53,15 @@ any configurations it extends from.  Second, a module which declares a dependenc
 will also, in terms of transitive dependencies, pick up the dependencies of configurations which
 that one extends from.
 
-For example, a module +a+ might divide its dependencies for compile-time use into +headers+,
-+compileWin32+, and +compileX64+, with +compileWin32+ and +compileX64+ extending from +headers+.
-That means that any other module which declares a dependency on +a+'s +compileX64+ will pick up
+For example, a module +a+ using the link:plugin-intrepid.html#_pre_defined_configuration_set_types[]
+would divide its dependencies for compile-time use into +import_common+, +import_Win32_Release+, and
++import_x64_Release+, with +import_Win32_Release+ and +import_x64_Release+ extending from +import_common+.
+That means that any other module which declares a dependency on +a+'s +import_x64_Release+ will pick up
 
-* the artifacts from +compileX64+ in +a+;
-* the artifacts from +headers+ in +a+;
-* any transitive dependencies from +compileX64+ in +a+; and
-* any transitive dependencies from +headers+ in +a+.
+* the artifacts from +import_x64_Release+ in +a+;
+* the artifacts from +import_common+ in +a+;
+* any transitive dependencies from +import_x64_Release+ in +a+; and
+* any transitive dependencies from +import_common+ in +a+.
 
 The following diagram highlights these in blue.
 
@@ -72,13 +73,14 @@ digraph {
     rankdir=LR;
     node [shape=box];
 
-    subgraph cluster_util {
-        label = "util";
-
-        util_headers [label="headers",color=blue];
-    }
-
     subgraph {
+
+        subgraph cluster_other {
+            label = "other";
+
+            other_build[label="build",color=blue];
+            other_runtime[label="runtime"];
+        }
 
         subgraph cluster_a {
             label = "a";
@@ -87,15 +89,16 @@ digraph {
             cluster_a_sink[shape=point,margin="0.0",style=invis]
             cluster_a_source -> {
 
-            a_headers [label="headers",color=blue];
-            a_compileWin32 [label="compileWin32"];
-            a_compileX64 [label="compileX64",color=blue];
-            a_runtime [label="runtime"];
-
-            a_compileWin32 -> a_headers [arrowhead="onormal"];
-            a_compileX64 -> a_headers [arrowhead="onormal",color=blue];
+                a_import_common [label="import_common",color=blue];
+                a_import_Win32_Release [label="import\n_Win32\n_Release"];
+                a_import_x64_Release [label="import\n_x64\n_Release",color=blue];
+                a_runtime_Win32_Release [label="runtime\n_Win32\n_Release"];
+                a_runtime_x64_Release [label="runtime\n_x64\n_Release"];
 
             } -> cluster_a_sink [style=invis,minlen=0];
+
+            a_import_Win32_Release -> a_import_common [arrowhead="onormal"];
+            a_import_x64_Release -> a_import_common [arrowhead="onormal",color=blue];
 
         }
 
@@ -106,38 +109,38 @@ digraph {
             cluster_b_sink[shape=point,margin="0.0",style=invis]
             cluster_b_source -> {
 
-                b_headers [label="headers",color=blue];
-                b_compileWin32 [label="compileWin32"];
-                b_compileX64 [label="compileX64",color=blue];
-                b_runtime [label="runtime"];
-
-                b_compileWin32 -> b_headers [arrowhead="onormal"];
-                b_compileX64 -> b_headers [arrowhead="onormal",color=blue];
+                b_import_common [label="import_common",color=blue];
+                b_import_Win32_Release [label="import\n_Win32\n_Release"];
+                b_import_x64_Release [label="import\n_x64\n_Release",color=blue];
+                b_runtime_Win32_Release [label="runtime\n_Win32\n_Release"];
+                b_runtime_x64_Release [label="runtime\n_x64\n_Release"];
 
             } -> cluster_b_sink [style=invis,minlen=0];
 
+            b_import_Win32_Release -> b_import_common [arrowhead="onormal"];
+            b_import_x64_Release -> b_import_common [arrowhead="onormal",color=blue];
+
         }
 
-        subgraph cluster_other {
-            label = "other";
+    }
 
-            other_compile[label="compile",color=blue];
-            other_runtime[label="runtime"];
-        }
+    subgraph cluster_util {
+        label = "util";
 
-
+        util_import_common [label="import_common",color=blue];
     }
 
     cluster_a_sink -> cluster_b_source [style=invis];
 
-    a_headers -> util_headers [color=blue];
+    a_import_common -> util_import_common [color=blue];
 
-    a_compileWin32 -> b_compileWin32;
-    a_compileX64 -> b_compileX64 [color=blue];
-    a_runtime -> b_runtime;
+    a_import_Win32_Release -> b_import_Win32_Release;
+    a_import_x64_Release -> b_import_x64_Release [color=blue];
+    a_runtime_Win32_Release -> b_runtime_Win32_Release;
+    a_runtime_x64_Release -> b_runtime_x64_Release;
 
-    other_compile -> a_compileX64 [color=blue];
-    other_runtime -> a_runtime;
+    other_build -> a_import_x64_Release [color=blue];
+    other_runtime -> a_runtime_x64_Release;
 }
 --
 
@@ -147,14 +150,17 @@ digraph {
 
 A private configuration is one which is used when building a module, but is not intended for other
 modules to use.  For example, dependencies on build tools might be mapped from a private
-configuration.
+configuration, or dependencies on parts of a module (such as C++ headers) which are to be
+encapsulated by the depending module.
 
-Private configurations are normally declared in the +ivy.xml+ file and marked as
-+visibility="private"+.  However, +intrepid+ removes all references to configurations whose names
-begin with "+private+" from the +ivy.xml+ when it is generated.
+Private configurations are declared in Gradle by setting the property +visible = false+ on a
+configuration, and appear in the +ivy.xml+ file marked with the attribute +visibility="private"+.
+These configurations can still be used by other modules, but they are excluded from some default
+usage.
 
 The following diagram highlights in blue the configurations which will be fetched when all
-configurations of the +other+ module are fetched.
+configurations of the +other+ module are fetched.  Private configurations are shown with dashed
+lines.
 
 .Private configurations
 [caption="Figure {counter:figureindex}: "]
@@ -167,53 +173,69 @@ digraph {
     subgraph cluster_doxygen {
         label = "Doxygen";
 
-        Doxygen_bin [label="bin"];
+        Doxygen_bin [label="runtime_x64"];
     }
 
     subgraph cluster_a {
         label = "a";
 
-        a_headers [label="headers",color=blue];
-        a_compileWin32 [label="compileWin32"];
-        a_compileX64 [label="compileX64",color=blue];
-        a_runtime [label="runtime",color=blue];
-        a_privateBuild [label="privateBuild"];
+        cluster_a_source[shape=point,margin="0.0",style=invis]
+        cluster_a_sink[shape=point,margin="0.0",style=invis]
+        cluster_a_source -> {
 
-        a_compileWin32 -> a_headers [arrowhead="onormal"];
-        a_compileX64 -> a_headers [arrowhead="onormal",color=blue];
+            a_import_common [label="import_common",color=blue];
+            a_import_Win32_Release [label="import\n_Win32\n_Release"];
+            a_import_x64_Release [label="import\n_x64\n_Release",color=blue];
+            a_runtime_Win32_Release [label="runtime\n_Win32\n_Release",color=blue];
+            a_runtime_x64_Release [label="runtime\n_x64\n_Release",color=blue];
+            a_build [label="build",style="dashed"];
 
-        a_privateBuild -> Doxygen_bin;
+        } -> cluster_a_sink [style=invis,minlen=0];
+
+        a_import_Win32_Release -> a_import_common [arrowhead="onormal"];
+        a_import_x64_Release -> a_import_common [arrowhead="onormal",color=blue];
+
+        a_build -> Doxygen_bin;
     }
 
     subgraph cluster_b {
         label = "b";
 
-        b_headers [label="headers",color=blue];
-        b_compileWin32 [label="compileWin32"];
-        b_compileX64 [label="compileX64",color=blue];
-        b_runtime [label="runtime",color=blue];
-        b_privateBuild [label="privateBuild"];
+        cluster_b_source[shape=point,margin="0.0",style=invis]
+        cluster_b_sink[shape=point,margin="0.0",style=invis]
+        cluster_b_source -> {
 
-        b_compileWin32 -> b_headers [arrowhead="onormal"];
-        b_compileX64 -> b_headers [arrowhead="onormal",color=blue];
+            b_import_common [label="import_common",color=blue];
+            b_import_Win32_Release [label="import\n_Win32\n_Release"];
+            b_import_x64_Release [label="import\n_x64\n_Release",color=blue];
+            b_runtime_Win32_Release [label="runtime\n_Win32\n_Release",color=blue];
+            b_runtime_x64_Release [label="runtime\n_x64\n_Release",color=blue];
+            b_build [label="build",style="dashed"];
 
-        b_privateBuild -> Doxygen_bin;
+        } -> cluster_b_sink [style=invis,minlen=0];
+
+        b_import_Win32_Release -> b_import_common [arrowhead="onormal"];
+        b_import_x64_Release -> b_import_common [arrowhead="onormal",color=blue];
+
+        b_build -> Doxygen_bin;
     }
 
     subgraph cluster_other {
         label = "other";
 
-        other_compile [label="compile",color=blue];
+        other_build [label="build",color=blue,style="dashed"];
         other_runtime [label="runtime",color=blue];
-        other_privateBuild [label="privateBuild",color=blue];
     }
 
-    a_compileWin32 -> b_compileWin32;
-    a_compileX64 -> b_compileX64 [color=blue];
-    a_runtime -> b_runtime [color=blue];
+    cluster_a_sink -> cluster_b_source [style=invis];
 
-    other_compile -> a_compileX64 [color=blue];
-    other_runtime -> a_runtime [color=blue];
+    a_import_Win32_Release -> b_import_Win32_Release;
+    a_import_x64_Release -> b_import_x64_Release [color=blue];
+    a_runtime_Win32_Release -> b_runtime_Win32_Release [color=blue];
+    a_runtime_x64_Release -> b_runtime_x64_Release [color=blue];
+
+    other_build -> a_import_x64_Release [color=blue];
+    other_runtime -> a_runtime_x64_Release [color=blue];
 }
 --
 
@@ -255,8 +277,8 @@ You can skip some of this section if you are building a module which is not used
 (and maybe will not be published to Artifactory) -- for example, if you are building an application.
 In that case you can normally
 
-* use a single configuration (for example, +privateBuild+) for all you dependencies;
-* not have a packageArtifacts block;
+* use a single private configuration (for example, +build+) for all your dependencies;
+* not have a +packageArtifacts+ block;
 * and skip ahead to <<_determine_inputs>>.
 
 
@@ -265,124 +287,17 @@ In that case you can normally
 In the world of Java and related languages, the set of artifacts is much simpler (namely, a small
 number of JAR files), so Gradle provides a set of pre-defined configurations: +compile+, +test+, +runtime+, etc.
 
-Use of Gradle with C\++ was limited when the +holygradle+ plugins were created, so no standard set
-of configurations exists.  However, based on our experience so far, a typical C++ module might
-publish configurations such as the following.
-
-* +privateBuild+: tools used for building, testing, documenting, etc. this project, but not required
-for any other project which wants to use the published module from this project.  (+intrepid+
-automatically omits from publication any configuration whose name starts with "+private+".)
-* +doc+: pre-written Word documents, generated help files, etc.
-* +headers+: "+.h+" and "+.hpp+" files, including those generated by the MIDL compiler, plus
-"+.idl+" files if using COM, for example.  This is normally defined separately from the various
-+compileFoo+ configurations because its contents are independent of Visual Studio Platform and
-Configuration variations.
-* +build+: Files needed as part of the build process for any module which uses this one.  For
-example, this might include batch files to copy or symlink this module's DLLs into a target folder
-created by the module using it.
-* +compileVc10X64Debug+: files needed to compile against the +Debug+ Visual Studio "Configuration"
-of this module, e.g., static libraries ("+.lib+").  This configuration will extend from +headers+.
-Visual Studio's notion of configuration is separate from the idea in Gradle and Artifactory
-although, as you can see, related.
-* +compileVc10X64Release+: As above, but in the +Release+ configuration.
-* +runtimeVc10X64Debug+: files needed at run-time when using the +Debug+ Visual Studio
-"Configuration" of this module, e.g., dynamic-link libraries ("+.dll+") and executables ("+.exe+").
-* +runtimeVc10X64Release+: As above, but in the +Release+ configuration.
-* +debuggingVc10X64Debug+: files needed when debugging the +Debug+ Visual Studio
-"Configuration" of this module, e.g., program database ("+.pdb+") files.  This will extend from the
-corresponding runtime configuration, because if you want the "+.pdb+" files then you almost
-certainly also want the matching "+.dll+" and "+.exe+" files.
-* +debuggingVc10X64Release+: As above, but in the +Release+ configuration.
-
-The above translates into Gradle as follows.
+Use of Gradle with C\++ was limited when the +holygradle+ plugins were created, so no single
+standard set of configurations exists.  However, from version link:release_notes.html#_7_7_0[]
+there are several link:plugin-intrepid.html#_pre_defined_configuration_set_types[] which will
+set up patterns of configurations which have proven useful in practice.
 
 [source,groovy]
 ----
-configurations {
-    privateBuild
-    doc
-    headers
-    compileVc10X64Debug { extendsFrom headers }
-    compileVc10X64Release { extendsFrom headers }
-    runtimeVc10X64Debug
-    runtimeVc10X64Release
-    debuggingVc10X64Debug { extendsFrom runtimeVc10X64Debug }
-    debuggingVc10X64Release { extendsFrom runtimeVc10X64Release }
+configurationSets {
+    main { type configurationSetTypes.DLL }
 }
 ----
-
-and can be visualised, along with dependencies on a similar module (and Doxygen as an example build
-tool), as follows.  The diagram assumes that the headers for module +b+ don't expose any types from
-the headers for module +a+, so there is no dependency between those two configurations.
-
-.Private configurations
-[caption="Figure {counter:figureindex}: "]
-[graphviz,private_configs_2.svg,dot,svg]
---
-digraph {
-    rankdir=LR;
-    node [shape=box];
-
-    subgraph cluster_doxygen {
-        label = "Doxygen";
-
-        Doxygen_bin [label="bin"];
-    }
-
-    subgraph cluster_a {
-        label = "a";
-
-        a_headers [label="headers"];
-        a_compileVc10X64Debug [label="compileVc10-\nX64Debug"];
-        a_compileVc10X64Release [label="compileVc10-\nX64Release"];
-        a_runtimeVc10X64Debug [label="runtimeVc10-\nX64Debug"];
-        a_runtimeVc10X64Release [label="runtimeVc10-\nX64Release"];
-        a_debuggingVc10X64Debug [label="debuggingVc10-\nX64Debug"];
-        a_debuggingVc10X64Release [label="debuggingVc10-\nX64Release"];
-        a_privateBuild [label="privateBuild"];
-
-        a_compileVc10X64Debug -> a_headers [arrowhead="onormal"];
-        a_compileVc10X64Release -> a_headers [arrowhead="onormal"];
-        a_debuggingVc10X64Debug -> a_runtimeVc10X64Debug [arrowhead="onormal"];
-        a_debuggingVc10X64Release -> a_runtimeVc10X64Release [arrowhead="onormal"];
-
-        a_privateBuild -> Doxygen_bin;
-    }
-
-    subgraph cluster_b {
-        label = "b";
-
-        b_headers [label="headers"];
-        b_compileVc10X64Debug [label="compileVc10-\nX64Debug"];
-        b_compileVc10X64Release [label="compileVc10-\nX64Release"];
-        b_runtimeVc10X64Debug [label="runtimeVc10-\nX64Debug"];
-        b_runtimeVc10X64Release [label="runtimeVc10-\nX64Release"];
-        b_debuggingVc10X64Debug [label="debuggingVc10-\nX64Debug"];
-        b_debuggingVc10X64Release [label="debuggingVc10-\nX64Release"];
-        b_privateBuild [label="privateBuild"];
-
-        b_compileVc10X64Debug -> b_headers [arrowhead="onormal"];
-        b_compileVc10X64Release -> b_headers [arrowhead="onormal"];
-        b_debuggingVc10X64Debug -> b_runtimeVc10X64Debug [arrowhead="onormal"];
-        b_debuggingVc10X64Release -> b_runtimeVc10X64Release [arrowhead="onormal"];
-
-        b_privateBuild -> Doxygen_bin;
-    }
-
-    a_compileVc10X64Debug -> b_compileVc10X64Debug;
-    a_compileVc10X64Release -> b_compileVc10X64Release;
-    a_runtimeVc10X64Debug -> b_runtimeVc10X64Debug;
-    a_runtimeVc10X64Release -> b_runtimeVc10X64Release;
-    a_debuggingVc10X64Debug -> b_debuggingVc10X64Debug;
-    a_debuggingVc10X64Release -> b_debuggingVc10X64Release;
-}
---
-
-
-Other combinations of Visual Studio Platform, Configuration, and/or compiler version might be
-appropriate.  Client-server or web projects might also publish one or more configurations for files
-which must be present on the server side, for client-side code to run, e.g., HTML, CSS, and
-JavaScript files.
 
 Note that configurations should be declared near the top of the +build.gradle+ file, after any
 plugin declarations, because they will be referenced in several other places.
@@ -404,7 +319,7 @@ all Groovy properties, can be referenced as literals or as strings.
 [source,groovy]
 ----
 packageArtifacts {
-    headers {
+    import_common {
         include "src/**/*.h"
         include "src/**/*.idl"
     }
@@ -416,15 +331,15 @@ packageArtifacts {
     build {
         include "copy_outputs_to.bat"
     }
-    ["Debug", "Release"].each { conf ->
-        "compileVc10X64${conf}" {
+    configurationSets.main.typeAsDefault.axes["Configuration"].each { conf ->
+        "import_x64_${conf}" {
             include "output/my_module_${conf}64.lib"
             include "output/MIDL/**/${conf}/**/*"
         }
-        "runtimeVc10X64${conf}" {
+        "runtime_x64_${conf}" {
             include "output/my_module_${conf}64.dll"
         }
-        "debuggingVc10X64${conf}" {
+        "debugging_x64_${conf}" {
             include "output/my_module_${conf}64.pdb"
         }
     }
@@ -510,34 +425,11 @@ packedDependencies {
 
 The dependency mapping will normally be conceptually straightforward, though it may be complicated
 if the configurations published by your dependencies have different names, or fail to match yours
-exactly.  Basically, the pattern is as follows.
+exactly.  If you can use one of the link:plugin-intrepid.html#_pre_defined_configuration_set_types[]
+it will make your build script much simpler.  See link:plugin-intrepid.html#_configurationSetTypes[]
+and link:plugin-intrepid.html#_configurationSets[] for more information.
 
-* If the dependency is a build tool which you only need at build-time, (e.g., Doxygen), declare a
-mapping from +privateBuild+ to the appropriate configurations of the dependency: normally there
-will be only one.
-* If the dependency is a static library, declare a mapping from +privateBuild+ to whatever
-configurations of the dependency include the "+.lib+" files.  There may be several, for different
-build configurations.
-** If the module publishes a +headers+ configuration, you will normally not need to declare a
-dependency on that directly, because the module will have its static library configurations
-extending from +headers+.
-** The dependency module may declare one or more runtime configurations, even though it is a static
-library, for example if it depends on other "+.dll+"s at runtime.  If it does, you should declare
-a mapping from your each of your runtime configurations to the corresponding ones in that module, as
-with the "+.pdb+"s.  This may require you to add runtime configurations to your module, even though
-it does not have any direct runtime dependencies itself.
-* If the dependency is a dynamic library, you should declare a mapping from your each of your
-runtime configurations to the corresponding ones in that module.
-* For both static and dynamic libraries, you may wish to separately declare a dependency from each
-of your debugging configurations to the corresponding ones in the up-stream module.  This means
-that projects which use your module can easily fetch the "+.pdb+"s for it along with yours.  You
-should declare each separately so that down-stream modules which use only a subset of your
-configurations will pull in only a subset of the debugging files.  You should declare it in addition
-to the mapping of runtime configurations, even though debugging configurations generally extend from
-runtime configurations, so that down-stream modules can correctly pull in just the runtime files
-(e.g., to build an installer), or both runtime and debugging files.
-
-WARNING: Declaring the dependency mapping correctly is important: if you get it wrong, you may find
+TIP: Declaring the dependency mapping correctly is important: if you get it wrong, you may find
 that your project builds and runs, but down-stream modules which try to use yours fail.  For this
 reason, we recommend setting up an auto-build job for a module which attempts to use various
 configurations of your own module, including building against LIBs/headers, and running with
@@ -545,33 +437,37 @@ DLLs/EXEs.
 
 Following is an example of some of the dependencies based on a real-world +build.gradle+ file.
 
-* Boost is only a build-time dependency, and not needed by down-stream modules: this project does
-not expose any Boost types from its public interfaces, so it does not have to publish a dependency
-from its (published) headers to Boost's headers.
+* Boost is a build-time dependency, and this module exposes some Boost types in its interfaces,
+so the comiple-time imports from Boost need to be re-exported.
 * HTML Help Workshop is only used at (documentation) build time.
-* ImageLib is an in-house, static library and, as with Boost, this project doesn't expose any
-ImageLib types.  However, ImageLib has a runtime dependency (on the Intel C\++ compiler runtime), so
-this project has to declare that its runtime configurations depend on that.  In this case, ImageLib
+* ImageLib is an in-house, static library and this project doesn't expose any ImageLib types.
+However, ImageLib has a runtime dependency (on the Intel C\++ compiler runtime), so this project
+has to declare that its runtime configurations depend on that.  In this case, ImageLib
 doesn't separate its runtime dependencies into +Debug+ and +Release+, which may either be an
-oversight, or because there is only one version of the Intel runtime DLLs.
+oversight, or because there is only one version of the Intel runtime DLLs.  ImageLib also
+does not use the pre-defined configuration names, so more complex mapping is needed.
 
 [source,groovy]
 ----
 packedDependencies {
-    "../Boost_vc10" {
-        dependency "org.boost:Boost_static:1.49.0_1"
-        configuration "privateBuild->includes,libX64"
+    "../Boost" {
+        dependency "org.boost:Boost:1.49.0_1"
+        configurationSet configurations.build, configurationSetTypes.DLL_64, export: true
     }
     // ...
     "../HTML Help Workshop" {
         dependency "com.microsoft:HTML_Help_Workshop:4.74.8702.0"
-        configuration "privateBuild->full"
+        configuration "build->full"
     }
     // ...
     "../ImageLib" {
         dependency "com.example-corp.example-team:ImageLib:13.1.3"
-        configuration "privateBuild->pdbVc10X64Debug,pdbVc10X64Release"
-        configuration "runtimeVc10Debug,runtimeVc10Release->externals"
+        configurationSets.main.typeAsDefault.axes["Configuration"].each { conf ->
+            configuration "build->compileVc10X64${conf}"
+            configuration "runtime_x64_${conf}->runtimeVc10X64${conf}"
+            configuration "runtime_x64_${conf}->externals"
+            configuration "debugging_x64_${conf}->pdbVc10X64${conf}"
+        }
     }
     // ...
 }
@@ -849,10 +745,18 @@ Once you are happy with the contents of this block, run the following command to
 gw publish
 ----
 
-TIP: You can use a +file:+ URL as the target to test publishing on your own machine.  For example,
+[TIP]
+====
+You can use a +file:+ URL as the target to test publishing on your own machine.  For example,
 "+file://D:/Projects/example-team/fake-repo/+".  This won't test authentication and permission
 aspects of the process, but will let you check that the +group+, +name+, and +version+ are correct,
 and may find other unexpected problems.
+
+If you do this, you should either (a) give each publication a new version number; or (b) delete the
+contents of the unpack cache each time.  Otherwise Gradle will see your new publication with the same
+version, but the Holy Gradle will not unpack it, because it wll have recorded the fact that the
+same-named ZIP files have already been unpacked into the relevant unpack cache folder.
+====
 
 The +publish+ task depends on the +packageEverything+ and +generateIvyModuleDescriptor+ tasks, so
 normally you only need to run this one command after your solution is built.
@@ -1132,7 +1036,7 @@ numbering.
 
 ==== Package Third-Party Dependency Files
 
-At this point, you should add +configurations+ and +packageArtifacts+ blocks to your script, as in
+At this point, you should add +configurationSets+ and +packageArtifacts+ blocks to your script, as in
 the usual <<_initial_set_up>> case.  You won't need to add a +packedDependencies+ block or a
 top-level +repositories.ivy+ block, and you probably won't need to specify any +prerequisites+,
 unless they're needed just for the packaging of this third-party software.
@@ -1164,15 +1068,15 @@ then the following +packageArtifacts+ block
 ----
 packageArtifacts {
     String distroot = "ThirdPartyLib_bin_1.4"
-    headers {
+    import_common {
         from distroot
         include "**/*.h"
     }
-    compile {
+    import_x64_Release {
         from distroot
         include "**/*.lib"
     }
-    runtime {
+    runtime_x64_Release {
         from distroot
         include "**/*.dll"
     }
@@ -1182,17 +1086,17 @@ packageArtifacts {
 will produce "+.zip+" files with the following structure.
 
 ----
-ThirdPartyLib-headers-1.4_1.zip\
+ThirdPartyLib-import_common-1.4_1.zip\
     ThirdPartyLib_bin_1.4\
         include\
             tplib.h
 
-ThirdPartyLib-compile-1.4_1.zip\
+ThirdPartyLib-import_x64_Release-1.4_1.zip\
     ThirdPartyLib_bin_1.4\
         lib\
             tplib.lib
 
-ThirdPartyLib-runtime-1.4_1.zip\
+ThirdPartyLib-runtime_x64_Release-1.4_1.zip\
     ThirdPartyLib_bin_1.4\
         bin\
             tplib.dll
@@ -1206,17 +1110,17 @@ like this
 ----
 packageArtifacts {
     String distroot = "ThirdPartyLib_bin_1.4"
-    headers {
+    import_common {
         from distroot
         to "."
         include "**/*.h"
     }
-    compile {
+    import_x64_Release {
         from distroot
         to "."
         include "**/*.lib"
     }
-    runtime {
+    runtime_x64_Release {
         from distroot
         to "."
         include "**/*.dll"
@@ -1227,15 +1131,15 @@ packageArtifacts {
 will produce ZIP files with the desired structure:
 
 ----
-ThirdPartyLib-headers-1.4_1.zip\
+ThirdPartyLib-import_common-1.4_1.zip\
     include\
         tplib.h
 
-ThirdPartyLib-compile-1.4_1.zip\
+ThirdPartyLib-import_x64_Release-1.4_1.zip\
     lib\
         tplib.lib
 
-ThirdPartyLib-runtime-1.4_1.zip\
+ThirdPartyLib-runtime_x64_Release-1.4_1.zip\
     bin\
         tplib.dll
 ----
@@ -1414,10 +1318,11 @@ ZIP file, and that has files describing the source repository and version it was
 
 Release notes are an interesting case because you may want to send out updated release notes after
 your release, for example, if bugs are found.  One approach could be to create a separate module for
-the release notes, which has a dependency on your original module.  Suppose your original module is
-published at version "+1.3.1+"; then you could have multiple versions of your release notes module,
-each using the date and time: "+1.3.1-_YYYYMMDD-HHMMSS_+".  Then someone can always get the latest
-version by defining a dependency on "_group_:_module_\_release\_notes:+".
+the release notes, which has a dependency on your original module.  Suppose your original module
+"+com.example-corp:my-lib+" is published at version "+1.3.1+"; then you could have multiple versions
+of your release notes module, each using the date and time: "+1.3.1-_YYYYMMDD-HHMMSS_+".  Then
+someone can always get the latest version by defining a dependency on
+"`com.example-corp:my-lib_release-notes:+`".
 
 ==== Identifying the Release
 
@@ -1468,7 +1373,7 @@ If you customers have access to an gloss:artifactory[] server, then they can fet
 their project with the gloss:holygradle[], using the +packedDependencies+ block as usual.  You must
 tell them
 
-* your module's version ID (+_group_/_name_/_version+); and
+* your module's version ID (+_group_/_name_/_version_+); and
 * the _virtual_ gloss:repository[] which they should fetch it from.
 
 If that repository is not already in the +repositories+ section of their +build.gradle+, they must
@@ -1498,20 +1403,8 @@ configurations {
     preBuiltArtifacts
 }
 
-// Setting group and version: EITHER
-
 group = "com.example-corp.teamA"
-version = System.getenv("MY_MODULE_VERSION") ?: "unspecified"
-
-// OR (if you want to put publishPackages after packageArtifacts)
-
-publishPackages {
-    group "com.example-corp.teamA"
-    nextVersionNumberEnvironmentVariable "MY_MODULE_VERSION"
-    // ...
-}
-
-// (end of Setting group and version)
+version = System.getenv("MY_MODULE_VERSION") ?: Project.DEFAULT_VERSION
 
 packageArtifacts {
     preBuiltArtifacts {        
@@ -1521,10 +1414,14 @@ packageArtifacts {
         }
     }
 }
+
+publishPackages {
+    // ...
+}
 ----
 
 TIP: For the above to work, the +_group_+ and +_version_+ must be set before the +packageArtifacts+
-block, either directly or by using the +publishPackages+.
+block.
 
 Now publish your module to Artifactory as normal.  You will see a ZIP file with a name containing
 the string "+preBuiltArtifacts+".  Download and unzip it to a new folder, which must *not* have the

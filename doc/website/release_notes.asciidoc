@@ -702,16 +702,16 @@ URL for fetching the plugins.
 To change your wrapper from previous versions to this one, follow these steps.
 +
 --
-. Download https://artifactory.my-company.com/artifactory/plugins-release-local/holygradle/wrapper-starter-kit/7.0.0/wrapper-starter-kit-7.0.0.zip and unzip it in the root folder of your project.
+. Download https://artifact-server.example-corp.com/artifactory/plugins-release-local/holygradle/wrapper-starter-kit/7.0.0/wrapper-starter-kit-7.0.0.zip and unzip it in the root folder of your project.
 . Delete +gradle/gradle-wrapper.properties+ from source control (because it's now generated on the fly) and add the new files (+gradle/gradle-wrapper.properties.in+, +gradle/distributionPath.txt+), then commit that.
 . Add +.hgignore+ entries for +gradle/gradle-wrapper.properties+ (not the +.in+ version), because they're now generated, and +gradle/distributionUrlBase.txt+), then commit that.  (Separate commit because trying to delete and ignore a file in the same commit is liable to cause problems.)
-. Set environment variable +HOLY_GRADLE_REPOSITORY_BASE_URL+ to +https://artifactory.my-company.com/artifactory/+ (or other appropriate URL for your server).  Remember to do this on your autobuild machines, too.
+. Set environment variable +HOLY_GRADLE_REPOSITORY_BASE_URL+ to +https://artifact-server.example-corp.com/artifactory/+ (or other appropriate URL for your server).  Remember to do this on your autobuild machines, too.
 . If you have any hard-coded URLs in your +build.gradle+ or +gradle.properties+, you'll have to initialise them from the environment variable, in your +build.gradle+, as follows.
 Instead of +gradle.properties+ having
 +
 ----
-myTeamDependenciesRepo=https://artifactory.my-company.com/artifactory/my-team-integration/
-myTeamPublishRepo=https://artifactory.my-company.com/artifactory/my-team-integration-local/
+myTeamDependenciesRepo=https://artifact-server.example-corp.com/artifactory/teamA-integration/
+myTeamPublishRepo=https://artifact-server.example-corp.com/artifactory/teamA-integration-local/
 ----
 +
 change to +build.gradle+ having
@@ -724,8 +724,8 @@ String repoBaseUrl = System.getenv("HOLY_GRADLE_REPOSITORY_BASE_URL")
 if (!repoBaseUrl.endsWith("/")) {
     repoBaseUrl += "/"
 }
-project.ext.myTeamDependenciesRepo = repoBaseUrl + "my-team-integration/"
-project.ext.myTeamPublishRepo = repoBaseUrl + "my-team-integration-local/"
+project.ext.myTeamDependenciesRepo = repoBaseUrl + "teamA-integration/"
+project.ext.myTeamPublishRepo = repoBaseUrl + "teamA-integration-local/"
 ----
 --
 

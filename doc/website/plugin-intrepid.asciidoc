@@ -39,7 +39,7 @@ buildscript {
 }
 gplugins.apply()
 
-group = "com.my-company.my-team"
+group = "com.example-corp.teamA"
 version = System.getenv("NEXT_VERSION_NUMBER") ?: Project.DEFAULT_VERSION
 
 repositories.ivy {
@@ -63,7 +63,7 @@ configurationsSets {
 sourceDependencies {
     framework {
         // Assume the following repo contains a build.gradle setting
-        // group "com.my-company.my-team" and version "1.0.3.987".
+        // group "com.example-corp.teamA" and version "1.0.3.987".
         svn "http://svn-server/path/to/framework"
         configurationSet configurationSets.main, configurationSetTypes.DLL_64
     }
@@ -74,7 +74,7 @@ sourceDependencies {
 
 packedDependencies {
     RenderingLib {
-        dependency "com.my-company.rendering:RenderingLib:2012a2"
+        dependency "com.example-corp.rendering:RenderingLib:2012a2"
         configurationSet configurationSets.main, configurationSetTypes.LIB_64
     }
     "NUnit <version> {
@@ -182,7 +182,7 @@ When published, the Ivy module description for this example module will look lik
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0">
-  <info organisation="com.my-company.my-team" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <info organisation="com.example-corp.teamA" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
   <configurations>
     <conf name="build" visibility="private"/>
     <conf name="import_common" visibility="public"/>
@@ -202,16 +202,16 @@ When published, the Ivy module description for this example module will look lik
   </configurations>
   <publications>
     <artifact name="example-import_common" type="zip" ext="zip" conf="import_common"/>
-    <artifact name="import_x64_Release" type="zip" ext="zip" conf="import_x64_Release"/>
-    <artifact name="import_x64_Debug" type="zip" ext="zip" conf="import_x64_Debug"/>
-    <artifact name="runtime_x64_Release" type="zip" ext="zip" conf="runtime_x64_Release"/>
-    <artifact name="runtime_x64_Debug" type="zip" ext="zip" conf="runtime_x64_Debug"/>
-    <artifact name="debugging_x64_Release" type="zip" ext="zip" conf="debugging_x64_Release"/>
-    <artifact name="debugging_x64_Debug" type="zip" ext="zip" conf="debugging_x64"/>
+    <artifact name="example-import_x64_Release" type="zip" ext="zip" conf="import_x64_Release"/>
+    <artifact name="example-import_x64_Debug" type="zip" ext="zip" conf="import_x64_Debug"/>
+    <artifact name="example-runtime_x64_Release" type="zip" ext="zip" conf="runtime_x64_Release"/>
+    <artifact name="example-runtime_x64_Debug" type="zip" ext="zip" conf="runtime_x64_Debug"/>
+    <artifact name="example-debugging_x64_Release" type="zip" ext="zip" conf="debugging_x64_Release"/>
+    <artifact name="example-debugging_x64_Debug" type="zip" ext="zip" conf="debugging_x64"/>
   </publications>
   <dependencies>
-    <dependency org="com.my-company.my-team" name="framework" rev="1.0.3.987" conf="import_x64_Release->import_x64_Release;import_x64_Debug->import_x64_Debug;runtime_x64_Release->runtime_x64_Release;runtime_x64_Debug->runtime_x64_Debug;debugging_x64_Release->debugging_x64_Release;debugging_x64_Debug->debugging_x64_Debug"/>
-    <dependency org="com.my-company.rendering" name="RenderingLib" rev="2012a2" conf="import_x64_Release->import_x64_Release;import_x64_Debug->import_x64_Debug;runtime_x64_Release->runtime_x64_Release;runtime_x64_Debug->runtime_x64_Debug;debugging_x64_Release->debugging_x64_Release;debugging_x64_Debug->debugging_x64_Debug"/>
+    <dependency org="com.example-corp.teamA" name="framework" rev="1.0.3.987" conf="import_x64_Release->import_x64_Release;import_x64_Debug->import_x64_Debug;runtime_x64_Release->runtime_x64_Release;runtime_x64_Debug->runtime_x64_Debug;debugging_x64_Release->debugging_x64_Release;debugging_x64_Debug->debugging_x64_Debug"/>
+    <dependency org="com.example-corp.rendering" name="RenderingLib" rev="2012a2" conf="import_x64_Release->import_x64_Release;import_x64_Debug->import_x64_Debug;runtime_x64_Release->runtime_x64_Release;runtime_x64_Debug->runtime_x64_Debug;debugging_x64_Release->debugging_x64_Release;debugging_x64_Debug->debugging_x64_Debug"/>
     <dependency org="org.nunit" name="NUnit" rev="2.5.10" conf="test_runtime_x64_Release,test_runtime_x64_Debug->bin"/>
   </dependencies>
 </ivy-module>
@@ -621,7 +621,7 @@ interfaces of that module should be encapsulated within this module;
 The rule for the `import_*` configurations can also be represented by the following table.  The From/To columns
 are the configuration set type for the source and destination of the mapping.  The `export:` column indicates
 what value for that option (default +false+) is passed to the +configurationSet+ method of +sourceDependencies+
-++_packedDependencies++.
+or +packedDependencies+.
 
 [width="60%",cols="1,1,1,2",options="header"]
 |====
@@ -642,6 +642,74 @@ what value for that option (default +false+) is passed to the +configurationSet+
 |EXE |n/a |no
 
 |====
+
+The following diagram shows the configurations for two modules +a+ and +b+ of type +DLL+, where +a+
+is exposing the headers (in +import_common+) of +b+; plus a simple packaging of Doxygen (using a single
+configuration) as an example build tool.  The blue lines would be missing if +a+ did not export the
+imports of +b+.
+
+.Configuration Mapping
+[caption="Figure {counter:figureindex}: "]
+[graphviz,config_mapping.svg,dot,svg]
+--
+digraph {
+    rankdir=LR;
+    node [shape=box];
+
+    subgraph cluster_doxygen {
+        label = "Doxygen";
+
+        Doxygen_bin [label="bin"];
+    }
+
+    subgraph cluster_a {
+        label = "a";
+
+        a_import_common [label="import\n_common"];
+        a_import_x64_Debug [label="import\n_x64\n_Debug"];
+        a_import_x64_Release [label="import\n_x64\n_Release"];
+        a_runtime_x64_Debug [label="runtime\n_x64\n_Debug"];
+        a_runtime_x64_Release [label="runtime\n_x64\n_Release"];
+        a_debugging_x64_Debug [label="debugging\n_x64\n_Debug"];
+        a_debugging_x64_Release [label="debugging\n_x64\n_Release"];
+        a_build [label="build",style="dashed"];
+
+        a_import_x64_Debug -> a_import_common [arrowhead="onormal"];
+        a_import_x64_Release -> a_import_common [arrowhead="onormal"];
+
+        a_build -> Doxygen_bin;
+    }
+
+    subgraph cluster_b {
+        label = "b";
+
+        b_import_common [label="import\n_common"];
+        b_import_x64_Debug [label="import\n_x64\n_Debug"];
+        b_import_x64_Release [label="import\n_x64\n_Release"];
+        b_runtime_x64_Debug [label="runtime\n_x64\n_Debug"];
+        b_runtime_x64_Release [label="runtime\n_x64\n_Release"];
+        b_debugging_x64_Debug [label="debugging\n_x64\n_Debug"];
+        b_debugging_x64_Release [label="debugging\n_x64\n_Release"];
+        b_build [label="build",style="dashed"];
+
+        b_import_x64_Debug -> b_import_common [arrowhead="onormal"];
+        b_import_x64_Release -> b_import_common [arrowhead="onormal"];
+
+        b_build -> Doxygen_bin;
+    }
+
+    a_import_common -> b_build [style=invis];
+    b_import_common -> Doxygen_bin [style=invis];
+
+    a_import_x64_Debug -> b_import_x64_Debug [color=blue];
+    a_import_x64_Release -> b_import_x64_Release [color=blue];
+    a_runtime_x64_Debug -> b_runtime_x64_Debug;
+    a_runtime_x64_Release -> b_runtime_x64_Release;
+    a_debugging_x64_Debug -> b_debugging_x64_Debug;
+    a_debugging_x64_Release -> b_debugging_x64_Release;
+}
+--
+
 
 ==== User-defined Configuration Set Types
 
@@ -1099,7 +1167,7 @@ sourceDependencies {
         svn "http://path/to/svn/repo"
         publishing {
             group "com.company.team"
-            configuration "compileDebug->compileVc10Debug", "compileRelease->compileVc10Release"
+            configuration "import_x64_Debug->compileVc10Debug", "import_x64_Release->compileVc10Release"
             version "1.0.+"
         }
     }
@@ -1204,7 +1272,7 @@ This is a container for packed dependency objects. The first level below +packed
 ----
 packedDependencies {
     "RenderingLib" {
-        dependency "com.my-company.rendering:RenderingLib:2012a2"
+        dependency "com.example-corp.rendering:RenderingLib:2012a2"
         configurationSet configurationSets.main, configurationSetTypes.LIB_64
     }
     "NUnit <version>" {
@@ -1826,7 +1894,7 @@ This task also fetches transitive dependencies. For example, assume a module's b
 ----
 packedDependencies {
     foo {
-        dependency "com.my-company.my-team:foo:1.2.3.4"
+        dependency "com.example-corp.teamA:foo:1.2.3.4"
         configurationSet configurationSets.main, configurationSetTypes.DLL_64
     }
 }
@@ -1837,7 +1905,7 @@ and the module descriptor for +foo+ declares a transitive dependency on +bar+ as
 [source,xml]
 ----
 <ivy-module version="2.0">
-  <info organisation="com.my-company.my-team" module="foo" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <info organisation="com.example-corp.teamA" module="foo" revision="1.2.3.4" status="release" publication="20121115134228"/>
   <configurations>
     ...
     <conf name="runtime_x64_Debug" visibility="public" />
