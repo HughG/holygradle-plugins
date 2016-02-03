@@ -36,6 +36,17 @@ class Link {
         // Try to build as a directory junction first
         try {
             Junction.rebuild(link, target)
+
+            // The Junction code will blindly create links to stuff that won't work (like network shares or non-existant
+            // targets. The only way I can see to detect this is to check if the resulting file exists. This will return
+            // false if the target is invalid even if the link has been successfully created.
+            if (link.exists()) {
+                return
+            } else {
+                // Remove the link before continuing
+                Junction.delete(link)
+                throw new Exception()
+            }
         } catch (Exception e) {
             logger?.debug("Failed to create a directory junction from ${link} to ${target}. Falling back to symlinks.", e)
 

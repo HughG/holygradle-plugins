@@ -29,7 +29,11 @@ class Junction {
     public static final int NOT_A_REPARSE_POINT = 0x00001126
 
     public static boolean isJunction(File file) {
-        return file.isDirectory() && isMountPoint(file)
+        try {
+            return isMountPoint(file)
+        } catch (Win32Exception) {
+            return false
+        }
     }
 
     /**
