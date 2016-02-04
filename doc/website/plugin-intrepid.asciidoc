@@ -95,13 +95,13 @@ packageArtifacts {
         include "src/**/*.h"
     }
     configurationSets.main.axes['Configuration'].each { conf ->
-        "import_x64_{conf}" {
+        "import_x64_${conf}" {
             include "lib/${conf}/*.lib"
         }
-        "runtime_x64_{conf}" {
+        "runtime_x64_${conf}" {
             include "bin/${conf}/*.dll"
         }
-        "debugging_x64_{conf}" {
+        "debugging_x64_${conf}" {
             include "bin/${conf}/*.pdb"
         }
     }

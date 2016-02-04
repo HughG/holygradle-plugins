@@ -1,6 +1,6 @@
 include::stdattr.ascinc[]
 
-= Support
+= Examples
 
 include::sitemap.ascinc[]
 

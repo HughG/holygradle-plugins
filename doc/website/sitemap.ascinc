@@ -29,6 +29,12 @@ version 7.7.1
     <li><!--<a href="reference.html"></a>--><p>Reference</p>
         <ul>
             <li><a href="plugins.html"></a></li>
+            <ul>
+                <li><a href="plugin-my-credentials.html"></a></li>
+                <li><a href="plugin-intrepid.html"></a></li>
+                <li><a href="plugin-devenv.html"></a></li>
+                <li><a href="plugin-unit-test.html"></a></li>
+            </ul>
             <li><a href="glossary.html"></a></li>
         </ul>
     </li>
