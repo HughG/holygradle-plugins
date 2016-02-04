@@ -3,6 +3,9 @@ package holygradle.artifacts
 import groovy.transform.InheritConstructors
 import org.gradle.api.artifacts.Configuration
 
+/**
+ * @see http://holygradle.bitbucket.org/plugin-intrepid.html#_exe
+ */
 @InheritConstructors
 class WindowsExecutableConfigurationSetType extends WindowsConfigurationSetType {
     @Override

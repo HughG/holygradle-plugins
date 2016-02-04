@@ -4,6 +4,9 @@ import groovy.transform.InheritConstructors
 import holygradle.lang.NamedParameters
 import org.gradle.api.artifacts.Configuration
 
+/**
+ * @see http://holygradle.bitbucket.org/plugin-intrepid.html#_dll
+ */
 @InheritConstructors
 class WindowsDynamicLibraryConfigurationSetType extends WindowsConfigurationSetType {
     @Override

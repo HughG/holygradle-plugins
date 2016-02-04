@@ -1,5 +1,8 @@
 package holygradle.artifacts
 
+/**
+ * @see http://holygradle.bitbucket.org/plugin-intrepid.html#_default_web_types
+ */
 class DefaultWebConfigurationSetTypes {
     public static final Map<String, ConfigurationSetType> TYPES = [
         new DefaultConfigurationSetType(

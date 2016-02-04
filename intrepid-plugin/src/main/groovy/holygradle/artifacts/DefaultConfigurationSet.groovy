@@ -7,6 +7,13 @@ import com.google.common.collect.Sets
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer;
 
+/**
+ * This configuration set class forms its related configurations based on an instance of
+ * {@link DefaultConfigurationSetType} or one of its subclasses.  It makes names for the related configurations
+ * defined by its type by joining the axis value strings with underscores and adding an optional
+ * {@link DefaultConfigurationSet#prefix} string.  The prefix allows a single project to have more than one
+ * configuration set of the same type.
+ */
 class DefaultConfigurationSet implements ConfigurationSet {
     private static final List<Map<String, String>> INCLUDE_ALL_BINDINGS =
         new ArrayList<LinkedHashMap<String, String>>().asImmutable()
@@ -16,7 +23,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
     private DefaultConfigurationSetType type
     private final Object initSync = new Object()
     // This class uses LinkedHashMap so that the iteration order is predictable and the same as the init order.
-    private LinkedHashMap<Map<String, String>, String> configurationNames = new LinkedHashMap<>()
+    private LinkedHashMap<Map<String, String>, String> configurationNamesMap = new LinkedHashMap<>()
 
     String prefix
 
@@ -56,11 +63,11 @@ class DefaultConfigurationSet implements ConfigurationSet {
                 continue
             }
 
-            // We clone the binding before using it as a key in configurationNames, because Template#make adds an "out"
+            // We clone the binding before using it as a key in configurationNamesMap, because Template#make adds an "out"
             // key which holds a PrintWriter, and we don't want that stored in our key.
             Map<String, String> bindingForValues = binding.clone() as Map<String, String>
             String nameForValues = template.make(binding).toString()
-            configurationNames[bindingForValues] = nameForValues
+            configurationNamesMap[bindingForValues] = nameForValues
         }
     }
 
@@ -82,7 +89,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
 
     public void prefix(String prefix) {
         synchronized (initSync) {
-            if (!configurationNames.isEmpty()) {
+            if (!configurationNamesMap.isEmpty()) {
                 throw new RuntimeException(
                     "Cannot change prefix for configuration set ${name} after configuration names have been generated"
                 )
@@ -95,7 +102,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
     @Override
     void type(ConfigurationSetType type) {
         synchronized (initSync) {
-            if (!configurationNames.isEmpty()) {
+            if (!configurationNamesMap.isEmpty()) {
                 throw new RuntimeException(
                     "Cannot change type for configuration set ${name} after configuration names have been generated"
                 )
@@ -127,7 +134,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
             defaultType.requiredAxes.values()*.size().inject(1) { acc, val -> acc * val }
         final int optionalAxesCombinationCount =
             defaultType.optionalAxes.values()*.size().inject(1) { acc, val -> acc * val }
-        configurationNames = new LinkedHashMap<Map<String, String>, String>(
+        configurationNamesMap = new LinkedHashMap<Map<String, String>, String>(
             requiredAxesCombinationCount * (optionalAxesCombinationCount + 1)
         )
     }
@@ -150,10 +157,16 @@ class DefaultConfigurationSet implements ConfigurationSet {
         return result
     }
 
-    @Override
-    public Map<Map<String, String>, String> getConfigurationNames() {
+    /**
+     * Returns a map from axis-value bindings (as defined by this set's {@link DefaultConfigurationSetType}) to the
+     * actual configurations names in this set (which may add a prefix string).  The elements of this map will be the
+     * same as, and in the same order as, the return value of {@link #getConfigurationNames()}.
+     *
+     * @return A map from axis-value bindings to the actual configuration names in this set
+     */
+    public Map<Map<String, String>, String> getConfigurationNamesMap() {
         synchronized (initSync) {
-            if (configurationNames.isEmpty()) {
+            if (configurationNamesMap.isEmpty()) {
                 if (type == null) {
                     throw new RuntimeException("Must set type for configuration set ${name}")
                 }
@@ -179,7 +192,14 @@ class DefaultConfigurationSet implements ConfigurationSet {
             }
         }
 
-        configurationNames
+        configurationNamesMap
+    }
+
+    @Override
+    public List<String> getConfigurationNames() {
+        // Construct a new list so that the result can be used freely, e.g., with Groovy's spread operator (which does
+        // not work with the list type returned by LinkedHashMap#values()).
+        return new ArrayList<String>(getConfigurationNamesMap().values())
     }
 
     public String getDescriptionForBinding(Map<String, String> binding) {
@@ -193,11 +213,17 @@ class DefaultConfigurationSet implements ConfigurationSet {
             "where '...' is a configuration or configurationSet in your project."
     }
 
-    @Override
-    public Map<Map<String, String>, Configuration> getConfigurations(Project project) {
+    /**
+     * Returns a map from axis-value bindings (as defined by this set's {@link DefaultConfigurationSetType}) to the
+     * actual configurations in this set (which may add a prefix string to their names).  The elements of this list will
+     * be the same as, and in the same order as, the return value of {@link #getConfigurations()}.
+     *
+     * @return A map from axis-value bindings to the actual configurations in this set
+     */
+    public Map<Map<String, String>, Configuration> getConfigurationsMap(Project project) {
         ConfigurationContainer configurations = project.configurations
-        // Explicitly call #getConfigurationNames here to make sure the names are lazily filled in.
-        def nameMap = getConfigurationNames()
+        // Explicitly call #getConfigurationNamesMap here to make sure the names are lazily filled in.
+        def nameMap = getConfigurationNamesMap()
         // Create all the configurations for the axis bindings.
         nameMap.each { binding, name ->
             Configuration conf = configurations.findByName(name) ?: configurations.add(name)
@@ -251,11 +277,18 @@ class DefaultConfigurationSet implements ConfigurationSet {
     }
 
     @Override
+    public List<Configuration> getConfigurations(Project project) {
+        // Construct a new list so that the result can be used freely, e.g., with Groovy's spread operator (which does
+        // not work with the list type returned by LinkedHashMap#values()).
+        return new ArrayList<Configuration>(getConfigurationsMap(project).values())
+    }
+
+    @Override
     public String toString() {
         return "DefaultConfigurationSet{" +
             "name='" + name + '\'' +
             ", type=" + type.name +
-            ", configurationNames=" + getConfigurationNames() +
+            ", configurationNamesMap=" + getConfigurationNamesMap() +
             '}';
     }
 }

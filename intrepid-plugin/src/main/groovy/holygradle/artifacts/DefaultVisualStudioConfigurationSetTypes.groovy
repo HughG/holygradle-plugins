@@ -1,5 +1,8 @@
 package holygradle.artifacts
 
+/**
+ * @see http://holygradle.bitbucket.org/plugin-intrepid.html#_default_visual_studio_types
+ */
 class DefaultVisualStudioConfigurationSetTypes {
     private static final String VS_PLATFORM_X64 = "x64"
     private static final String VS_PLATFORM_WIN32 = "Win32"

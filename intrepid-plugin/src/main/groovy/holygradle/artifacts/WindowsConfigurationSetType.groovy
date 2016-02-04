@@ -1,5 +1,11 @@
 package holygradle.artifacts
 
+/**
+ * Base class for types which relate to C++-style projects using a Windows compiler such as Visual Studio.  This class
+ * defines specific required and optional axes, and sets up a specific set of "{@code _common}" configurations.
+ *
+ * @see http://holygradle.bitbucket.org/plugin-intrepid.html#_default_visual_studio_types
+ */
 abstract class WindowsConfigurationSetType extends DefaultConfigurationSetType {
     // Have to declare these here because, if we try to refer to the base class constants in our constructor's
     // super() call, we get a VerifyError "Expecting to find object/array on stack".  Judging by all the other

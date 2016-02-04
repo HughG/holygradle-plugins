@@ -50,9 +50,9 @@ class WindowsConfigurationSetTypeTest extends AbstractHolyGradleTest {
         String fileName = typeName
         DefaultConfigurationSet fromSet = new DefaultConfigurationSet(fileName)
         fromSet.type(type)
-        Map<Map<String,String>, String> names = fromSet.configurationNames
+        Map<Map<String,String>, String> namesMap = fromSet.configurationNamesMap
         Project project = ProjectBuilder.builder().build()
-        Map<Map<String, String>, Configuration> configurations = fromSet.getConfigurations(project)
+        Map<Map<String, String>, Configuration> configurationsMap = fromSet.getConfigurationsMap(project)
         Configuration exampleSourceConf = project.configurations.create("exampleSourceConf")
         Collection<String> mappingsExport = (fromSet.type instanceof WindowsExecutableConfigurationSetType) ?
             ["N/A"] :
@@ -61,8 +61,8 @@ class WindowsConfigurationSetTypeTest extends AbstractHolyGradleTest {
 
         File regTestFile = regression.getTestFile(fileName)
         regTestFile.withPrintWriter { w ->
-            names.each { binding, name ->
-                Configuration configuration = configurations[binding]
+            namesMap.each { binding, name ->
+                Configuration configuration = configurationsMap[binding]
                 w.println("${binding} ==> ${name} (visible = ${configuration.visible}) extendsFrom ${configuration.extendsFrom*.name}")
                 w.println("description: ${configuration.description}")
                 w.println()

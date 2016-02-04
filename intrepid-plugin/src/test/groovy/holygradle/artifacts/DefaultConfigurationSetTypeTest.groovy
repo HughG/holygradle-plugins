@@ -129,7 +129,11 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
         Assert.assertEquals(
             // We need an extra toString to make sure all GStrings are converted to Strings.
             (COMMON_AND_MAIN_CONFIGURATION_NAMES.collect { "foo_${it}" })*.toString(),
-            set.configurationNames.values().toList()
+            set.configurationNames
+        )
+        Assert.assertEquals(
+            set.configurationNames,
+            set.configurationNamesMap.values().toList()
         )
     }
 
