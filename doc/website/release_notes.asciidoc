@@ -45,12 +45,13 @@ things for users, and also for plugin developers.
 ==== 7.7.x
 
 ===== 7.7.2
-(NOT YET PUBLISHED)
+(4b7e7f25280b at 2016-02-04 15:14:32 UTC)
 
-* GR #6585 Further bugfixes.
+* GR #6585 Further bugfixes and improvements.
 
 ** Make the "private +build+ configuration" mechanism work for +DefaultConfigurationSetType+, not
-just for the +WindowsConfigurationSetType+ subclass.
+just for the +WindowsConfigurationSetType+ subclass, so that "web libraries" can also choose not
+to re-export things they import.
 
 ** Create the "private +build+ configuration" automatically if it doesn't already exist.
 
@@ -59,6 +60,19 @@ just for the +WindowsConfigurationSetType+ subclass.
 ** In the default Visual Studio and Web configuration set types, change the names of some axes, so
 that they map the variables used in Visual Studio (+configurations+ to +Configuration+, and
 +platforms+ to +Platform+).
+
+** In the default Web configuration set type, change to have "+_common+" configurations for all
+stages, not just "+import+", because web projects are more likely to have files in each stage
+which don't differ between Release and Debug.
+
+** Add a +getAxes+ method to +DefaultConfigurationSet+ so that scripts can easily iterate over one
+of the axes, for example in the +pacakgeArtifacts+ block.  See the example build scripts.
+
+** The +ConfigurationSet+ interface had methods called +getConfigurations+ and
++getConfigurationNames+ which returned a mapping from axis bindings to the corresponding
+configurations (or names).  These methods now just return a list, and new methods
++getConfigurationsMap+ and +getConfigurationNamesMap+ have been added to the
++DefaultConfigurationSet+ implementation class.
 
 ===== 7.7.1
 (186454651bba at 2015-11-30 13:55:03 UTC)

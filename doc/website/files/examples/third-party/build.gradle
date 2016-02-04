@@ -67,9 +67,9 @@ packageArtifacts { packArts ->
         include "include/**" // '**' means 'all files and folders inside this'
     }
 
-    configurationSets.main.typeAsDefault.optionalAxes["Platform"].each { vsPlatform ->
+    configurationSets.main.axes.Platform.each { vsPlatform ->
         def p = vsPlatform[-2..-1] // last two characters: "64" or "32"
-        configurationSets.main.typeAsDefault.optionalAxes["Configuration"].each { vsConfiguration ->
+        configurationSets.main.axes.Configuration.each { vsConfiguration ->
             def c = vsConfiguration[0].toLowerCase() // "r" for Release, "d" for Debug
 
             packArts."import_${vsPlatform}_${vsConfiguration}" {
