@@ -96,13 +96,13 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
     }
 
     public boolean buildScriptRequired() {
-        return [
+        return ([
             textAtTop,
             textAtBottom,
-            packedDependencies,
             pinnedSourceDependencies,
             ivyRepositories
-        ].any { !it.empty } ||
+        ] as Collection[]).any { !it.empty } ||
+            !packedDependencies.empty ||
             publishInfoSpecified()
     }
 
@@ -144,8 +144,8 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
         sourceDepNames.each { String sourceDepName ->
             findSourceDependencies(project.rootProject, sourceDepName).each { SourceDependencyHandler sourceDep ->
                 if (allSourceDeps.containsKey(sourceDepName)) {
-                    int curConf = allSourceDeps[sourceDepName].publishingHandler.configurations.size()
-                    int itConf = sourceDep.publishingHandler.configurations.size()
+                    int curConf = allSourceDeps[sourceDepName].configurationMappings.size()
+                    int itConf = sourceDep.configurationMappings.size()
                     // NOTE 2014-09-16 HughG: This comparison is nonsense.  See GR #4824.
                     if (itConf > curConf) {
                         allSourceDeps[sourceDepName] = sourceDep
@@ -330,7 +330,7 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
                 writePackedDependency(
                     buildScript,
                     sourceDep.getFullTargetPathRelativeToRootProject(),
-                    sourceDep.getLatestPublishedDependencyCoordinate(project),
+                    sourceDep.getDependencyCoordinate(),
                     packedDependencies[sourceDepName]
                 )
             }

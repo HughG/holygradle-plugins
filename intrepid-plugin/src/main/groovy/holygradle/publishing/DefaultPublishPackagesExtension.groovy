@@ -26,7 +26,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public IvyModuleDescriptor mainIvyDescriptor
     private String publishGroup = null
     private String publishName = null
-    
+    private boolean addRelativePaths = false
+
     public DefaultPublishPackagesExtension(
         Project project,
         PublishingExtension publishingExtension,
@@ -64,7 +65,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 this.freezeDynamicDependencyVersions(project)
                 this.putConfigurationsInOriginalOrder()
                 this.collapseMultipleConfigurationDependencies()
-                this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
+                if (this.addDependencyRelativePaths) {
+                    this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
+                }
 
                 ivyPublishTask.doFirst {
                     this.failIfPackedDependenciesNotCreatingSymlink(packedDependencies)
@@ -153,7 +156,15 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public RepositoryHandler getRepositories() {
         return repositories
     }
-    
+
+    boolean getAddDependencyRelativePaths() {
+        this.addRelativePaths
+    }
+
+    void setAddDependencyRelativePaths(boolean addRelativePaths) {
+        this.addRelativePaths = addRelativePaths
+    }
+
     public void repositories(Action<RepositoryHandler> configure) {
         configure.execute(repositories)
     }
@@ -429,7 +440,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     // Else if the dependency is a source dependency, get its relative path from the 
                     // gradle script's sourceDependencyHandler
                     SourceDependencyHandler sourceDep = sourceDependencies.find {
-                        ModuleVersionIdentifier latestPublishedModule = it.getLatestPublishedModule(project)
+                        ModuleVersionIdentifier latestPublishedModule = it.getDependencyId()
                         latestPublishedModule.getGroup() == depNode.@org && 
                         latestPublishedModule.getName() == depNode.@name &&
                         latestPublishedModule.getVersion() == depNode.@rev

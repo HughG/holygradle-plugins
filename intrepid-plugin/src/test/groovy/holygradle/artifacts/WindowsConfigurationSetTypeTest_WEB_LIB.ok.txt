@@ -1,0 +1,133 @@
+[stage:import] ==> import_common (visible = true) extendsFrom []
+description: Files for the import stage of development, common to all values of [Configuration]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.WEB_LIB' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:debugging, Configuration:Release] ==> debugging_Release (visible = true) extendsFrom []
+description: Files for the debugging stage of development, with [Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.WEB_LIB' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:runtime, Configuration:Release] ==> runtime_Release (visible = true) extendsFrom []
+description: Files for the runtime stage of development, with [Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.WEB_LIB' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:import, Configuration:Release] ==> import_Release (visible = true) extendsFrom [import_common]
+description: Files for the import stage of development, with [Configuration:Release]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.WEB_LIB' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:debugging, Configuration:Debug] ==> debugging_Debug (visible = true) extendsFrom []
+description: Files for the debugging stage of development, with [Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.WEB_LIB' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:runtime, Configuration:Debug] ==> runtime_Debug (visible = true) extendsFrom []
+description: Files for the runtime stage of development, with [Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.WEB_LIB' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+
+[stage:import, Configuration:Debug] ==> import_Debug (visible = true) extendsFrom [import_common]
+description: Files for the import stage of development, with [Configuration:Debug]. You can use this with the Holy Gradle by adding 'configurationnSet ..., configurationSets.WEB_LIB' to the packedDependencies entry for this module in your project, where '...' is a configuration or configurationSet in your project.
+
+Mappings from a single config (with export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+exampleSourceConf->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+exampleSourceConf->import_Debug
+
+Mappings from a single config (non-export)
+exampleSourceConf->debugging_Release
+exampleSourceConf->runtime_Release
+build->import_Release
+exampleSourceConf->debugging_Debug
+exampleSourceConf->runtime_Debug
+build->import_Debug
+

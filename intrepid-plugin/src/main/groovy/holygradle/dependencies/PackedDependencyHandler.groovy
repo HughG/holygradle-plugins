@@ -1,16 +1,15 @@
 package holygradle.dependencies
 
+import holygradle.Helper
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import holygradle.Helper
 
 import java.util.regex.Matcher
 
 class PackedDependencyHandler extends DependencyHandler {
     private Project projectForHandler
-    private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
     private ModuleVersionIdentifier dependencyId = null
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
@@ -56,7 +55,7 @@ class PackedDependencyHandler extends DependencyHandler {
         this(depName, projectForHandler)
         this.projectForHandler = projectForHandler
         initialiseDependencyId(dependencyCoordinate)
-        this.configurations = configurations
+        this.configurationMappings.addAll(configurations)
     }
     
     public PackedDependencyHandler(
@@ -177,49 +176,48 @@ class PackedDependencyHandler extends DependencyHandler {
     public void dependency(String dependencyCoordinate) {
         initialiseDependencyId(dependencyCoordinate)
     }
-        
+
+    @Override
     public void configuration(String config) {
         Collection<AbstractMap<String, String>.SimpleEntry> newConfigs = []
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$name' in 'packedDependencies'.")
-        configurations.addAll newConfigs
+        configurationMappings.addAll newConfigs
+        ModuleVersionIdentifier id = getDependencyId()
         for (conf in newConfigs) {
             String fromConf = conf.key
             String toConf = conf.value
             projectForHandler.dependencies.add(
                 fromConf,
                 new DefaultExternalModuleDependency(
-                    dependencyId.group, dependencyId.module.name, dependencyId.version, toConf
+                    id.group, id.module.name, id.version, toConf
                 )
             )
         }
     }
-    
-    public void configuration(String... configs) {
-        configs.each { String config ->
-            configuration(config)
-        }
-    }
-    
-    public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
-        configurations
-    }
-    
+
     public String getGroupName() {
-        dependencyId.group
+        getDependencyId().group
     }
     
     public String getDependencyName() {
-        dependencyId.module.name
+        getDependencyId().module.name
     }
    
     public String getVersionStr() {
-        dependencyId.version
+        getDependencyId().version
     }
     
     public String getDependencyCoordinate() {
-        dependencyId.toString()
+        getDependencyId().toString()
     }
-    
+
+    public ModuleVersionIdentifier getDependencyId() {
+        if (dependencyId == null) {
+            throw new RuntimeException("'dependency' not set for packed dependency '${name}'")
+        }
+        dependencyId
+    }
+
     public boolean pathIncludesVersionNumber() {
         targetName.contains("<version>")
     }
