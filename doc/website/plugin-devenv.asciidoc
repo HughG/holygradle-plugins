@@ -71,26 +71,41 @@ This method defines the version of +devenv.com+ that the tasks should when build
 [source,groovy]
 ----
 DevEnv {
-    version "VS90"
+    version "VS120"
 }
 ----
 
-The +version+ is used to construct a path to +devenv.com+ as follows: 
+The +version+ is used to construct a path to +devenv.com+ as follows.
 
-- Get the value of the +<version>COMNTOOLS+ environment variable e.g. +VS100COMNTOOLS+
+- Get the value of the +<version>COMNTOOLS+ environment variable, for example, +VS100COMNTOOLS+
 - The resulting path will be appended with +../IDE/devenv.com+
 
--> Default value: **"VS100"**
+The different versions of Visual Studio have environment variables which correspond as follows
+
+[options="header",width="30%"]
+|====
+|Version |Variable
+|2005 |+VS80COMNTOOLS+
+|2008 |+VS90COMNTOOLS+
+|2010 |+VS100COMNTOOLS+
+|2012 |+VS110COMNTOOLS+
+|2013 |+VS120COMNTOOLS+
+|2015 |+VS140COMNTOOLS+
+|====
+
+-> Call this method exactly once.  As of version link:release_notes.html#_7_7_0[], there is no default; previously it
+was "VS100".
 
 ==== platform
 
 This method defines the platform parameter which will be passed on the command line to +devenv.com+
-when initiating a build or clean operation. 
+when initiating a build or clean operation.  If multiple values are passed in, separate build tasks
+will be created for each.
 
 [source,groovy]
 ----
 DevEnv {
-    platform "Win32"
+    platform "Win32", "x64"
 }
 ----
 
