@@ -13,16 +13,18 @@ class LinkTest extends AbstractHolyGradleTest {
     @Test
     public void testNetworkSharesFallbackToSymlink() {
         // Delete the share in case it exists
-        "net share ${SHARE_NAME} /DELETE".execute()
+        Process deleteProcess = "net share ${SHARE_NAME} /DELETE".execute()
+        deleteProcess.waitForProcessOutput()
 
         // Create a temporary directory and share
         File tempDir = Files.createTempDir()
-        "net share ${SHARE_NAME}=${tempDir.canonicalPath}".execute()
+        Process createProcess = "net share ${SHARE_NAME}=${tempDir.canonicalPath}".execute()
+        createProcess.waitForProcessOutput()
 
         File target = new File("\\\\localhost\\${SHARE_NAME}")
         File link = new File(testDir, "linkA")
 
-        Assert.isTrue(target.exists(), "Error creating test share ${target}")
+        Assert.isTrue(target.exists(), "Error creating test share ${target}.")
 
         Link.delete(link)
 
