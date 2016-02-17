@@ -44,10 +44,13 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         File projectBDir = new File(getTestDir(), "projectB")
         File projectBPackagesDir = new File(projectBDir, "packages")
         FileHelper.ensureDeleteDirRecursive(projectBPackagesDir)
+        FileHelper.ensureDeleteFile(new File(projectBDir, "settings.gradle"))
+        FileHelper.ensureDeleteFile(new File(projectBDir, "settings-subprojects.txt"))
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
         invokeGradle(projectBDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
         }
 
         // These two configurations should build normally.
