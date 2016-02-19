@@ -2,11 +2,11 @@ package holygradle.packaging
 
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
-import holygradle.custom_gradle.util.RetryHelper
 import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
+import org.gradle.api.artifacts.UnknownConfigurationException
 import org.gradle.api.file.*
 import org.gradle.api.initialization.Settings
 import org.gradle.api.tasks.bundling.*
@@ -43,7 +43,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         // tesks which we want to depend on won't have been created.
         project.gradle.projectsEvaluated {
             NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers =
-                project.packageArtifacts as NamedDomainObjectContainer<PackageArtifactHandler>
+                project.extensions.packageArtifacts as NamedDomainObjectContainer<PackageArtifactHandler>
             PackageArtifactHandler buildScriptHandler =
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
             buildScriptHandler.include project.buildFile.name
@@ -60,12 +60,20 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             }
             packageArtifactHandlers.each { packArt ->
                 Task packageTask = packArt.definePackageTask(createPublishNotesTask)
-                project.artifacts.add(packArt.getConfiguration(), packageTask)
+                try {
+                    project.artifacts.add(packArt.configuration, packageTask)
+                } catch (UnknownConfigurationException e) {
+                    throw new RuntimeException(
+                        "Failed to find configuration '${packArt.configuration}' in ${project} " +
+                        "when adding packageArtifact entry '${packArt.name}'",
+                        e
+                    )
+                }
                 packageEverythingTask.dependsOn(packageTask)
             }
         }
                 
-        project.packageArtifacts
+        project.extensions.packageArtifacts
     }
 
     private static Task defineCreatePublishNotesTask(Project project) {
@@ -77,7 +85,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             File buildInfoDir = new File(project.projectDir, "build_info")
 
             // Save the build directory to an extension so it can be accessed from outside
-            t.ext.buildInfoDir = buildInfoDir
+            t.ext['buildInfoDir'] = buildInfoDir
 
             t.onlyIf {
                 // Don't do anything if we are republishing, or we will end up deleting the original build_info and
@@ -87,14 +95,8 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 return !republishing
             }
             t.doLast {
-                if (buildInfoDir.exists()) {
-                    RetryHelper.retry(10, 1000, logger, "delete ${buildInfoDir.name} dir") {
-                        buildInfoDir.deleteDir()
-                    }
-                }
-                RetryHelper.retry(10, 1000, logger, "create ${buildInfoDir.name} dir") {
-                    buildInfoDir.mkdir()
-                }
+                FileHelper.ensureDeleteDirRecursive(buildInfoDir)
+                FileHelper.ensureMkdirs(buildInfoDir)
 
                 String buildNumber = System.getenv("BUILD_NUMBER")
                 if (buildNumber != null) {
@@ -113,9 +115,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 addSourceRepositoryInfo(t, buildInfoDir)
                 Collection<SourceDependencyHandler> allSourceDependencies = findAllSourceDependencies(project)
                 File sourceDependenciesDir = new File(buildInfoDir, "source_dependencies")
-                RetryHelper.retry(10, 1000, project.logger, "create ${sourceDependenciesDir.name} dir") {
-                    sourceDependenciesDir.mkdir()
-                }
+                FileHelper.ensureMkdirs(sourceDependenciesDir)
                 allSourceDependencies.each { SourceDependencyHandler handler ->
                     addSourceRepositoryInfo(t, sourceDependenciesDir, handler)
                 }
@@ -184,9 +184,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 // We're adding info for a subproject source dependency, so put it in a sub-folder; in this case,
                 // baseDir = "build_info/source_dependencies"
                 sourceDepInfoDir = new File(baseDir, handler.targetName)
-                RetryHelper.retry(10, 1000, project.logger, "create ${sourceDepInfoDir.name} dir") {
-                    sourceDepInfoDir.mkdir()
-                }
+                FileHelper.ensureMkdirs(sourceDepInfoDir)
             }
 
             new File(sourceDepInfoDir, "source_url.txt").write(sourceRepo.getUrl())
@@ -306,7 +304,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         Collection<Closure> localLazyConfigurations = lazyConfigurations
 
         PackageArtifactDescriptor localRootPackageDescriptor = rootPackageDescriptor // capture private for closure
-        t.ext.lazyConfiguration = { Zip it ->
+        t.ext['lazyConfiguration'] = { Zip it ->
             // t.group = "Publishing " + project.name
             // t.classifier = name
             localLazyConfigurations.each {

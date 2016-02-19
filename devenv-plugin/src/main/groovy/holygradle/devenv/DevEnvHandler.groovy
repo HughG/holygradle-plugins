@@ -74,7 +74,11 @@ class DevEnvHandler {
             if (parentHandler != null) {
                 parentHandler.getDevEnvVersion()
             } else {
-                "VS100"
+                throw new RuntimeException(
+                    "You must set the devenv version, for example, 'DevEnv { version \"VS120\"}' for the " +
+                    "Visual Studio 2013 compiler, or \"VS100\" for the Visual Studio 2010 compiler. " +
+                    "This value is used to read the appropriate environment variable, for example, VS120COMMONTOOLS."
+                )
             }
         } else {
             devEnvVersion

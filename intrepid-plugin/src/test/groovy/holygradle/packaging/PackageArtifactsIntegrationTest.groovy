@@ -64,7 +64,6 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         assertTrue(buildScriptFile.exists())
         ZipFile buildScriptZipFile = new ZipFile(buildScriptFile)
         assertNotNull("build file is in zip", buildScriptZipFile.getEntry("build.gradle"))
-        assertNotNull("settings file is in zip", buildScriptZipFile.getEntry("settings.gradle"))
 
         checkBuildInfo(project.zipTree(new File("packages", "projectB-buildScript.zip")), collector)
     }

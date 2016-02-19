@@ -34,4 +34,6 @@ gw -d -S other_arguments_here 2>&1 | tee bug_report.log
 The +2>&1+ redirects standard error to the same file, so that any error messages and exceptions are
 also captured.
 
+WARNING: These log messages may contain passwords sent to Artifactory.
+
 include::{localDoc}/support.ascinc[]

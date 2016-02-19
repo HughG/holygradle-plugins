@@ -72,7 +72,7 @@ set LOCAL_ARTIFACTS_DIR_PATH=
 set "dir=%~f0"
 :findLocalArtifactsLoop
   @rem Get the parent directory using ~dp trick, then strip the trailing '\'
-  for %%d in (%dir%) do set "dir=%%~dpd"
+  for %%d in ("%dir%") do set "dir=%%~dpd"
   set "dir=%dir:~0,-1%"
 
   if exist "%dir%\%LOCAL_ARTIFACTS_DIR_NAME%\" (
@@ -98,15 +98,15 @@ if not "x%LOCAL_ARTIFACTS_DIR_PATH%"=="x" (
 )
 
 @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist %~dp0local\holy-gradle-plugins\base-url-lookup.txt (
-  copy %~dp0local\holy-gradle-plugins\base-url-lookup.txt %~dp0gradle\base-url-lookup.txt
+if exist "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" (
+  copy "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" "%~dp0gradle\base-url-lookup.txt"
 )
 if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
 
   @rem Try to find a server URL based on the DNS suffix values on the local machine.
-  if exist %~dp0gradle\base-url-lookup.txt (
+  if exist "%~dp0gradle\base-url-lookup.txt" (
     for /f "tokens=6" %%S in ('ipconfig ^| findstr "Connection-specific DNS Suffix"') do (
-      for /f "eol=# tokens=1,2" %%T in (%~dp0gradle\base-url-lookup.txt) do (
+      for /f "eol=# tokens=1,2" %%T in ("%~dp0gradle\base-url-lookup.txt") do (
         if "%%S"=="%%T" (
           echo In domain "%%S", defaulting HOLY_GRADLE_REPOSITORY_BASE_URL to "%%U".
           set HOLY_GRADLE_REPOSITORY_BASE_URL=%%U
@@ -160,15 +160,16 @@ set DISTRIBUTION_PATH_FILE=%DISTRIBUTION_LOCAL_PATH_FILE%
 copy >nul /y /a "%APP_HOME%gradle\gradle-wrapper.properties.in"+"%APP_HOME%gradle\distributionUrlBase.txt"+%DISTRIBUTION_PATH_FILE% "%APP_HOME%\gradle\gradle-wrapper.properties" /b
 
 @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist %~dp0local\holy-gradle-plugins\certs (
-  xcopy /i /s /y %~dp0local\holy-gradle-plugins\certs %~dp0gradle\certs
+if exist "%~dp0local\holy-gradle-plugins\certs" (
+  xcopy /i /s /y "%~dp0local\holy-gradle-plugins\certs" "%~dp0gradle\certs"
 )
-if not exist %APP_HOME%gradle\certs goto certsDone
+if not exist "%APP_HOME%gradle\certs" goto certsDone
 
-set JAVA_HOME=%JAVA_HOME:"=%
-set KEYTOOL_EXE=%JAVA_HOME%\bin\keytool.exe
+@rem Find keytool.exe from java.exe.
+for %%d in ("%JAVA_EXE%") do set "KEYTOOL_EXE=%%~dpd"
+set KEYTOOL_EXE=%KEYTOOL_EXE%\keytool.exe
 
-if exist "%JAVA_EXE%" goto keytoolFound
+if exist "%KEYTOOL_EXE%" goto keytoolFound
 
 echo.
 echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME%
@@ -183,9 +184,9 @@ echo location of your Java installation.
 
 set GW_CACERTS_PASS=gwcerts
 if exist "%JAVA_HOME%\jre" (
-    set JRE_HOME=%JAVA_HOME%\jre
+    set "JRE_HOME=%JAVA_HOME%\jre"
 ) else (
-    set JRE_HOME=%JAVA_HOME%
+    set "JRE_HOME=%JAVA_HOME%"
 )
 set JAVA_KEY_STORE="%JRE_HOME%\lib\security\cacerts"
 set GW_KEY_STORE="%APP_HOME%gradle\cacerts"
@@ -198,10 +199,10 @@ if errorlevel 1 (
     echo See %KEY_STORE_IMPORT_LOG% for details.
     goto fail
 )
-for %%C in (%APP_HOME%gradle\certs\*.*) do (
-    >>%KEY_STORE_IMPORT_LOG% 2>>&1 "%KEYTOOL_EXE%" -importcert -noprompt -file %%C -alias %%~nC -keystore %GW_KEY_STORE% -storepass %GW_CACERTS_PASS%
+for %%C in ("%APP_HOME%gradle\certs\*.*") do (
+    >>%KEY_STORE_IMPORT_LOG% 2>>&1 "%KEYTOOL_EXE%" -importcert -noprompt -file "%%C" -alias %%~nC -keystore %GW_KEY_STORE% -storepass %GW_CACERTS_PASS%
     if errorlevel 1 (
-        echo Failed to import file %%C
+        echo Failed to import file "%%C"
         echo to local trust store %GW_KEY_STORE%.
         echo See %KEY_STORE_IMPORT_LOG% for details.
         goto fail

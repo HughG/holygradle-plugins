@@ -22,22 +22,21 @@ class Helper {
     // Recursively navigates down subprojects to gather the names of all sourceDependencies which
     // have not specified sourceControlRevisionForPublishedArtifacts.
     public static Collection<SourceDependencyHandler> getTransitiveSourceDependencies(Project project) {
-        doGetTransitiveSourceDependencies(project, project.sourceDependencies as Collection<SourceDependencyHandler>)
+        doGetTransitiveSourceDependencies(project.sourceDependencies as Collection<SourceDependencyHandler>)
     }
     
     // Recursively navigates down subprojects to gather the names of all sourceDependencies which
     // have not specified sourceControlRevisionForPublishedArtifacts.
     private static Collection<SourceDependencyHandler> doGetTransitiveSourceDependencies(
-        Project project,
         Collection<SourceDependencyHandler> sourceDependencies
     ) {
         // Note: Make transSourceDep be a fresh collection; previous code got ConcurrentModificationException sometimes.
         Collection<SourceDependencyHandler> transSourceDep = new ArrayList<SourceDependencyHandler>(sourceDependencies)
         sourceDependencies.each { sourceDep ->
             String projName = sourceDep.targetName
-            Project proj = sourceDep.getSourceDependencyProject(project)
+            Project proj = sourceDep.getSourceDependencyProject()
             if (proj == null) {
-                File projDir = new File("${project.rootProject.projectDir.path}/${projName}")
+                File projDir = new File("${sourceDep.project.rootProject.projectDir.path}/${projName}")
                 if (projDir.exists()) {
                     proj = ProjectBuilder.builder().withProjectDir(projDir).build()
                 }
@@ -46,7 +45,7 @@ class Helper {
                 Collection<SourceDependencyHandler> subprojSourceDep =
                     proj.extensions.findByName("sourceDependencies") as Collection<SourceDependencyHandler>
                 if (subprojSourceDep != null) {
-                    Collection<SourceDependencyHandler> transSubprojSourceDep = doGetTransitiveSourceDependencies(project, subprojSourceDep)
+                    Collection<SourceDependencyHandler> transSubprojSourceDep = doGetTransitiveSourceDependencies(subprojSourceDep)
                     transSourceDep.addAll(transSubprojSourceDep)
                 }
             }

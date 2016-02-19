@@ -13,7 +13,16 @@ import org.junit.Test
 class SettingsFileIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testSubprojectsWithoutBuildFiles() {
-        invokeGradle(new File(getTestDir(), "withoutBuildScripts")) { WrapperBuildLauncher launcher ->
+        File withoutBuildScriptsDir = new File(getTestDir(), "withoutBuildScripts")
+        FileHelper.ensureDeleteFile(new File(withoutBuildScriptsDir, "settings.gradle"))
+        FileHelper.ensureDeleteFile(new File(withoutBuildScriptsDir, "settings-subprojects.txt"))
+
+        invokeGradle(withoutBuildScriptsDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
+        }
+
+        invokeGradle(withoutBuildScriptsDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
         }
     }

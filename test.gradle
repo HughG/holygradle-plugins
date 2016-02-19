@@ -78,7 +78,11 @@ project.ext.setUpTests = { Project project ->
                 // Skip unit testing.
                 t.enabled = false
             } else {
-                throw new RuntimeException("You can only use -PnoTest for SNAPSHOT releases, but this is ${project.version}")
+                 if (!project.hasProperty('publishWithoutTests')) {
+                     throw new RuntimeException(
+                         "You can only use -PnoTest for SNAPSHOT releases, but this is ${project.version}"
+                     )
+                 }
             }
         }
     }
@@ -127,7 +131,11 @@ project.ext.setUpTests = { Project project ->
          if (project.version.endsWith('-SNAPSHOT')) {
             // Skip integration testing.
         } else {
-            throw new RuntimeException("You can only use -PnoIntegTest for SNAPSHOT releases, but this is ${project.version}")
+            if (!project.hasProperty('publishWithoutTests')) {
+                throw new RuntimeException(
+                    "You can only use -PnoIntegTest for SNAPSHOT releases, but this is ${project.version}"
+                )
+            }
         }
     } else {
         project.publishReallyTasks.each { Task publishReallyTask ->

@@ -3,6 +3,6 @@ import java.nio.file.*
 File propertiesFile = new File("buildSrc", "gradle.properties")
 if (!propertiesFile.exists()) {
     Path link = propertiesFile.toPath()
-    Path target = Paths.get("..", "gradle.properties")
+    Path target = Paths.get(".", "gradle.properties")
     Files.createLink(link, target)
 }

@@ -7,6 +7,8 @@ configurations {
     preBuiltArtifacts
     pinnedSource
     pinnedSourceBad
+
+    toProjectA
 }
 
 sourceDependencies {
@@ -14,6 +16,7 @@ sourceDependencies {
     // we don't actually have to fetch any source.
     "../projectA" {
         hg new File(project.projectDir, "../projectA").toURI().toString()
+        configuration "toProjectA->default"
     }
 }
 

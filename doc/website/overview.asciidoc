@@ -161,42 +161,43 @@ digraph {
     subgraph cluster_a {
         label = "com.foo.teamA:A:2.1";
 
-        a_compile [label="compile"];
+        a_build [label="build"];
         a_runtime [label="runtime",color=blue];
     }
 
     subgraph cluster_b {
         label = "org.other:B:1.0";
 
-        b_compile [label="compile"];
+        b_import [label="import"];
         b_runtime [label="runtime",color=blue];
     }
 
     subgraph cluster_c {
         label = "com.foo.teamC:C:1.5";
 
-        c_compile [label="compile",color=blue];
+        c_import [label="import",color=blue];
         c_runtime [label="runtime",color=blue];
     }
 
     subgraph cluster_n {
         label = "com.foo.teamA:N:0.1";
 
-        other_compile [label="compile",color=blue];
+        other_import [label="import",color=blue];
         other_runtime [label="runtime",color=blue];
     }
 
-    a_compile -> b_compile;
-    a_compile -> c_compile;
+    a_build -> b_import;
+    a_build -> c_import;
     a_runtime -> b_runtime [color=blue];
     a_runtime -> c_runtime [color=blue];
 
     other_runtime -> a_runtime [color=blue];
-    other_compile -> c_compile [color=blue];
+    other_import -> c_import [color=blue];
 }
 --
 
-TODO: Link to reference page on extending configurations.
+More details on extending configurations, and mapping sets of related configurations between modules,
+can be found in the link:workflows.html#_configurations[] section of the link:workflows.html page.
 
 == Artifactory
 

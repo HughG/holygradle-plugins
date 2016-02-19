@@ -13,19 +13,20 @@ This is a custom plugin for Gradle for retrieving source-code dependencies and o
 
 * Default dependency settings
 ** Fail on version conflict by default (configurable)
+* Configurations
+** Create sets of related configurations following standard patterns.
 * Source code dependencies
 ** Retrieving source code repositories from SVN and Mercurial
 ** Caching credentials for SVN and Mercurial
-** Configurable options when publishing a module that has a source code dependency
-** Support for overriding a source code dependency and using pre-built artifacts instead
+** Gradle configuration-based dependency mapping
 * Packed dependencies
 ** Retrieving dependencies consisting of many files into your workspace
 ** Central cache for unpacked dependencies & symlink from workspace to central cache
 ** Configurable symlinks from consumer module to multiple locations in unpacked dependency
-** Support for multiple versions of the same component (i.e. version conflicts)
+** Support for using multiple versions of the same component
 * Publishing
 ** Support for creating multiple packages (i.e. zip files)
-** Uploading to Ivy format repository
+** Uploading to Gradle format repository with Ivy metadata in +ivy.xml+ file
 
 === Example build script
 
@@ -34,9 +35,12 @@ Here is an example build script:
 [source,groovy]
 ----
 buildscript {
-    gplugins.use "intrepid:7.2.5"
+    gplugins.use "intrepid-plugin:7.7.2"
 }
 gplugins.apply()
+
+group = "com.example-corp.teamA"
+version = System.getenv("NEXT_VERSION_NUMBER") ?: Project.DEFAULT_VERSION
 
 repositories.ivy {
     url "http://artifactory-server/artifactory/libs-release"
@@ -48,21 +52,20 @@ repositories.ivy {
 
 // dependenciesSettings.defaultFailOnVersionConflict = false
 
-configurations {
-    headers
-    source.extendsFrom headers
-    compileVc10Debug.extendsFrom headers
-    compileVc10Release.extendsFrom headers
+configurationsSets {
+    main { type configurationSetTypes.DLL_64 }
+    test {
+        type configurationSetTypes.EXE_64
+        prefix "test"
+    }
 }
 
 sourceDependencies {
     framework {
+        // Assume the following repo contains a build.gradle setting
+        // group "com.example-corp.teamA" and version "1.0.3.987".
         svn "http://svn-server/path/to/framework"
-        publishing {
-            group "com.company.team"
-            configuration "compileVc10Debug->compileDebug", "compileVc10Release->compileRelease"
-            version "1.0.3.+"
-        }
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64
     }
     "another-lib" {
         hg "http://hg-server/scm/path/to/another-lib"
@@ -71,33 +74,40 @@ sourceDependencies {
 
 packedDependencies {
     RenderingLib {
-        dependency "com.company.rendering:RenderingLib:2012a2"
-        configuration "compileVc10Debug->compileVc10X64Debug", "compileVc10Release->compileVc10X64Release"
+        dependency "com.example-corp.rendering:RenderingLib:2012a2"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
     }
-    "NUnit <version>" {
-        dependency "org:NUnit:2.5.10"
-        configuration "compileVc10Debug,compileVc10Release->bin"
+    "NUnit <version> {
+        dependency "org.nunit:NUnit:2.5.10"
+        // This is an example of setting up configuraton mappings to a module which
+        // does not use the same configuration naming scheme, so we can't map to a
+        // configurationSetType.
+        def testRuntimeConfs = configurationSets.test.configurationNamesMap.findAll { k, v ->
+            k[stage] == 'runtime'
+        }
+        configuration "${testRuntimeConfs.join(',')}->bin"
         unpackToCache = false
     }
 }
 
 packageArtifacts {
-    headers.include "src/**/*.h"
-    source {
-        include "src/**/*.cpp", "extra/**/src/**/*.cpp"
-        include "build/*.vcxproj"
+    import_common {
+        include "src/**/*.h"
     }
-    ["Debug", "Release"].each { conf ->
-        "libVc10${conf}" {
-            configuration = configurations."compileVc10${conf}"
+    configurationSets.main.axes['Configuration'].each { conf ->
+        "import_x64_${conf}" {
             include "lib/${conf}/*.lib"
+        }
+        "runtime_x64_${conf}" {
+            include "bin/${conf}/*.dll"
+        }
+        "debugging_x64_${conf}" {
+            include "bin/${conf}/*.pdb"
         }
     }
 }
 
 publishPackages {
-    group "org"
-    nextVersionNumberAutoIncrementFile "next_version.txt"
     repositories.ivy {
         credentials {
             username my.username("Artifactory")
@@ -111,35 +121,46 @@ publishPackages {
 
 This script does the following:
 
-* Makes use of the latest version of the intrepid plugin with a version number starting with "1.0.1".
+* Makes use of a specific version of the intrepid plugin.
 * Describes which repository to use for satisfying dependencies, including credentials.
-* Defines link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#configurations[configurations] for this module.
+* Defines
+link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#configurations[configurations]
+for this module using the <<_configurationSets>> gloss:dsl[], suitable for this module packaging a
+DLL, and having unit test executables which may have different dependencies.
 * Defines 'framework' as a source code dependency:
-** When dependencies are fetched, an SVN checkout operation will fetch the 'framework' source code to '<workspace>/framework'.
-** When 'this' module is published, the source-code dependency will be converted to a published artifact dependency e.g. +org:framework:1.0.3.987+ 
+** When dependencies are fetched, an SVN checkout operation will fetch the 'framework' source code
+to '<workspace>/framework'. 
+** When 'this' module is published, the source-code dependency will be converted to a published
+module dependency, using the group, name, and version defined by the +build.gradle+ in that source
+dependency.
 * Defines 'another-lib' as a source code dependency:
-** When dependencies are fetched, an Hg clone operation will fetch the source code to '<workspace>/another-lib'.
+** When dependencies are fetched, an Hg clone operation will fetch the source code to
+'<workspace>/another-lib'.
 ** When 'this' module is published, the source-code dependency will not be mentioned.
 * Defines 'RenderingLib' as a dependency:
-** When dependencies are fetched, all packages belonging to the specified configurations will be fetched from the repository.
+** When dependencies are fetched, all packages belonging to the specified configurations will be
+fetched from the repository. 
+** When 'this' module is published, the gloss:ivy-xml[] will contain a module dependency for that
+module, with appropriate configuration mappings from the configurations in the "main" configuration set.
 ** The packages will be unpacked to a central cache. (The cache settings can be configured.)
 ** A symlink will be created from the workspace to the unpacked copy of 'RenderingLib'.
 * Defines 'NUnit' as a dependency:
-** When dependencies are fetched, all packages belonging to the 'bin' configuration will be fetched from the repository and unpacked directly into '<workspace>/NUnit 2.5.10'. 
-** When 'this' module is published it will not mention 'NUnit' as a dependency.
+** When dependencies are fetched, all packages belonging to the 'bin' configuration will be fetched
+from the repository and unpacked directly into '<workspace>/NUnit 2.5.10'.
+** When 'this' module is published, the gloss:ivy-xml[] will contain a module dependency for that
+module, with appropriate configuration mappings from the configurations in the "test" configuration set.
 * Packages are defined for 'this' module:
 ** These will be created when the +publish+ task is invoked.
 ** Each package belongs to exactly one configuration (although configurations can extend one another).
-** The 'headers' and 'source' packages have the same name as their corresponding configurations so the configuration isn't explicitly set.
-** Some Groovy logic helps to define the packages 'libVc10Debug' and 'libVc10Release'.
+** It is possible to name a package differently from the configuration (not shown here).
+** Some Groovy logic helps to define the packages 'import_x64_Debug', 'import_x64_Release', and so on.
 * Publishing settings are configured, including:
 ** which repository to publish to;
 ** the credentials for the repository;
-** the group name for the published artifacts;
-** the version number for the published artifacts, which will be fetched from the file 'next_version.txt'. (There are other ways to specify the version number.)
-* After publishing the version number in 'next_version.txt' will be incremented automatically. 
+** the group (set at the top of the file), name (implicit from the containing folder name, or set in
++settings.gradle+), and version (also at the top of the file, using an environment variable).
 
-For the above script the intrepid plugin makes the following tasks available:
+For the above script the intrepid plugin makes the following tasks available (plus others described later):
 
 ....
 Dependencies tasks
@@ -161,25 +182,37 @@ When published, the Ivy module description for this example module will look lik
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0">
-  <info organisation="org" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <info organisation="com.example-corp.teamA" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
   <configurations>
-    <conf name="headers" visibility="public"/>
-    <conf name="source" visibility="public" extends="headers"/>
-    <conf name="runtime" visibility="public" extends="headers"/>
-    <conf name="compileVc10Debug" visibility="public" extends="headers"/>
-    <conf name="compileVc10Release" visibility="public" extends="headers"/>
+    <conf name="build" visibility="private"/>
+    <conf name="import_common" visibility="public"/>
+    <conf name="import_x64_Release" visibility="public" extends="import_common"/>
+    <conf name="import_x64_Debug" visibility="public" extends="import_common"/>
+    <conf name="runtime_x64_Release" visibility="public"/>
+    <conf name="runtime_x64_Debug" visibility="public"/>
+    <conf name="debugging_x64_Release" visibility="public"/>
+    <conf name="debugging_x64_Debug" visibility="public"/>
+    <conf name="test_import_common" visibility="public"/>
+    <conf name="test_import_x64_Release" visibility="public" extends="test_import_common"/>
+    <conf name="test_import_x64_Debug" visibility="public" extends="test_import_common"/>
+    <conf name="test_runtime_x64_Release" visibility="public"/>
+    <conf name="test_runtime_x64_Debug" visibility="public"/>
+    <conf name="test_debugging_x64_Release" visibility="public"/>
+    <conf name="test_debugging_x64_Debug" visibility="public"/>
   </configurations>
   <publications>
-    <artifact name="example-headers" type="zip" ext="zip" conf="headers"/>
-    <artifact name="example-source" type="zip" ext="zip" conf="source"/>
-    <artifact name="example-libVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>
-    <artifact name="example-libVc10Release" type="zip" ext="zip" conf="compileVc10Release"/>
+    <artifact name="example-import_common" type="zip" ext="zip" conf="import_common"/>
+    <artifact name="example-import_x64_Release" type="zip" ext="zip" conf="import_x64_Release"/>
+    <artifact name="example-import_x64_Debug" type="zip" ext="zip" conf="import_x64_Debug"/>
+    <artifact name="example-runtime_x64_Release" type="zip" ext="zip" conf="runtime_x64_Release"/>
+    <artifact name="example-runtime_x64_Debug" type="zip" ext="zip" conf="runtime_x64_Debug"/>
+    <artifact name="example-debugging_x64_Release" type="zip" ext="zip" conf="debugging_x64_Release"/>
+    <artifact name="example-debugging_x64_Debug" type="zip" ext="zip" conf="debugging_x64"/>
   </publications>
   <dependencies>
-    <dependency org="com.company.team" name="framework" rev="1.0.3.987" conf="compileVc10Debug->compileDebug"/>
-    <dependency org="com.company.team" name="framework" rev="1.0.3.987" conf="compileVc10Release->compileRelease"/>
-    <dependency org="com.company.rendering" name="RenderingLib" rev="2012a2" conf="compileVc10Debug->compileVc10X64Debug"/>
-    <dependency org="com.company.rendering" name="RenderingLib" rev="2012a2" conf="compileVc10Release->compileVc10X64Release"/>
+    <dependency org="com.example-corp.teamA" name="framework" rev="1.0.3.987" conf="import_x64_Release->import_x64_Release;import_x64_Debug->import_x64_Debug;runtime_x64_Release->runtime_x64_Release;runtime_x64_Debug->runtime_x64_Debug;debugging_x64_Release->debugging_x64_Release;debugging_x64_Debug->debugging_x64_Debug"/>
+    <dependency org="com.example-corp.rendering" name="RenderingLib" rev="2012a2" conf="import_x64_Release->import_x64_Release;import_x64_Debug->import_x64_Debug;runtime_x64_Release->runtime_x64_Release;runtime_x64_Debug->runtime_x64_Debug;debugging_x64_Release->debugging_x64_Release;debugging_x64_Debug->debugging_x64_Debug"/>
+    <dependency org="org.nunit" name="NUnit" rev="2.5.10" conf="test_runtime_x64_Release,test_runtime_x64_Debug->bin"/>
   </dependencies>
 </ivy-module>
 ----
@@ -187,12 +220,620 @@ When published, the Ivy module description for this example module will look lik
 
 == DSL Guide
 
-The intrepid plugin adds several domain-specific-language (DSL) elements.
+The intrepid plugin adds several gloss:domain-specific-language[] (DSL) elements.
+
+[[_repositories]]
+=== repositories
+
+This DSL element isn't actually part of the +intrepid+ plugin, but will likely need to be configured
+in your build script, and usually appears near the top of the file.  (See
+http://www.gradle.org/docs/1.4/userguide/userguide_single.html#N10607[repositories] in the Gradle
+documentation.) This element should be placed in the root of your build script--that means, outside of any
+other DSL elements such as <<_sourceDependencies>>). For example:
+
+[source,groovy]
+----
+repositories.ivy {
+    url "http://artifactory-server/artifactory/my-repo"
+    credentials {
+        username "user"
+        password "password"
+    }
+}
+----
+
+This +repositories+ block will configure <<_sourceDependencies>> and <<_packedDependencies>>. You can configure it using any of the methods in methods in the Gradle link:http://gradle.org/docs/1.4/javadoc/org/gradle/api/artifacts/dsl/RepositoryHandler.html[RepositoryHandler] (e.g. Maven, Ivy or file-system) but the publishing of packages using +intrepid+ only supports Ivy so you'll probably only have artifacts available in an Ivy repository.
+
+[[_configurationSetTypes]]
+=== configurationSetTypes
+
+This DSL block is used in combination with the <<_configurationSets>> block to provide a convenient way to define
+several related gloss:configuration[]s in your project, and their mapping to configurations in other modules, following
+common patterns.  For background information about configurations and configuration mapping, see the
+link:overview.html#_gradle_module_concepts[] overview and the link:workflows.html#_configurations[] section of the
+link:workflows.html[] page.
+
+A gloss:configuration-set-type[] defines a pattern for related named configurations and a pattern for mapping those
+configurations to corresponding configurations in other modules for <<_packedDependencies>> and <<_sourceDependencies>>.
+(A gloss:configuration-set[] actually creates those configurations in a project, optionally extending the naming
+pattern, so that a project can have several different parts following the same pattern--for example, client and server
+executables.)
+
+Often you will not need to use this block in your build file, because the gloss:holygradle[] automatically adds several
+configuration set types which are commonly useful for web and Windows native applications.  You can however remove or
+replace those types or add your own.
+
+TIP: You can print a given configuration set type such as +configurationSetTypes.LIB+ using the normal Groovy +println+
+method to see information about what it defines.
+
+==== Pre-defined Configuration Set Types
+
+This section describes the types pre-defined by the Holy Gradle.
+
+===== Naming Pattern
+
+The naming pattern is based on the idea that there are several concepts relevant to the files which make up a
+typical non-Java module.  One word is used for each such concept or "axis" and, unlike Java which uses +camelCaseWords+,
+the axes are separated by underscores.  This is so that it is easy for non-Java build tools to construct
+configuration names from pieces; but +camelCase+ may be used within the value for some axis.
+
+Some axes are optional, and the Platform and Configuration axes also have a "combined" value `common`, for files such as
+C++ headers, which are the same across Platform and Configuration.
+
+// NOTE: Need leading {empty} here so that the '[]' aren't interpreted as paragraph styles.  Can't use leading space
+// or it's interpreted as literal text and comes out all monospace.  Also need custom {undsc} attribute and double (as
+// opposed to single) quotes to get formatting right.
+====
+{empty}[_Testing_ "+{undsc}+"] +
+{empty}[_Subcomponent_ "+{undsc}+"] +
+{empty} _Stage_ +
+{empty}[ { ["+{undsc}+" _Platform_] ["+{undsc}+" _BuildType_] | "+{undsc}common+" } ]
+====
+
+For example, `import_x64_Release`, or `test_server_runtime_x64_Release`.
+
+Testing::
+    This axis is related to the testing of the module:
++
+* No value for this axis means the configuration covers the default, production use of the module.
+* +test+: Parts used for unit testing the module.
+* +integTest+: Parts used for integration testing of the module.
+
+Subcomponent::
+    This axis indicates that your module contains several separate parts, for example matching +client+ and +server+
+libraries.  There are no suggested standard values--you can use any word which describes the subcomponent.  If you
+need more than one work, use +camelCase+.
+Stage::
+    This refers to stages of the software lifecycle.
++
+* `import`: Files needed from module when you want to build some other module which uses it.
+* `runtime`: Files needed from the module at runtime.
+* `debugging`: Files only needed if/when you want to debug a running application (or a crash dump).
+
+Platform::
+    This axis covers the Visual Studio / MSBuild "Platform": "Win32" or "x64".  Non-C++ and other platform-neutral
+modules would omit this axis.
+Configuration::
+    For modules built with Visual Studio / MSBuild, this covers the "Configuration": "Debug" or "Release".  Non-C++
+modules will usually still include this axis; for example, a JavaScript library would have minified JS in its
+"Release" built type, whereas "Debug" would have the non-minified JS.
+
+These configuration set types also define a private configuration called +build+.  Its purpose is to map to
+configurations in other modules in cases where those files are needed to build this module, but are not needed by
+other modules which use this one.  Typically it maps to
+
+* build tools;
+* `import_*` in other modules, if the interface of that module should _not_ be exposed from this module.
+
+===== Default Visual Studio Types
+
+There are several configuration set types for Visual Studio solutions which are mainly C++-style projects.  These
+types have a naming pattern which defines the _Stage_, _Platform_, and _Configuration_ axes; the _Testing_ and
+_Subcomponent_ axes can be added by a specific configuration set.
+
+* LIB: static libraries, or similar things which do not themselves have runtime files.
+
+* DLL: dynamic libraries, or similar things which have runtime files and are used by other libraries or executables
+
+* EXE: dynamic libraries, or similar things which have runtime files and are executable themselves, instead of being
+used by other modules.
+
+These configuration set types define configuration name parts, "extends from" relationships, and contents as follows.
+
+[options="header",cols="2,1,3"]
+|====
+|Name |Extends |Contains
+
+|`build`
+|nothing
+|nothing, because this configuration is private
+
+|`import_common`
+|nothing
+|Platform- and Configuration-independent files which other modules need to build against this one.
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Release` +
+`import_Win32_Debug`
+|`import_common`
+|Platform- and Configuration-specific files which other modules need to build against this one.
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
+|nothing
+|Platform- and Configuration-specific files which other modules need at runtime to use this one.
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
+|nothing
+|Platform- and Configuration-specific files which other modules need to debug against this one.
+
+|====
+
+===== LIB
+
+This type is for static libraries built with the typical Visual Studio +Platform+ values of +x64+ and +Win32+,
+and +Configuration+ values of +Debug+ and +Release+.  There are also types called
+
+* `LIB_RELEASE`, which does not include any of the names with `Debug` in them;
+* `LIB_64`, which does not include any of the names with `Win32` in them;
+* `LIB_64_RELEASE`, which does not include any of the names with `Win32` or `Debug` in them.
+
+The configurations are intended to contain the following kinds of files when your module is published, as controlled by
+the <<_packageArtifacts>> block.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+a|For a Windows static library, this configuration might include
+
+* header files
+* Visual Studio property sheets (for setting up include/link paths)
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Release` +
+`import_Win32_Debug`
+|`.lib` files, and also `.pdb` files (because PDBs for static libraries are linked into the PDBs for DLLs/EXEs which
+use them, and are not needed at debugging time)
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
+|nothing
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
+|nothing
+
+|====
+
+===== DLL
+
+This type is for dynamic libraries built with the typical Visual Studio +Platform+ values of +x64+ and +Win32+,
+and +Configuration+ values of +Debug+ and +Release+.  There are also types called
+
+* `DLL_RELEASE`, which does not include any of the names with `Debug` in them;
+* `DLL_64`, which does not include any of the names with `Win32` in them;
+* `DLL_64_RELEASE`, which does not include any of the names with `Win32` or `Debug` in them.
+
+These types are also suitable for executables which are used like libraries, in that your module needs some kind of
+header to use them and/or they are not run independently.  For example, COM singletons are build as EXEs but can be
+used by libraries, which need "+.idl+" files to access them.  The configurations are intended to contain the
+following kinds of files when your module is published, as controlled by the <<_packageArtifacts>> block.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+a|For a Windows dynamic library, this configuration might include
+
+* header files
+* +.idl+ files
+* Visual Studio property sheets (for setting up include/link paths)
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Release` +
+`import_Win32_Debug`
+|`.lib` files
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
+|`.dll` files, and any `.exe` or other "plugin-style" executable files
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
+|`.pdb` files
+
+|====
+
+===== EXE
+
+This type is for executables built with the typical Visual Studio +Platform+ values of +x64+ and +Win32+, and
++Configuration+ values of +Debug+ and +Release+.  There are also types called
+
+* `EXE_RELEASE`, which does not include any of the names with `Debug` in them;
+* `EXE_64`, which does not include any of the names with `Win32` in them;
+* `EXE_64_RELEASE`, which does not include any of the names with `Win32` or `Debug` in them.
+
+These types are also suitable for executables which are used like libraries, in that your module needs some kind of
+header to use them and/or they are not run independently.  For example, COM singletons are build as EXEs but can be
+used by libraries, which need "+.idl+" files to access them.  The configurations are intended to contain the
+following kinds of files when your module is published, as controlled by the <<_packageArtifacts>> block.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+|nothing
+
+|`import_x64_Release` +
+`import_x64_Debug` +
+`import_Win32_Release` +
+`import_Win32_Debug`
+|nothing
+
+|`runtime_x64_Release` +
+`runtime_x64_Debug` +
+`runtime_Win32_Release` +
+`runtime_Win32_Debug`
+|`.exe` files
+
+|`debugging_x64_Release` +
+`debugging_x64_Debug` +
+`debugging_Win32_Release` +
+`debugging_Win32_Debug`
+|`.pdb` files
+
+|====
+
+===== Default Web Types
+
+There is currently only one configuration set type intended for web applications.  The naming pattern defines the _Stage_ and _Configuration_ axes, and omits the _Platform_ axis; the _Testing_ and
+_Subcomponent_ axes can be added by a specific configuration set.
+
+* WEB_LIB: web application components, for use as part of a larger application, containing JavaScript, HTML, CSS and
+related files.
+
+This configuration set type defines configuration name parts, "extends from" relationships, and contents as follows.
+
+[options="header",cols="2,1,3"]
+|====
+|Name |Extends |Contains
+
+|`build`
+|nothing
+|nothing, because this configuration is private
+
+|`import_common`
+|nothing
+|Configuration-independent files which other modules need to build against this one.
+
+|`import_Release` +
+`import_Debug`
+|`import_common`
+|Configuration-specific files which other modules need to build against this one.
+
+|`runtime_Release` +
+`runtime_Debug`
+|nothing
+|Configuration-specific files which other modules need at runtime to use this one.
+
+|`debugging_Release` +
+`debugging_Debug`
+|nothing
+|Configuration-specific files which other modules need to debug against this one.
+
+|====
+
+===== WEB_LIB
+
+This type is for web application components, for use as part of a larger application, containing JavaScript, HTML,
+CSS and related files.
+
+[options="header",cols="2,4"]
+|====
+|Name |Contains 
+
+|`build`
+|nothing, because this configuration is private
+
+|`import_common`
+|Build scripts or other files which other modules need to build against this one.
+
+|`import_Release` +
+`import_Debug`
+|Configuration-specific build scripts or files which other modules need to build against this one.
+
+|`runtime_common`
+|HTML and/or similar content which does _not_ differ between Release (minified) and Debug (non-minified).
+
+|`runtime_Release` +
+`runtime_Debug`
+|JavaScript, CSS, XSLT, and/or similar content which differs between Release (minified) and Debug (non-minified).
+
+|`debugging_common`
+|Debugging support files which do _not_ differ between Release (minified) and Debug (non-minified).
+
+|`debugging_Release` +
+`debugging_Debug`
+|Source maps and/or other debugging support files which differ between Release (minified) and Debug (non-minified).
+
+|====
+
+===== Configuration Mapping Rules
+
+These configuration set types can be passed to the +configurationSet+ method of <<_sourceDependencies>>
+(<<_sourceDependencies_configurationSet>>) or <<_packedDependencies>> (<<_packedDependencies_configurationSet>>)
+and the Holy Gradle will automatically create mappings between configurations, according to the following rules.
+
+* The `runtime_*` and `debugging_*` configurations in a dependency are always mapped from the corresponding
+configurations in this module.  That is, `runtime_Win32_Debug->runtime_Win32_Debug`,
+`runtime_Win32_Release->runtime_Win32_Release`, and so on.  This is true even for static libraries because they
+can have runtime dependencies on DLLs.
+
+* The `import_common` configuration does not need to be mapped between modules because other modules are only
+expected to use the `import_*` configurations (`import_Win32_Debug` and so on), and those configurations will
+include everything in the other module's `import_common`, because each `import_*` configuration extends
+`import_common`.
+
+* The `import_*` configurations in a dependency may be
+
+** mapped from the corresponding public configurations in this module (`import_x64_Release->import_x64_Release`
+and so on) if
+
+*** either the interfaces of that module should be exposed from this module;
+
+*** or both this module and the dependency are static libraries, because in that case another module which links
+against this one will also have to link against the dependency;
+
+** mapped from the private `build` configurations in this module (`build->import_x64_Release` and so on) if the
+interfaces of that module should be encapsulated within this module;
+
+** not mapped at all, if the dependency is an EXE-style module, because they do not have build-time interfaces.
+
+The rule for the `import_*` configurations can also be represented by the following table.  The From/To columns
+are the configuration set type for the source and destination of the mapping.  The `export:` column indicates
+what value for that option (default +false+) is passed to the +configurationSet+ method of +sourceDependencies+
+or +packedDependencies+.
+
+[width="60%",cols="1,1,1,2",options="header"]
+|====
+|From |To |`export:` |Map to `import_*`?
+
+.5+|LIB .2+|LIB |`false` |from same
+|`true` |from same
+.2+|DLL |`false` |from `build`
+|`true` |from same
+|EXE |n/a |no
+.5+|DLL .2+|LIB |`false` |from `build`
+|`true` |from same
+.2+|DLL |`false` |from `build`
+|`true` |from same
+|EXE |n/a |no
+.3+|EXE |LIB |n/a |no
+|DLL |n/a |no
+|EXE |n/a |no
+
+|====
+
+The following diagram shows the configurations for two modules +a+ and +b+ of type +DLL+, where +a+
+is exposing the headers (in +import_common+) of +b+; plus a simple packaging of Doxygen (using a single
+configuration) as an example build tool.  The blue lines would be missing if +a+ did not export the
+imports of +b+.
+
+.Configuration Mapping
+[caption="Figure {counter:figureindex}: "]
+[graphviz,config_mapping.svg,dot,svg]
+--
+digraph {
+    rankdir=LR;
+    node [shape=box];
+
+    subgraph cluster_doxygen {
+        label = "Doxygen";
+
+        Doxygen_bin [label="bin"];
+    }
+
+    subgraph cluster_a {
+        label = "a";
+
+        a_import_common [label="import\n_common"];
+        a_import_x64_Debug [label="import\n_x64\n_Debug"];
+        a_import_x64_Release [label="import\n_x64\n_Release"];
+        a_runtime_x64_Debug [label="runtime\n_x64\n_Debug"];
+        a_runtime_x64_Release [label="runtime\n_x64\n_Release"];
+        a_debugging_x64_Debug [label="debugging\n_x64\n_Debug"];
+        a_debugging_x64_Release [label="debugging\n_x64\n_Release"];
+        a_build [label="build",style="dashed"];
+
+        a_import_x64_Debug -> a_import_common [arrowhead="onormal"];
+        a_import_x64_Release -> a_import_common [arrowhead="onormal"];
+
+        a_build -> Doxygen_bin;
+    }
+
+    subgraph cluster_b {
+        label = "b";
+
+        b_import_common [label="import\n_common"];
+        b_import_x64_Debug [label="import\n_x64\n_Debug"];
+        b_import_x64_Release [label="import\n_x64\n_Release"];
+        b_runtime_x64_Debug [label="runtime\n_x64\n_Debug"];
+        b_runtime_x64_Release [label="runtime\n_x64\n_Release"];
+        b_debugging_x64_Debug [label="debugging\n_x64\n_Debug"];
+        b_debugging_x64_Release [label="debugging\n_x64\n_Release"];
+        b_build [label="build",style="dashed"];
+
+        b_import_x64_Debug -> b_import_common [arrowhead="onormal"];
+        b_import_x64_Release -> b_import_common [arrowhead="onormal"];
+
+        b_build -> Doxygen_bin;
+    }
+
+    a_import_common -> b_build [style=invis];
+    b_import_common -> Doxygen_bin [style=invis];
+
+    a_import_x64_Debug -> b_import_x64_Debug [color=blue];
+    a_import_x64_Release -> b_import_x64_Release [color=blue];
+    a_runtime_x64_Debug -> b_runtime_x64_Debug;
+    a_runtime_x64_Release -> b_runtime_x64_Release;
+    a_debugging_x64_Debug -> b_debugging_x64_Debug;
+    a_debugging_x64_Release -> b_debugging_x64_Release;
+}
+--
+
+
+==== User-defined Configuration Set Types
+
+It is possible to define your own configuration set types, though the ways of doing this are currently not documented.
+Please look at the source for the interfaces +ConfigurationSetType+ and +ConfigurationSet+, and the classes which
+implement them.
+
+[[_configurationSets]]
+=== configurationSets
+
+This DSL block is used in combination with the <<_configurationSetTypes>> block to provide a convenient way to define
+several related gloss:configuration[]s in your project, and their mapping to configurations in other modules, following
+common patterns.  For background information about configurations and configuration mapping, see the
+link:overview.html#_gradle_module_concepts[] overview and the link:workflows.html#_configurations[] section of the
+link:workflows.html[] page
+
+You will commonly use this block in your +build.gradle+ file although it is not required: you can define individual
+configurations yourself, but the configuration mapping in source and packed dependency definitions may be more verbose.
+You can also define both configuration sets and individual configurations.
+
+This is a container for configuration set objects. The first level below +configurationSets+ defines the names of the individual configuration sets.  The name of the set is only used to refer to this set elsewhere in the build script; it does not automatically appear in the configuration names.  For example:
+
+[source,groovy]
+----
+configurationSets {
+    main {
+        type configurationSetTypes.DLL_64
+    }
+    test {
+        prefix "test"
+        type configurationSetTypes.EXE_64
+    }
+}
+----
+
+The above example is equivalent to a +configurations+ block like the following.
+
+[source,groovy]
+----
+configuration {
+    // "main" configuration set
+    build { visible = false }
+    import_common
+    import_x64_Release.extendsFrom import_common
+    import_x64_Debug.extendsFrom import_common
+    // ...
+    runtime_x64_Release
+    // ...
+    debugging_x64_Release
+    // ...
+
+    // "test" configuration set
+    test_build { visible = false }
+    test_import_common
+    test_import_x64_Release.extendsFrom import_common
+    test_import_x64_Debug.extendsFrom import_common
+    // ...
+    test_runtime_x64_Release
+    // ...
+    test_debugging_x64_Release
+    // ...
+}
+----
+
+[[_configurationSets_type]]
+==== type
+
+This method takes one parameter, the configuration set type for this configuration set.  For the pre-defined types,
+the names of the configurations in the set will be those from the type, with the <<_configurationSets_prefix>> added at
+the beginning.
+
+-> You must call this method exacly once.
+
+
+[[_configurationSets_prefix]]
+==== prefix
+
+This method takes one parameter, a string prefix to be added to all names from the <<_configurationSets_type>>.  If this
+method is not called for a configuration set, the names from its type will be used directly.  If you have more than one
+configuration set of the same or similar types in your build script, you will probably have to use a prefix on all but
+one of them to avoid configuration name overlaps.
+
+-> Call this method at most once.
+
+[[_configurationSets_configurationSet]]
+==== Configuration Set Methods
+
+Configuration sets themselves have methods which may be useful in your build script.
+
+[[_configurationSets_configurationSet_type]]
+===== type
+
+This property returns the configuration set type for this set.
+
+[[_configurationSets_configurationSet_axes]]
+===== axes
+
+This property returns a map with
+
+* keys which are the names of each axis used in the configuration set type; and
+* values which are the set of values for that axis defined by the type.
+
+[[_configurationSets_configurationSet_configurationNames]]
+===== configurationNames
+
+This property returns a map with
+
+* keys which are maps of name-value pairs for each axis used in the configuration set type; and
+* values which are the names of the corresponding configuration defined by this set.
+
+[[_configurationSets_configurationSet_getConfigurations]]
+===== getConfigurations
+
+This method takes a Gradle https://docs.gradle.org/1.4/javadoc/index.html?org/gradle/api/Project.html[Project] object,
+creates the +Configuration+ objects for the names defined by this set (if they do not already exist), and returns a map
+with
+
+* keys which are maps of name-value pairs for each axis used in the configuration set type; and
+* values which are the corresponding +Configuration+ objects in the given +Project+.
+
 
 === dependenciesSettings
 
 This object has settings which apply to all dependencies.
-
 
 [source,groovy]
 ----
@@ -289,220 +930,27 @@ sourceDependencies {
 }
 ----
 
-[[_publishing]]
-==== publishing
-
-This is like a struct which groups together a few different configuration options relating to how the source-code dependency will be referenced (in the Ivy module descriptor XML) when the consumer module is published.  The consumer module can be published as depending on the published output of a source-code dependency.
-
-If the +publishing+ configuration is omitted then the source-code dependency will not be mentioned in the module descriptor.
-
-This is an example of a fully-specified +publishing+ element:
-
-[source,groovy]
-----
-sourceDependencies {
-    dependency_module {
-        svn "http://path/to/svn/repo"
-        publishing {
-            group "com.company.team"
-            configuration "compileDebug->compileVc10Debug", "compileRelease->compileVc10Release"
-            version "1.0.+"
-        }
-    }
-}
-----
-
-NOTE: In order for dynamic version numbers to be resolved you will need to configure the <<_repositories>> element.
-
-When the module containing this build script is published it would produce an Ivy module descriptor like this:
-
-[source,xml]
-----
-<?xml version="1.0" encoding="UTF-8"?>
-<ivy-module version="2.0">
-  <info organisation="com.company.team" module="example" revision="1.2.3.4" status="release" publication="20121115134228"/>
-  <configurations>
-    ...
-  </configurations>
-  <publications>
-    ...
-  </publications>
-  <dependencies>
-    <dependency org="com.company.team" name="dependency_module" rev="1.0.3.987" conf="compileDebug->compileVc10Debug"/>
-    <dependency org="com.company.team" name="dependency_module" rev="1.0.3.987" conf="compileRelease->compileVc10Release"/>
-  </dependencies>
-</ivy-module>
-----
-
-
-===== group
-
-This method configures the group name for the dependency - see the `dependency->org` attribute in the above module descriptor.
-
-If this method is not called then the group will default to the group specified in <<_publishPackages>>.
-
--> Call this method at most once.
-
-===== configuration
-
-This method defines which configurations will appear in the dependencies - see the `dependency->conf` attribute in the above module descriptor.
-
-You can pass any number of string parameters to this method, or call the method multiple times.
-
-The number of +dependency+ elements in the module descriptor will correspond to the number of distinct configurations you specify.
-
--> Call this method at least once.
-
-===== version
-
-This method defines the version number that will be used in the +dependency+ elements in the module descriptor.
-
-You can specify an exact version number (e.g. +1.2.3.4+) or a dynamic version number (e.g. +1.2.++). The dynamic version number will be resolved to a concrete version number based on what artifacts exist in the target repository **at the time that the module is published.**
-
-By default, if you do not specify a version, then the version used for publishing the module will also be used for the version number in the +dependency+ element in the module descriptors for source dependencies.
-
--> Call this method at most once.
-
-===== usePublishedVersion
-
-If you have configured the <<_publishing>> section of your source-code dependency (explained above) then you can set the +usePublishedVersion+ property as follows:
-
-[source,groovy]
-----
-sourceDependencies {
-    dependency_module {
-        svn "http://path/to/svn/repo"
-        publishing {
-            group "com.company.team"
-            configuration "compileDebug->compileVc10Debug", "compileRelease->compileVc10Release"
-            version "1.0.+"
-        }
-        usePublishedVersion = true
-    }
-}
-----
-
-If you already have a source-code checkout located at +<workspace>/dependency_module+ then you will need to delete it or move it out of the way. The use of +usePublishedVersion = true+ will cause the source-code dependency to behave similar to +packedDependencies+ i.e. the dynamic version number will be resolved, the appropriate artifacts will be retrieved, unpacked to the central cache and a symlink defined.
-
-It is expected that developers will normally only use this property temporarily in their local check-out, and not commit it to shared version-controlled source.
-
-=== sourceDependencyTasks
-
-This container allows you to define commands to be invoked on all +sourceDependencies+.
-
-For example:
-
-[source,groovy]
-----
-sourceDependencyTasks {
-    theTask {
-        invoke("command", "could", "fail").failAtEnd()
-        invoke("fails", "but", "dont", "care").ignoreFailures()
-        invoke("failure", "is", "important").failImmediately()
-        invoke("failure", "is", "important") // behaves as failImmediately
-    }
-}
-----
-
-The above script will define a task +theTask+ to be invoked on the current project AND all of the source dependencies that it depends on. This means that you can define a set of useful commands in your root build script and make use of them in all subprojects.
-
-Each invocation can be configured to behave appropriately with respect to the return codes.
-
-* +failImmediately()+ - terminate as soon as possible when any invocation's exit code is non-zero. This is the default behaviour.
-* +failAtEnd()+ - after all projects have made the invocation, check for non-zero exit codes and summarise. If there were any failures then terminate here.
-* +ignoreFailures()+ - ignore the exit codes.
-
-NOTE: If your source-dependency command does something which modifies the Gradle scripts (for example, +svn update+ or +hg update+) then the new versions of the Gradle scripts will not be applied until the next time you invoke Gradle. So for example 'gw hgUpdate buildRelease' would do the Hg update but the build task would run according to the Gradle scripts prior to the update. So it would be better to run these two tasks separately: 'gw hgUpdate' followed by 'gw buildRelease'.
-
-=== sourceControl
-
-This DSL gives you read-only access to various properties of the source control repository for the current project e.g. protocol (hg or svn), url, revision, and whether there are any local modifications.
-
-==== protocol
-
-This read-only property returns a string "hg" or "svn" depending on whether this project directory is an hg clone or an svn checkout. If it is neither then "n/a" will be returned.
-
-==== url
-
-This read-only property returns the url for the source control repository/checkout in the project directory. Null is returned if the project directory is not under source control.
-
-==== revision
-
-This read-only property returns the revision for the source control repository/checkout in the project directory. Null is returned if the project directory is not under source control.
-
-==== hasLocalChanges
-
-This method returns a boolean indicating whether the source control repository/checkout in the project directory has any uncommitted modifications. False is returned if the project directory is not under source control.
-
-[[_packedDependencies]]
-=== packedDependencies
-
-This is a container for packed-dependency objects. The first level below +packedDependencies+ defines the names of the individual dependencies e.g.
-
-
-[source,groovy]
-----
-packedDependencies {
-    "my-rendering-lib" {
-        dependency "com.company.rendering:RenderingLib:2012a2"
-        configuration "compileVc10Debug->compileVc10X64Debug", "compileVc10Release->compileVc10X64Release"
-    }
-    "NUnit <version>" {
-        dependency "org:NUnit:2.5.+"
-        configuration "privateBuild->bin"
-        unpackToCache = false
-    }
-}
-----
-
-declares two dependencies:
-
-* +RenderingLib+ packages belonging to the configurations +compileVc10X64Debug+ and +compileVc10X64Release+ should be unpacked to the central cache, and a symlink should be created at +<workspace>/my-rendering-lib+. When this module is published, the +RenderingLib+ dependency will be included in the module descriptor.
-* +NUnit+ packages belonging to the configuration +bin+ should be unpacked directly to the workspace in folder called +<workspace>/NUnit 2.5.10+ (assuming that 2.5.10 is the most recent version with the prefix "2.5"). When this module is published, the +NUnit+ dependency should not be mentioned in the module descriptor (due to the +privateBuild+ configuration).
-
-==== Relative Paths
-
-Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate subdirectories of the workspace. See <<_relative_paths>>.
-
-==== Using +<version>+
-
-You can specify +<version>+ anywhere within the name of a packed dependency e.g. +"my_component-<version> blah"+. Once the version number has been resolved, the +<version>+ will be replaced with the actual version of the packed dependency that has been retrieved.
-
-The name of the packed dependency affects:
-
-* the path to which the dependency will be unpacked within your workspace (if +unpackToCache+ is false)
-* the name of the symlink in your workspace (if +unpackToCache+ is true, which is the default)
-
-For the example above, the workspace would look like this:
-
-----
-<workspace>
-|   build.gradle
-|   ...
-+---my-rendering-lib   (symlink ---> <unpack cache>/com.company.rendering/RenderingLib-2012a2)
-|   ...
-+---NUnit 2.5.10
-    ...
-----
-
-
-==== dependency
-
-This method configures the coordinates of the dependency. The single parameter must follow the pattern "<groupId>:<artifactId>:<version>" where:
-
-* +groupId+ is an identifier (such as the name of the organisation) to disambiguate the +artifactId+. The +groupId+ can contain full-stops e.g. +org.common.util+.
-* +artifactId+ is an identifier for the artifact.
-* +version+ is a version number. 
-
-WARNING: Floating version numbers (e.g. +1.2.++) are supported. (See link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#sec:dependency_resolution[how dependency resolution works].)  However, use of floating version numbers is not recommended because they are ordered lexicographically rather than numerically: that means +1.10+ comes before +1.2+, for example.
-
--> Call this method exactly once.
-
+[[_sourceDependencies_configuration]]
 ==== configuration
 
-This method defines the mappings **from** configurations in this module **to** configurations in the dependency module. These mappings will be included in the module descriptor when this module is published. The **to** configurations also determine which packages from the dependency artifact will be fetched and unpacked.
+This method defines the configuration mapping for the dependency - see the +<dependency ... conf="..."/>+ attribute
+in the example module descriptor above.  Mappings are defined _from_ configurations in this module _to_
+configurations in the dependency module. These mappings will be included in the module descriptor when this module is
+published. The "to" configurations also determine which packaged artifacts from the dependency module will be fetched
+and unpacked.
+
+More details on extending configurations, and mapping sets of related configurations between modules,
+can be found in the link:workflows.html#_configurations[] section of the link:workflows.html page.
 
 You can pass any number of string parameters to this method, or call the method multiple times.
+
+You can also not call this method, in which case the source will be checked out but its Gradle project configurations
+will not be linked to the configurations of this module and, when this module is published, it will have no
+dependency on any module which may be defined in the checked-out repository.  This can be useful if, for example,
+
+* you want to join multiple source repositories into one published module;
+* your main source is in a Mercurial repo but you also have large binary files in a Subversion repo, such as
+Word documents.
 
 Here are some examples of string parameters passed to the +configuration+ method and the resulting mappings:
 
@@ -531,7 +979,378 @@ Here are some examples of string parameters passed to the +configuration+ method
 * configuration mapping from "bb" to "cc"
 * configuration mapping from "bb" to "dd"
 
--> Call this method at least once.
+-> Call this method and/or <<_sourceDependencies_configurationSet>> at least once, usually.
+
+[[_sourceDependencies_configurationSet]]
+==== configurationSet
+
+This method creates multiple configuration mappings from this module to a source dependency module, based on the
+names defined by configuration sets and configuration set types, and any specific mapping rules implemented by the
+types.
+
+The method takes two main arguments:
+
+* the source, which can be a +ConfigurationSet+ or a Gradle +Configuration+ in this module; and
+* the target, which can be a +ConfigurationSetType+ or a +ConfigurationSet+ which matches the dependency module.
+
+If the source is a +ConfigurationSet+, then the optional "+export:+" boolean argument can be passed, which affects the
+mapping of `import_*` configurations (see <<_configuration_mapping_rules>>).
+
+The Holy Gradle does not check that the type for the target is correct.  You may be able to get documentation
+for a dependency, or work out which mapping to use by looking at its package contents or the gloss:ivy-xml[].  From
+version link:release_notes.html#_7_7_2[] the +description+ for each configuration in a configuration set contains a
+hint about how to use it.
+
+-> Call this method and/or <<_sourceDependencies_configuration>> at least once, usually.
+
+Following are some examples of parameters passed to the +configurationSet+ method and the resulting mappings.  They
+assume the following configuration sets in both this module and the target.
+
+[source,groovy]
+----
+configurationSets {
+    main {
+        type configurationSetTypes.DLL_64
+    }
+    extra {
+        prefix "extra"
+        type configurationSetTypes.DLL_64
+    }
+}
+----
+
+===== +ConfigurationSet+ to +ConfigurationSetType+
+
+This is the most common usage, where this module has one or more configuration sets, and the target configuration set
+in the dependency module does not have a prefix.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->import_x64_Release`
+* `build->import_x64_Debug`
+* `runtime_x64_Release->runtime_x64_Release`
+* `runtime_x64_Debug->runtime_x64_Debug`
+* `debugging_x64_Release->debugging_x64_Release`
+* `debugging_x64_Debug->debugging_x64_Debug`
+
+If the export flag is set:
+
+[source,groovy]
+----
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64, export: true
+----
+
+then the import mappings change as follows:
+
+* `import_x64_Release->import_x64_Release`
+* `import_x64_Debug->import_x64_Debug`
+
+===== +ConfigurationSet+ to +ConfigurationSet+
+
+This version is used when the target configuration set has a prefix.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64.makeSet { prefix "extra" }
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->extra_import_x64_Release`
+* `build->extra_import_x64_Debug`
+* `runtime_x64_Release->extra_runtime_x64_Release`
+* `runtime_x64_Debug->extra_runtime_x64_Debug`
+* `debugging_x64_Release->extra_debugging_x64_Release`
+* `debugging_x64_Debug->extra_debugging_x64_Debug`
+
+If the export flag is set:
+
+[source,groovy]
+----
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64.makeSet { prefix "extra" }, export: true
+----
+
+then the import mappings change as follows:
+
+* `import_x64_Release->extra_import_x64_Release`
+* `import_x64_Debug->extra_import_x64_Debug`
+
+===== +Configuration+ to +ConfigurationSetType+
+
+This version can be used when you want to map to several configurations of a target module from one configuration of
+this module.  A common use for this would be to add a dependency on some build helper tool, from this module's
++build+ configuration.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurations.build, configurationSetTypes.DLL_64_RELEASE
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->import_x64_Release`
+* `build->import_x64_Debug`
+* `build->runtime_x64_Release`
+* `build->runtime_x64_Debug`
+* `build->debugging_x64_Release`
+* `build->debugging_x64_Debug`
+
+When the source is a +Configuration+ rather than a +ConfigurationSet+, the export flag is not applicable.
+
+===== +Configuration+ to +ConfigurationSetType+
+
+This version can be used when you want to map to several configurations of a target module from one configuration of
+this module, and those configurations have a prefix.
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        hg "http://path/to/foo"
+        configurationSet configurations.build, configurationSetTypes.DLL_64_RELEASE.makeSet { prefix "extra" }
+    }
+}
+----
+
+This generates configuration mappings as follow.
+
+* `build->extra_import_x64_Release`
+* `build->extra_import_x64_Debug`
+* `build->extra_runtime_x64_Release`
+* `build->extra_runtime_x64_Debug`
+* `build->extra_debugging_x64_Release`
+* `build->extra_debugging_x64_Debug`
+
+Again, the the export flag is not applicable because the source is a +Configuration+ rather than a +ConfigurationSet+.
+
+WARNING: For source dependencies, you might try to reference a configuration set object from the dependency module's
+Gradle project as the target for a mapping, rather than creating one with +ConfigurationSetType#makeSet+.  However, it
+is difficult to make this work in all cases; for example, if running +gw fetchAllDependencies+ from a clean checkout,
+the source for the dependency project may not exist yet.
+
+[[_publishing]]
+==== publishing
+
+WARNING: This block is deprecated as of version link:release_notes.html#_7_7_0[], and will be removed in a future
+version of the Holy Gradle.
+
+This is like a struct which groups together a few different configuration options relating to how the source-code dependency will be referenced (in the Ivy module descriptor XML) when the consumer module is published.  The consumer module can be published as depending on the published output of a source-code dependency.
+
+If the +publishing+ configuration is omitted then the source-code dependency will not be mentioned in the module descriptor.
+
+This is an example of a fully-specified +publishing+ element:
+
+[source,groovy]
+----
+sourceDependencies {
+    dependency_module {
+        svn "http://path/to/svn/repo"
+        publishing {
+            group "com.company.team"
+            configuration "import_x64_Debug->compileVc10Debug", "import_x64_Release->compileVc10Release"
+            version "1.0.+"
+        }
+    }
+}
+----
+
+NOTE: In order for dynamic version numbers to be resolved you will need to configure the <<_repositories>> element.
+
+
+===== group
+
+This method configures the group name for the dependency - see the `dependency->org` attribute in the above module descriptor.
+
+If this method is not called then the group will default to the group specified in <<_publishPackages>>.
+
+-> Call this method at most once.
+
+[[_publishing_configuration]]
+===== configuration
+
+This method is the same as the <<_configuration>> method of a source dependency block.
+
+===== version
+
+This method defines the version number that will be used in the +dependency+ elements in the module descriptor.
+
+You can specify an exact version number (e.g. +1.2.3.4+) or a dynamic version number (e.g. +1.2.++). The dynamic version number will be resolved to a concrete version number based on what artifacts exist in the target repository **at the time that the module is published.**
+
+By default, if you do not specify a version, then the version used for publishing the module will also be used for the version number in the +dependency+ element in the module descriptors for source dependencies.
+
+-> Call this method at most once.
+
+===== usePublishedVersion
+
+This method was removed in version 7.7.0.  The behaviour it was intended to provide -- switching
+between binary and source versions of the same module -- will be provided by a better mechanism in
+future.
+
+=== sourceDependencyTasks
+
+This container allows you to define commands to be invoked on all +sourceDependencies+.
+
+For example:
+
+[source,groovy]
+----
+sourceDependencyTasks {
+    theTask {
+        invoke("command", "could", "fail").failAtEnd()
+        invoke("fails", "but", "dont", "care").ignoreFailures()
+        invoke("failure", "is", "important").failImmediately()
+        invoke("failure", "is", "important") // behaves as failImmediately
+    }
+}
+----
+
+The above script will define a task +theTask+ to be invoked on the current project AND all of the source dependencies that it depends on. This means that you can define a set of useful commands in your root build script and make use of them in all subprojects.
+
+Each invocation can be configured to behave appropriately with respect to the return codes.
+
+* +failImmediately()+ - terminate as soon as possible when any invocation's exit code is non-zero. This is the default behaviour.
+* +failAtEnd()+ - after all projects have made the invocation, check for non-zero exit codes and summarise. If there were any failures then terminate here.
+* +ignoreFailures()+ - ignore the exit codes.
+
+WARNING: If your source dependency command does something which modifies the Gradle scripts (for
+example, +svn update+ or +hg update+) then the new versions of the Gradle scripts will not be
+applied until the next time you invoke Gradle. So for example 'gw hgUpdate buildRelease' would do
+the Hg update but the build task would run according to the Gradle scripts prior to the update. So
+it would be better to run these two tasks separately: 'gw hgUpdate' followed by 'gw buildRelease'.
++
+If such a task fails after only some source dependencies are updated, you may be unable to run
+Gradle if the +build.gradle+ files across all the projects are no longer consistent.  In that case
+you must update or otherwise modify each repository until the Gradle scripts reach a consistent
+state.
+
+=== sourceControl
+
+This DSL gives you read-only access to various properties of the source control repository for the current project e.g. protocol (hg or svn), url, revision, and whether there are any local modifications.
+
+==== protocol
+
+This read-only property returns a string "hg" or "svn" depending on whether this project directory is an hg clone or an svn checkout. If it is neither then "n/a" will be returned.
+
+==== url
+
+This read-only property returns the url for the source control repository/checkout in the project directory. Null is returned if the project directory is not under source control.
+
+==== revision
+
+This read-only property returns the revision for the source control repository/checkout in the project directory. Null is returned if the project directory is not under source control.
+
+==== hasLocalChanges
+
+This method returns a boolean indicating whether the source control repository/checkout in the project directory has any uncommitted modifications. False is returned if the project directory is not under source control.
+
+[[_packedDependencies]]
+=== packedDependencies
+
+This is a container for packed dependency objects. The first level below +packedDependencies+ defines the names of the individual dependencies e.g.
+
+[source,groovy]
+----
+packedDependencies {
+    "RenderingLib" {
+        dependency "com.example-corp.rendering:RenderingLib:2012a2"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+    "NUnit <version>" {
+        dependency "org.nunit:NUnit:2.5.+"
+        def testRuntimeConfs = configurationSets.test.configurationNamesMap.findAll { k, v ->
+            k[stage] == 'runtime'
+        }
+        configuration "${testRuntimeConfs.join(',')}->bin"
+        unpackToCache = false
+    }
+}
+----
+
+declares two dependencies:
+
+* +RenderingLib+ packages belonging to the configurations defined by the +LIB_64+ configuration type
+should be unpacked to the central cache, and a symlink should be created at
++<workspace>/my-rendering-lib+. When this module is published, the +RenderingLib+ dependency will be
+included in the module descriptor. 
+* +NUnit+ packages belonging to the configuration +bin+ should be unpacked directly to the workspace
+in folder called +<workspace>/NUnit 2.5.10+ (assuming that 2.5.10 is the most recent version with
+the prefix "2.5").
+
+==== Relative Paths
+
+Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate subdirectories of the workspace. See <<_relative_paths>>.
+
+==== Using +<version>+
+
+You can specify +<version>+ anywhere within the name of a packed dependency e.g. +"my_component-<version> blah"+. Once the version number has been resolved, the +<version>+ will be replaced with the actual version of the packed dependency that has been retrieved.
+
+The name of the packed dependency affects:
+
+* the path to which the dependency will be unpacked within your workspace (if +unpackToCache+ is false)
+* the name of the symlink in your workspace (if +unpackToCache+ is true, which is the default)
+
+For the example above, the workspace would look like this:
+
+----
+<workspace>
+|   build.gradle
+|   ...
++---RenderingLib (symlink ---> <unpack cache>/com.company.rendering/RenderingLib/2012a2)
+|   ...
++---NUnit 2.5.10
+    ...
+----
+
+
+==== dependency
+
+This method configures the coordinates of the dependency. The single parameter must follow the pattern "<groupId>:<artifactId>:<version>" where:
+
+* +groupId+ is an identifier (such as the name of the organisation) to disambiguate the +artifactId+. The +groupId+ can contain full-stops e.g. +org.common.util+.
+* +artifactId+ is an identifier for the artifact.
+* +version+ is a version number. 
+
+WARNING: Floating version numbers (e.g. +1.2.++) are supported. (See link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#sec:dependency_resolution[how dependency resolution works].)  However, use of floating version numbers is not recommended because they are ordered lexicographically rather than numerically: that means +1.10+ comes before +1.2+, for example.
+
+-> Call this method exactly once.
+
+[[_packedDependencies_configuration]]
+==== configuration
+
+This method works the same as <<_sourceDependencies_configuration>> for +sourceDependencies+.  You will normally call
+this method or +configurationSet+ at least once for a packed dependency, otherwise no packed artifacts will be fetched
+and unzipped.
+
+-> Call this method and/or <<_packedDependencies_configurationSet>> at least once, usually.
+
+[[_packedDependencies_configurationSet]]
+==== configurationSet
+
+This method works the same as <<_sourceDependencies_configurationSet>> for +sourceDependencies+.  You will normally call
+this method or +configuration+ at least once for a packed dependency, otherwise no packed artifacts will be fetched and
+unzipped.
+
+-> Call this method and/or <<_packedDependencies_configuration>> at least once, usually.
 
 ===== Private dependencies
 
@@ -567,7 +1386,7 @@ This property defines whether the dependency should be unpacked to the central c
 
 ==== noCreateSymlinkToCache()
 
-Calling this method on a packed dependency causes the +rebuildSymlinks+ and +deleteSymlinks+ task to ignore it.  This allows you to create your own folder or symlink in the appropriate location, to replace a packed dependency with, for example, a locally-built version.  It is the complement of the +usePublishedVersion+ property for source dependencies.
+Calling this method on a packed dependency causes the +rebuildSymlinks+ and +deleteSymlinks+ task to ignore it.  This allows you to create your own folder or symlink in the appropriate location, to replace a packed dependency with, for example, a locally-built version.
 
 It is expected that developers will normally only use this method temporarily in their local check-out, and not commit it to shared version-controlled source.  If this method is called on a packed dependency, then attempting to publish the containing project will throw an exception, because Gradle cannot know the real version of the dependency.
 
@@ -755,8 +1574,8 @@ and at least one of those projects forces a dependency to resolve to a different
 correct set of symlinks (in the default case where +unpackToCache = true+).
 
 In practice, all uses had a relative path of +"../_module_name_"+, so this is now the default, and the previous
-behaviour will be removed in a future version, provided no problems are found with this approach.  For now, the previous
-behaviour can be re-activated with the following bit of DSL.
+behaviour will be removed in a future version, provided no problems are found with this approach.
+For now, the previous behaviour can be re-activated with the following bit of DSL.
 
 [source,groovy]
 ----
@@ -769,7 +1588,7 @@ If this value is set in the root project, it will affect all sub-projects unless
 
 === symlinks
 
-This extension allows you to define symlinks for +packedDependencies+ or +sourceDependencies+ e.g. this extract of build-script for a module named +consumer_module+
+This extension allows you to define symlinks for +packedDependencies+ or +sourceDependencies+ e.g. this extract of build script for a module named +consumer_module+
 
 [source,groovy]
 ----
@@ -815,15 +1634,15 @@ This is a container for packages. The first level below +packageArtifacts+ defin
 [source,groovy]
 ----
 packageArtifacts {   
-    source.include "src/**/*.h", "src/**/*.cpp"
-    ["Debug", "Release"].each { conf ->
+    import_common.include "src/**/*.h"
+    configurationSets.main.axes['Configuration'].each { conf ->
         "${conf}Exe" {
-            configuration = "compile$conf"
+            configuration = "runtime_x64_$conf"
             include "bin/$conf/*.exe"
             exclude "**/helper.exe"
         }
         "${conf}Pdb" {
-            configuration = "compile$conf"
+            configuration = "debugging_x64_$conf"
             include "bin/$conf/*.pdb"
         }
     }
@@ -835,12 +1654,12 @@ packageArtifacts {
 }
 ----
 
-defines 6 packages: +source+, +docs+, +DebugExe+, +DebugPdb+, +ReleaseExe+ and +ReleasePdb+.
+defines 6 packages: +import_common+, +docs+, +DebugExe+, +DebugPdb+, +ReleaseExe+ and +ReleasePdb+.
 
 Each package:
 * is a zip-file which will be created at publish-time;
 * defines, implicitly or explicitly, which configuration it belongs to;
-* will be referenced in the module descriptor (Ivy XML).
+* will be referenced in the module descriptor (gloss:ivy-xml[]).
 
 ==== configuration
 
@@ -849,7 +1668,7 @@ This property defines the configuration that the package belongs to. For example
 [source,groovy]
 ----
 <publications>
-    <artifact name="example-libVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>
+    <artifact name="example-import_x64_Debug" type="zip" ext="zip" conf="import_x64_Debug"/>
     ...
 </publications>
 ----
@@ -861,7 +1680,7 @@ You do not have to explicitly set the configuration if the name of the package a
 
 ==== include
 
-This method defines file-path patterns to **include** in the package, subject to those files not being excluded by the +exclude+ patterns.
+This method defines file-path patterns to **include** in the package, subject to those files not being excluded by the <<_exclude>> patterns.
 
 You can pass any number of string parameters to this method, or call the method multiple times.
 
@@ -869,7 +1688,7 @@ You can pass any number of string parameters to this method, or call the method 
 
 ==== exclude
 
-This method defines file-path patterns to **exclude** from the package. This will take priority over any +include+ patterns.
+This method defines file-path patterns to **exclude** from the package. This will take priority over any <<_include>> patterns.
 
 Some patterns will be excluded by default: +.gradle+, +packages/ivy.xml+, +packages/*.zip+
 
@@ -915,6 +1734,9 @@ packageArtifacts {
         includeTextFile("readme.txt") {
             add "the first line with a ${variable}"
             add "as many lines as you want"
+            add """a triple-quoted string
+which can span multiple lines
+and is a standard feature of the Groovy language"""
         }
     }
 }
@@ -927,9 +1749,10 @@ This method adds a line of text to the text file.
 
 -> Call this method any number of times.
 
+[[_includeBuildScript]]
 ==== includeBuildScript
 
-This extension allows you to dynamically create a build-script to be included in the package. There is support for taking the +sourceDependencies+ already defined and converting them to pinned source dependencies or to +packedDependencies+. This facilitates the creation of source and binary 'meta-packages' for releases.
+This extension allows you to dynamically create a build script to be included in the package. There is support for taking the +sourceDependencies+ already defined and converting them to pinned source dependencies or to +packedDependencies+. This facilitates the creation of source and binary 'meta-packages' for releases.
 
 
 [source,groovy]
@@ -956,16 +1779,27 @@ packageArtifacts {
 
 ===== createDefaultSettingsFile
 
-If this property is true, and +includeBuildScript+ is called, but +includeSettingsFile+ is not, then the plugin will add a default +settings.gradle+ file to the package.  If the property is false then, in that case, the package will have no settings file.  That may lead to unexpected behaviour when the package is used, if it is unzipped in a location where some ancestor folder has a settings file.
+If this property is true, and +includeBuildScript+ is called, but +includeSettingsFile+ is not, then
+the plugin will add a default +settings.gradle+ file to the package.  If the property is false then,
+in that case, the package will have no settings file.  That may lead to unexpected behaviour when
+the package is used, if it is unzipped in a location where some ancestor folder has a settings
+file.  See Gradle documentation for the
+https://docs.gradle.org/1.4/userguide/build_lifecycle.html#sec:settings_file[Settings file],
+https://docs.gradle.org/1.4/userguide/build_lifecycle.html#sec:initialization[Initialization] and
+the +-u+ / +--no-search-upwards+
+https://docs.gradle.org/1.4/userguide/gradle_command_line.html[command line] option.
 
 This property is true by default.
 
 ===== add
 
-This method allows you to include arbitrary text in the generated build script. If you call this before any call to +addPinnedSourceDependency+ or +addPackedDependency+ then the text will appear at the top of the buildscript. Otherwise it will appear at the bottom.
+This method allows you to include arbitrary text in the generated build script. If you call this
+before any call to <<_addPinnedSourceDependency>> or <<_addPackedDependency>> then the text will
+appear at the top of the build script. Otherwise it will appear at the bottom.
 
 -> Call this method any number of times.
 
+[[_addPinnedSourceDependency]]
 ===== addPinnedSourceDependency
 
 This method allows you to select source dependencies to be included in the generated build script, pinned to the current source-control revision.
@@ -974,7 +1808,9 @@ This method takes any number of parameters which refer to source dependencies in
 
 -> Call this method any number of times.
 
-Note: This method used to support a wildcard syntax but no longer does.  To add all source dependencies from all projects, you can use the following code.
+Note: This method used to support a wildcard syntax but no longer does.  To add all source
+dependencies from all projects, you can use the following code inside an <<_includeBuildScript>>
+block.
 
 [source,groovy]
 ----
@@ -983,7 +1819,7 @@ gradle.projectsEvaluated {
 }
 ----
 
-
+[[_addPackedDependency]]
 ===== addPackedDependency
 
 This method allows you to specify dependencies to be included in the generated build script as +packedDependencies+ i.e. to retrieve pre-built artifacts instead of the source code repository.
@@ -1022,7 +1858,11 @@ You can also pass a second parameter to this method, which gets used as follows:
 
 ===== generateSettingsFileForSubprojects
 
-This property allows you to define whether a settings file should be generated by the build script.
+This property allows you to define whether a settings file should be generated by the build script,
+listing all the source dependencies added by <<_addPinnedSourceDependency>>.  If the settings file
+is generated, then the +build.gradle+ files from those source dependencies will be included in the
+multi-project build of the generated build script.  If not, they will just be present as source code
+but ignored by the Gradle build.
 
 -> Default value: **true**
 
@@ -1078,8 +1918,16 @@ When published, the module descriptor would look something like this:
 </ivy-module>
 ----
 
+WARNING: The group and version methods in this block are not yet deprecated but are likely to be
+removed in a future version of the Holy Gradle.  Instead, you should just set the group and version
+at the top level of the file, near the beginning, as shown in the example build script at the top of
+this page.  That example shows how to set the version from an environment variable, like
+<<_nextVersionNumberEnvironmentVariable>>; the other methods <<_nextVersionNumber>> and
+<<_nextVersionNumberAutoIncrementFile>> have not been used in practice.
 
 ==== group
+
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
 
 This method defines the group name for the published artifacts. It will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->organisation` attribute in the module descriptor above. The group is often based on the name of the organisation, and helps to disambiguate modules with the same name from different organisations.
 
@@ -1089,6 +1937,8 @@ Calling this method has the same effect as setting the link:http://gradle.org/do
 
 [[_nextVersionNumber]]
 ==== nextVersionNumber
+
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
 
 This method defines the version number for the published artifacts. This will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->revision` attribute in the module descriptor above.
 
@@ -1101,6 +1951,8 @@ Calling this method has the same effect as setting the link:http://gradle.org/do
 [[_nextVersionNumberAutoIncrementFile]]
 ==== nextVersionNumberAutoIncrementFile
 
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
+
 This method has the same effect as <<_nextVersionNumber>> with a few important differences:
 
 * the single string parameter defines a relative path to a file containing the next version number
@@ -1110,6 +1962,8 @@ This method has the same effect as <<_nextVersionNumber>> with a few important d
 
 [[_nextVersionNumberEnvironmentVariable]]
 ==== nextVersionNumberEnvironmentVariable
+
+WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
 
 This method has the same effect as <<_nextVersionNumber>> except that the single string parameter defines the name of an environment variable which contains the version number. This may be useful if, for example, your autobuild already has a notion of version number and is invoking the +publish+ task.
 
@@ -1134,37 +1988,30 @@ repositories.ivy {
 
 If your repository supports anonymous publishing (which is not recommended) then you could omit the +credentials+ section. Note that it is recommended that you use the link:plugin-my-credentials.html[] rather than hard-coding credentials.
 
-[[_repositories]]
-=== repositories
-
-This DSL element isn't actually part of the +intrepid+ plugin, but will likely need to be configured in your build script (see link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#N10607[repositories].) This element should be placed in the root of your build-script (i.e. outside of any other DSL elements such as <<_sourceDependencies>>). For example:
-
-[source,groovy]
-----
-repositories.ivy {
-    url "http://artifactory-server/artifactory/my-repo"
-    credentials {
-        username "user"
-        password "password"
-    }
-}
-----
-
-This +repositories+ block will configure <<_sourceDependencies>> and <<_packedDependencies>>. You can configure it using any of the methods in methods in the [link:http://gradle.org/docs/1.4/javadoc/org/gradle/api/artifacts/dsl/RepositoryHandler.html[RepositoryHandler] (e.g. Maven, Ivy or file-system) but the publishing of packages using +intrepid+ only supports Ivy so you'll probably only have artifacts available in an Ivy repository.
-
 == Tasks
 
 See link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#tutorial_gradle_command_line[using the Gradle command line] for general information on invoking tasks.
 
 === fetchAllDependencies
 
-This task retrieves all <<_packedDependencies>> and <<_sourceDependencies>> and sets up the necessary symlinks. Symlinks are always deleted and rebuilt.
+This task retrieves all <<_packedDependencies>> and <<_sourceDependencies>> and sets up the
+necessary symlinks. Symlinks are always deleted and rebuilt.
 
-If a source-code dependency is retrieved then +settings.gradle+ will be updated to include the new module. Afterwards, the plugin will attempt to automatically relaunch the task in order to allow the new module to be taken into account and for further dependencies to be resolved. The gradle process is terminated with a special exit code and as a result a slightly customised Gradle Wrapper re-launches the gradle process. This slightly hacky approach has a few implications:
+If a source-code dependency is retrieved then the +settings-subprojects.txt+ file (used by the Holy
+Gradle's generated +settings.gradle+) will be updated to include the new module. Afterwards, the
+plugin will attempt to automatically relaunch the task in order to allow the new module to be taken
+into account and for further dependencies to be resolved. The gradle process is terminated with a
+special exit code and as a result a slightly customised Gradle Wrapper re-launches the gradle
+process. This slightly hacky approach has a few implications.
 
-* make sure that any Gradle Wrapper you create comes from the 'custom-gradle-core' plugin's +createWrapper+ task.
-* it is advisable to run the +fetchAllDependencies+ by itself, without any other tasks on the same invocation
-* usage of the daemon is automatically disabled by the customised Gradle Wrapper
+* Wake sure that any Gradle Wrapper you create comes from the 'custom-gradle-core' plugin's
++createWrapper+ task.  This version has special code to re-run Gradle when a new source dependency
+is fetched, in case that source dependency has its own +build.gradle+.
+
+* It is advisable to run the +fetchAllDependencies+ by itself, without any other tasks on the same
+invocation.
+
+* Usage of the daemon is automatically disabled by the customised Gradle Wrapper.
 
 ==== Transitive dependencies
 
@@ -1174,8 +2021,8 @@ This task also fetches transitive dependencies. For example, assume a module's b
 ----
 packedDependencies {
     foo {
-        dependency "com.company.team:foo:1.2.3.4"
-        configuration "compileDebug->compileX64Debug", "compileRelease->compileX64Release" 
+        dependency "com.example-corp.teamA:foo:1.2.3.4"
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64
     }
 }
 ----
@@ -1185,16 +2032,15 @@ and the module descriptor for +foo+ declares a transitive dependency on +bar+ as
 [source,xml]
 ----
 <ivy-module version="2.0">
-  <info organisation="com.company.team" module="foo" revision="1.2.3.4" status="release" publication="20121115134228"/>
+  <info organisation="com.example-corp.teamA" module="foo" revision="1.2.3.4" status="release" publication="20121115134228"/>
   <configurations>
     ...
-    <conf name="compileX64Debug" visibility="public" />
-    <conf name="compileX64Release" visibility="public" />
+    <conf name="runtime_x64_Debug" visibility="public" />
+    <conf name="runtime_x64_Release" visibility="public" />
   </configurations>
   <publications>...</publications>
   <dependencies>
-    <dependency org="com.company.team" name="bar" rev="9.8.7" conf="compileX64Debug->runtimeDebug"/>
-    <dependency org="com.company.team" name="bar" rev="9.8.7" conf="compileX64Release->runtimeRelease"/>
+    <dependency org="com.company.team" name="bar" rev="9.8.7" conf="runtime_x64_Debug->runtime_x64_Debug;runtime_x64_Runtime->runtime_x64_Runtime"/>
   </dependencies>
 </ivy-module>
 ----
@@ -1206,23 +2052,31 @@ and the module descriptor for +bar+ declares artifacts as follows:
 <ivy-module version="2.0">
   <info organisation="com.company.team" module="bar" revision="9.8.7" status="release" publication="20121115134228"/>
   <configurations>
-    <conf name="runtimeDebug" visibility="public" />
-    <conf name="runtimeRelease" visibility="public" />
-    <conf name="pdbDebug" visibility="public" extends="runtimeDebug"/>
-    <conf name="pdbRelease" visibility="public" extends="runtimeRelease"/>
+    ...
+    <conf name="runtime_x64_Debug" visibility="public" />
+    <conf name="runtime_x64_Release" visibility="public" />
+    <conf name="debugging_x64_Debug" visibility="public" />
+    <conf name="debugging_x64_Release" visibility="public" />
   </configurations>
   <publications>
-    <artifact name="bar-dlls-debug" type="zip" ext="zip" conf="runtimeDebug"/>
-    <artifact name="bar-dlls-release" type="zip" ext="zip" conf="runtimeRelease"/>
-    <artifact name="bar-pdbs-debug" type="zip" ext="zip" conf="pdbDebug"/>
-    <artifact name="bar-pdbs-release" type="zip" ext="zip" conf="pdbRelease"/>
+    ...
+    <artifact name="bar-runtime_x64_Debug" type="zip" ext="zip" conf="runtime_x64_Debug"/>
+    <artifact name="bar-runtime_x64_Release" type="zip" ext="zip" conf="runtime_x64_Release"/>
+    <artifact name="bar-debugging_x64_Debug" type="zip" ext="zip" conf="debugging_x64_Debug"/>
+    <artifact name="bar-debugging_x64_Release" type="zip" ext="zip" conf="debugging_x64_Release"/>
   </publications>
   <dependencies>...</dependencies>
 </ivy-module>
 ----
 
 
-In this example the top-level module is dependent on the +compileX64Debug+ and +compileX64Release+ configurations of +foo+ which are in turn dependent on the +runtimeDebug+ and +runtimeRelease+ configurations of +bar+. Although +bar+ defines four artifacts, only +bar-dlls-debug+ and +bar-dlls-release+ belong to the configurations of interest, so these will be fetched. Finally, since both of these artifacts have the file-extension "zip" (see the `artifact->ext` attribute in the module descriptor for +bar+) then the +intrepid+ plugin assumes that they should be unpacked to your unpacked dependency cache, and creates a symlink from your workspace.
+In this example the top-level module is dependent on the configurations +runtime_x64_Debug+ and
++runtime_x64_Runtime+ of +foo+, which are then dependent on the same named configurations of
++bar+. Although +bar+ defines four artifacts, only +bar-runtime_x64_Debug+ and
++bar-runtime_x64_Release+ belong to the configurations of interest, so these will be
+fetched. Finally, since both of these artifacts have the file-extension "zip" (see the
+`artifact->ext` attribute in the module descriptor for +bar+) the +intrepid+ plugin assumes that
+they should be unpacked to your unpacked cache, and creates a symlink from your workspace.
 
 === fetchFirstLevelSourceDependencies
 
@@ -1235,12 +2089,22 @@ Along with +collectDependencies+, this task can be useful in pre-fetching depend
 
 === collectDependencies
 
-This task will navigate through all of the project's dependencies. This includes +packedDependencies+ and their transitive dependencies, Gradle plugins and all of their dependencies. A folder named +local_artifacts+ will be created. Ivy and Maven style dependencies will be placed in their respective subfolders. Source dependencies will be summarised in a "build_info" folder but the source itself will not be included. Finally, +custom-gradle+ will be placed in its own subfolder. 
+This task will navigate through all of the project's dependencies. This includes
++packedDependencies+ and their transitive dependencies, Gradle plugins and all of their
+dependencies. A folder named +local_artifacts+ will be created. Ivy and Maven style dependencies
+will be placed in their respective subfolders. Source dependencies will be summarised in a
+"build_info" folder but the source itself will not be included. Finally, the +custom-gradle+
+gloss:gradle-distribution[] used by the gloss:holygradle[]'s gloss:gradle-wrapper[] will be placed in
+its own subfolder.
 
-The result is a directory which contains all packed dependencies. This is useful for pre-fetching dependencies so that you can package them up and give them to a customer who doesn't have access to your network.
+The result is a directory which contains all packed dependencies. This is useful for pre-fetching
+dependencies so that you can package them up and give them to a customer who doesn't have access to
+your network.
 
-This task is a subclass of the usual Gradle +Copy+ task, so the +destinationDir+ and other aspects can be customised as
-normal.
+TODO: Link to description of how local_artifacts is used.
+
+This task is a subclass of the usual Gradle +Copy+ task, so the +destinationDir+ and other aspects
+can be customised as normal.
 
 === zipDependencies
 
@@ -1252,13 +2116,25 @@ This task is a subclass of the usual Gradle +Zip+ task, so the +baseName+ and ot
 
 This task performs a subset of the functionality of the +fetchAllDependencies+ task - it simply rebuilds all the symlinks for all dependencies.
 
+=== rebuildSymlinksToCache
+
+TODO: doc
+
 === deleteSymlinks
 
 This task deletes any symlinks created by +rebuildSymlinks+ or +fetchAllDependencies+. This is not a blanket deletion of all symlinks; only symlinks which **would** be created by the other tasks are deleted.
 
 === packageEverything
 
-This task will create all zip-file packages that you have defined in the <<_packageArtifacts>> section. You do not have to invoke this task prior to publishing because the package creation is already a dependency. However you might wish to invoke this task in order to inspect the resulting zip files prior to their being published. The zips will be placed in a +packages+ subdirectory of the module.
+This task will create all zip-file packages that you have defined in the <<_packageArtifacts>>
+section. You do not have to invoke this task prior to publishing because the <<_publish>> task
+already depednds on this task. However you might wish to invoke this task in order to inspect the
+resulting zip files prior to their being published. The zips will be placed in a +packages+
+subdirectory of the module.
+
+If you are testing the packaging, you may also wish to run the standard Gradle task,
++generateIvyModuleDescriptor+.  This will create the gloss:ivy-xml[] for your module in
++${project.buildDir}/publications/ivy/ivy.xml+.
 
 === publish
 
@@ -1324,7 +2200,7 @@ WARNING: Previous versions of the gloss:holygradle[] allowed published packed de
 transitive dependencies should appear at some other relative location.  This feature is deprecated and will be removed
 in future.  See <<useRelativePathFromIvyXml>>.
 
-==== Ivy files
+=== Ivy files
 
 WARNING: This feature is deprecated and will be removed in future.  See <<useRelativePathFromIvyXml>>.
 
@@ -1333,8 +2209,11 @@ relative path baked in. So, for example, if you published +MyLib+ you could exam
 path +../../Stuff/+ specified for the +UtilityLib+ dependency, and if you published +SubLib+ you would see the relative
 path +../+ for the +Boost+ dependency.
 
-Relative paths chain together as you would expect. For example +Root+ depends on +MyLib+, which depends on +SubLib+ and
-all the relative paths are empty. This means that the directories are nested. After +MyLib+ and +SubLib+ are published
-and subsequently fetched on someone's machine, the directory structure is still nested, even when these modules are
-unpacked to the central cache. This approach does mean that it would be rather difficult to allow versions of transitive
-dependencies to be overridden -- therefore overriding transitive dependencies this isn't currently supported.
+Relative paths chain together as you would expect. For example +Root+ depends on +MyLib+, which
+depends on +SubLib+ and all the relative paths are empty. This means that the directories are
+nested. After +MyLib+ and +SubLib+ are published and subsequently fetched on someone's machine, the
+directory structure is still nested, even when these modules are unpacked to the central cache. This
+approach does mean that it would be rather difficult to allow versions of transitive dependencies to
+be overridden.  Therefore overriding transitive dependencies using +resolutionStrategy.force+ isn't
+currently supported -- it may work, if your relative paths don't result in nesting, but it's not
+guaranteed.

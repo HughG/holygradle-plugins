@@ -9,6 +9,6 @@
     <artifact name="projectB-runtime" type="zip" ext="zip" conf="runtime"/>
   </publications>
   <dependencies>
-    <dependency org="happydays" name="ProjectA" rev="3.3.3" conf="everything->everything;runtime->runtime" relativePath="../ProjectA" holygradle:isSource="true"/>
+    <dependency org="happydays" name="ProjectA" rev="3.3.3" conf="everything->everything;runtime->runtime" holygradle:isSource="true"/>
   </dependencies>
 </ivy-module>

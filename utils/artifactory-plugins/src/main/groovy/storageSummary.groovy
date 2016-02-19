@@ -22,6 +22,12 @@ import org.artifactory.repo.RepoPathFactory
  */
 
 executions {
+    // NOTE 2016-01-20 HughG: I want to read the set of groups from a file, but the plugin API gives me no way to
+    // get the plugin directory or something like that.  From experimenation, the current directory when the
+    // "executions" block is executed is the "bin" folder of the installation.
+    final File ARTIFACTORY_ROOT = new File("..")
+    final Set PLUGIN_GROUPS = new File(ARTIFACTORY_ROOT, "etc/plugins/storageSummary.groups.txt").readLines().toSet()
+
     /**
      * This execution is named 'storageSummary' and it can be invoked via the usual Artifactory REST API.
      * The expected (and mandatory) parameter is MIME-style 'Content-Type' describing the format in which to return the
@@ -29,9 +35,9 @@ executions {
      *
      * You may need to change the list of {@code groups:} below to suit your local setup.
      *
-     * curl -u username:password "http://localhost:8081/artifactory/api/plugins/execute/storageSummary?params=Content-Tyoe=text/xml"
+     * curl -u username:password "http://localhost:8081/artifactory/api/plugins/execute/storageSummary?params=Content-Type=text/xml"
      */
-    storageSummary(httpMethod: 'GET', groups: ["readers"].toSet()) { Map params ->
+    storageSummary(httpMethod: 'GET', groups: PLUGIN_GROUPS) { Map params ->
         try {
             status = 200
 
@@ -45,7 +51,7 @@ executions {
                 userVisibleRepoStats
             )
             addStatsForUserVisibleRepos(
-                repositories.getRemoteRepositories(),
+                repositories.getRemoteRepositories().collect { "${it}-cache" },
                 allRepoStats,
                 userVisibleRepoStats
             )
@@ -109,12 +115,12 @@ class RepoStats {
         return String.format('%.2f', percentage)
     }
 
-    public long getSizeInMegabytes() {
-        return size / 1024
+    public double getSizeInMegabytes() {
+        return roundToTwoDecimalPlaces(size / 1024.0d)
     }
 
-    public long getSizeInGigabytes() {
-        return sizeInMegabytes / 1024
+    public double getSizeInGigabytes() {
+        return roundToTwoDecimalPlaces(sizeInMegabytes / 1024.0d)
     }
 
     public RepoStats plus(RepoStats other) {
@@ -123,6 +129,10 @@ class RepoStats {
 
     public RepoStats minus(RepoStats other) {
         return new RepoStats(name, count - other.count, size - other.size)
+    }
+
+    private static double roundToTwoDecimalPlaces(double value) {
+        Math.round(value*100)/100.0d
     }
 }
 

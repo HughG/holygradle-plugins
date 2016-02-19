@@ -7,7 +7,10 @@ gplugins.apply()
 
 sourceDependencies {
     "..\projectA" {
-        hg "unknown@263f25984b04516cb889a050aee4d5afd18e4580"
+        hg "unknown@[snipped]"
+    }
+    "..\projectA2" {
+        hg "unknown@[snipped]"
     }
 }
 packedDependenciesDefault {

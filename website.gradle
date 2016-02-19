@@ -94,15 +94,18 @@ void initializeBuildWebsiteTask(
     }
 }
 
+Pattern WEBSITE_ROOT_PATTERN = Pattern.compile(/\[\[WEBSITE_ROOT\]\]/)
+
 for (local in [false, true]) {
     final closed_local = local // capture for use in closures; otherwise you get the final loop value
-    final String namePart = local ? "Local" : "Public"
+    final String namePart = local ? 'Local' : 'Public'
+    final String namePartLowercase = local ? 'local' : 'public'
     final String rawHtmlSubdir = local ? 'raw-html-local' : 'raw-html'
     final String rawHtmlDir = "${project.WEBSITE_DIR}/${rawHtmlSubdir}"
     final String websiteOutputSubdir = local ? 'output-local' : 'output'
     final String websiteOutputDir = "${project.WEBSITE_DIR}/${websiteOutputSubdir}"
     final String publishUrl = local ? project.localWebsitePublishUrl : project.publicWebsitePublishUrl
-    final String publishUsernameProperty = "${local ? 'local' : 'public'}WebsitePublishUsername"
+    final String publishUsernameProperty = "${namePartLowercase}WebsitePublishUsername"
     final File quicklyFile = new File("${rawHtmlDir}/_quickly.txt")
 
     task("clean${namePart}Website") { Task t ->
@@ -120,15 +123,40 @@ for (local in [false, true]) {
         }
     }
 
+    task("copy${namePart}WebsiteExamples", type: Copy) {
+        from project.WEBSITE_DIR
+        into websiteOutputDir
+        include "files/examples/**"
+        exclude "files/examples/*/gw.bat"
+        exclude "files/examples/*/.gradle/**"
+        exclude "files/examples/*/dep/**"
+        exclude "files/examples/*/gradle/**"
+        if (local) {
+            it.include "local/files/examples/**"
+            it.exclude "local/files/examples/*/gw.bat"
+            it.exclude "local/files/examples/*/.gradle/**"
+            it.exclude "local/files/examples/*/dep/**"
+            it.exclude "local/files/examples/*/gradle/**"
+        }
+
+        String rootString = project.property("${namePartLowercase}WebsiteUrl")
+
+        filter { line -> WEBSITE_ROOT_PATTERN.matcher(line).replaceAll(rootString) }
+    }
+
     task("copy${namePart}WebsiteExtraFiles", type: Copy) {
+        dependsOn "copy${namePart}WebsiteExamples"
+
         from project.WEBSITE_DIR
         into websiteOutputDir
         include "asciidoc/**"
         include "files/**"
+        exclude "files/examples/**"
         include "images/**"
         if (local) {
             it.include "local/asciidoc/**"
             it.include "local/files/**"
+            it.exclude "local/files/examples/**"
             it.include "local/images/**"
         }
     }

@@ -144,7 +144,7 @@ Gradle will
 
 == Purpose -- Module Dependencies
 
-_Configurations_ connect build artifacts and module dependencies
+_Configurations_ connect artifacts (from module dependencies) to tasks
 
 Configurations
 
@@ -306,7 +306,7 @@ task hello {
     }
 }
 
-// or ...
+// or, for short, simple cases ...
 
 task hello2 << {
     println "Hello world!"
@@ -370,6 +370,9 @@ For beginners it's common to confuse the code for
 
 * configuration: sets task properties, including action(s)
 * execution: runs the action
+
+The following code is the same as the previous slide +
+except that it shows these two mistakes.
 
 [source,groovy]
 ----
@@ -515,6 +518,12 @@ task listDependencies << {
     }
 }
 ----
+
+Calling +.resolvedConfiguration+ makes Gradle do the resolving, +
+using built-in code to get files from the repositories.
+
+Normally Gradle resolves a configuration +
+when it checks the inputs of a task.
 
 
 == Basic Examples -- Warning: Floating Versions

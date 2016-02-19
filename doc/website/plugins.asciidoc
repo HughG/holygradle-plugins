@@ -201,6 +201,8 @@ The link:plugin-my-credentials.html[] supports the following.
 
 The link:plugin-intrepid.html[] supports the following.
 
+* Configurations
+** Create sets of related configurations following standard patterns.
 * Source code dependencies
 ** Retrieving source code repositories from gloss:subversion[] or gloss:mercurial[].
 ** Caching gloss:subversion[] and gloss:mercurial[] credentials in the gloss:credential-manager[].

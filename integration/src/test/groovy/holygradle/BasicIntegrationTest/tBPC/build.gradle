@@ -44,7 +44,7 @@ sourceDependencies {
     "other" {
         hg "https://hgserver.example-corp.com/other"
         branch = "SOME_BRANCH"
-        publishing.configuration "default"
+        configuration "default"
     }
 }
 
@@ -81,6 +81,7 @@ publishPackages {
     Test devenv.
 */
 DevEnv {
+    version "VS100"
     solutionFile "no_such.sln"
     platform "x64", "Win32"
 }

@@ -102,13 +102,17 @@ permissions to access them, you may get errors including the following.
 
 ==== Incorrect Password
 
-Your password may be sent incorrectly to Artifactory for any of these reasons.
+Your username and/or password may be sent incorrectly to Artifactory for any of these reasons.
 
-. Your password is not stored in the gloss:credential-manager[].  You may need to run +gw.bat+ with
-the +--no-daemon+ argument to allow the password prompt dialog to be shown.  See the
+. Your username and password are not stored in the gloss:credential-manager[].  You may need to run
++gw.bat+ with the +--no-daemon+ argument to allow the password prompt dialog to be shown.  See the
 link:plugin-my-credentials.html[] page for more information.
-. Your password is stored in the gloss:credential-manager[] but is out of date.  See the
-link:plugin-my-credentials.html[] page for information on how to update it.
+. Your username and password are stored in the Credential Manager but the password is out of date.
+See the link:plugin-my-credentials.html[] page for information on how to update it.
+. You have a username and password stored in the Credential Manager, but that username does not have
+an account on your Artifactory server.  Please contact the appropriate person from the
+link:support.html[] page to check this.  Note that the stored username is normally the same as your
+Windows login name, but it can be set to a different username.
 . Your Artifactory server is configured only to accept encrypted passwords but you have stored your
 password unencrypted, or the other way round.  Normally encrypted passwords are used if your server
 has an +http:+ URL, otherwise your normal, unencrypted password is used.  Please contact your
@@ -116,7 +120,7 @@ support person to check.
 
 ==== Incorrect Artifactory Permissions
 
-If you know which repositories you need access to, please email the appropriate person from the
+If you know which repositories you need access to, please contact the appropriate person from the
 link:support.html[] page to request access.  It is good practice also to "+CC:+" the person who runs
 the team which owns that repository.
 

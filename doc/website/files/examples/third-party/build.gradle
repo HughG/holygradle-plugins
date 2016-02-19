@@ -1,12 +1,15 @@
-/* To publish a new release of this module, follow these steps.
+/* To publish the first release of this module, follow these steps.
+ *
+ * - Read [[WEBSITE_ROOT]]/workflows.html#_packaging_third_party_dependencies
+ *   if you are not familiar with publishing third-party modules.
  *
  * - Change the text below, in the comments and the code, to match the library or tool you are
  *   publishing.  For example, to publish boost, you might change the group to 'org.boost' and
  *   change all 'some-lib' to 'boost'.
  *
  * - Decide whether the set of configurations is suitable for your module, and change them if not.
- *   If you want to split it up by platform (Win32, x64) you may need more configurations.  If you
- *   are just packaging a build tool, you may only need 'bin'.
+ *   See [[WEBSITE_ROOT]]/plugin-intrepid.html#_pre_defined_configuration_set_types and
+ *   [[WEBSITE_ROOT]]/plugin-intrepid.html#_configurationSets for suggested configurations.
  *
  * - Check that the packageArtifacts block is including the correct files for each artifact.  You
  *   can run 'gw packageEverything' to create the ZIP files (in the 'packages' folder) without
@@ -37,45 +40,61 @@
  */
 
 buildscript {
-    def pluginVersion = '7.2.5'
+    def pluginVersion = '7.7.1'
     gplugins.use "intrepid:${pluginVersion}"
     gplugins.use "my-credentials:${pluginVersion}"
 }
 gplugins.apply()
 
-configurations {
-    bin
-    include
-    lib
-    pdb
-}
- 
-packageArtifacts {
-    bin {
-        from "some-lib/"
-        to "."
-        include "bin/*.dll", "bin/*.exe"
+group = "com.something"
+// Change this line each time you make a new publishing of the same original version.
+version = "2.1.0_1"
+
+// See [[WEBSITE_ROOT]]/intrepid-plugin.html#_configurationSets
+// and [[WEBSITE_ROOT]]/workflows.html#_determine_outputs
+configurationSets {
+    main {
+        type configurationSetTypes.DLL
     }
-    include {
+}
+
+// See [[WEBSITE_ROOT]]/plugin-intrepid.html#_packageArtifacts
+// and [[WEBSITE_ROOT]]/workflows.html#_package_third_party_dependency_files
+packageArtifacts { packArts ->
+    import_common {
         from "some-lib/include"
         to "."
         include "include/**" // '**' means 'all files and folders inside this'
     }
-    lib {
-        from "some-lib/lib"
-        to "."
-        include "lib/*.*"
-    }
-    pdb {
-        from "some-lib/pdb"
-        to "."
-        include "pdb/*.pdb"
+
+    configurationSets.main.axes.Platform.each { vsPlatform ->
+        def p = vsPlatform[-2..-1] // last two characters: "64" or "32"
+        configurationSets.main.axes.Configuration.each { vsConfiguration ->
+            def c = vsConfiguration[0].toLowerCase() // "r" for Release, "d" for Debug
+
+            packArts."import_${vsPlatform}_${vsConfiguration}" {
+                from "some-lib/"
+                to "."
+                include "${vsPlatform}/${vsConfiguration}/somelib_vc12_u${c}${p}.lib"
+            }
+            packArts."runtime_${vsPlatform}_${vsConfiguration}" {
+                from "some-lib/"
+                to "."
+                include "${vsPlatform}/${vsConfiguration}/somelib_vc12_u${c}${p}.dll"
+            }
+
+            packArts."debugging_${vsPlatform}_${vsConfiguration}" {
+                from "some-lib/"
+                to "."
+                include "${vsPlatform}/${vsConfiguration}/somelib_vc12_u${c}${p}.pdb"
+            }
+        }
     }
 }
 
+// See [[WEBSITE_ROOT]]/plugin-intrepid.html#_publishPackages
+// and [[WEBSITE_ROOT]]/workflows.html#_publish_third_party_dependency_module
 publishPackages {
-    group "com.something"
-    nextVersionNumber "2.1.0_1" // change this line
     repositories.ivy {
         credentials {
             username my.username("Artifactory")
@@ -89,21 +108,20 @@ publishPackages {
     }
 }
 
+// See [[WEBSITE_ROOT]]/workflows.html#_add_third_party_license_information
 publishing {
     publications.ivy.descriptor.withXml {
         Node infoNode = asNode().info[0]
    
         Node licenseNode = infoNode.appendNode("license")
         licenseNode.@name = "Some Software License for SomeLib"
-        licenseNode.@url = "http://www.some-lib.org/license"
+        licenseNode.@url = "http://www.something.com/license"
          
         String description = """
-This is a package of Sencha's Ext JS 4.2.1, a JavaScript application framework SDK.
-The commercial license permits the distribution of ExtJS only in minified form and 
-only with applications (not with libraries or frameworks).
-More information about the SDK can be found at http://docs.sencha.com/ext-js/4-2/ ."""
+This is a package of SomeLib 2.1.0, a library for something-or-other.
+More information about the SDK can be found at http://docs.something.com/some-lib/2-1-0/ ."""
   
         Node descriptionNode = infoNode.appendNode("description", description)
-        descriptionNode.@homepage = "http://docs.sencha.com/ext-js/4-2/"
+        descriptionNode.@homepage = "http://docs.something.com/some-lib/2-1-0/"
     }
 }

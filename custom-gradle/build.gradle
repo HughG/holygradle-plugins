@@ -19,7 +19,7 @@ String initScriptsPath = 'src/initScripts/'
 String versionedInitScriptsPath = 'build/tmp/tempInitScripts/'
 File f = new File(project.projectDir, versionedInitScriptsPath)
 if (!f.exists()) {
-    Files.createDirectory(f.toPath())
+    Files.createDirectories(f.toPath())
 }
 
 task createVersionedInitScript(type: Copy) {

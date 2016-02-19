@@ -49,9 +49,21 @@ minimal project (see link:first_steps.html#_running_the_holy_gradle[]) if you do
 [source,groovy]
 ----
 configurations {
-    privateBuild
+    build { visible = false }
 }
 ----
+* If your module will export things for other modules to use, you should normally add at least one
+gloss:configuration-set[] to your +build.gradle+.
++
+[source,groovy]
+----
+configurationSets {
+    main { type configurationSetTypes.DLL }
+}
+----
++
+See link:plugin-intrepid.html#_configurationSets[] for details.
+
 * Add a reference to the repository, if it is not already in your +build.gradle+.  (For more
 information on authentication, see the link:plugin-my-credentials.html[] page.)
 +
@@ -77,8 +89,10 @@ configurations to the other project's configurations.
 packedDependencies {
     "somelib" {
         dependency "com.example-corp.teamA:somelib:1.3.2"
-        configuration "privateBuild->compileVc10Debug,compileVc10Release"
-        configuration "privateBuild->debuggingVc10Debug,debuggingVc10Release"
+        // If it follows a standard Holy Gradle configuration naming pattern:
+        configurationSet configurations.main, configurationSetTypes.DLL
+        // If not, ask the publishing organisation what configurations to use for what:
+        configuration "build->compileVc10Debug,compileVc10Release"
     }
 }
 ----
@@ -87,6 +101,7 @@ See link:plugin-intrepid.html#_packedDependencies[] for details.
 
 * Run +gw fAD+ in a Windows Command Prompt in your project's directory.  If you have any problems,
 contact your local link:support.html[] staff or the group which publishes the module.
++
 TIP: Before publishing your module, you should review the list of configurations in your
 +build.gradle+, and the configuration mapping for each dependency.  If you do not, it may be more
 difficult for other teams to use your module.  See the <<_make_a_release>> section below, and the

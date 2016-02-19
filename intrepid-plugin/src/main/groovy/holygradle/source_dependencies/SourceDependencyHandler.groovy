@@ -1,6 +1,7 @@
 package holygradle.source_dependencies
 
 import holygradle.Helper
+import holygradle.IntrepidPlugin
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
@@ -9,127 +10,24 @@ import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-
-class SourceDependencyPublishingHandler {
-    private final String dependencyName
-    private final Project fromProject
-    private Collection<String> originalConfigurations = []
-    private Collection<AbstractMap.SimpleEntry<String, String>> configurations = []
-    private String publishVersion = null
-    private String publishGroup = null
-    
-    public SourceDependencyPublishingHandler(String dependencyName, Project fromProject) {
-        this.dependencyName = dependencyName
-        this.fromProject = fromProject
-        configuration("everything")
-    }
-    
-    public void configuration(String config) {
-        originalConfigurations.add(config)
-        Collection<AbstractMap.SimpleEntry<String, String>> newConfigs = []
-        Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$dependencyName' in 'sourceDependencies'.")
-        configurations.addAll(newConfigs)
-        
-        // Add project dependencies between "sourceDependency"s, but only if they exist (e.g. after fAD).  This allows
-        // Gradle's dependency resolution system to spot any conflicts between any _other_ dependencies in the
-        // "fromProject" and the project for "dependencyName", such as packed dependencies.  See GR #2037.
-        //
-        // TODO 2013-05-15 HughG: I think ...
-        //    - This belongs in SourceDependencyHandler, not in a "publishing" sub-object, because dependencies apply
-        //      at build time, not only at publishing time.  The lack of build-time dependencies caused GR #2037.
-        //    - This object shouldn't let you set the version, because at build time you just depend on the source which
-        //      is there (which has no version) and at publishing time, you depend on whatever version gets published.
-        //      It makes no sense to use one version of the source, but depend on a hard-coded published version.
-        //    - This object shouldn't allow the group to be configured, because it can be inferred from the source
-        //      dependency's project.  I don't think it's ever used, anyway.
-        //    - Therefore, in fact, this class needn't exist at all.
-        //
-        // ... but I don't want to refactor anything until I have unit tests which check the effect of this method (i.e.,
-        // that the correct ivy.xml file is produced).
-        Project rootProject = this.fromProject.rootProject
-        Project depProject = rootProject.findProject(":${this.dependencyName}")
-        if (depProject == null) {
-            if (!newConfigs.empty) {
-                this.fromProject.logger.info(
-                    "Not creating project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
-                        "because ${this.dependencyName} has no project file."
-                )
-            }
-        } else if (!depProject.projectDir.exists()) {
-            if (!newConfigs.empty) {
-                this.fromProject.logger.info(
-                    "Not creating project dependencies from ${fromProject.name} on ${this.dependencyName}, " +
-                    "because ${this.dependencyName} has yet to be fetched."
-                )
-            }
-        } else {
-            for (conf in newConfigs) {
-                String fromConf = conf.key
-                String toConf = conf.value
-                this.fromProject.logger.info "sourceDependencies: adding project dependency " +
-                    "from ${fromProject.group}:${fromProject.name} conf=${fromConf} " +
-                    "on :${this.dependencyName} conf=${toConf}"
-                this.fromProject.dependencies.add(
-                    fromConf,
-                    rootProject.dependencies.project(path: ":${this.dependencyName}", configuration: toConf)
-                )
-            }
-        }
-    }
-    
-    public void configuration(String... configs) {
-        configs.each { String config ->
-            configuration(config)
-        }
-    }
-    
-    public void version(String ver) {
-        publishVersion = ver
-    }
-
-    public void group(String g) {
-        publishGroup = g
-    }
-
-    public String getPublishVersion() {
-        publishVersion
-    }
-
-    public String getPublishGroup() {
-        publishGroup
-    }
-
-    public Collection<AbstractMap.SimpleEntry<String, String>> getConfigurations() {
-        return configurations
-    }
-}
 
 class SourceDependencyHandler extends DependencyHandler {
+    private static final AbstractMap.SimpleEntry<String, String> EVERYTHING_CONFIGURATION_MAPPING =
+        new AbstractMap.SimpleEntry<String, String>(
+            IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME, IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME
+        )
     public String protocol = null
     public String url = null
     public String branch = null
     public Boolean writeVersionInfoFile = null
     public boolean export = false
-    public SourceDependencyPublishingHandler publishingHandler
-    public boolean usePublishedVersion = false
     private File destinationDir
 
     public static Collection<SourceDependencyHandler> createContainer(Project project) {
         project.extensions.sourceDependencies = project.container(SourceDependencyHandler) { String sourceDepName ->
-            // Explicitly create the SourceDependencyHandler so we can add SourceDependencyPublishingHandler.
-
-            SourceDependencyHandler sourceDep = new SourceDependencyHandler(sourceDepName, project)
-            SourceDependencyPublishingHandler sourceDepPublishing = new SourceDependencyPublishingHandler(
-                sourceDep.targetName,
-                project
-            )
-            sourceDep.initialize(sourceDepPublishing)
-            sourceDep  
+            new SourceDependencyHandler(sourceDepName, project)
         }
         project.sourceDependencies as Collection<SourceDependencyHandler>
     }
@@ -138,11 +36,7 @@ class SourceDependencyHandler extends DependencyHandler {
         super(depName, project)
         destinationDir = new File(project.projectDir, depName).getCanonicalFile()
     }
-    
-    public void initialize(SourceDependencyPublishingHandler publishing) {
-        publishingHandler = publishing
-    }
-    
+
     public File getDestinationDir() {
         destinationDir
     }
@@ -165,8 +59,62 @@ class SourceDependencyHandler extends DependencyHandler {
         }
     }
 
-    public SourceDependencyPublishingHandler getPublishing() {
-        return publishingHandler
+    /**
+     * @deprecated Methods of SourceDependencyPublishingHandler have moved out to SourceDependencyHandler or been
+     * deleted, because the configuration mapping to source dependencies has an effect even if you are not publishing.
+     */
+    public SourceDependencyHandler getPublishing() {
+        project.logger.warn(
+            "The 'publishing' part of the syntax 'sourceDependencies { \"something\" { publishing ... } }' " +
+            "is deprecated and will be removed.  Instead, its contents should be moved up one level, so " +
+            "'sourceDependencies { \"something\" { publishing.configuration \"build->default\" ... } }' should be " +
+            "'sourceDependencies { \"something\" { configuration \"build->default\" ... } }'."
+        )
+        return this
+    }
+
+    public void configuration(String config) {
+        Collection<AbstractMap.SimpleEntry<String, String>> newConfigs = []
+        Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$targetName' in 'sourceDependencies'.")
+        configurationMappings.addAll(newConfigs)
+
+        Project rootProject = project.rootProject
+        Project depProject = rootProject.findProject(":${targetName}")
+        if (depProject == null) {
+            if (!newConfigs.empty) {
+                project.logger.info(
+                    "Not creating project dependencies from ${project.name} on ${targetName}, " +
+                    "because ${this.targetName} has no project file."
+                )
+            }
+        } else if (!depProject.projectDir.exists()) {
+            if (!newConfigs.empty) {
+                project.logger.info(
+                    "Not creating project dependencies from ${project.name} on ${targetName}, " +
+                    "because ${this.targetName} has yet to be fetched."
+                )
+            }
+        } else {
+            for (conf in newConfigs) {
+                String fromConf = conf.key
+                String toConf = conf.value
+                project.logger.info(
+                    "sourceDependencies: adding project dependency " +
+                    "from ${project.group}:${project.name} conf=${fromConf} " +
+                    "on :${targetName} conf=${toConf}"
+                )
+                project.dependencies.add(
+                    fromConf,
+                    rootProject.dependencies.project(path: ":${targetName}", configuration: toConf)
+                )
+            }
+        }
+
+        // Add a mapping for "everything" lazily, i.e., only if we add any other mappings.  This makes it easy to have
+        // un-published source dependencies, e.g., to just pull in some repo containing documentation.
+        if (!configurationMappings.contains(EVERYTHING_CONFIGURATION_MAPPING)) {
+            configuration(IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME)
+        }
     }
 
     public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {
@@ -200,71 +148,38 @@ class SourceDependencyHandler extends DependencyHandler {
         fetchTask.initialize(sourceDependency)
         return fetchTask
     }
-    
-    public ModuleVersionIdentifier getLatestPublishedModule(Project project) {
+
+    /**
+     * Returns the module version ID of the source dependency, unless it doesn't have a Gradle project, in which case
+     * throws RuntimeException.
+     * @return The module version ID of the source dependency.
+     * @throws RuntimeException if the source dependency does not have a Gradle project.
+     */
+    public ModuleVersionIdentifier getDependencyId() {
         ModuleVersionIdentifier identifier = null
-        if (publishingHandler.configurations.size() > 0) {
-            String groupName = project.group.toString()
-            String targetName = targetName
-            String version = publishingHandler.publishVersion
-            String firstTargetConfig = publishingHandler.configurations.find().value
-            
-            if (!usePublishedVersion) {
-                Project dependencyProject = project.rootProject.findProject(targetName)
-                if (dependencyProject == null) {
-                    // NOTE HughG: I've made this mistake a few times when modifying the settings.gradle code, so I put
-                    // in this explicit check and helpful message.
-                    throw new RuntimeException(
-                        "Internal error: failed to find project '${targetName}'; " +
-                        "maybe name override in settings.gradle was not done correctly."
-                    )
-                }
-                groupName = dependencyProject.group.toString()
-                if (version == null) {
-                    version = dependencyProject.version
-                }
+        if (configurationMappings.size() > 0) {
+            Project dependencyProject = project.rootProject.findProject(targetName)
+            if (dependencyProject == null) {
+                // NOTE HughG: I've made this mistake a few times when modifying the settings.gradle code, so I put
+                // in this explicit check and helpful message.
+                throw new RuntimeException(
+                    "Internal error: failed to find project '${targetName}'; " +
+                    "maybe name override in settings.gradle was not done correctly."
+                )
             }
-            
-            if (version == null) {
-                version = project.version
-            }
-            if (version == "latest" || version == "latest.integration") {
-                version = "+"
-            }
-            if (version.endsWith("+")) {
-                Dependency externalDependency = new DefaultExternalModuleDependency(groupName, targetName, version, firstTargetConfig)
-                Configuration dependencyConf = project.configurations.detachedConfiguration(externalDependency)
-                dependencyConf.resolvedConfiguration.firstLevelModuleDependencies.each {
-                    version = it.moduleVersion
-                }
-            }
+            String groupName = dependencyProject.group.toString()
+            String version = dependencyProject.version.toString()
+
             identifier = new DefaultModuleVersionIdentifier(groupName, targetName, version)
         }
         identifier
     }
-    
-    public String getDynamicPublishedDependencyCoordinate(Project project) {
-        String group = publishingHandler.publishGroup
-        if (group == null) {
-            group = project.group
-        }
-        "${group}:${name}:${publishingHandler.publishVersion}"
-    }
-    
-    public String getLatestPublishedDependencyCoordinate(Project project) {
-        ModuleVersionIdentifier latest = getLatestPublishedModule(project)
-        if (latest == null) {
-            "${project.group}:${name} ??"
-        } else {
-            "${latest.getGroup()}:${latest.getName()}:${latest.getVersion()}"
-        }
+
+    public String getDependencyCoordinate() {
+        return dependencyId.toString()
     }
 
-    // NOTE 2013-11-07 HughG: I don't see why we need to pass in a project here.  The constructor for this class which
-    // doesn't take project doesn't seem to be called anywhere, so we should just be able to use [this.project].  But
-    // I think it's too risky to change without more investigation; e.g., it might break pinned source meta-packages,
-    // so I'll leave it for now.
-    public Project getSourceDependencyProject(Project project) {
+    public Project getSourceDependencyProject() {
         project.rootProject.findProject(targetName)
     }
 }
