@@ -38,13 +38,6 @@ class SummariseAllDependenciesTask extends DefaultTask {
                                     )
                                 )
 
-                                /*SourceDependencyHandler sourceDep = project.sourceDependencies.find {
-                                    ModuleVersionIdentifier latestPublishedModule = it.getLatestPublishedModule(project)
-                                    latestPublishedModule.getGroup() == dep.moduleGroup &&
-                                        latestPublishedModule.getName() == dep.moduleName &&
-                                        latestPublishedModule.getVersion() == dep.moduleVersion
-                                }*/
-
                                 Dependency(
                                     name: dep.moduleName,
                                     group: dep.moduleGroup,
