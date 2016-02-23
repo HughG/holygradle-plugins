@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ivy-module version="2.0" xmlns:holygradle="http://holy-gradle/">
+<ivy-module version="2.0">
   <configurations>
     <conf name="everything" visibility="public" extends="compile,runtime"/>
     <conf name="compile" visibility="public"/>
@@ -11,7 +11,7 @@
     <artifact name="projectA-runtime" type="zip" ext="zip" conf="runtime"/>
   </publications>
   <dependencies>
-    <dependency org="happydays_subsiduary" name="src_dep1" rev="2.2.2" conf="everything->everything;compile->runtime" relativePath="src_dep1" holygradle:isSource="true"/>
-    <dependency org="happydays" name="src_dep2" rev="1.1.1" conf="everything->everything;compile->compile;runtime->runtime" relativePath="src_dep2" holygradle:isSource="true"/>
+    <dependency org="happydays_subsiduary" name="src_dep1" rev="2.2.2" conf="everything->everything;compile->runtime"/>
+    <dependency org="happydays" name="src_dep2" rev="1.1.1" conf="everything->everything;compile->compile;runtime->runtime"/>
   </dependencies>
 </ivy-module>

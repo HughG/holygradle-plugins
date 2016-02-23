@@ -66,7 +66,10 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 this.putConfigurationsInOriginalOrder()
                 this.collapseMultipleConfigurationDependencies()
                 if (this.addDependencyRelativePaths) {
-                    this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
+                    this.addDependencyRelativePaths(project, packedDependencies)
+                }
+                if (project.hasProperty("recordAbsolutePaths")) {
+                    this.addDependencySourceTags(project, sourceDependencies)
                 }
 
                 ivyPublishTask.doFirst {
@@ -419,12 +422,33 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
+    public void addDependencySourceTags(Project project, Collection<SourceDependencyHandler> sourceDependencies) {
+        mainIvyDescriptor.withXml { xml ->
+            xml.asNode().'@xmlns:holygradle' = 'http://holy-gradle/'
+            xml.asNode().dependencies.dependency.each { depNode ->
+                // If the dependency is a source dependency, get its relative path from the
+                // gradle script's sourceDependencyHandler
+                SourceDependencyHandler sourceDep = sourceDependencies.find {
+                    ModuleVersionIdentifier latestPublishedModule = it.getDependencyId()
+                    latestPublishedModule.getGroup() == depNode.@org &&
+                        latestPublishedModule.getName() == depNode.@name &&
+                        latestPublishedModule.getVersion() == depNode.@rev
+                }
+
+                if (sourceDep != null) {
+                    project.logger.info "Adding isSource tag to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
+                    depNode.'@holygradle:isSource' = true
+                    depNode.'@holygradle:absolutePath' = sourceDep.getAbsolutePath().getCanonicalPath().toString()
+                }
+            }
+        }
+    }
+
     // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or symlinked) to.
-    public void addDependencyRelativePaths(Project project, Collection<PackedDependencyHandler> packedDependencies, Collection<SourceDependencyHandler> sourceDependencies) {
+    public void addDependencyRelativePaths(Project project, Collection<PackedDependencyHandler> packedDependencies) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
-            xml.asNode().'@xmlns:holygradle' = 'http://holy-gradle/'
             xml.asNode().dependencies.dependency.each { depNode ->
                 // If the dependency is a packed dependency, get its relative path from the 
                 // gradle script's packedDependencyHandler
@@ -438,23 +462,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     project.logger.info "Adding relative path to packedDep node: ${packedDep.getGroupName()}:${packedDep.getDependencyName()}:${packedDep.getVersionStr()} path=${packedDep.getFullTargetPath()}"
                     depNode.@relativePath = packedDep.getFullTargetPath()
                 } else {
-                    // Else if the dependency is a source dependency, get its relative path from the 
-                    // gradle script's sourceDependencyHandler
-                    SourceDependencyHandler sourceDep = sourceDependencies.find {
-                        ModuleVersionIdentifier latestPublishedModule = it.getDependencyId()
-                        latestPublishedModule.getGroup() == depNode.@org && 
-                        latestPublishedModule.getName() == depNode.@name &&
-                        latestPublishedModule.getVersion() == depNode.@rev
-                    }
-                    
-                    if (sourceDep != null) {
-                        project.logger.info "Adding relative path to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
-                        depNode.@relativePath = sourceDep.getFullTargetPath()
-                        depNode.'@holygradle:absolutePath' = sourceDep.getAbsolutePath().toString()
-                        depNode.'@holygradle:isSource' = true
-                    } else {
-                        project.logger.warn "Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in source or packed dependencies"
-                    }
+                    project.logger.warn "Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in packed dependencies."
                 }
             }
         }

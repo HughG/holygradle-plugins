@@ -106,7 +106,7 @@ class SourceOverrideHandler {
             project.exec {
                 workingDir sourceOverride
                 executable new File(sourceOverride, "gw.bat").canonicalPath
-                args "generateIvyModuleDescriptor", "summariseAllDependencies"
+                args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
             }
             sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
             sourceOverrideDependencyFileCache = new File(sourceOverride, "AllDependencies.xml")
