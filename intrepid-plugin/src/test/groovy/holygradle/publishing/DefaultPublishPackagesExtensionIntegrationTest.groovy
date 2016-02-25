@@ -50,8 +50,7 @@ class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleI
         regTestFile.withPrintWriter { w ->
             ivyXml.eachLine { l ->
                 if (!l.contains("publication=")) {
-                    // Filter out the absolutePath tag which will change based on the checkout location
-                    w.println(l.replaceAll(/holygradle:absolutePath="(.*?)" /, ""))
+                    w.println(l)
                 }
             }
         }

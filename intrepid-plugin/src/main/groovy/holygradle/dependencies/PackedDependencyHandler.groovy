@@ -200,17 +200,15 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
 
-    // Todo: Return the handler object instead
-    public String getSourceOverride() {
+    public SourceOverrideHandler getSourceOverride() {
         if (project == null) {
             return null;
         }
 
-        SourceOverrideHandler override = project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
+        // Search for this dependency in the list of source overrides for the project
+        return project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
             handler.dependencyCoordinate == getDependencyCoordinate()
         }
-
-        return override?.sourceOverride
     }
     public String getGroupName() {
         getDependencyId().group

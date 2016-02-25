@@ -1,6 +1,7 @@
 package holygradle.publishing
 
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.*
@@ -424,7 +425,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     public void addDependencySourceTags(Project project, Collection<SourceDependencyHandler> sourceDependencies) {
         mainIvyDescriptor.withXml { xml ->
-            xml.asNode().'@xmlns:holygradle' = 'http://holy-gradle/'
+            xml.asNode()."@xmlns:${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}" = SourceOverrideHandler.HOLY_GRADLE_NAMESPACE
             xml.asNode().dependencies.dependency.each { depNode ->
                 // If the dependency is a source dependency, get its relative path from the
                 // gradle script's sourceDependencyHandler
@@ -437,8 +438,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
                 if (sourceDep != null) {
                     project.logger.info "Adding isSource tag to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
-                    depNode.'@holygradle:isSource' = true
-                    depNode.'@holygradle:absolutePath' = sourceDep.getAbsolutePath().getCanonicalPath().toString()
+                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:isSource" = true
+                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:absolutePath" = sourceDep.getAbsolutePath().getCanonicalPath().toString()
                 }
             }
         }

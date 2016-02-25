@@ -260,7 +260,7 @@ public class IntrepidPlugin implements Plugin<Project> {
             type: SummariseAllDependenciesTask
         ) { SummariseAllDependenciesTask it ->
             it.group = "Dependencies"
-            it.description = "Create an XML file listing all immediate and transitive dependencies"
+            it.description = "Create an XML file listing all direct and transitive dependencies"
             it.initialize()
         }
 
@@ -502,19 +502,41 @@ public class IntrepidPlugin implements Plugin<Project> {
                     throw new RuntimeException("beforeResolve handler failed.", beforeResolveException)
                 }
 
+                ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
+                def timer = profilingHelper.startBlock("SourceOverrideLoop(${project})")
+
+                // Pre-calculate the dependencies so we only have to loop once
+                def sourceOverrideCache = new HashMap<SourceOverrideHandler, HashMap<String, HashMap<String, String>>>()
                 sourceOverrides.each { SourceOverrideHandler handler ->
                     def (File ivyFile, File dependencyFile) = handler.getIvyFile()
                     def dependencyXml = new XmlSlurper(false, false).parse(dependencyFile)
 
+                    // Build hashsets from the dependency XML
+                    def remoteConfigurations = new HashMap<String, HashMap<String, String>>()
+                    dependencyXml.Configuration.each { config ->
+                        def remoteDependencies = new HashMap<String, String>()
+
+                        config.Dependency.each { dep ->
+                            def calculatedVersion = dep.@isSource.toBoolean() ? Helper.convertPathToVersion(dep.@absolutePath.toString()) : dep.@version.toString()
+                            remoteDependencies.put("${dep.@group.toString()}:${dep.@name.toString()}", calculatedVersion)
+                        }
+
+                        remoteConfigurations.put(config.@name, remoteDependencies)
+                    }
+
+                    sourceOverrideCache.put(handler, remoteConfigurations)
+                }
+
+                sourceOverrides.each { SourceOverrideHandler handler ->
                     // Compare source override full dependencies to the current dependency
+                    def dependencyCache = sourceOverrideCache.get(handler)
+
                     dependencies.resolutionResult.allModuleVersions { ResolvedModuleVersionResult module ->
-                        dependencyXml.Configuration.each { config ->
-                            config.Dependency.each { dep ->
-                                def calculatedVersion = dep.@isSource.toBoolean() ? Helper.convertPathToVersion(dep.@absolutePath.toString()) : dep.@version.toString()
-                                if (module.id.group.toString() == dep.@group.toString() &&
-                                    module.id.name.toString() == dep.@name.toString() &&
-                                    module.id.version.toString() != calculatedVersion) {
-                                    throw new RuntimeException("Module '${module.id}' does not match the dependency declared in source override '${handler.name}' (${dep.@group}:${dep.@name}:${calculatedVersion}). You may have to declare a matching source override in the source project.")
+                        dependencyCache.each { configName, config ->
+                            def moduleKey = "${module.id.group.toString()}:${module.id.name.toString()}"
+                            if (config.containsKey(moduleKey)) {
+                                if (config.get(moduleKey) != module.id.version.toString()) {
+                                    throw new RuntimeException("Module '${module.id}' does not match the dependency declared in source override '${handler.name}' (${moduleKey}:${config.get(moduleKey)}). You may have to declare a matching source override in the source project.")
                                 }
                             }
                         }
@@ -522,22 +544,13 @@ public class IntrepidPlugin implements Plugin<Project> {
 
                     // Compare source override full dependencies to each other
                     sourceOverrides.each { SourceOverrideHandler handler2 ->
-                        def (File ivyFile2, File dependencyFile2) = handler2.getIvyFile()
-                        def dependencyXml2 = new XmlSlurper(false, false).parse(dependencyFile2)
+                        def dependencyCache2 = sourceOverrideCache.get(handler2)
 
-                        dependencyXml.Configuration.each { config ->
-                            config.Dependency.each { dep ->
-                                def calculatedVersion = dep.@isSource.toBoolean() ? Helper.convertPathToVersion(dep.@absolutePath.toString()) : dep.@version.toString()
-
-                                dependencyXml2.Configuration.each { config2 ->
-                                    config2.Dependency.each { dep2 ->
-                                        def calculatedVersion2 = dep2.@isSource.toBoolean() ? Helper.convertPathToVersion(dep2.@absolutePath.toString()) : dep2.@version.toString()
-
-                                        if (dep.@group.toString() == dep2.@group.toString() &&
-                                            dep.@name.toString() == dep2.@name.toString() &&
-                                            calculatedVersion != calculatedVersion2) {
-                                            throw new RuntimeException("Module in source override '${handler.name}' (${dep.@group}:${dep.@name}:${calculatedVersion}) does not match module in source override '${handler2.name}' (${dep2.@group}:${dep2.@name}:${calculatedVersion2}). You may have to declare a matching source override.")
-                                        }
+                        dependencyCache.each { configName, config ->
+                            dependencyCache2.each { configName2, config2 ->
+                                config.each { dep, version ->
+                                    if (config2.containsKey(dep) && config2.get(dep) != version) {
+                                        throw new RuntimeException("Module in source override '${handler.name}' (${dep}:${version}) does not match module in source override '${handler2.name}' (${dep}:${config2.get(dep)}). You may have to declare a matching source override.")
                                     }
                                 }
                             }

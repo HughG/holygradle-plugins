@@ -19,7 +19,7 @@ class SummariseAllDependenciesTask extends DefaultTask {
             }
 
             def file = new File(project.projectDir, "AllDependencies.xml")
-            println("Writing xml to ${file.canonicalPath}")
+            project.logger.info("Writing dependencies to ${file.canonicalPath}")
             def markupBuilder = new StreamingMarkupBuilder()
 
             def xml = markupBuilder.bind {
