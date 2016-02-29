@@ -19,7 +19,7 @@ class SummariseAllDependenciesIntegrationTest extends AbstractHolyGradleIntegrat
         File templateDir = new File(getTestDir(), "projectAIn")
         File projectDir = new File(getTestDir(), "projectA")
 
-        File outputFile = new File(projectDir, "AllDependencies.xml")
+        File outputFile = new File(projectDir, "all-dependencies.xml")
 
         if (projectDir.exists()) {
             assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())

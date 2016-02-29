@@ -26,7 +26,7 @@ sourceOverrides {
 			println("Ivy File: ${new File(handler.sourceOverride, "build/publications/ivy/ivy.xml")}")
 			return [
 				new File(handler.sourceOverride, "build/publications/ivy/ivy.xml"),
-				new File(handler.sourceOverride, "AllDependencies.xml")
+				new File(handler.sourceOverride, "all-dependencies.xml")
 			]
 		}
 	}

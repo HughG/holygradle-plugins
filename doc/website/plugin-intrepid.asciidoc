@@ -1440,7 +1440,7 @@ will be symlinked to +C:/projects/renderingLib+ instead of the packed binaries.
 The transitive dependencies of a source override may differ from those of the binary package it is 
 replacing. The +sourceOverride+ handler expects to find a valid Ivy file with the list of immediate
 dependencies at +<sourceOverride>/build/publications/ivy/ivy.xml+ and optionally an XML file at 
-+<sourceOverride>/AllDependencies.xml+ containing a full list of immediate and transitive 
++<sourceOverride>/all-dependencies.xml+ containing a full list of immediate and transitive
 dependencies for the project in the format created by the summariseAllDependencies task e.g.
 
 [source,xml]
@@ -1502,7 +1502,7 @@ sourceOverrides {
 			}
 			return [
 				new File("C:/projects/framework", "subproject/build/publications/ivy/ivy.xml"),
-				new File("C:/projects/framework", "subproject/AllDependencies.xml")
+				new File("C:/projects/framework", "subproject/all-dependencies.xml")
 			]
 		}
 	}
@@ -1520,7 +1520,7 @@ sourceOverrides {
 		ivyFileGenerator {
 			return [
 				new File("C:/projects/framework", "ivy.xml"),
-				new File("C:/projects/framework", "AllDependencies.xml")
+				new File("C:/projects/framework", "all-dependencies.xml")
 			]
 		}
 	}
@@ -2149,7 +2149,7 @@ You may notice a task called +publishIvyPublicationToIvyRepository+ or similar. 
 
 === summariseAllDependencies
 
-This task resolves all dependencies and saves them as a flat list grouped by configuration to +AllDependencies.xml+ in the project directory. For example.
+This task resolves all dependencies and saves them as a flat list grouped by configuration to +all-dependencies.xml+ in the project directory. For example.
 
 [source,xml]
 ----

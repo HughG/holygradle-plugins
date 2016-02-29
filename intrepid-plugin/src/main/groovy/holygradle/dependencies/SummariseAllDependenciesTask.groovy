@@ -14,11 +14,7 @@ import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 class SummariseAllDependenciesTask extends DefaultTask {
     public void initialize() {
         doLast {
-            project.configurations.each { configuration ->
-                configuration.resolve()
-            }
-
-            def file = new File(project.projectDir, "AllDependencies.xml")
+            def file = new File(project.projectDir, "all-dependencies.xml")
             project.logger.info("Writing dependencies to ${file.canonicalPath}")
             def markupBuilder = new StreamingMarkupBuilder()
 

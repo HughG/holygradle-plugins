@@ -79,7 +79,7 @@ class SourceOverrideHandler {
             project.logger.info("Skipping generation of fresh ivy file for ${dependencyCoordinate}")
             return [
                 new File(sourceOverride, "build/publications/ivy/ivy.xml"),
-                new File(sourceOverride, "AllDependencies.xml")
+                new File(sourceOverride, "all-dependencies.xml")
             ]
         }
 
@@ -100,7 +100,7 @@ class SourceOverrideHandler {
                 standardOutput = new ByteArrayOutputStream()
             }
             sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
-            sourceOverrideDependencyFileCache = new File(sourceOverride, "AllDependencies.xml")
+            sourceOverrideDependencyFileCache = new File(sourceOverride, "all-dependencies.xml")
         } else if (new File(sourceOverride, "gw.bat").exists()) { // Otherwise try to run gw.bat
             project.logger.info("Using gw.bat ivy file generation for ${dependencyCoordinate}")
             project.logger.info("${new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath} not found")
@@ -112,7 +112,7 @@ class SourceOverrideHandler {
                 standardOutput = new ByteArrayOutputStream()
             }
             sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
-            sourceOverrideDependencyFileCache = new File(sourceOverride, "AllDependencies.xml")
+            sourceOverrideDependencyFileCache = new File(sourceOverride, "all-dependencies.xml")
         } else {
             throw new RuntimeException("No Ivy file generation available for '${name}'. Please ensure your source override contains a generateSourceOverrideDetails.bat, a compatible gw.bat or provide a custom generation method in your build.gradle.")
         }
