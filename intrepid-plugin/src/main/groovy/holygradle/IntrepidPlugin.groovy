@@ -502,13 +502,17 @@ public class IntrepidPlugin implements Plugin<Project> {
                     throw new RuntimeException("beforeResolve handler failed.", beforeResolveException)
                 }
 
-                ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
-                def timer = profilingHelper.startBlock("SourceOverrideLoop(${project})")
+                // Todo: This should be able to be pre-calculated but Groovy's closure capture rules are making it harder than it should be
+                def sourceOverrideCache = new HashMap<SourceOverrideHandler, HashMap<String, HashMap<String, String>>>()
+
+                // Pre-generate dependency files for each source override
+                sourceOverrides.each { SourceOverrideHandler handler ->
+                    handler.generateDependencyFiles()
+                }
 
                 // Pre-calculate the dependencies so we only have to loop once
-                def sourceOverrideCache = new HashMap<SourceOverrideHandler, HashMap<String, HashMap<String, String>>>()
                 sourceOverrides.each { SourceOverrideHandler handler ->
-                    def (File ivyFile, File dependencyFile) = handler.getIvyFile()
+                    File dependencyFile = handler.dependenciesFile
                     def dependencyXml = new XmlSlurper(false, false).parse(dependencyFile)
 
                     // Build hashsets from the dependency XML
@@ -563,4 +567,3 @@ public class IntrepidPlugin implements Plugin<Project> {
         project.gradle.addListener(listener)
     }
 }
-

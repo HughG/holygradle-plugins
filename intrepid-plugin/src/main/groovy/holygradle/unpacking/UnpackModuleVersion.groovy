@@ -295,10 +295,9 @@ class UnpackModuleVersion {
         def sourceOverrideHandler = project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
             handler.dummyDependencyCoordinate == fullCoordinate
         }
-        println("Finding handler for ${fullCoordinate} = ${sourceOverrideHandler}")
 
         if (sourceOverrideHandler != null) {
-            new File(sourceOverrideHandler.sourceOverride)
+            new File(sourceOverrideHandler.from)
         } else {
             getUnpackDir(project)
         }

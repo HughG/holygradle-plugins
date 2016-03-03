@@ -1,6 +1,6 @@
 buildscript {
     gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
-	project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
+    project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
 }
 gplugins.apply()
 
@@ -17,14 +17,14 @@ repositories.ivy {
 // local dependencies. This will happen if a source override resolves dependencies differently
 // to the local project (e.g. if it has different repos configured or uses source dependencies).
 sourceOverrides {
-	"application" {
-		dependency "holygradle.test:example-application:1.0"
-		sourceOverride "../source/application-1.0"
-	}
-	"ext_11" {
-		dependency "holygradle.test:external-lib:1.0"
-		sourceOverride "../source/ext-1.1"
-	}
+    "application" {
+        dependency "holygradle.test:example-application:1.0"
+        from "../source/application-1.0"
+    }
+    "ext_11" {
+        dependency "holygradle.test:external-lib:1.0"
+        from "../source/ext-1.1"
+    }
 }
 
 packedDependencies {
@@ -32,8 +32,8 @@ packedDependencies {
         dependency "holygradle.test:example-application:1.0"
         configuration "bar->compileVc10Debug,compileVc10Release"
     }
-	"ext_11" {
-		dependency "holygradle.test:external-lib:1.0"
-		configuration "bar->compile,compile"
-	}
+    "ext_11" {
+        dependency "holygradle.test:external-lib:1.0"
+        configuration "bar->compile,compile"
+    }
 }

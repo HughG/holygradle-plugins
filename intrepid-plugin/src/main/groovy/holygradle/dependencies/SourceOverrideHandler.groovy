@@ -20,8 +20,7 @@ class SourceOverrideHandler {
     private ModuleVersionIdentifier dependencyId = null
     private ModuleVersionIdentifier dummyDependencyId = null
     private String dummyVersionString
-    private String dependencyCoordinate
-    private String sourceOverrideLocation
+    private String from
     private Closure<SourceOverrideHandler> sourceOverrideIvyFile
     private boolean hasCreatedDummyModule = false
     private File sourceOverrideIvyFileCache = null
@@ -52,17 +51,17 @@ class SourceOverrideHandler {
         initialiseDependencyId(dep)
     }
 
-    public void sourceOverride(String override) {
+    public void from(String override) {
         if (new File(override).isAbsolute()) {
-            sourceOverrideLocation = override
+            from = override
         } else {
-            sourceOverrideLocation = new File(project.projectDir, override).canonicalPath
+            from = new File(project.projectDir, override).canonicalPath
         }
-        dummyVersionString = Helper.convertPathToVersion(sourceOverrideLocation)
+        dummyVersionString = Helper.convertPathToVersion(from)
     }
 
-    public String getSourceOverride() {
-        sourceOverrideLocation
+    public String getFrom() {
+        from
     }
 
     public void ivyFileGenerator(Closure<SourceOverrideHandler> generator) {
@@ -73,14 +72,25 @@ class SourceOverrideHandler {
         sourceOverrideIvyFile
     }
 
-    public Collection<File> getIvyFile() {
+    public File getIvyFile() {
+        if (sourceOverrideIvyFileCache == null) {
+            generateDependencyFiles()
+        }
+        return sourceOverrideIvyFileCache
+    }
 
+    public File getDependenciesFile() {
+        if (sourceOverrideDependencyFileCache == null) {
+            generateDependencyFiles()
+        }
+        return sourceOverrideDependencyFileCache
+    }
+
+    public void generateDependencyFiles() {
         if (project.hasProperty("useCachedIvyFiles")) {
             project.logger.info("Skipping generation of fresh ivy file for ${dependencyCoordinate}")
-            return [
-                new File(sourceOverride, "build/publications/ivy/ivy.xml"),
-                new File(sourceOverride, "all-dependencies.xml")
-            ]
+            sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
+            sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
         }
 
         // First check the cache map (only the Ivy File cache, tolerate the dependency file cache being null)
@@ -90,34 +100,32 @@ class SourceOverrideHandler {
             project.logger.info("Using custom ivy file generator code for ${dependencyCoordinate}")
             def generator = getIvyFileGenerator()
             (sourceOverrideIvyFileCache, sourceOverrideDependencyFileCache) = generator(this)
-        } else if (new File(sourceOverride, "generateSourceOverrideDetails.bat").exists()) {
+        } else if (new File(from, "generateSourceOverrideDetails.bat").exists()) {
             // Otherwise try to run a user provided Ivy file generator
             project.logger.info("Using standard ivy file generator batch script for ${dependencyCoordinate}")
-            project.logger.info("Batch File: ${new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath}")
+            project.logger.info("Batch File: ${new File(from, "generateSourceOverrideDetails.bat").canonicalPath}")
             project.exec {
-                workingDir sourceOverride
-                executable new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath
+                workingDir from
+                executable new File(from, "generateSourceOverrideDetails.bat").canonicalPath
                 standardOutput = new ByteArrayOutputStream()
             }
-            sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
-            sourceOverrideDependencyFileCache = new File(sourceOverride, "all-dependencies.xml")
-        } else if (new File(sourceOverride, "gw.bat").exists()) { // Otherwise try to run gw.bat
+            sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
+            sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
+        } else if (new File(from, "gw.bat").exists()) { // Otherwise try to run gw.bat
             project.logger.info("Using gw.bat ivy file generation for ${dependencyCoordinate}")
-            project.logger.info("${new File(sourceOverride, "generateSourceOverrideDetails.bat").canonicalPath} not found")
+            project.logger.info("${new File(from, "generateSourceOverrideDetails.bat").canonicalPath} not found")
 
             project.exec {
-                workingDir sourceOverride
-                executable new File(sourceOverride, "gw.bat").canonicalPath
+                workingDir from
+                executable new File(from, "gw.bat").canonicalPath
                 args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
                 standardOutput = new ByteArrayOutputStream()
             }
-            sourceOverrideIvyFileCache = new File(sourceOverride, "build/publications/ivy/ivy.xml")
-            sourceOverrideDependencyFileCache = new File(sourceOverride, "all-dependencies.xml")
+            sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
+            sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
         } else {
             throw new RuntimeException("No Ivy file generation available for '${name}'. Please ensure your source override contains a generateSourceOverrideDetails.bat, a compatible gw.bat or provide a custom generation method in your build.gradle.")
         }
-
-        return [sourceOverrideIvyFileCache, sourceOverrideDependencyFileCache]
     }
 
     public void createDummyModuleFiles() {
@@ -125,7 +133,6 @@ class SourceOverrideHandler {
             return
         }
 
-        def (ivyFile, dependenciesFile) = getIvyFile()
         File tempDir = new File(
             project.buildDir,
             "holygradle/source_replacement/${groupName}/${dependencyName}/${dummyVersionString}"

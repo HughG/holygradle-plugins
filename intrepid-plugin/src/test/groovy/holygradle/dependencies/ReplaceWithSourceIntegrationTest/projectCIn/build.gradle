@@ -1,6 +1,6 @@
 buildscript {
     gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
-	project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
+    project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
 }
 gplugins.apply()
 
@@ -16,7 +16,7 @@ repositories.ivy {
 sourceOverrides {
     "framework" {
         dependency "holygradle.test:example-framework:1.1"
-		sourceOverride "../source/framework-1.1-extlib-1.0"
+        from "../source/framework-1.1-extlib-1.0"
     }
 }
 

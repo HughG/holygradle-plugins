@@ -1415,12 +1415,12 @@ changes to dependencies and projects with source overrides defined can not be pu
 sourceOverrides {
     "framework" {
         dependency "com.company:framework:1.1"
-		sourceOverride "../source/framework-1.1"
+        from "../source/framework-1.1"
     }
-	"ext_lib" {
-		dependency "com.company.rendering:RenderingLib:2012a2"
-		sourceOverride "C:/projects/renderingLib"
-	}
+    "ext_lib" {
+        dependency "com.company.rendering:RenderingLib:2012a2"
+        from "C:/projects/renderingLib"
+    }
 }
 
 packedDependencies {
@@ -1473,7 +1473,7 @@ pattern as the +packedDependency+ definition. Transitive dependencies of this an
 dependencies will also be overriden but dependencies of a source override will not. This will be 
 reported as a version conflict at dependency resolution time.
 
-==== sourceOverride
+==== from
 
 This method defines a path, either absolute or relative to the root project, where the source 
 replacement is located.
@@ -1491,21 +1491,21 @@ commands. This example will generate the dependency files for a sub-project of f
 [source,groovy]
 ----
 sourceOverrides {
-	"subproject" {
-		dependency "com.company:subproject:1.1"
-		sourceOverride "C:/projects/framework/subproject"
-		ivyFileGenerator { SourceOverrideHandler handler ->
-			project.exec {
-				workingDir "C:/projects/framework"
-				executable "gw.bat"
-				args "subproject:summariseAllDependencies", "subproject:generateIvyModuleDescriptor"
-			}
-			return [
-				new File("C:/projects/framework", "subproject/build/publications/ivy/ivy.xml"),
-				new File("C:/projects/framework", "subproject/all-dependencies.xml")
-			]
-		}
-	}
+    "subproject" {
+        dependency "com.company:subproject:1.1"
+        from "C:/projects/framework/subproject"
+        ivyFileGenerator { SourceOverrideHandler handler ->
+            project.exec {
+                workingDir "C:/projects/framework"
+                executable "gw.bat"
+                args "subproject:summariseAllDependencies", "subproject:generateIvyModuleDescriptor"
+            }
+            return [
+                new File("C:/projects/framework", "subproject/build/publications/ivy/ivy.xml"),
+                new File("C:/projects/framework", "subproject/all-dependencies.xml")
+            ]
+        }
+    }
 }
 ----
 
@@ -1514,16 +1514,16 @@ This example just returns static files.
 [source,groovy]
 ----
 sourceOverrides {
-	"framework" {
-		dependency "com.company:framework:1.1"
-		sourceOverride "C:/projects/framework/"
-		ivyFileGenerator {
-			return [
-				new File("C:/projects/framework", "ivy.xml"),
-				new File("C:/projects/framework", "all-dependencies.xml")
-			]
-		}
-	}
+    "framework" {
+        dependency "com.company:framework:1.1"
+        from "C:/projects/framework/"
+        ivyFileGenerator {
+            return [
+                new File("C:/projects/framework", "ivy.xml"),
+                new File("C:/projects/framework", "all-dependencies.xml")
+            ]
+        }
+    }
 }
 ----
 
@@ -2155,15 +2155,15 @@ This task resolves all dependencies and saves them as a flat list grouped by con
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <Configurations>
-	<Configuration name="compileVc10Debug">
-		<Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
-		<Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
-	</Configuration>
-	<Configuration name="compileVc10Release">
-		<Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
-		<Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
-	</Configuration>
-	<Configuration name="source"/>
+    <Configuration name="compileVc10Debug">
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
+    </Configuration>
+    <Configuration name="compileVc10Release">
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
+    </Configuration>
+    <Configuration name="source"/>
 </Configurations>
 ----
 
