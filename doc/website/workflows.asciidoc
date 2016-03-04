@@ -1499,6 +1499,13 @@ republish {
 }
 ----
 
+Republishing depends on the "everything" configuration which is deprecated. If you wish to use republishing in your project you will also need to add the following line to your +gradle.properties+ file.
+
+[source,groovy]
+----
+createEverythingConfiguration=true
+----
+
 ==== Using Republishing
 
 You can then download published package with a name like "+some_module-republishing-1.2.3.zip+",

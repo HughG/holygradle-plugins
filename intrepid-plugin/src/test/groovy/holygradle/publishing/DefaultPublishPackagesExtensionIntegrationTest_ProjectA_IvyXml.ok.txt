@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0">
   <configurations>
-    <conf name="everything" visibility="public" extends="compile,runtime"/>
     <conf name="compile" visibility="public"/>
     <conf name="runtime" visibility="public"/>
+    <conf name="buildScript" visibility="public"/>
   </configurations>
   <publications>
+    <artifact name="projectA-buildScript" type="zip" ext="zip" conf="buildScript"/>
     <artifact name="projectA-compile" type="zip" ext="zip" conf="compile"/>
-    <artifact name="projectA-buildScript" type="zip" ext="zip" conf="everything"/>
     <artifact name="projectA-runtime" type="zip" ext="zip" conf="runtime"/>
   </publications>
   <dependencies>
-    <dependency org="happydays_subsiduary" name="src_dep1" rev="2.2.2" conf="everything->everything;compile->runtime"/>
-    <dependency org="happydays" name="src_dep2" rev="1.1.1" conf="everything->everything;compile->compile;runtime->runtime"/>
+    <dependency org="happydays_subsiduary" name="src_dep1" rev="2.2.2" conf="compile->runtime"/>
+    <dependency org="happydays" name="src_dep2" rev="1.1.1" conf="compile->compile;runtime->runtime"/>
   </dependencies>
 </ivy-module>

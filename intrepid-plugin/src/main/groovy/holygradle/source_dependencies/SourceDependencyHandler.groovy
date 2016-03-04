@@ -112,7 +112,9 @@ class SourceDependencyHandler extends DependencyHandler {
 
         // Add a mapping for "everything" lazily, i.e., only if we add any other mappings.  This makes it easy to have
         // un-published source dependencies, e.g., to just pull in some repo containing documentation.
-        if (!configurationMappings.contains(EVERYTHING_CONFIGURATION_MAPPING)) {
+        if (project.hasProperty(IntrepidPlugin.EVERYTHING_CONFIGURATION_PROPERTY) &&
+            !configurationMappings.contains(EVERYTHING_CONFIGURATION_MAPPING)
+        ) {
             configuration(IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME)
         }
     }

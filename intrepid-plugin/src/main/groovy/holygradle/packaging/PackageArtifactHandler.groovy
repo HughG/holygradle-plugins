@@ -6,6 +6,7 @@ import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.UnknownConfigurationException
 import org.gradle.api.file.*
 import org.gradle.api.initialization.Settings
@@ -44,11 +45,13 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         project.gradle.projectsEvaluated {
             NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers =
                 project.extensions.packageArtifacts as NamedDomainObjectContainer<PackageArtifactHandler>
+            Configuration buildScriptConfiguration =
+                    project.configurations.findByName("buildScript") ?: project.configurations.create("buildScript")
             PackageArtifactHandler buildScriptHandler =
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
             buildScriptHandler.include project.buildFile.name
             buildScriptHandler.include project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
-            buildScriptHandler.configuration = "everything"
+            buildScriptHandler.configuration = "buildScript"
 
             PublishPackagesExtension publishPackages =
                 project.rootProject.extensions.findByName("publishPackages") as PublishPackagesExtension

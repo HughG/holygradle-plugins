@@ -33,6 +33,7 @@ import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
     public static final String EVERYTHING_CONFIGURATION_NAME = "everything"
+    public static final String EVERYTHING_CONFIGURATION_PROPERTY = "createEverythingConfiguration"
 
     void apply(Project project) {
         ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
@@ -263,16 +264,18 @@ public class IntrepidPlugin implements Plugin<Project> {
         /**************************************
          * Packaging and publishing stuff
          **************************************/
-        
-        // Define an 'everything' configuration which depends on all other configurations.
-        Configuration everythingConf =
-            configurations.findByName(EVERYTHING_CONFIGURATION_NAME) ?: configurations.add(EVERYTHING_CONFIGURATION_NAME)
-        project.gradle.projectsEvaluated {
-            configurations.each((Closure){ Configuration conf ->
-                if (conf.name != EVERYTHING_CONFIGURATION_NAME && conf.visible) {
-                    everythingConf.extendsFrom conf
-                }
-            })
+
+        if (project.hasProperty(EVERYTHING_CONFIGURATION_PROPERTY)) {
+            // Define an 'everything' configuration which depends on all other configurations.
+            Configuration everythingConf =
+                    configurations.findByName(EVERYTHING_CONFIGURATION_NAME) ?: configurations.add(EVERYTHING_CONFIGURATION_NAME)
+            project.gradle.projectsEvaluated {
+                configurations.each((Closure) { Configuration conf ->
+                    if (conf.name != EVERYTHING_CONFIGURATION_NAME && conf.visible) {
+                        everythingConf.extendsFrom conf
+                    }
+                })
+            }
         }
 
         /**************************************

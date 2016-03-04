@@ -11,7 +11,6 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
         invokeGradle(new File(getTestDir(), "conflicting_modules1")) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                "Could not resolve all dependencies for configuration ':everything'.",
                 "A conflict was found between the following modules:",
                 "- holygradle.test:external-lib:1.0",
                 "- holygradle.test:external-lib:1.1"
@@ -21,14 +20,21 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
     
     @Test
     public void testConflictingModules2() {
-        invokeGradle(new File(getTestDir(), "conflicting_modules2")) { WrapperBuildLauncher launcher ->
+        final projectDir = new File(getTestDir(), "conflicting_modules2")
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(
-                "Could not resolve all dependencies for configuration ':everything'.",
-                "A conflict was found between the following modules:",
-                "- holygradle.test:external-lib:1.0",
-                "- holygradle.test:external-lib:1.1"
-            )
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
+                """In root project 'conflicting_modules2', location '${projectDir.absolutePath}\\extlib10' is targeted by multiple dependencies/versions:
+    holygradle.test:external-lib:1.1 in configurations [bar]
+        which is from packed dependency extlib10
+    holygradle.test:external-lib:1.0 in configurations [foo]
+        which is from packed dependency extlib10
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Multiple different dependencies/versions are targeting the same locations."""
+            ))
         }
     }
     
@@ -39,9 +45,9 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
                 """In root project 'unpacking_modules_to_same_location', location '${projectDir.absolutePath}\\extlib' is targeted by multiple dependencies/versions:
-    holygradle.test:example-framework:1.1 in configurations [everything, bar]
+    holygradle.test:example-framework:1.1 in configurations [bar]
         which is from packed dependency sub/../extlib
-    holygradle.test:external-lib:1.1 in configurations [everything, foo, bar]
+    holygradle.test:external-lib:1.1 in configurations [foo, bar]
         which is from holygradle.test:example-framework:1.1
         which is from packed dependency sub/../extlib
 
