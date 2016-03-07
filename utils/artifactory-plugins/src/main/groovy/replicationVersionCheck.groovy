@@ -63,14 +63,16 @@ class ArtifactoryAPI {
         ParserRegistry.setDefaultCharset(null)
     }
 
-    public String getVersionWithRevision() {
+    public List getVersionWithRevision() {
         String query = '/artifactory/api/system/version'
         HttpResponseDecorator resp = (HttpResponseDecorator) (client.get(path: query))
         if (resp.status != 200) {
             throw new CancelException("ERROR: problem obtaining version info: {$resp.status} from ${query}", 500)
         }
         Map data = resp.data as Map
-        return "${data.version}_rev_${data.revision}"
+        String version = data.version as String
+        String revision = data.revision as String
+        return [version.split('\\.').collect { Integer.parseInt(it) }, Integer.parseInt(revision)]
     }
 
     public def getMailServerConfiguration() {
@@ -158,12 +160,49 @@ class VersionMatchChecker {
         }
     }
 
+    private boolean versionIsGreaterThan(List left, List right) {
+        def (List<Integer> leftVersion, Integer leftRevision) = left
+        def (List<Integer> rightVersion, Integer rightRevision) = right
+
+        // This method returns a list pairing each item in leftVersion with the corresponding item in rightVersion.  If
+        // the lists are not the same size, then the extra items from one list are dropped, so we need to check that as
+        // a later step.
+        List<List<Integer>> leftWithRightVersionComponents = [leftVersion, rightVersion].transpose()
+        log.debug("leftWithRightVersionComponents = ${leftWithRightVersionComponents}")
+        boolean arePairedComponentsGreaterThan = false
+        for (pair in leftWithRightVersionComponents) {
+            def (leftComponent, rightComponent) = pair
+            // We don't use a switch here because we may want to break out of the for.
+            def comp = leftComponent <=> rightComponent
+            if (comp == -1) { // less than
+                break
+            } else if (comp == 0) { // equal
+                // We will just continue
+            } else /* comp == 1 */ { // greater than
+                arePairedComponentsGreaterThan = true
+                break
+            }
+        }
+
+        // If the paired version parts are equal, but the left version has more parts, we assume it is a greater (newer)
+        // version.
+        boolean isLeftVersionLengthGreaterThan = leftVersion.size() > rightVersion.size()
+
+        // Lastly check the "rev"
+        boolean isLeftRevisionGreaterThan = leftRevision > rightRevision
+
+        log.debug("${arePairedComponentsGreaterThan}, ${isLeftVersionLengthGreaterThan}, ${isLeftRevisionGreaterThan}")
+        return arePairedComponentsGreaterThan ||
+            isLeftVersionLengthGreaterThan ||
+            isLeftRevisionGreaterThan
+    }
+
     public void checkServerVersionsMatch(RepoPath localRepoPath, String description) {
         if (LOCAL_CRED.size() != 2 || LOCAL_CRED.any { it == null || it.trim().empty }) {
             throw new CancelException(
                 "Failed to read credentials for local access from '${LOCAL_CRED_FILENAME}'. " +
-                "That file should contain a single line with the 'username:password' of an admin user. " +
-                "The password can be plaintext or encrypted.",
+                    "That file should contain a single line with the 'username:password' of an admin user. " +
+                    "The password can be plaintext or encrypted.",
                 500
             )
         }
@@ -171,22 +210,22 @@ class VersionMatchChecker {
         if (!security.findUser(localUsername)?.admin) {
             throw new CancelException(
                 "User '${localUsername}' configured for local access in '${LOCAL_CRED_FILENAME}' is not an admin. " +
-                "That file should contain a single line with the 'username:password' of an admin user. " +
-                "The password can be plaintext or encrypted.",
+                    "That file should contain a single line with the 'username:password' of an admin user. " +
+                    "The password can be plaintext or encrypted.",
                 500
             )
         }
         final ArtifactoryAPI localApi = new ArtifactoryAPI(log, LOCAL_SERVER_URI, localUsername, LOCAL_CRED[1])
-        String localVersion = localApi.getVersionWithRevision()
+        def localVersion = localApi.getVersionWithRevision()
         HttpRepositoryConfiguration remoteRepoConf =
             repositories.getRepositoryConfiguration(localRepoPath.repoKey) as HttpRepositoryConfiguration
         String remoteServerUri = new URIBuilder(remoteRepoConf.url).setPath("/").toString()
         final ArtifactoryAPI remoteApi = new ArtifactoryAPI(log, remoteServerUri, remoteRepoConf.username, remoteRepoConf.password)
-        String remoteVersion = remoteApi.getVersionWithRevision()
-        log.info "Remote version is ${remoteVersion}, local version is ${localVersion} ${description}"
-        if (remoteVersion != localVersion) {
+        def remoteVersion = remoteApi.getVersionWithRevision()
+        log.debug("Remote version is ${remoteVersion}, local version is ${localVersion}, ${description}")
+        if (versionIsGreaterThan(remoteVersion, localVersion)) {
             final String errorMessage = "Server version mismatch during replication ${description}: " +
-                "remote = ${remoteVersion}, local = ${localVersion}"
+                "remote = ${remoteVersion} is greater than local = ${localVersion}"
 
             sendMismatchNotifications(localApi, errorMessage)
 
