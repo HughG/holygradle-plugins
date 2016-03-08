@@ -20,15 +20,22 @@ import org.artifactory.security.Security
  * This plugin is a guard against the possibility that replication will behave incorrectly if the source and destination
  * servers are running different versions of Artifactory.
  *
- * In the same folder as this plugin, you should create two text files:
+ * This plugin requires the following JARs to be manually copied to the ".../plugins/lib" folder of Artifactory.  They
+ * can be copied from your Gradle cache under the paths given, once you have run "gw build" for this project.  (All
+ * other required JARs are already part of Artifactory.)
  *
- *   - replicationVersionCheck.emails.txt should contain a list of users to email when the plugin fails, with one email
- *     address per line (blank lines are ignored),
+ *   - http-builder-0.6.jar (org.codehaus.groovy.modules.http-builder/http-builder/0.6)
+ *   - json-lib-2.3-jdk15.jar (net.sf.json-lib/json-lib/2.3)
  *
- *   - replicationVersionCheck.localUserInfo.txt should contain a single line with the username and password of an admin
- *     user for the local server.  This information is needed to get the mail configuration for sending emails.  The
- *     format should be 'username:password' and the password can be plain or encrypted, depending on how your server is
- *     configured.  For security reasons, the folder containing this file should only be readable by admin users.
+ * In the same folder as this plugin, you should create a folder "conf", and inside that two text files:
+ *
+ *   - notificationEmails.txt should contain a list of users to email when the plugin fails, with one email address per
+ *     line (blank lines are ignored),
+ *
+ *   - localAdminUserInfo.txt should contain a single line with the username and password of an admin user for the local
+ *     server.  This information is needed to get the mail configuration for sending emails.  The format should be
+ *     'username:password' and the password can be plain or encrypted, depending on how your server is configured.  For
+ *     security reasons, the folder containing this file should only be readable by admin users.
  */
 
 /**
@@ -45,8 +52,40 @@ import org.artifactory.security.Security
  */
 
 class ArtifactoryAPI {
+    // NOTE 2016-01-20 HughG: I want to read the admin user credentials from a file, but the plugin API gives me no way
+    // to get the plugin directory or something like that.  From experimentation, the current directory when the
+    // "executions" block is executed is the "bin" folder of the installation.
+    private static final File ARTIFACTORY_ROOT = new File("..")
+    private static final String LOCAL_CRED_FILENAME = "etc/plugins/conf/localAdminUserInfo.txt"
+    private static final List<String> LOCAL_CRED =
+        new File(ARTIFACTORY_ROOT, LOCAL_CRED_FILENAME).text.split(':')
+    private static final String LOCAL_SERVER_URI = 'http://localhost:8081/'
+
     private final Logger log
     private final RESTClient client
+
+    public static ArtifactoryAPI getLocalApi(Logger log, Security security, Closure asSystem) {
+        if (LOCAL_CRED.size() != 2 || LOCAL_CRED.any { it == null || it.trim().empty }) {
+            throw new CancelException(
+                "Failed to read credentials for local access from '${LOCAL_CRED_FILENAME}'. " +
+                    "That file should contain a single line with the 'username:password' of an admin user. " +
+                    "The password can be plaintext or encrypted.",
+                500
+            )
+        }
+        final String localUsername = LOCAL_CRED[0]
+        asSystem {
+            if (!security.findUser(localUsername)?.admin) {
+                throw new CancelException(
+                    "User '${localUsername}' configured for local access in '${LOCAL_CRED_FILENAME}' is not an admin. " +
+                        "That file should contain a single line with the 'username:password' of an admin user. " +
+                        "The password can be plaintext or encrypted.",
+                    500
+                )
+            }
+        }
+        return new ArtifactoryAPI(log, LOCAL_SERVER_URI, localUsername, LOCAL_CRED[1])
+    }
 
     public ArtifactoryAPI(Logger log, String server, String username, String password) {
         this.log = log
@@ -93,33 +132,32 @@ class ArtifactoryAPI {
     }
 }
 
-class VersionMatchChecker {
+class EmailNotifier {
     // NOTE 2016-01-20 HughG: I want to read the set of mail recipients from a file, but the plugin API gives me no way
     // to get the plugin directory or something like that.  From experimentation, the current directory when the
     // "executions" block is executed is the "bin" folder of the installation.
     private static final File ARTIFACTORY_ROOT = new File("..")
     // Read all non-empty lines for email addresses.
     private static final List<String> ALERT_EMAIL_ADDRESSES =
-        new File(ARTIFACTORY_ROOT, "etc/plugins/replicationVersionCheck.emails.txt").
+        new File(ARTIFACTORY_ROOT, "etc/plugins/conf/notificationEmails.txt").
             readLines().
             findAll { !it.trim().empty }
-    private static final String LOCAL_CRED_FILENAME = "etc/plugins/replicationVersionCheck.localUserInfo.txt"
-    private static final List<String> LOCAL_CRED =
-        new File(ARTIFACTORY_ROOT, LOCAL_CRED_FILENAME).text.split(':')
-    private static final String LOCAL_SERVER_URI = 'http://localhost:8081/'
 
-    private final Repositories repositories
     private final Logger log
     private final Security security
+    private final ArtifactoryAPI localApi
 
-    VersionMatchChecker(Logger log, Security security, Repositories repositories) {
+    public EmailNotifier(Logger log, Security security, Closure asSystem) {
         this.log = log
         this.security = security
-        this.repositories = repositories
+        this.localApi = ArtifactoryAPI.getLocalApi(log, security, asSystem)
     }
 
     // From http://groovy.329449.n5.nabble.com/Sending-email-with-Groovy-td331546.html
-    private static void sendMismatchNotifications(ArtifactoryAPI localApi, String errorMessage) {
+    public void sendNotifications(
+        String subject,
+        String errorMessage
+    ) {
         def ms = localApi.getMailServerConfiguration()
         def properties = new Properties()
         properties.put('mail.smtp.host', ms.host.text())
@@ -149,15 +187,36 @@ class VersionMatchChecker {
             }
         )
 
-        for (email in ALERT_EMAIL_ADDRESSES) {
+        String currentUserEmail = security.currentUser().email
+        log.debug("sendNotifications: security.currentUsername = ${security.currentUsername}")
+        log.debug("sendNotifications: currentUserEmail = ${currentUserEmail}")
+        boolean isValidCurrentUserEmail = (currentUserEmail != null && !currentUserEmail.trim().empty)
+        List<String> emailAddresses = ALERT_EMAIL_ADDRESSES
+        if (isValidCurrentUserEmail) {
+            emailAddresses = emailAddresses + currentUserEmail
+        }
+        log.debug("sendNotifications: emailAddresses = ${emailAddresses}")
+        for (email in emailAddresses) {
             def message = new MimeMessage(session)
             message.from = new InternetAddress(ms.from.text())
             message.setRecipient(Message.RecipientType.TO, new InternetAddress(email))
-            message.subject = "${ms.subjectPrefix.text()} Server version mismatch during replication"
+            message.subject = "${ms.subjectPrefix.text()} ${subject}"
             message.sentDate = new Date()
             message.text = errorMessage
             Transport.send(message)
         }
+    }
+}
+
+class VersionMatchChecker {
+    private final Repositories repositories
+    private final Logger log
+    private final Security security
+
+    VersionMatchChecker(Logger log, Security security, Repositories repositories) {
+        this.log = log
+        this.security = security
+        this.repositories = repositories
     }
 
     private boolean versionIsGreaterThan(List left, List right) {
@@ -197,25 +256,8 @@ class VersionMatchChecker {
             isLeftRevisionGreaterThan
     }
 
-    public void checkServerVersionsMatch(RepoPath localRepoPath, String description) {
-        if (LOCAL_CRED.size() != 2 || LOCAL_CRED.any { it == null || it.trim().empty }) {
-            throw new CancelException(
-                "Failed to read credentials for local access from '${LOCAL_CRED_FILENAME}'. " +
-                    "That file should contain a single line with the 'username:password' of an admin user. " +
-                    "The password can be plaintext or encrypted.",
-                500
-            )
-        }
-        final String localUsername = LOCAL_CRED[0]
-        if (!security.findUser(localUsername)?.admin) {
-            throw new CancelException(
-                "User '${localUsername}' configured for local access in '${LOCAL_CRED_FILENAME}' is not an admin. " +
-                    "That file should contain a single line with the 'username:password' of an admin user. " +
-                    "The password can be plaintext or encrypted.",
-                500
-            )
-        }
-        final ArtifactoryAPI localApi = new ArtifactoryAPI(log, LOCAL_SERVER_URI, localUsername, LOCAL_CRED[1])
+    public void checkServerVersionsMatch(RepoPath localRepoPath, String description, Closure asSystem) {
+        final ArtifactoryAPI localApi = ArtifactoryAPI.getLocalApi(log, security, asSystem)
         def localVersion = localApi.getVersionWithRevision()
         HttpRepositoryConfiguration remoteRepoConf =
             repositories.getRepositoryConfiguration(localRepoPath.repoKey) as HttpRepositoryConfiguration
@@ -227,7 +269,10 @@ class VersionMatchChecker {
             final String errorMessage = "Server version mismatch during replication ${description}: " +
                 "remote = ${remoteVersion} is greater than local = ${localVersion}"
 
-            sendMismatchNotifications(localApi, errorMessage)
+            new EmailNotifier(log, security, asSystem).sendNotifications(
+                "Server version mismatch during replication",
+                errorMessage
+            )
 
             throw new CancelException(errorMessage, 500)
         }
@@ -246,7 +291,7 @@ replication {
      */
     beforeFileReplication { RepoPath localRepoPath ->
         final VersionMatchChecker checker = new VersionMatchChecker(log, security, repositories)
-        checker.checkServerVersionsMatch(localRepoPath, "(before file ${localRepoPath.toPath()})")
+        checker.checkServerVersionsMatch(localRepoPath, "(before file ${localRepoPath.toPath()})", { c -> asSystem(c) })
     }
     /**
      * Handle before directory replication events.
@@ -259,7 +304,7 @@ replication {
      */
     beforeDirectoryReplication { RepoPath localRepoPath ->
         final VersionMatchChecker checker = new VersionMatchChecker(log, security, repositories)
-        checker.checkServerVersionsMatch(localRepoPath, "(before dir ${localRepoPath.toPath()})")
+        checker.checkServerVersionsMatch(localRepoPath, "(before dir ${localRepoPath.toPath()})", { c -> asSystem(c) })
     }
     /**
      * Handle before delete replication events.
@@ -272,7 +317,7 @@ replication {
      */
     beforeDeleteReplication { RepoPath localRepoPath ->
         final VersionMatchChecker checker = new VersionMatchChecker(log, security, repositories)
-        checker.checkServerVersionsMatch(localRepoPath, "(before delete ${localRepoPath.toPath()})")
+        checker.checkServerVersionsMatch(localRepoPath, "(before delete ${localRepoPath.toPath()})", { c -> asSystem(c) })
     }
     /**
      * Handle before property replication events.
@@ -285,6 +330,6 @@ replication {
      */
     beforePropertyReplication { RepoPath localRepoPath ->
         final VersionMatchChecker checker = new VersionMatchChecker(log, security, repositories)
-        checker.checkServerVersionsMatch(localRepoPath, "(before properties of ${localRepoPath.toPath()})")
+        checker.checkServerVersionsMatch(localRepoPath, "(before properties of ${localRepoPath.toPath()})", { c -> asSystem(c) })
     }
 }
