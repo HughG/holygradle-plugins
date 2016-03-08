@@ -57,6 +57,7 @@ contributor(context(scope: scriptScope(name: ~/.*\.groovy/)), {
                          <ul><li>name: buildName, type: java.lang.String - The build name specified in the REST request.</li>
                          <li>name: params, type: java.util.Map<java.lang.String, java.util.List<java.lang.String>> - The parameters specified in the REST request.</li></ul>
                         '''
+    method name: 'replication', type: 'void', params: [closure: 'groovy.lang.Closure']
 })
 
 contributor(context(scope: closureScope()), {
@@ -166,5 +167,25 @@ contributor(context(scope: closureScope()), {
     if(enclosingCall('promotions')){
         property name: 'status', type: 'int', doc: 'A response status code. Defaults to -1 (unset).'
         property name: 'message', type: 'java.lang.String', doc: 'A text message to return in the response body, replacing the response content. Defaults to null.'
+    }
+
+    if(enclosingCall('replication')){
+        property name: 'replicate', type: 'int', doc: 'Whether to replicate the current item. Defaults to true. Set to false to skip replication.'
+
+        def closureParams = '<p>Closure parameters:'
+        def repoPathParam = '<ul><li>localRepoPath (org.artifactory.repo.RepoPath) - the repoPath of the item on the local Artifactory server.</li>'
+
+        method name: 'beforeFileReplication', type: 'void', params: [closure: 'groovy.lang.Closure'], doc: """Handle before file replication events.
+            $closureParams
+            $repoPathParam</ul>""".toString()
+        method name: 'beforeDirectoryReplication', type: 'void', params: [closure: 'groovy.lang.Closure'], doc: """Handle before file replication events.
+            $closureParams
+            $repoPathParam</ul>""".toString()
+        method name: 'beforeDeleteReplication', type: 'void', params: [closure: 'groovy.lang.Closure'], doc: """Handle before delete replication events.
+            $closureParams
+            $repoPathParam</ul>""".toString()
+        method name: 'beforePropertyReplication', type: 'void', params: [closure: 'groovy.lang.Closure'], doc: """Handle before property replication events.
+            $closureParams
+            $repoPathParam</ul>""".toString()
     }
 })
