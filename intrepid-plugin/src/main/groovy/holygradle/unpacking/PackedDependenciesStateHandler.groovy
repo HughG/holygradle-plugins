@@ -172,23 +172,33 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         parentUnpackModule?.getVersion(parentDependencyVersion)
                     }
 
+                // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
+                // dependency is a transitive dependency, "thisPackedDep" will be null.
+                PackedDependencyHandler thisPackedDep = packedDependencies.find {
+                    // Note that we don't compare the version, because we might have resolved to another version if
+                    // multiple versions were requested in the dependency graph.  In that case, we still want to
+                    // regard this packed dependency as mapping to the given UnpackModuleVersion, i.e., to the
+                    // resolved dependency version. We know that there can only be one resolved version per
+                    // configuration so by checking the configuration matches we can be sure this is it.
+                    return (it.groupName == id.group) &&
+                        (it.dependencyName == id.name) &&
+                        (it.configurationMappings.any { entry ->
+                            originalConf.hierarchy.any { it.name == entry.key }
+                        })
+                }
+
                 // Find or create an UnpackModuleVersion instance.
                 UnpackModuleVersion unpackModuleVersion
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
+                    // We want packed dependency paths to override the paths of transitive dependencies. Because
+                    // UnpackModuleVersion prioritises the properties of a packed dependency if one is set we can
+                    // achieve this by setting the packed dependency property here even if a transitive dependency has
+                    // created the module first.
+                    // Todo: Figure out if this has already been set and throw an error. We can't do this naively because
+                    // a dependency might map to multiple configurations.
+                    unpackModuleVersion.packedDependency = thisPackedDep
                 } else {
-
-                    // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
-                    // dependency is a transitive dependency, "thisPackedDep" will be null.
-                    PackedDependencyHandler thisPackedDep = packedDependencies.find {
-                        // Note that we don't compare the version, because we might have resolved to another version if
-                        // multiple versions were requested in the dependency graph.  In that case, we still want to
-                        // regard this packed dependency as mapping to the given UnpackModuleVersion, i.e., to the
-                        // resolved dependency version.
-                        return (it.groupName == id.group) &&
-                            (it.dependencyName == id.name)
-                    }
-
                     File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
                     unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parentUnpackModuleVersion, thisPackedDep)
@@ -240,38 +250,13 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             throw new RuntimeException("Some dependencies had no ivy.xml file")
         }
 
-        // Check if we need to force the version number to be included in the path in order to prevent
-        // two different versions of a module to be unpacked to the same location.
+        // Build a map of target locations to module versions
         Map<File, Collection<UnpackModuleVersion>> targetLocations =
             [:].withDefault { new ArrayList<UnpackModuleVersion>() }
         unpackModulesMap.values().each { UnpackModule module ->
             module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
                 File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
                 targetLocations[targetPath].add(versionInfo)
-            }
-
-            if (module.versions.size() > 1) {
-                int noIncludesCount = 0
-                module.versions.any { String versionStr, UnpackModuleVersion versionInfo ->
-                    !versionInfo.includeVersionNumberInPath
-                }
-                if (noIncludesCount > 0) {
-                    project.logger.warn(
-                        "Dependencies have been detected on different versions of the module '${module.name}'. " +
-                        "To prevent different versions of this module being unpacked to the same location, " +
-                        "the version number will be appended to the path as '${module.name}-<version>'. You can " +
-                        "make this warning disappear by changing the locations to which these dependencies are " +
-                        "being unpacked. For your information, here are the details of the affected dependencies:"
-                    )
-                    module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                        final String originalInfo = versionInfo.getIncludeInfo()
-                        versionInfo.includeVersionNumberInPath = true
-                        project.logger.warn(
-                            "  ${module.group}:${module.name}:${versionStr} : "
-                                + originalInfo + " -> " + versionInfo.getIncludeInfo()
-                        )
-                    }
-                }
             }
         }
 

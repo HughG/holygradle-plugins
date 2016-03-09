@@ -108,7 +108,11 @@ class UnpackModuleVersion {
     public PackedDependencyHandler getPackedDependency() {
         packedDependency00
     }
-    
+
+    void setPackedDependency(PackedDependencyHandler packedDependency) {
+        packedDependency00 = packedDependency
+    }
+
     // TODO: will need to track all parents because each one (unpacked to a different location in
     // the central cache) will need to create a symlink to this module in the cache.
     public UnpackModuleVersion getParent() {
