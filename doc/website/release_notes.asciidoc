@@ -44,6 +44,20 @@ things for users, and also for plugin developers.
 
 ==== 7.7.x
 
+===== 7.7.3
+(9bb5a2f764ff at 2016-03-09 11:30:32 UTC)
+
+* GR #6664 Move the "everything" configuration behind a property flag
+
+** Make the +everything+ configuration not created unless the property +createEverythingConfiguration+
+is set.
+
+** Packed dependencies are more aware of configurations. This allows different versions of
+modules to exist in one project so long as they are in different configurations.
+
+** Transitive dependencies that are also specified as a direct packed dependency will now use the
+location of the packed dependency even if the transitive dependency is evaluated first.
+
 ===== 7.7.2
 (4b7e7f25280b at 2016-02-04 15:14:32 UTC)
 
