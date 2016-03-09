@@ -197,7 +197,9 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     // created the module first.
                     // Todo: Figure out if this has already been set and throw an error. We can't do this naively because
                     // a dependency might map to multiple configurations.
-                    unpackModuleVersion.packedDependency = thisPackedDep
+                    if (thisPackedDep != null) {
+                        unpackModuleVersion.packedDependency = thisPackedDep
+                    }
                 } else {
                     File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
