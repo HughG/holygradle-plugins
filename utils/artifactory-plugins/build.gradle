@@ -13,6 +13,9 @@ dependencies {
     // These libraries can be found in // from http://repo.jfrog.org/artifactory/libs-releases/org/artifactory/artifactory-papi/
     compile "org.slf4j:slf4j-api:1.7.5" // (also from repo1)
     compile "org.artifactory:artifactory-papi:3.3.0"
+
+    compile "org.codehaus.groovy.modules.http-builder:http-builder:0.6"
+    compile "javax.mail:mail:1.4.3"
 }
 
 repositories {
