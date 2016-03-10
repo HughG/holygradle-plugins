@@ -39,8 +39,8 @@ import javax.mail.internet.MimeMessage
  *
  *   - localAdminUserInfo.txt should contain a single line with the username and password of an admin user for the local
  *     server.  This information is needed to get the mail configuration for sending emails.  The format should be
- *     'username:password' and the password can be plain or encrypted, depending on how your server is configured.  For
- *     security reasons, the folder containing this file should only be readable by admin users.
+ *     'username:password' and the password must be plaintext, NOT encrypted.  For security reasons, the folder
+ *     containing this file should only be readable by admin users.
  */
 
 /**
@@ -71,7 +71,8 @@ class ArtifactoryAPI2 {
     private static final String LOCAL_CRED_FILENAME = "etc/plugins/conf/localAdminUserInfo.txt"
     private static final List<String> LOCAL_CRED =
         new File(ARTIFACTORY_ROOT, LOCAL_CRED_FILENAME).text.split(':')
-    private static final String LOCAL_SERVER_URI = 'http://localhost:8081/'
+    private static final String LOCAL_SERVER_URI =
+        new File(ARTIFACTORY_ROOT, "etc/plugins/conf/localServerBaseUrl.txt").text
 
     private final Logger log
     private final RESTClient client
