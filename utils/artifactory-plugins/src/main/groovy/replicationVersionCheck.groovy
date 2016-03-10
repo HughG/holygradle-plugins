@@ -36,6 +36,9 @@ import org.artifactory.security.Security
  *     server.  This information is needed to get the mail configuration for sending emails.  The format should be
  *     'username:password' and the password must be plaintext, NOT encrypted.  For security reasons, the folder
  *     containing this file should only be readable by admin users.
+ *
+ *   - localServerBaseUrl.txt should contain the base URL for the server (without the "artifactory/" part), for example,
+ *     "http://localhost:8081/".
  */
 
 /**
