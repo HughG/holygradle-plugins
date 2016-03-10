@@ -136,20 +136,20 @@ class PackageArtifactHandler implements PackageArtifactDSL {
      */
     private static Collection<SourceDependencyHandler> findAllSourceDependencies(Project project) {
         Map<String, SourceDependencyHandler> handlers = [:]
-        collectAllSourceDependencies(project, project, handlers)
+        collectAllSourceDependencies(project, handlers)
         return handlers.values()
     }
 
     private static void collectAllSourceDependencies(
-        Project originatingProject,
         Project project,
         Map<String, SourceDependencyHandler> handlers
     ) {
         project.sourceDependencies.each { SourceDependencyHandler handler ->
             handlers[handler.absolutePath.canonicalPath] = handler
-        }
-        project.subprojects { Project subProject ->
-            collectAllSourceDependencies(originatingProject, subProject, handlers)
+            Project srcDepProject = handler.sourceDependencyProject
+            if (srcDepProject != null) {
+                collectAllSourceDependencies(srcDepProject, handlers)
+            }
         }
     }
 

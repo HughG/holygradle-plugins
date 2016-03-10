@@ -140,20 +140,31 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
         boolean throwIfAnyMissing,
         Iterable<String> sourceDepNames
     ) {
-        Map<String, SourceDependencyHandler> allSourceDeps = [:]
+        Map<String, List<SourceDependencyHandler>> allSourceDeps = [:].withDefault { new ArrayList<>() }
         sourceDepNames.each { String sourceDepName ->
             findSourceDependencies(project.rootProject, sourceDepName).each { SourceDependencyHandler sourceDep ->
-                if (allSourceDeps.containsKey(sourceDepName)) {
-                    int curConf = allSourceDeps[sourceDepName].configurationMappings.size()
-                    int itConf = sourceDep.configurationMappings.size()
-                    // NOTE 2014-09-16 HughG: This comparison is nonsense.  See GR #4824.
-                    if (itConf > curConf) {
-                        allSourceDeps[sourceDepName] = sourceDep
+                allSourceDeps[sourceDepName] << sourceDep
+            }
+        }
+        boolean sourceDependencyPathsClash = false
+        allSourceDeps.each { sourceDepName, List<SourceDependencyHandler> handlersMatchingName ->
+            Map<String, List<SourceDependencyHandler>> handlersByPath =
+                handlersMatchingName.groupBy { it.fullTargetPathRelativeToRootProject }
+            if (handlersByPath.size() > 1) {
+                sourceDependencyPathsClash = true
+                project.logger.error(
+                    "The name '${sourceDepName}' is used by source dependencies targetting more than one path:"
+                )
+                handlersByPath.each { path, handlers ->
+                    project.logger.error("  path '${new File(project.rootProject.projectDir, path)}' is targetted by")
+                    handlers.each { handler ->
+                        project.logger.error("    source dependency '${handler.name}' in ${handler.project}")
                     }
-                } else {
-                    allSourceDeps[sourceDepName] = sourceDep
                 }
             }
+        }
+        if (sourceDependencyPathsClash) {
+            throw new RuntimeException("Failed to find a unique target path for some source dependency names")
         }
         if (throwIfAnyMissing) {
             Set<String> wantedSourceDepNames = new TreeSet<String>()
@@ -166,7 +177,8 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
                 )
             }
         }
-        allSourceDeps
+        // We may have more than one handler for each name, but we know they all point to the same path, so any will do.
+        allSourceDeps.collect { name, handlers -> [name, handlers[0]] }
     }
 
     private static Map<String, PackedDependencyHandler> collectPackedDependencies(
