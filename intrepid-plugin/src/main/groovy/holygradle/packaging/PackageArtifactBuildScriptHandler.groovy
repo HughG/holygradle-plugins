@@ -178,7 +178,7 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
             }
         }
         // We may have more than one handler for each name, but we know they all point to the same path, so any will do.
-        allSourceDeps.collect { name, handlers -> [name, handlers[0]] }
+        allSourceDeps.collectEntries { name, handlers -> [name, handlers[0]] }
     }
 
     private static Map<String, PackedDependencyHandler> collectPackedDependencies(
