@@ -22,28 +22,28 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     // It's not important what this order is, but it is important that it's stable -- i.e., that the methods return
     // LinkedList-based lists and maps.
     public static final ArrayList<String> COMMON_CONFIGURATION_NAMES = [
-        "test_use_common",
-        "main_use_common",
-        "test_make_common",
         "main_make_common",
+        "test_make_common",
+        "main_use_common",
+        "test_use_common"
     ]
     public static final ArrayList<String> MAIN_CONFIGURATION_NAMES = [
-        "test_use_purple_large",
-        "main_use_purple_large",
-        "test_make_purple_large",
-        "main_make_purple_large",
-        "test_use_orange_large",
-        "main_use_orange_large",
-        "test_make_orange_large",
-        "main_make_orange_large",
-        "test_use_purple_medium",
-        "main_use_purple_medium",
-        "test_make_purple_medium",
-        "main_make_purple_medium",
-        "test_use_orange_medium",
-        "main_use_orange_medium",
-        "test_make_orange_medium",
         "main_make_orange_medium",
+        "test_make_orange_medium",
+        "main_use_orange_medium",
+        "test_use_orange_medium",
+        "main_make_purple_medium",
+        "test_make_purple_medium",
+        "main_use_purple_medium",
+        "test_use_purple_medium",
+        "main_make_orange_large",
+        "test_make_orange_large",
+        "main_use_orange_large",
+        "test_use_orange_large",
+        "main_make_purple_large",
+        "test_make_purple_large",
+        "main_use_purple_large",
+        "test_use_purple_large"
     ]
     public static final ArrayList<String> COMMON_AND_MAIN_CONFIGURATION_NAMES =
         COMMON_CONFIGURATION_NAMES + MAIN_CONFIGURATION_NAMES

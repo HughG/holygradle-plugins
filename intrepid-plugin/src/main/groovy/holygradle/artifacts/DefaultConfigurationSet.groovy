@@ -5,7 +5,7 @@ import groovy.text.Template
 import org.gradle.api.Project
 import com.google.common.collect.Sets
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.ConfigurationContainer
 
 /**
  * This configuration set class forms its related configurations based on an instance of
@@ -51,7 +51,16 @@ class DefaultConfigurationSet implements ConfigurationSet {
         int axesSize = axes.size()
         // IntelliJ mistakenly thinks this is a Set<List<List<String>>>
         //noinspection GroovyAssignabilityCheck
-        Set<List<String>> allValueCombinations = Sets.cartesianProduct(axes.values().toList()*.toSet())
+        // This is sorted because toSet() creates a HashSet which doesn't guarantee order over time (or between versions
+        // of Java). It is desirable for the configuration set order to remain the same (and tests will fail if they
+        // don't). This produces reasonable grouping of configurations while preserving order across Java versions.
+        def axesSets = axes.values().collect {
+            def set = new LinkedHashSet<List<String>>(it.size())
+            set.addAll(it)
+            return set
+        }
+
+        Set<List<String>> allValueCombinations = Sets.cartesianProduct(axesSets)
         List<String> axesKeys = axes.keySet().toList()
         for (List<String> values in allValueCombinations) {
             Map<String, String> binding = [:]
