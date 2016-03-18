@@ -2,17 +2,18 @@ package holygradle.unit_test
 
 import holygradle.io.FileHelper
 import holygradle.source_dependencies.SourceDependenciesStateHandler
+import org.apache.commons.io.output.TeeOutputStream
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
-import org.gradle.process.ExecSpec
-
+import org.gradle.api.tasks.Exec
 
 class TestHandler {
     public static final Collection<String> DEFAULT_FLAVOURS = Collections.unmodifiableCollection(["Debug", "Release"])
 
     public final String name
     private Collection<String> commandLineChunks = []
-    private String redirectOutputFilePath = null
+    private Object teeTarget
+    private String redirectOutputFilePath
     private Object workingDir
     private Collection<String> selectedFlavours = new ArrayList<String>(DEFAULT_FLAVOURS)
     
@@ -33,6 +34,13 @@ class TestHandler {
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
     public void redirectOutputToFile(String outputFilePath) {
         redirectOutputFilePath = outputFilePath
+
+        // TODO 2016-03-18 HUGR: Deprecate in favour of standardOutput method.
+   }
+
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
+    public void teeStandardOutput(Object teeTarget) {
+        this.teeTarget = teeTarget
     }
 
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
@@ -56,49 +64,69 @@ class TestHandler {
         selectedFlavours.addAll(newFlavours)
     }
     
-    private void configureTask(Project project, String flavour, Task task) {
+    private void configureTask(String flavour, Exec task) {
         if (selectedFlavours.contains(flavour)) {
-            GString testMessage = "Running unit test ${name} (${flavour})..."
-            task.doLast {
-                println testMessage
-                if (commandLineChunks.size() == 0) {
-                    println "    Nothing to run."
-                } else {
-                    project.exec { ExecSpec spec ->
-                        List<String> cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
-                        // Look for the command exe one of three places,
-                        // But proceed even if we don't find it as it may
-                        // be relying on system path (e.g., "cmd.exe")   
-                        File exePath = new File(cmd[0])
-                        if (!exePath.exists()) {
-                            File tryPath = new File(project.projectDir, cmd[0])
-                            if (tryPath.exists()) {
-                                exePath = tryPath
-                            }
-                        }
-                        if (!exePath.exists()) {
-                            File tryPath = new File(project.rootProject.projectDir, cmd[0])
-                            if (tryPath.exists()) {
-                                exePath = tryPath
-                            }
-                        }
-                        cmd[0] = exePath.path
-                        spec.commandLine cmd
-                        if (redirectOutputFilePath != null) {
-                            final File testOutputFile =
-                                new File(project.projectDir, replaceFlavour(redirectOutputFilePath, flavour))
-                            FileHelper.ensureMkdirs(testOutputFile.parentFile, "as parent folder for test output")
-                            spec.standardOutput = new FileOutputStream(testOutputFile)
-                        }
-                        if (workingDir != null) {
-                            spec.workingDir workingDir
-                        }
-                    }
+            task.onlyIf {
+                boolean commanLineEmpty = (commandLineChunks.size() == 0)
+                if (commanLineEmpty) {
+                    println "Not running unit test ${name} (${flavour}) because command line is empty."
                 }
+                return !commanLineEmpty
+            }
+
+            // ---- Set up the command line.
+            List<String> cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
+            // Look for the command exe one of three places,
+            // But proceed even if we don't find it as it may
+            // be relying on system path (e.g., "cmd.exe")
+            File exePath = new File(cmd[0])
+            if (!exePath.exists()) {
+                File tryPath = new File(task.project.projectDir, cmd[0])
+                if (tryPath.exists()) {
+                    exePath = tryPath
+                }
+            }
+            if (!exePath.exists()) {
+                File tryPath = new File(task.project.rootProject.projectDir, cmd[0])
+                if (tryPath.exists()) {
+                    exePath = tryPath
+                }
+            }
+            cmd[0] = exePath.path
+            task.commandLine cmd
+
+            // ---- Set up the output stream.
+            OutputStream testOutputStream
+            File testOutputFile
+            if (redirectOutputFilePath != null) {
+                testOutputFile = new File(task.project.projectDir, redirectOutputFilePath)
+            } else if (teeTarget != null) {
+                if (teeTarget instanceof OutputStream) {
+                    testOutputStream = (OutputStream)teeTarget
+                } else {
+                    testOutputFile = task.project.file(teeTarget)
+                }
+            }
+            if (testOutputFile != null) {
+                testOutputFile = new File(replaceFlavour(testOutputFile.toString(), flavour))
+                FileHelper.ensureMkdirs(testOutputFile.parentFile, "as parent folder for test output")
+                testOutputStream = new FileOutputStream(testOutputFile)
+            }
+            if (testOutputStream != null) {
+                if (teeTarget != null) {
+                    testOutputStream = new TeeOutputStream(task.standardOutput, testOutputStream)
+                }
+                task.standardOutput = testOutputStream
+            }
+
+            // ---- Set up the workingDir.
+            if (workingDir != null) {
+                task.workingDir workingDir
             }
         }
     }
-    
+
+
     public static void defineTasks(Project project) {
         Collection<String> allFlavours = TestFlavourHandler.getAllFlavours(project)
         for (flavour in allFlavours) {
@@ -129,8 +157,8 @@ class TestHandler {
                 
             project.extensions.tests.each { TestHandler it ->
                 // Create a separate task for each of the tests to allow them to be run individually
-                Task subtask = project.task("unitTest${it.name.capitalize()}${flavour}", type: DefaultTask)
-                it.configureTask(project, flavour, subtask)
+                Exec subtask = (Exec)project.task("unitTest${it.name.capitalize()}${flavour}", type: Exec)
+                it.configureTask(flavour, subtask)
                 task.dependsOn subtask
             }
             
