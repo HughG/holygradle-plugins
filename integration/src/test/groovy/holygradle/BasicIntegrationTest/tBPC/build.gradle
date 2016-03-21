@@ -91,9 +91,9 @@ DevEnv {
 */
 tests {
     main_test {
-        commandLine "main/build/main_test/Output/main_test_<f>64.exe"
+        commandLine "${projectDir}/main/build/main_test/Output/main_test_<f>64.exe"
         commandLine "--output_format=XML --report_format=XML --log_level=all --report_level=no"
-        redirectOutputToFile "main/build/main_test/Output/main_test_<f>64.xml"
+        standardOutput = "${projectDir}/main/build/main_test/Output/main_test_<f>64.xml"
     }
 }
 

@@ -3,4 +3,6 @@ dependencies {
         compile project(":${pluginProjectName}-plugin")
         testCompile project(":${pluginProjectName}-plugin").sourceSets.test.output
     }
+
+    runtime group: 'commons-io', name: 'commons-io', version:'1.4'
 }

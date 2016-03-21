@@ -10,19 +10,22 @@ import org.gradle.api.tasks.Exec
 class TestHandler {
     public static final Collection<String> DEFAULT_FLAVOURS = Collections.unmodifiableCollection(["Debug", "Release"])
 
+    public final Project project
     public final String name
     private Collection<String> commandLineChunks = []
-    private Object teeTarget
     private String redirectOutputFilePath
+    private Object standardOutput
+    private Object teeTarget
     private Object workingDir
     private Collection<String> selectedFlavours = new ArrayList<String>(DEFAULT_FLAVOURS)
-    
-    public static TestHandler createContainer(Project project) {
-        project.extensions.tests = project.container(TestHandler)
+
+    public static NamedDomainObjectContainer<TestHandler> createContainer(Project project) {
+        project.extensions.tests = project.container(TestHandler) { String name -> new TestHandler(project, name) }
         project.extensions.tests
     }
     
-    public TestHandler(String name) {
+    public TestHandler(Project project, String name) {
+        this.project = project
         this.name = name
     }
 
@@ -31,16 +34,51 @@ class TestHandler {
         commandLineChunks.addAll(cmdLine)
     }
 
+    @Deprecated
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
     public void redirectOutputToFile(String outputFilePath) {
         redirectOutputFilePath = outputFilePath
+        project.logger.warn(
+            "redirectOutputFilePath is deprecated. Instead, set the standardOutput property and/or the " +
+            "standardOutputTee property. The standardOutput property overrides any value passed to this method. " +
+            "Note that the redirectOutputFilePath value is interpreted relative to the projectDir but the " +
+            "value assigned to the standardOutput property is non. If you want to redirect standardOutput to " +
+            "a location relative to the projectDir, you must explicitly include projectDir in the value you set."
+        )
+    }
 
-        // TODO 2016-03-18 HUGR: Deprecate in favour of standardOutput method.
-   }
-
+    /**
+     * Sets the standard output of the test executable to the given {@code standardOutput}.  If the
+     * {@code standardOutput} is an {@link OutputStream} it is used directly.  Otherwise it is interpreted as for
+     * {@link Project#file(java.lang.Object)}, any "&lt;flavour&gt;" strings are replaced in the filename, the parent
+     * folder of that {@link File} is created if it does not already exist, and then the {@link File} is used to
+     * construct a {@link FileOutputStream}.
+     *
+     * This method is similar to {@link org.gradle.process.ExecSpec@setStandardOutput} but the provided value may be a
+     * template which is interpreted separately for each task.  There is no matching {@code getStandardOutput} method
+     * because there may be no single {@link OutputStream} to return: there may be one such stream for each task.
+     *
+     * @param teeTarget An {@link OutputStream} or another kind of object interpreted as for
+     * {@link Project#file(java.lang.Object)}
+     */
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
-    public void teeStandardOutput(Object teeTarget) {
-        this.teeTarget = teeTarget
+    public void setStandardOutput(Object standardOutput) {
+        this.standardOutput = standardOutput
+    }
+
+    /**
+     * Redirects the standard output of the test executable to both Gradle's standard output and the given
+     * {@code target}.  If the {@code target} is an {@link OutputStream} it is used directly.  Otherwise it is
+     * interpreted as for {@link Project#file(java.lang.Object)}, any "&lt;flavour&gt;" strings are replaced in the
+     * filename, the parent folder of that {@link File} is created if it does not already exist, and then the
+     * {@link File} is used to construct a {@link FileOutputStream}.
+     *
+     * @param teeTarget An {@link OutputStream} or another kind of object interpreted as for
+     * {@link Project#file(java.lang.Object)}
+     */
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
+    public void setStandardOutputTee(Object target) {
+        this.teeTarget = target
     }
 
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
@@ -63,7 +101,18 @@ class TestHandler {
         selectedFlavours.clear()
         selectedFlavours.addAll(newFlavours)
     }
-    
+
+    private OutputStream makeOutputStream(String flavour, Object target) {
+        if (target instanceof OutputStream) {
+            return (OutputStream)target
+        } else {
+            File outputFile = project.file(target)
+            File flavouredOutputFile = new File(replaceFlavour(outputFile.toString(), flavour))
+            FileHelper.ensureMkdirs(flavouredOutputFile.parentFile, "as parent folder for test output")
+            return new FileOutputStream(flavouredOutputFile)
+        }
+    }
+
     private void configureTask(String flavour, Exec task) {
         if (selectedFlavours.contains(flavour)) {
             task.onlyIf {
@@ -81,14 +130,27 @@ class TestHandler {
             // be relying on system path (e.g., "cmd.exe")
             File exePath = new File(cmd[0])
             if (!exePath.exists()) {
-                File tryPath = new File(task.project.projectDir, cmd[0])
+                // TODO 2015-03-21 HughG: Remove this at next major revision change.
+                File tryPath = new File(project.projectDir, cmd[0])
                 if (tryPath.exists()) {
+                    project.logger.warn(
+                        "Test executable was specified as '${exePath}' but found relative to project.projectDir at " +
+                        "'${tryPath}'.  This automatic path search will be removed in a future version of the Holy " +
+                        "Gradle.  Please add project.projectDir to the executable path explicitly."
+                    )
                     exePath = tryPath
                 }
             }
             if (!exePath.exists()) {
-                File tryPath = new File(task.project.rootProject.projectDir, cmd[0])
+                // TODO 2015-03-21 HughG: Remove this at next major revision change.
+                File tryPath = new File(project.rootProject.projectDir, cmd[0])
                 if (tryPath.exists()) {
+                    project.logger.warn(
+                        "Test executable was specified as '${exePath}' but found relative to " +
+                        "project.rootProject.projectDir at '${tryPath}'.  This automatic path search will be removed " +
+                        "in a future version of the Holy Gradle.  Please add project.rootProject.projectDir to the " +
+                        "executable path explicitly."
+                    )
                     exePath = tryPath
                 }
             }
@@ -96,27 +158,19 @@ class TestHandler {
             task.commandLine cmd
 
             // ---- Set up the output stream.
-            OutputStream testOutputStream
-            File testOutputFile
-            if (redirectOutputFilePath != null) {
-                testOutputFile = new File(task.project.projectDir, redirectOutputFilePath)
-            } else if (teeTarget != null) {
-                if (teeTarget instanceof OutputStream) {
-                    testOutputStream = (OutputStream)teeTarget
-                } else {
-                    testOutputFile = task.project.file(teeTarget)
-                }
+            final OutputStream testOutputStream
+            if (standardOutput != null) {
+                testOutputStream = makeOutputStream(flavour, standardOutput)
+            } else if (redirectOutputFilePath != null) {
+                testOutputStream = makeOutputStream(flavour, new File(project.projectDir, redirectOutputFilePath))
+            } else {
+                testOutputStream = task.standardOutput
             }
-            if (testOutputFile != null) {
-                testOutputFile = new File(replaceFlavour(testOutputFile.toString(), flavour))
-                FileHelper.ensureMkdirs(testOutputFile.parentFile, "as parent folder for test output")
-                testOutputStream = new FileOutputStream(testOutputFile)
-            }
-            if (testOutputStream != null) {
-                if (teeTarget != null) {
-                    testOutputStream = new TeeOutputStream(task.standardOutput, testOutputStream)
-                }
+            if (task.standardOutput != testOutputStream) {
                 task.standardOutput = testOutputStream
+            }
+            if (teeTarget != null) {
+                task.standardOutput = new TeeOutputStream(task.standardOutput, makeOutputStream(flavour, teeTarget))
             }
 
             // ---- Set up the workingDir.

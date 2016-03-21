@@ -238,6 +238,14 @@
                     <option name="myStatic" value="false" />
                     <option name="myName" value="configurationSetTypes" />
                   </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="tests" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.unit_test.TestHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.unit_test.TestHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="tests" />
+                  </DPropertyElement>
                 </set>
               </option>
             </DClassElement>
