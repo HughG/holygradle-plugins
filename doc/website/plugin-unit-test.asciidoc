@@ -80,6 +80,22 @@ the first letter in upper case.
 
 -> Call this method at least once.
 
+==== workingDir
+
+This method and property allow you to set the working directory for the unit test executable.
+
+[source,groovy]
+----
+tests {
+    foo {
+        commandLine "foo/build/<Flavour>/foo_test.exe"
+        commandLine "--output_format=XML"
+        workingDir = new File(projectDir, "foo/test_results/foo_vc10_u<f>64.xml")
+        // or workingDir new File("${projectDir}/foo/test_results/foo_vc10_u<f>64.xml")
+        // or setStandardOutput file("foo/test_results/foo_vc10_u<f>64.xml")
+    }
+}
+----
 ==== redirectOutputToFile
 
 WARNING: This method is deprecated and will be remoted in a future version of the gloss:holygradle[].
@@ -98,12 +114,9 @@ As above you can use `<flavour>`, `<f>`, and so on.
 This settable property allows you to have the output of the unit test process redirected to a file
 of your choice.
 
-The value for this property is a Java `File` object, not a `String`.  You can create one using
-
-* +new File(_<some String>_)+ or +new File(_<existing File>_, _<some String>_)+, in which case you must
-specify the complete path; or
-* +project.file(_<some String>_)+ (or just +file(_<some String>_)+), in which case the string is
-relative to the project's +projectDir+ property.
+The value for this property can be a Java `File` object, a string, or other types as documented
+for the Gradle `Project#file` method.  The value is intepreted relative to the `projectDir`,
+unless you supply a `File` with an absolute path.
 
 As above you can use `<flavour>`, `<f>`, and so on in the strings used to construct the +File+
 objects.
@@ -114,9 +127,8 @@ tests {
     foo {
         commandLine "foo/build/<Flavour>/foo_test.exe"
         commandLine "--output_format=XML"
-        standardOutput = new File(projectDir, "foo/test_results/foo_vc10_u<f>64.xml")
-        // or standardOutput = new File("${projectDir}/foo/test_results/foo_vc10_u<f>64.xml")
-        // or setStandardOutput file("foo/test_results/foo_vc10_u<f>64.xml")
+        standardOutput = "foo/test_results/foo_vc10_u<f>64.xml")
+        // or standardOutput = new File(rootProject.projectDir, "foo/test_results/foo_vc10_u<f>64.xml")
     }
 }
 ----
@@ -134,7 +146,7 @@ tests {
     foo {
         commandLine "foo/build/<Flavour>/foo_test.exe"
         commandLine "--output_format=XML"
-        standardOutputTee = file("foo/test_results/foo_vc10_u<f>64.xml")
+        standardOutputTee = "foo/test_results/foo_vc10_u<f>64.xml"
     }
 }
 ----

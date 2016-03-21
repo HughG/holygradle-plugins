@@ -14,8 +14,8 @@ class TestHandler {
     public final String name
     private Collection<String> commandLineChunks = []
     private String redirectOutputFilePath
-    private File standardOutputTemplate
-    private File teeTemplate
+    private Object standardOutputTemplate
+    private Object teeTemplate
     private Object workingDir
     private Collection<String> selectedFlavours = new ArrayList<String>(DEFAULT_FLAVOURS)
 
@@ -40,39 +40,37 @@ class TestHandler {
         redirectOutputFilePath = outputFilePath
         project.logger.warn(
             "redirectOutputFilePath is deprecated. Instead, set the standardOutput property and/or the " +
-            "standardOutputTee property. The standardOutput property overrides any value passed to this method. " +
-            "Note that the redirectOutputFilePath value is interpreted relative to the projectDir but the " +
-            "value assigned to the standardOutput property is not. If you want to redirect standardOutput to " +
-            "a location relative to the projectDir, you must explicitly include '\${projectDir}' in the value you set " +
-            "or use the project.file(String) method, which returns a file relative to the projectDir."
+            "standardOutputTee property. The standardOutput property overrides any value passed to this method."
         )
     }
 
     /**
-     * Sets the standard output of the test executable to the given {@code standardOutputTemplate}.  The {@link File} is
-     * treated as a template: any "&lt;flavour&gt;" strings are replaced in the filename.  At task configuration time
-     * the parent folder of the file is created if it does not already exist.
+     * Sets the standard output of the test executable to the given {@code standardOutputTemplate}.  The argument is
+     * interpreted as a {@link File} as for the {@link Project#file} method, and then treated as a template: any
+     * "&lt;flavour&gt;" strings are replaced in the filename.  At task configuration time the parent folder of the
+     * file is created if it does not already exist.
      *
      * This method is similar to {@link org.gradle.process.ExecSpec@setStandardOutput} but there is no matching
      * {@code getStandardOutput} method because there may be no single {@link OutputStream} to return: there may be one
      * such stream for each task.
      *
-     * @param standardOutputTemplate A {@link File} used as a template to set the output file for each test task.
+     * @param standardOutputTemplate An {@link Object} used as a template to set the output file for each test task.
      */
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
-    public void setStandardOutput(File standardOutputTemplate) {
+    public void setStandardOutput(Object standardOutputTemplate) {
         this.standardOutputTemplate = standardOutputTemplate
     }
 
     /**
      * Redirects the standard output of the test executable to both Gradle's standard output and the given
-     * {@code teeTemplate}.  The {@link File} is treated as a template: any "&lt;flavour&gt;" strings are replaced in
-     * the filename.  At task configuration time the parent folder of the file is created if it does not already exist.
+     * {@code teeTemplate}.  The argument is interpreted as a {@link File} as for the {@link Project#file} method, and
+     * then treated as a template: any "&lt;flavour&gt;" strings are replaced in the filename.  At task configuration
+     * time the parent folder of the file is created if it does not already exist.
      *
-     * @param teeTemplate A {@link File} used as a template to set a tee output file for each test task.
+     * @param teeTemplate An {@link Object} used as a template to set a tee output file for each test task.
      */
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
-    public void setStandardOutputTee(File teeTemplate) {
+    public void setStandardOutputTee(Object teeTemplate) {
         this.teeTemplate = teeTemplate
     }
 
@@ -97,8 +95,9 @@ class TestHandler {
         selectedFlavours.addAll(newFlavours)
     }
 
-    private static OutputStream makeOutputStream(String flavour, File target) {
-        File flavouredOutputFile = new File(replaceFlavour(target.toString(), flavour))
+    private OutputStream makeOutputStream(String flavour, Object target) {
+        final File outputFile = project.file(target)
+        final File flavouredOutputFile = new File(replaceFlavour(outputFile.toString(), flavour))
         FileHelper.ensureMkdirs(flavouredOutputFile.parentFile, "as parent folder for test output")
         return new FileOutputStream(flavouredOutputFile)
     }
