@@ -44,8 +44,47 @@ things for users, and also for plugin developers.
 
 ==== 7.7.x
 
+===== 7.7.4
+(TODO)
+
+Intrepid::
+
+* GR #6664 Move the "everything" configuration behind a property flag.  Fixed a bug where, if the same module was both
+a direct and a transitive dependency, it could cause packed dependency resolution to fail, depending on the order in
+which they were found.
+
+* GR #4126 Bug fix for recording source version info for unpublished source dependencies.  Info for transitive source
+dependencies was only included for the root project; for other projects (including all source dependencies reachable
+from the root project), only info on immediate source dependencies was included.  Now each project's +build_info+
+folder includes source version info for its complete set of transitive source dependecies.
+
+* GR #6585 Internal change to make sure that the configurations returned by a configuration set's methods are always
+returned in the same order.
+
+UnitTest::
+
+* GR #6675 Convenience improvements to the unit-test plugin:
+
+** You can now set the +workingDir+ for the tasks which are generated, in the same way as +ExecSpec#workingDir+.
+
+** You can now choose to send test output either just to a file (using +standardOutput = <File>+), or to both a file and
+standard output (using +standardOutputTee = <File>+).  These methods replace +redirectOutputFilePath+ which is
+deprecated (but still works, for now).  Note that these new methods don't take strings, only File objects, and they are
+not automatically interpreted relative to the +projectDir+.  See link:plugin-unit-test.html#_setstandardoutput[] and
+link:plugin-unit-test.html#_setstandardoutputtee[] for details.
+
+Utils::
+
+* GR #5818, GR #4104 These Artifactory plugins need to make REST calls to the local server's API.  This release
+parameterises the URL for the local server, since it may not be on the default of "+http://localhost:8081/+".
+
+DevEnv {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper::
+- No changes.
+
 ===== 7.7.3
 (9bb5a2f764ff at 2016-03-09 11:30:32 UTC)
+
+Intrepid::
 
 * GR #6664 Move the "everything" configuration behind a property flag
 
@@ -58,8 +97,20 @@ modules to exist in one project so long as they are in different configurations.
 ** Transitive dependencies that are also specified as a direct packed dependency will now use the
 location of the packed dependency even if the transitive dependency is evaluated first.
 
+Utils::
+
+* GR #5818 New Artifactory plugin -- fail replication if source server is different version (and send email
+notifications).
+
+* GR #4104 Add email notifications to existing checkCaseInsensitiveNameClash Artifactory plugin.
+
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper::
+- No changes.
+
 ===== 7.7.2
 (4b7e7f25280b at 2016-02-04 15:14:32 UTC)
+
+Intrepid::
 
 * GR #6585 Further bugfixes and improvements.
 
@@ -88,8 +139,13 @@ configurations (or names).  These methods now just return a list, and new method
 +getConfigurationsMap+ and +getConfigurationNamesMap+ have been added to the
 +DefaultConfigurationSet+ implementation class.
 
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.7.1
 (186454651bba at 2015-11-30 13:55:03 UTC)
+
+Intrepid::
 
 * GR #6585 Fixed mistake in overall design of configuration mapping.  If module A is mapping to
 module B, and doesn't want to export B's "+import+" configurations in its own "+import+"
@@ -97,8 +153,13 @@ configurations, it usually still needs to have a mapping to the import configura
 otherwise headers/etc. will be missing (if the unpack cache is clean).  The fix is to map from a
 private configuration "+build+" in A to the "+import+" configurations of B.
 
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.7.0
 (aee70bdfbd29 at 2015-11-27 13:02:35 UTC)
+
+Intrepid::
 
 * GR #6585 Further bugfixes and improvements based on use in practice.
 
@@ -136,15 +197,20 @@ by the "GR #6279 source overrides" work when it's merged to default.
 configurations of the originating module and the dependency.  This mapping is only added when some
 other mapping is added.  This means that you can now have a source dependency with no Gradle project
 and no published dependency, for example, to include source or documents from a different source
-repository in the current module.  See [TODO: link to doc].
+repository in the current module.  See link:plugin-intrepid.html#_sourceDependencies_configuration[].
 
 * GR #5847 By default the "relativePath" attribute is no longer added to generated ivy.xml files. GR
 #5845 and GR #5846 changed the behaviour on read so that, by default, this value is ignored
 anyway. The Ivy files therefore now validate, which will allow us to upgrade to Gradle 1.8 or
 higher.
 
+DevEnv::
+
 * GR #5823 Changed +DevEnvHandler+ so it no longer assumes (the now rather outdated) Visual Studio
 2010 by default.  Now you must specify the version.
+
+UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
 
 
 ==== 7.6.x
@@ -152,11 +218,18 @@ higher.
 ===== 7.6.2
 (a18a258bee8a at 2015-11-18 17:49:32 UTC)
 
+Intrepid::
+
 * Fixed new bug introduced by previous bugfix (for deleting files with long paths), that read-only
 files could not be deleted.
 
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.6.1
 (5e8a66eb0f71 at 2015-11-16 14:54:00 UTC)
+
+Intrepid::
 
 * GR #6585 Bugfixes and improvements based on use in practice.
 
@@ -169,13 +242,18 @@ prefixed configurationSets in another module.  See [TODO: link to doc].
 ** Added overloads of +mapConfigurationSet+ for mapping a single configuration to a target
 configuration set (not just to a target configuration set type).
 
-** Add a simplistic configuration type for "web libraries". May change this in future.  See [TODO:
-link to doc].
+** Add a simplistic configuration type for "web libraries". May change this in future.  See
+link:plugin-intrepid.html#_web_lib[].
 
 * Internal bugfix for deleting test output files with paths longer than the Windows maximum.
 
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.6.0
 (c4befcca049a at 2015-10-30 17:38:34 UTC)
+
+Intrepid::
 
 * Bugfix for symlink creation: Symlinks were testing whether the link target existed before creating
 but for relative links this was being done relative to the working directory rather than the link
@@ -187,7 +265,11 @@ may not).
 * GR #6585 Add support for creating and mapping sets of related configurations.  Unlike JVM-based
 code, native applications often vary by platform, build setup (Debug or Release), etc., as reflected
 in the "model" in newer versions of Gradle, and it is natural to map these to separate Gradle
-configurations.  This new DSL makes this easier.  See [TODO: link to doc].
+configurations.  This new DSL makes this easier.  See link:plugin-intrepid.html#_configurationSetTypes[]
+and link:plugin-intrepid.html#_configurationSets[].
+
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
 
 ==== 7.5.x
 

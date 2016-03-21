@@ -33,12 +33,12 @@ gplugins.apply()
 def extraArgs = "--stuff"
 tests {
     foo {
-        commandLine "foo/build/<flavour>/foo_test.exe"
+        commandLine "foo/build/<Flavour>/foo_test.exe"
         commandLine "--output_format=XML", extraArgs
         redirectOutputToFile "foo/test_results/foo_vc10_u<f>64.xml"
     }
     bar {
-        commandLine "bar/build/<flavour>/bar_test.exe", extraArgs
+        commandLine "bar/build/<Flavour>/bar_test.exe", extraArgs
     }
 }
 ----
@@ -46,11 +46,17 @@ tests {
 If this build script elsewhere defines a dependency on another source control module then this will
 result in:
 
-* a task `unitTestDebugIndependently` which invokes `foo/build/Debug/foo_test.exe` with the arguments `--output_format=XML --stuff` which redirects standard output to a file `foo/test_results/foo_vc10_ud64.xml`
-* a similar task named `unitTestReleaseIndependently`
-* a task `unitTestDebug`, which depends on `unitTestDebugIndependently` and all `unitTestDebug`
-tasks on dependent modules
+* a task `unitTestDebug`, which does nothing itself but depends on
+** a task `unitTestFooDebug` which invokes `foo/build/Debug/foo_test.exe` with the arguments
+`--output_format=XML --stuff` and redirects standard output to a file
+`foo/test_results/foo_vc10_ud64.xml`;
+** a task `unitTestBarDebug` which invokes `bar/build/Debug/bar_test.exe` with the arguments
+`--stuff` (and leaves standard output as normal); and
+** all `unitTestDebug` tasks on dependent modules
 * a similar task named `unitTestRelease`
+
+To run only the tests for one project, and not run the tests for dependent modules, run Gradle
+with the `-a` option and specify the test task using the project path.  For example, `gw -a :someProject:testFoo`.
 
 == DSL Guide
 
@@ -65,21 +71,75 @@ This method defines the command line for the unit test process. You can call thi
 of times to append extra parts to the command-line, and the method accepts any number of arguments.
 
 Wherever `<flavour>` appears in the command line, it will be replaced with the corresponding
-flavour, for example, `Debug` or `Release`.
+flavour (for example, `Debug` or `Release`) converted to lower case.  Similarly `<Flavour>` will be
+replaced with only the first letter in upper case, and `<FLAVOUR>` with all letters in upper case.
 
 Wherever `<f>` appears in the command line, it will be replaced with a single character, the first
-letter of the flavour in lower case, for example, `d` or `r`.
+letter of the flavour in lower case (for example, `d` or `r`), and `<F>` will be replaced with
+the first letter in upper case.
 
 -> Call this method at least once.
 
 ==== redirectOutputToFile
 
+WARNING: This method is deprecated and will be remoted in a future version of the gloss:holygradle[].
+Please use <<_setstandardoutput>> and <<_setstandardoutputtee>> instead.  Note that those methods
+accept a `File`, not `String`, and are not automatically treated as relative to the `projectDir`.
+
 This method allows you to have the output of the unit test process redirected to a file of your
 choice.
 
-As above you can use `<flavour>` and `<f>`.
+As above you can use `<flavour>`, `<f>`, and so on.
 
 -> Call this method at most once.
+
+==== setStandardOutput
+
+This settable property allows you to have the output of the unit test process redirected to a file
+of your choice.
+
+The value for this property is a Java `File` object, not a `String`.  You can create one using
+
+* +new File(_<some String>_)+ or +new File(_<existing File>_, _<some String>_)+, in which case you must
+specify the complete path; or
+* +project.file(_<some String>_)+ (or just +file(_<some String>_)+), in which case the string is
+relative to the project's +projectDir+ property.
+
+As above you can use `<flavour>`, `<f>`, and so on in the strings used to construct the +File+
+objects.
+
+[source,groovy]
+----
+tests {
+    foo {
+        commandLine "foo/build/<Flavour>/foo_test.exe"
+        commandLine "--output_format=XML"
+        standardOutput = new File(projectDir, "foo/test_results/foo_vc10_u<f>64.xml")
+        // or standardOutput = new File("${projectDir}/foo/test_results/foo_vc10_u<f>64.xml")
+        // or setStandardOutput file("foo/test_results/foo_vc10_u<f>64.xml")
+    }
+}
+----
+
+-> Set this property at most once.
+
+==== setStandardOutputTee
+
+This settable property is similar to <<_setstandardoutput>> but it redirects output to a file
+and also outputs as normal, at the same time.
+
+[source,groovy]
+----
+tests {
+    foo {
+        commandLine "foo/build/<Flavour>/foo_test.exe"
+        commandLine "--output_format=XML"
+        standardOutputTee = file("foo/test_results/foo_vc10_u<f>64.xml")
+    }
+}
+----
+
+-> Set this property at most once.
 
 ==== flavour
 
