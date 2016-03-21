@@ -13,6 +13,7 @@ class TestHandler {
     public final String name
     private Collection<String> commandLineChunks = []
     private String redirectOutputFilePath = null
+    private Object workingDir
     private Collection<String> selectedFlavours = new ArrayList<String>(DEFAULT_FLAVOURS)
     
     public static TestHandler createContainer(Project project) {
@@ -23,15 +24,33 @@ class TestHandler {
     public TestHandler(String name) {
         this.name = name
     }
-    
+
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
     public void commandLine(String... cmdLine) {
         commandLineChunks.addAll(cmdLine)
     }
-    
+
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
     public void redirectOutputToFile(String outputFilePath) {
         redirectOutputFilePath = outputFilePath
     }
-    
+
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
+    public Object getWorkingDir() {
+        return workingDir
+    }
+
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
+    public void setWorkingDir(Object workingDir) {
+        this.workingDir = workingDir
+    }
+
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
+    public void workingDir(Object workingDir) {
+        this.workingDir = workingDir
+    }
+
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
     public void flavour(String... newFlavours) {
         selectedFlavours.clear()
         selectedFlavours.addAll(newFlavours)
@@ -71,6 +90,9 @@ class TestHandler {
                             FileHelper.ensureMkdirs(testOutputFile.parentFile, "as parent folder for test output")
                             spec.standardOutput = new FileOutputStream(testOutputFile)
                         }
+                        if (workingDir != null) {
+                            spec.workingDir workingDir
+                        }
                     }
                 }
             }
@@ -106,7 +128,10 @@ class TestHandler {
             task.description = "Run the ${flavour} unit tests for '${project.name}'."
                 
             project.extensions.tests.each { TestHandler it ->
-                it.configureTask(project, flavour, task)
+                // Create a separate task for each of the tests to allow them to be run individually
+                Task subtask = project.task("unitTest${it.name.capitalize()}${flavour}", type: DefaultTask)
+                it.configureTask(project, flavour, subtask)
+                task.dependsOn subtask
             }
             
             if (anyBuildDependencies && project.gradle.startParameter.buildProjectDependencies) {
