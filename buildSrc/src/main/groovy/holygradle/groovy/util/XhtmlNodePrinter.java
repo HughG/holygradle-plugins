@@ -16,7 +16,7 @@ import java.util.*;
 public class XhtmlNodePrinter extends XmlNodePrinter {
     private static final QName XML_SPACE = new QName("http://www.w3.org/XML/1998/namespace", "space");
 
-    private Set<String> expandEmptyElementsSet = new HashSet<String>();
+    private Set<String> keepEmptyElementsSet = new HashSet<String>();
 
     public XhtmlNodePrinter(PrintWriter out) {
         super(out);
@@ -59,7 +59,7 @@ public class XhtmlNodePrinter extends XmlNodePrinter {
             }
 
             printNameAttributes(node.attributes(), ctx);
-            if (isExpandEmptyElements() && expandEmptyElementsSet.contains(nodeName)) {
+            if (isExpandEmptyElements() && !keepEmptyElementsSet.contains(nodeName)) {
                 out.print("></");
                 out.print(nodeName);
                 out.print(">");
@@ -159,7 +159,7 @@ public class XhtmlNodePrinter extends XmlNodePrinter {
         if (!isPreserveWhitespace()) out.decrementIndent();
     }
 
-    public Set<String> getExpandEmptyElementsSet() {
-        return expandEmptyElementsSet;
+    public Set<String> getKeepEmptyElementsSet() {
+        return keepEmptyElementsSet;
     }
 }

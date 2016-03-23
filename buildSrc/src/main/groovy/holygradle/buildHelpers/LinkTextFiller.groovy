@@ -178,15 +178,26 @@ public class LinkTextFiller {
 
     public void writeTo(File outputFile) {
         // NOTE: We can't just use XmlUtil.serialize because it turns head/script into an empty tag, instead of
-        // start/end, which means Firefox won't load the script.  The default XmlNodePrinter adds extra whitespace, so
-        // I made a custom version.
+        // start/end, which means Firefox won't load the script.  Some other browsers also refuse to handle empty
+        // tags for other elements.  Based on the XHTML 1 spec (https://www.w3.org/TR/xhtml1/#C_3) as linked from
+        // <http://stackoverflow.com/a/69984>, we add a complete list of elements which have an empty content
+        // model, so we can expand empty tags to a stard/end pair for all other elements.  Also, the default
+        // XmlNodePrinter adds extra whitespace, which the custom class avoids.
         final XmlNodePrinter printer = new XhtmlNodePrinter(new PrintWriter(outputFile, "UTF-8"), "")
-        printer.expandEmptyElements = true // for Firefox
-        printer.expandEmptyElementsSet.with {
-            add("a")
-            add("script")
-            add("object")
-        }
+        printer.expandEmptyElements = true
+        printer.keepEmptyElementsSet.addAll([
+            "area",
+            "base",
+            "basefont",
+            "br",
+            "col",
+            "img",
+            "input",
+            "isindex",
+            "link",
+            "meta",
+            "param",
+        ])
         printer.preserveWhitespace = true // to avoid extra line breaks
         printer.print(doc.node)
     }

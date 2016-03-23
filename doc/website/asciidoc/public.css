@@ -57,28 +57,27 @@
     }
 
     /* Add in sitemap to the left of the toc */
-    #sitemaptitle {
-        display: block;
-        color: #527BBD;
-        font-family: Arial,Helvetica,sans-serif;
-        font-size: 1.1em;
-        font-weight: bold;
-        margin-bottom: 0.3em;
-        margin-top: 0.5em;
-    }
-    #sitemap {
+    #sitemap-container {
         position: fixed;
         top: 0;
         left: 0;
         bottom: 0;
-        font-size: 14px;
         width: 9em; /* at 14px, as opposed to body margin which is at 16px */
-        padding: 0.5em;
-        padding-bottom: 1.5em;
         margin: 0;
         overflow: auto;
         border-right: 3px solid #EEEEEE;
         background-color: #E0E0E0;
+    }
+    #sitemap-container iframe {
+        position: absolute;
+        overflow: visible;
+        border: none;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        width: 100%;
     }
     #sitemap ul {
         padding-left: 0;

@@ -1,0 +1,59 @@
+include::stdattr.ascinc[]
+:docinfo1!:
+:toc2!:
+:toclevels!:
+:disable-javascript:
+:stylesheet: master-sitemap.css
+
+= Sitemap
+
+++++
+<div id="sitemap">
+<div id="sitemaptitle">
+The Holy Gradle
+and Artifactory
+</div>
+version 7.7.4
+<hr />
+<ul>
+    <li><a href="index.html" target="_top">Home</a></li>
+    <li><p>Getting Started</p>
+        <ul>
+            <li><a href="very_quick_start.html" target="_top"></a></li>
+            <li><a href="overview.html" target="_top"></a></li>
+            <li><a href="first_steps.html" target="_top"></a></li>
+        </ul>
+    </li>
+    <li><a href="support.html" target="_top"></a>
+        <ul>
+            <li><a href="troubleshooting.html" target="_top"></a></li>
+        </ul>
+    </li>
+<!--
+    <li><a href="tutorial.html" target="_top">Tutorial</a></li>
+-->
+    <li><a href="workflows.html" target="_top">Workflows</a></li>
+    <li><a href="workflows_admin.html" target="_top">Workflows for Admins</a></li>
+    <li><a href="examples.html" target="_top">Examples</a></li>
+    <li><!--<a href="reference.html" target="_top"></a>--><p>Reference</p>
+        <ul>
+            <li><a href="plugins.html" target="_top"></a></li>
+            <ul>
+                <li><a href="plugin-my-credentials.html" target="_top"></a></li>
+                <li><a href="plugin-intrepid.html" target="_top"></a></li>
+                <li><a href="plugin-devenv.html" target="_top"></a></li>
+                <li><a href="plugin-unit-test.html" target="_top"></a></li>
+            </ul>
+            <li><a href="glossary.html" target="_top"></a></li>
+        </ul>
+    </li>
+    <hr />
+    <li><a href="development.html" target="_top"></a>
+        <ul>
+            <li><a href="release_notes.html" target="_top"></a></li>
+            <li><a href="requirements.html" target="_top"></a></li>
+        </ul>
+    </li>
+</ul>
+</div>
+++++

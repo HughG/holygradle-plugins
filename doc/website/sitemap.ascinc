@@ -1,50 +1,5 @@
 ++++
-<div id="sitemap">
-<div id="sitemaptitle">
-The Holy Gradle
-and Artifactory
-</div>
-version 7.7.2
-<hr />
-<ul>
-    <li><a href="index.html">Home</a></li>
-    <li><p>Getting Started</p>
-        <ul>
-            <li><a href="very_quick_start.html"></a></li>
-            <li><a href="overview.html"></a></li>
-            <li><a href="first_steps.html"></a></li>
-        </ul>
-    </li>
-    <li><a href="support.html"></a>
-        <ul>
-            <li><a href="troubleshooting.html"></a></li>
-        </ul>
-    </li>
-<!--
-    <li><a href="tutorial.html">Tutorial</a></li>
--->
-    <li><a href="workflows.html">Workflows</a></li>
-    <li><a href="workflows_admin.html">Workflows for Admins</a></li>
-    <li><a href="examples.html">Examples</a></li>
-    <li><!--<a href="reference.html"></a>--><p>Reference</p>
-        <ul>
-            <li><a href="plugins.html"></a></li>
-            <ul>
-                <li><a href="plugin-my-credentials.html"></a></li>
-                <li><a href="plugin-intrepid.html"></a></li>
-                <li><a href="plugin-devenv.html"></a></li>
-                <li><a href="plugin-unit-test.html"></a></li>
-            </ul>
-            <li><a href="glossary.html"></a></li>
-        </ul>
-    </li>
-    <hr />
-    <li><a href="development.html"></a>
-        <ul>
-            <li><a href="release_notes.html"></a></li>
-            <li><a href="requirements.html"></a></li>
-        </ul>
-    </li>
-</ul>
+<div id="sitemap-container">
+<iframe src="sitemap-content.html"></iframe>
 </div>
 ++++
