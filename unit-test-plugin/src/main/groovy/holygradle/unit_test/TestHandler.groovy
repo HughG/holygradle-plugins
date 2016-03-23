@@ -105,11 +105,11 @@ class TestHandler {
     private void configureTask(String flavour, Exec task) {
         if (selectedFlavours.contains(flavour)) {
             task.onlyIf {
-                boolean commanLineEmpty = (commandLineChunks.size() == 0)
-                if (commanLineEmpty) {
+                boolean commandLineEmpty = (commandLineChunks.size() == 0)
+                if (commandLineEmpty) {
                     println "Not running unit test ${name} (${flavour}) because command line is empty."
                 }
-                return !commanLineEmpty
+                return !commandLineEmpty
             }
 
             // ---- Set up the command line.

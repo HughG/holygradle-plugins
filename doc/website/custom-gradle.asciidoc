@@ -86,6 +86,12 @@ gplugins.apply()
 Note that the link:plugin-custom-gradle-core.html[] will automatically be applied whenever you
 use the +gplugins+ DSL.
 
+CAUTION: The gplugins DSL should only be used for Holy Gradle plugins. Using it for other plugins
+may result in unexpected side effects. Notably, if you are using +snapshot+ versions of the
+Holy Gradle plugins you will need to make a matching snapshot of all plugins available. Other 
+plugins should be applied using the standard
+https://docs.gradle.org/current/userguide/plugins.html[Gradle Plugins API]
+
 [[_user_gradle]]
 === user.gradle
 
