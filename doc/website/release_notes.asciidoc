@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.7.x
 
 ===== 7.7.4
-(TODO)
+(a5902c826e99 at 2016-03-23 09:57:55 UTC)
 
 Intrepid::
 
@@ -67,11 +67,11 @@ UnitTest::
 
 ** You can now set the +workingDir+ for the tasks which are generated, in the same way as +ExecSpec#workingDir+.
 
-** You can now choose to send test output either just to a file (using +standardOutput = <File>+), or to both a file and
-standard output (using +standardOutputTee = <File>+).  These methods replace +redirectOutputFilePath+ which is
-deprecated (but still works, for now).  Note that these new methods don't take strings, only File objects, and they are
-not automatically interpreted relative to the +projectDir+.  See link:plugin-unit-test.html#_setstandardoutput[] and
-link:plugin-unit-test.html#_setstandardoutputtee[] for details.
+** You can now choose to send test output either just to a file (using +standardOutput = <String, File, etc.>+), or to
+both a file and standard output (using +standardOutputTee = <String, File, etc.>+).  These methods replace
++redirectOutputFilePath+ which is deprecated (but still works, for now).  Note that these new methods don't take
+strings, only File objects, and they are not automatically interpreted relative to the +projectDir+.  See
+link:plugin-unit-test.html#_setstandardoutput[] and link:plugin-unit-test.html#_setstandardoutputtee[] for details.
 
 Utils::
 
