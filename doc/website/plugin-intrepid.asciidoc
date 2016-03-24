@@ -20,7 +20,7 @@ This is a custom plugin for Gradle for retrieving source-code dependencies and o
 ** Support for overriding a source code dependency and using pre-built artifacts instead
 * Packed dependencies
 ** Retrieving dependencies consisting of many files into your workspace
-** Central cache for unpacked dependencies & symlink from workspace to central cache
+** Central cache for unpacked dependencies & link from workspace to central cache
 ** Configurable symlinks from consumer module to multiple locations in unpacked dependency
 ** Support for multiple versions of the same component (i.e. version conflicts)
 * Publishing
@@ -123,7 +123,7 @@ This script does the following:
 * Defines 'RenderingLib' as a dependency:
 ** When dependencies are fetched, all packages belonging to the specified configurations will be fetched from the repository.
 ** The packages will be unpacked to a central cache. (The cache settings can be configured.)
-** A symlink will be created from the workspace to the unpacked copy of 'RenderingLib'.
+** A link will be created from the workspace to the unpacked copy of 'RenderingLib'.
 * Defines 'NUnit' as a dependency:
 ** When dependencies are fetched, all packages belonging to the 'bin' configuration will be fetched from the repository and unpacked directly into '<workspace>/NUnit 2.5.10'. 
 ** When 'this' module is published it will not mention 'NUnit' as a dependency.
@@ -144,8 +144,8 @@ For the above script the intrepid plugin makes the following tasks available:
 ....
 Dependencies tasks
 ------------------
-fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks.
-rebuildSymlinks - Rebuild all symlinks.
+fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links.
+rebuildSymlinks - Rebuild all links.
 
 Publishing tasks
 ----------------
@@ -382,7 +382,7 @@ sourceDependencies {
 }
 ----
 
-If you already have a source-code checkout located at +<workspace>/dependency_module+ then you will need to delete it or move it out of the way. The use of +usePublishedVersion = true+ will cause the source-code dependency to behave similar to +packedDependencies+ i.e. the dynamic version number will be resolved, the appropriate artifacts will be retrieved, unpacked to the central cache and a symlink defined.
+If you already have a source-code checkout located at +<workspace>/dependency_module+ then you will need to delete it or move it out of the way. The use of +usePublishedVersion = true+ will cause the source-code dependency to behave similar to +packedDependencies+ i.e. the dynamic version number will be resolved, the appropriate artifacts will be retrieved, unpacked to the central cache and a link defined.
 
 It is expected that developers will normally only use this property temporarily in their local check-out, and not commit it to shared version-controlled source.
 
@@ -457,7 +457,7 @@ packedDependencies {
 
 declares two dependencies:
 
-* +RenderingLib+ packages belonging to the configurations +compileVc10X64Debug+ and +compileVc10X64Release+ should be unpacked to the central cache, and a symlink should be created at +<workspace>/my-rendering-lib+. When this module is published, the +RenderingLib+ dependency will be included in the module descriptor.
+* +RenderingLib+ packages belonging to the configurations +compileVc10X64Debug+ and +compileVc10X64Release+ should be unpacked to the central cache, and a link should be created at +<workspace>/my-rendering-lib+. When this module is published, the +RenderingLib+ dependency will be included in the module descriptor.
 * +NUnit+ packages belonging to the configuration +bin+ should be unpacked directly to the workspace in folder called +<workspace>/NUnit 2.5.10+ (assuming that 2.5.10 is the most recent version with the prefix "2.5"). When this module is published, the +NUnit+ dependency should not be mentioned in the module descriptor (due to the +privateBuild+ configuration).
 
 ==== Relative Paths
@@ -471,7 +471,7 @@ You can specify +<version>+ anywhere within the name of a packed dependency e.g.
 The name of the packed dependency affects:
 
 * the path to which the dependency will be unpacked within your workspace (if +unpackToCache+ is false)
-* the name of the symlink in your workspace (if +unpackToCache+ is true, which is the default)
+* the name of the link in your workspace (if +unpackToCache+ is true, which is the default)
 
 For the example above, the workspace would look like this:
 
@@ -479,7 +479,7 @@ For the example above, the workspace would look like this:
 <workspace>
 |   build.gradle
 |   ...
-+---my-rendering-lib   (symlink ---> <unpack cache>/com.company.rendering/RenderingLib-2012a2)
++---my-rendering-lib   (link ---> <unpack cache>/com.company.rendering/RenderingLib-2012a2)
 |   ...
 +---NUnit 2.5.10
     ...
@@ -613,19 +613,19 @@ path.
 [[useRelativePathFromIvyXml]]
 ==== Relative paths for transitive dependencies
 
-By default, when a packed dependency has further transitive dependencies, the unpacked directories/symlinks for those
+By default, when a packed dependency has further transitive dependencies, the unpacked directories/links for those
 will appear next to the packed dependency.
 
 Previous versions of the Holy Gradle allowed published modules to specify the relative location where each transitive
 packed dependency should appear.  This design caused various problems, as follows.
 
 * If a packed dependency is used in multiple places in the dependency graph, it would require extra effort to create a
-symlink at each location, and waste space if +unpackToCache = false+ is used.
+link at each location, and waste space if +unpackToCache = false+ is used.
 * If relative paths points to child folders of dependencies, arbitrarily long paths may be created, causing problems
 with Windows' maximum path length of 260 characters.
 * If relative paths points to child folders of dependencies, and the same dependencies are used in separate projects,
 and at least one of those projects forces a dependency to resolve to a different version, there is no way to create a
-correct set of symlinks (in the default case where +unpackToCache = true+).
+correct set of links (in the default case where +unpackToCache = true+).
 
 In practice, all uses had a relative path of +"../_module_name_"+, so this is now the default, and the previous
 behaviour will be removed in a future version, provided no problems are found with this approach.  For now, the previous
@@ -1031,7 +1031,7 @@ See link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#tutorial
 
 === fetchAllDependencies
 
-This task retrieves all <<_packedDependencies>> and <<_sourceDependencies>> and sets up the necessary symlinks. Symlinks are always deleted and rebuilt.
+This task retrieves all <<_packedDependencies>> and <<_sourceDependencies>> and sets up the necessary links. Links are always deleted and rebuilt.
 
 If a source-code dependency is retrieved then +settings.gradle+ will be updated to include the new module. Afterwards, the plugin will attempt to automatically relaunch the task in order to allow the new module to be taken into account and for further dependencies to be resolved. The gradle process is terminated with a special exit code and as a result a slightly customised Gradle Wrapper re-launches the gradle process. This slightly hacky approach has a few implications:
 
@@ -1095,7 +1095,7 @@ and the module descriptor for +bar+ declares artifacts as follows:
 ----
 
 
-In this example the top-level module is dependent on the +compileX64Debug+ and +compileX64Release+ configurations of +foo+ which are in turn dependent on the +runtimeDebug+ and +runtimeRelease+ configurations of +bar+. Although +bar+ defines four artifacts, only +bar-dlls-debug+ and +bar-dlls-release+ belong to the configurations of interest, so these will be fetched. Finally, since both of these artifacts have the file-extension "zip" (see the `artifact->ext` attribute in the module descriptor for +bar+) then the +intrepid+ plugin assumes that they should be unpacked to your unpacked dependency cache, and creates a symlink from your workspace.
+In this example the top-level module is dependent on the +compileX64Debug+ and +compileX64Release+ configurations of +foo+ which are in turn dependent on the +runtimeDebug+ and +runtimeRelease+ configurations of +bar+. Although +bar+ defines four artifacts, only +bar-dlls-debug+ and +bar-dlls-release+ belong to the configurations of interest, so these will be fetched. Finally, since both of these artifacts have the file-extension "zip" (see the `artifact->ext` attribute in the module descriptor for +bar+) then the +intrepid+ plugin assumes that they should be unpacked to your unpacked dependency cache, and creates a link from your workspace.
 
 === fetchFirstLevelSourceDependencies
 
@@ -1123,11 +1123,11 @@ This task is a subclass of the usual Gradle +Zip+ task, so the +baseName+ and ot
 
 === rebuildSymlinks
 
-This task performs a subset of the functionality of the +fetchAllDependencies+ task - it simply rebuilds all the symlinks for all dependencies.
+This task performs a subset of the functionality of the +fetchAllDependencies+ task - it simply rebuilds all the links for all dependencies.
 
 === deleteSymlinks
 
-This task deletes any symlinks created by +rebuildSymlinks+ or +fetchAllDependencies+. This is not a blanket deletion of all symlinks; only symlinks which **would** be created by the other tasks are deleted.
+This task deletes any links created by +rebuildSymlinks+ or +fetchAllDependencies+. This is not a blanket deletion of all links; only links which **would** be created by the other tasks are deleted.
 
 === packageEverything
 
