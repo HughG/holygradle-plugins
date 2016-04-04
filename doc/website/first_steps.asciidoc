@@ -39,7 +39,9 @@ Windows 7 comes with an older version of Java pre-installed, usually at
 following things.
 
 . Set the +JAVA_HOME+ environment variable to the root folder of your Java 7 installation, for
-example, +C:\Program Files\Java\jre7+ or +C:\Program Files\Java\jdk1.7.0_55+.
+example, +C:\Program Files\Java\jre7+ or +C:\Program Files\Java\jdk1.7.0_55+. If the Holy Gradle
+needs to co-exist with other applications that use the +JAVA_HOME+ variable and a different version
+of Java you can set +HOLY_GRADLE_JAVA_HOME+ instead.
 
 . Make sure that the +bin+ folder in your Java install location is first on your +PATH+.  To
 check the versions of +java.exe+ on your path you can run +where java+, which lists them in

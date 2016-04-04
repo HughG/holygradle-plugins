@@ -21,6 +21,10 @@ if "%DIRNAME%" == "" set DIRNAME=.
 set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%
 
+@rem Allow use of Holy Gradle specific options to override system Java settings
+if defined HOLY_GRADLE_JAVA_HOME set JAVA_HOME=%HOLY_GRADLE_JAVA_HOME%
+if defined HOLY_GRADLE_GRADLE_HOME set GRADLE_HOME=%HOLY_GRADLE_GRADLE_HOME%
+
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 
