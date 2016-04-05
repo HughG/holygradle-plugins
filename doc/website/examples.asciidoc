@@ -8,6 +8,9 @@ include::sitemap.ascinc[]
 
 Following are some basic example gloss:holygradle[] build scripts.
 
-link:files/examples/third-party/build.gradle[Packaging Third-Party Dependencies]
+link:files/examples/third-party/build.gradle[Packaging third-party dependencies].
+
+link:files/examples/DLL_32/build.gradle[A custom configuration set type for a 32-bit DLL] with
+link:examples/DLL_32/settings.gradle[settings file].
 
 include::{localDoc}/examples.ascinc[]

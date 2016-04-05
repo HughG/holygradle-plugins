@@ -123,20 +123,22 @@ for (local in [false, true]) {
         }
     }
 
+    def addWebsiteExamples = { CopySpec spec, String prefix ->
+        spec.include "${prefix}files/examples/**"
+        spec.exclude "${prefix}files/examples/*/credential-store.exe"
+        spec.exclude "${prefix}files/examples/*/gw.bat"
+        spec.exclude "${prefix}files/examples/*/.gradle"
+        spec.exclude "${prefix}files/examples/*/build"
+        spec.exclude "${prefix}files/examples/*/dep"
+        spec.exclude "${prefix}files/examples/*/gradle"
+    }
+
     task("copy${namePart}WebsiteExamples", type: Copy) {
         from project.WEBSITE_DIR
         into websiteOutputDir
-        include "files/examples/**"
-        exclude "files/examples/*/gw.bat"
-        exclude "files/examples/*/.gradle/**"
-        exclude "files/examples/*/dep/**"
-        exclude "files/examples/*/gradle/**"
+        addWebsiteExamples(it, "")
         if (local) {
-            it.include "local/files/examples/**"
-            it.exclude "local/files/examples/*/gw.bat"
-            it.exclude "local/files/examples/*/.gradle/**"
-            it.exclude "local/files/examples/*/dep/**"
-            it.exclude "local/files/examples/*/gradle/**"
+            addWebsiteExamples(it, "local/")
         }
 
         String rootString = project.property("${namePartLowercase}WebsiteUrl")
@@ -144,20 +146,21 @@ for (local in [false, true]) {
         filter { line -> WEBSITE_ROOT_PATTERN.matcher(line).replaceAll(rootString) }
     }
 
+    def addWebsiteExtraFiles = { CopySpec spec, String prefix ->
+        spec.include "${prefix}asciidoc/**"
+        spec.include "${prefix}files/**"
+        spec.exclude "${prefix}files/examples/**"
+        spec.include "${prefix}images/**"
+    }
+
     task("copy${namePart}WebsiteExtraFiles", type: Copy) {
         dependsOn "copy${namePart}WebsiteExamples"
 
         from project.WEBSITE_DIR
         into websiteOutputDir
-        include "asciidoc/**"
-        include "files/**"
-        exclude "files/examples/**"
-        include "images/**"
+        addWebsiteExtraFiles(it, "")
         if (local) {
-            it.include "local/asciidoc/**"
-            it.include "local/files/**"
-            it.exclude "local/files/examples/**"
-            it.include "local/images/**"
+            addWebsiteExtraFiles(it, "local/")
         }
     }
 
