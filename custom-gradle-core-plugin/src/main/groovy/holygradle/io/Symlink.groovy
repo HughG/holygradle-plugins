@@ -20,7 +20,7 @@ public class Symlink {
         checkIsSymlinkOrMissing(link)
 
         File canonicalLink = link.canonicalFile
-        
+
         // Delete the symlink if it exists
         delete(canonicalLink)
         
@@ -28,17 +28,32 @@ public class Symlink {
         final File linkParentDir = canonicalLink.parentFile
         FileHelper.ensureMkdirs(linkParentDir, "for symlink ${canonicalLink.name}")
 
-        if (!target.exists()) {
+        File canonicalTarget = getCanonicalTarget(canonicalLink, target)
+        if (!canonicalTarget.exists()) {
             throw new IOException("Cannot create link to non-existent target: from '${canonicalLink}' to '${target}'")
         }
 
-        // If [target] is relative, we want createSymbolicLink to create a link relative to [link] (as opposed to
-        // relative to the current working directory) so we have to calculate this.
-        if (!target.isAbsolute()) {
-            File targetAsAbsoluteOrRelativeToLink = canonicalLink.parentFile.toPath().relativize(target.canonicalFile.toPath()).toFile()
-            Files.createSymbolicLink(canonicalLink.toPath(), targetAsAbsoluteOrRelativeToLink.toPath())
+        File effectiveTarget = getEffectiveTarget(canonicalLink, canonicalTarget)
+        Files.createSymbolicLink(canonicalLink.toPath(), effectiveTarget.toPath())
+    }
+
+    private static File getCanonicalTarget(File canonicalLink, File target) {
+        if (target.absolute) {
+            target
         } else {
-            Files.createSymbolicLink(canonicalLink.toPath(), target.toPath())
+            // If [target] is relative, we want createSymbolicLink to create a link relative to [link] (as opposed to
+            // relative to the current working directory) so we have to calculate this.
+            new File(canonicalLink.parentFile, target.path).canonicalFile
+        }
+    }
+
+    private static File getEffectiveTarget(File canonicalLink, File canonicalTarget) {
+        if (canonicalTarget.absolute) {
+            canonicalTarget
+        } else {
+            // If [target] is relative, we want createSymbolicLink to create a link relative to [link] (as opposed to
+            // relative to the current working directory) so we have to calculate this.
+            canonicalLink.parentFile.toPath().relativize(canonicalTarget.toPath()).toFile()
         }
     }
 
@@ -53,5 +68,9 @@ public class Symlink {
                 "because a folder or file already exists there and is not a symlink."
             )
         }
+    }
+
+    public static File getTarget(File link) {
+        return Files.readSymbolicLink(link.toPath()).toFile()
     }
 }

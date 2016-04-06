@@ -2,12 +2,18 @@ package holygradle.io
 
 import holygradle.custom_gradle.util.RetryHelper
 import holygradle.test.AbstractHolyGradleTest
-import org.eclipse.jdt.internal.core.Assert
+import org.junit.Assert
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 
-import static org.junit.Assert.*
+/*
+    NOTE: On Windows 8 and above, the SymlinkTest subclass needs to be run with Administrator privileges if the current
+    user is a member of the Administrators group.  If you run these tests from a non-admin command prompt, you'll get
+    an exception like the following.
+
+        java.nio.file.FileSystemException: <filename>: A required privilege is not held by the client
+*/
 
 abstract class LinkTestBase extends AbstractHolyGradleTest
 {
@@ -21,24 +27,32 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
 
     protected abstract void delete(File link)
 
+    protected abstract File getTarget(File link)
+
     /**
      * Test that you can create a link to a target which exists, using an absolute path.
      */
     @Test
     public void testLinkIsDetectedCorrectly() {
-        File link = new File(testDir, "link_to_existing")
-        File existingDir = new File(testDir, "existing_folder")
+        // Arrange
+        File link = new File(testDir, "link_to_existing").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        File existingDir = new File(testDir, "existing_folder").canonicalFile
+        Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
         if (link.exists()) {
             Link.delete(link)
-            FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
-            fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
+            Assert.fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
         }
         FileHelper.ensureMkdirs(existingDir, "for test setup")
+
+        // Act
         makeLinkExternally(link, existingDir)
 
-        Assert.isTrue(isLink(link), "Detected '$link' as link")
+        // Assert
+        Assert.assertTrue("Detected '$link' as link", isLink(link))
+        Assert.assertEquals("Target of '$link'", existingDir.canonicalFile, getTarget(link).canonicalFile)
     }
 
     /**
@@ -46,18 +60,26 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
      */
     @Test
     public void testCreateLinkToAbsolutePathToExistingDirectory() {
-        File link = new File(testDir, "link_to_existing")
-        File existingDir = new File(testDir, "existing_folder")
+        // Arrange
+        File link = new File(testDir, "link_to_existing").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        File existingDir = new File(testDir, "existing_folder").canonicalFile
+        Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
         if (link.exists()) {
             Link.delete(link)
-            FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
-            fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
+            Assert.fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
         }
         FileHelper.ensureMkdirs(existingDir, "for test setup")
 
+
+        // Act
         rebuild(link, existingDir)
+
+        // Assert
+        File target = getTarget(link)
+        Assert.assertEquals("Target of '$link'", existingDir.canonicalFile, target.canonicalFile)
     }
 
     /**
@@ -65,18 +87,27 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
      */
     @Test
     public void testCreateLinkToRelativePathToExistingDirectory() {
-        File link = new File(testDir, "link_to_existing")
+        // Arrange
+        File link = new File(testDir, "link_to_existing").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
         File existingDir = new File("../${testDir.name}/existing_folder")
+        Assert.assertTrue("target '$existingDir' is NOT absolute", !existingDir.absolute)
         if (link.exists()) {
             Link.delete(link)
-            FileHelper.ensureDeleteFile(link, "for test setup")
         }
-        if (existingDir.exists() && !existingDir.isDirectory()) {
-            fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
+        File canonicalTarget = getCanonicalLinkTargetPath(link, existingDir)
+        if (canonicalTarget.exists() && !canonicalTarget.isDirectory()) {
+            Assert.fail("Test pre-condition: '${canonicalTarget}' should not exist, or should be a directory")
         }
-        FileHelper.ensureMkdirs(existingDir, "for test setup")
+        FileHelper.ensureMkdirs(canonicalTarget, "for test setup")
 
+        // Act
         rebuild(link, existingDir)
+
+        // Assert
+        File target = getTarget(link)
+        File canonicalTargetFromLink = getCanonicalLinkTargetPath(link, target)
+        Assert.assertEquals("Target of '$link'", canonicalTarget, canonicalTargetFromLink)
     }
 
     /**
@@ -89,23 +120,28 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
      */
     @Test
     public void testCreateLinkToMissingDirectory() {
-        File link = new File(testDir, "link_to_missing")
-        File missingDir = new File(testDir, "missing_folder")
+        // Arrange
+        File link = new File(testDir, "link_to_missing").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        File missingDir = new File(testDir, "missing_folder").canonicalFile
+        Assert.assertTrue("target '$missingDir' is absolute", missingDir.absolute)
         if (link.exists()) {
             Link.delete(link)
-            FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (missingDir.exists()) {
-            fail("Test pre-condition: '${missingDir}' should not exist")
+            Assert.fail("Test pre-condition: '${missingDir}' should not exist")
         }
         // File deletion seems to happen after the JDK method returns, sometimes, so check until it's really gone.
         RetryHelper.retry(10, 1000, null, "Check ${missingDir.name} dir was really deleted") {
             !missingDir.exists()
         }
 
+        // Assert (written early because of how JUnit asserts about exceptions)
         thrown.expect(IOException)
         thrown.expectMessage("Cannot create link to non-existent target")
-        rebuild(link, missingDir)
+
+        // Act
+       rebuild(link, missingDir)
     }
 
     /**
@@ -113,25 +149,31 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
      */
     @Test
     public void testDeleteLink() {
-        File link = new File(testDir, "link_to_existing")
-        File existingDir = new File(testDir, "existing_folder")
+        // Arrange
+        File link = new File(testDir, "link_to_existing").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        File existingDir = new File(testDir, "existing_folder").canonicalFile
+        Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
         if (link.exists()) {
             Link.delete(link)
-            FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
-            fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
+            Assert.fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
         }
         FileHelper.ensureMkdirs(existingDir, "for test setup")
         rebuild(link, existingDir)
 
-        // Now for the actual test.
+        // Act
         delete(link)
+
+        // Assert
         if (!existingDir.exists()) {
-            fail("Link '${link}' target '${existingDir}' should still exist after deleting link")
+            Assert.fail("Link '${link}' target '${existingDir}' should still exist after deleting link")
         }
         if (!existingDir.isDirectory()) {
-            fail("Link '${link}' target '${existingDir}' still exists after deleting link, but is no longer a directory!")
+            Assert.fail(
+                "Link '${link}' target '${existingDir}' still exists after deleting link, but is no longer a directory!"
+            )
         }
     }
 
@@ -140,14 +182,16 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
      */
     @Test
     public void testDeleteLinkWithMissingTarget() {
-        File link = new File(testDir, "link_to_existing")
-        File existingDir = new File(testDir, "existing_folder")
+        // Arrange
+        File link = new File(testDir, "link_to_existing").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        File existingDir = new File(testDir, "existing_folder").canonicalFile
+        Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
         if (link.exists()) {
             Link.delete(link)
-            FileHelper.ensureDeleteFile(link, "for test setup")
         }
         if (existingDir.exists() && !existingDir.isDirectory()) {
-            fail("Test pre-condition: '${existingDir}' should not exist, or should be an empty directory")
+            Assert.fail("Test pre-condition: '${existingDir}' should not exist, or should be an empty directory")
         }
         FileHelper.ensureMkdirs(existingDir, "for test setup")
         rebuild(link, existingDir)
@@ -157,10 +201,27 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
             !existingDir.exists()
         }
 
-        // Now for the actual test.
+        // Act
+
+        // Assert
         delete(link)
         if (existingDir.exists()) {
-            fail("Link '${link}' target '${existingDir}' should still not exist")
+            Assert.fail("Link '${link}' target '${existingDir}' should still not exist")
+        }
+    }
+
+    /**
+     * Directory junctions always use an absolute path internally but symlinks can use a relative path.  For test
+     * comparisons and for making target folders, we always want the absolute target path.
+     */
+    private static File getCanonicalLinkTargetPath(File link, File target) {
+        if (target.isAbsolute()) {
+            return target.canonicalFile
+        } else {
+            // If [target] is relative, we want createSymbolicLink to create a link relative to [link] (as opposed to
+            // relative to the current working directory) so we have to calculate this.
+            File canonicalLink = link.canonicalFile
+            return new File(canonicalLink.parentFile, target.path).canonicalFile
         }
     }
 }

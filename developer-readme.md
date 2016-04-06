@@ -82,6 +82,14 @@ publishing, if you want.  See the section on publishing below for more details.
 
 # Testing
 
+> NOTE: On Windows 8 and above, the SymlinkTest subclass needs to be run with Administrator privileges if the current
+> user is a member of the Administrators group.  If you run these tests from a non-admin command prompt, you'll get
+> an exception like the following.
+> 
+>     java.nio.file.FileSystemException: <filename>: A required privilege is not held by the client
+> 
+> We may remove symlink support, and hence this test, once directory junction creation has been fully tested.
+
 Run tests with `gw test` for unit tests, and `gw integTest` for integration tests.  These use JUnit, so you can do the
 usual Gradle JUnit tricks, such as running a single test class (which is especially useful for integration tests, as
 these can't be run within a normal JUnit test runner).  You can't run just one test method, though.  You need to include

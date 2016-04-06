@@ -23,4 +23,9 @@ class SymlinkTest extends LinkTestBase
     protected void delete(File link) {
         Symlink.delete(link)
     }
+
+    @Override
+    protected File getTarget(File link) {
+        Symlink.getTarget(link)
+    }
 }

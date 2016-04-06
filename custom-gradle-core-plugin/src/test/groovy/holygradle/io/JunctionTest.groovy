@@ -23,4 +23,9 @@ class JunctionTest extends LinkTestBase
     protected void delete(File link) {
         Junction.delete(link)
     }
+
+    @Override
+    protected File getTarget(File link) {
+        Junction.getTarget(link)
+    }
 }
