@@ -103,6 +103,14 @@
                     <option name="myName" value="hgVersionInfoFile" />
                   </DPropertyElement>
                   <DPropertyElement>
+                    <option name="name" value="packedDependencies" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packedDependencies" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="ext" />
                     <option name="static" value="false" />
                     <option name="type" value="org.gradle.api.plugins.ExtraPropertiesExtension" />
@@ -117,14 +125,6 @@
                     <option name="myType" value="holygradle.credentials.MyHandler" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="my" />
-                  </DPropertyElement>
-                  <DPropertyElement>
-                    <option name="name" value="packedDependencies" />
-                    <option name="static" value="false" />
-                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
-                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
-                    <option name="myStatic" value="false" />
-                    <option name="myName" value="packedDependencies" />
                   </DPropertyElement>
                   <DPropertyElement>
                     <option name="name" value="packedDependenciesSettings" />
@@ -315,4 +315,3 @@
     </option>
   </component>
 </project>
-

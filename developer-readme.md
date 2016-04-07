@@ -10,6 +10,7 @@ This repository contains:
 
 # Prerequisites
  - Java JDK 1.7 - you do need the dev-kit, not just the run-time.
+ - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 15.
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
