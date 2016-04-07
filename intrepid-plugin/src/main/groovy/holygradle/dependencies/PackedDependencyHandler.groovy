@@ -14,7 +14,7 @@ class PackedDependencyHandler extends DependencyHandler {
     public Boolean applyUpToDateChecks = null
     public Boolean readonly = null
     public Boolean unpackToCache = null
-    private Boolean createSymlinkToCache = null
+    private Boolean createLinkToCache = null
     public Boolean createSettingsFile = null
 
     public static Collection<PackedDependencyHandler> createContainer(Project project) {
@@ -97,27 +97,36 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
 
+    @Deprecated
     public void noCreateSymlinkToCache() {
-        createSymlinkToCache = false
+        project.logger.warn(
+            "noCreateSymlinkToCache is deprecated and will be removed in future.  " +
+            "Please use noCreateLinkToCache instead"
+        )
+        noCreateLinkToCache()
     }
 
-    protected Boolean getCreateSymlinkToCache() {
-        createSymlinkToCache
+    public void noCreateLinkToCache() {
+        createLinkToCache = false
     }
 
-    public boolean shouldCreateSymlinkToCache() {
-        if (createSymlinkToCache == null) {
+    protected Boolean getCreateLinkToCache() {
+        createLinkToCache
+    }
+
+    public boolean shouldCreateLinkToCache() {
+        if (createLinkToCache == null) {
             // This property is different from the others: we only use the parent (default) value if it has been
-            // explicitly set.  If we were to call p.shouldCreateSymlinkToCache(), it would always have a fallback value
+            // explicitly set.  If we were to call p.shouldCreateLinkToCache(), it would always have a fallback value
             // (of p.shouldUnpackToCache()), so we'd never get to the fallback value we want, this.shouldUnpackToCache().
             PackedDependencyHandler p = getParentHandler()
-            if (p != null && p.getCreateSymlinkToCache() != null) {
-                return p.getCreateSymlinkToCache()
+            if (p != null && p.getCreateLinkToCache() != null) {
+                return p.getCreateLinkToCache()
             } else {
                 return shouldUnpackToCache()
             }
         } else {
-            return createSymlinkToCache
+            return createLinkToCache
         }
     }
 

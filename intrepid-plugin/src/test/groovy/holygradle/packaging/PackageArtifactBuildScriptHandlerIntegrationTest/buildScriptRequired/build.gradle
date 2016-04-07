@@ -41,12 +41,12 @@ sourceDependencies {
 }
 
 packedDependencies {
-    // This test uses noCreateSymlinkToCache() because we don't actually want to test the fetching
-    // unpacking, and symlinking of dependencies, just the finding of them by name in includeBuildScript.
+    // This test uses noCreateLinkToCache() because we don't actually want to test the fetching
+    // unpacking, and linking of dependencies, just the finding of them by name in includeBuildScript.
     "../projectCDep" {    
         dependency "holygradle.test:external-lib:1.0"
         configurations.each { configuration "${it.name}->testRuntime" }
-        noCreateSymlinkToCache()
+        noCreateLinkToCache()
     }
 }
 

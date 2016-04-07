@@ -1,4 +1,4 @@
-package holygradle.symlinks
+package holygradle.links
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
@@ -7,20 +7,19 @@ import org.junit.Test
 import static org.junit.Assert.*
 import static org.hamcrest.number.OrderingComparison.*
 
-class SymlinkTaskIntegrationTest extends AbstractHolyGradleIntegrationTest
+class LinkTaskIntegrationTest extends AbstractHolyGradleIntegrationTest
 {
     /**
-     * Tests that, if one project B has a source dependency on another project A, then the symlinks to the unpack cache
-     * for A will be rebuilt before any explicitly-created symlinks in B.  This is a requirement because project B might
-     * want to symlink to an unpacked dependency in A, but it can't do that if A's symlinks-to-cache don't already
-     * exist.
+     * Tests that, if one project B has a source dependency on another project A, then the links to the unpack cache
+     * for A will be rebuilt before any explicitly-created links in B.  This is a requirement because project B might
+     * want to link to an unpacked dependency in A, but it can't do that if A's links-to-cache don't already exist.
      *
      * We call the projects "A" and "B" here so that the tasks of "A" will be executed before those of "B" (since Gradle
      * does them in lexicographical order) unless there is some overriding task dependency (which is what we want to
      * test for).
      */
     @Test
-    public void sourceDependencyCacheSymlinksAreCreatedFirst() {
+    public void sourceDependencyCacheLinksAreCreatedFirst() {
         File projectDir = new File(getTestDir(), "vsSrcDeps")
         OutputStream outputStream = new ByteArrayOutputStream()
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
@@ -44,14 +43,14 @@ class SymlinkTaskIntegrationTest extends AbstractHolyGradleIntegrationTest
         )
 
         // Now check the thing we really care about.
-        int projBRebuildSymlinksToCacheIndex = outputLines.findIndexOf { it.startsWith(":projB:rebuildSymlinksToCache") }
-        int projARebuildSymlinksIndex = outputLines.findIndexOf { it.startsWith(":projA:rebuildSymlinks") }
-        assertNotEquals("Project B's symlinks-to-cache task is listed", -1, projBRebuildSymlinksToCacheIndex)
-        assertNotEquals("Project B's symlinks task is listed", -1, projARebuildSymlinksIndex)
+        int projBRebuildLinksToCacheIndex = outputLines.findIndexOf { it.startsWith(":projB:rebuildLinksToCache") }
+        int projARebuildLinksIndex = outputLines.findIndexOf { it.startsWith(":projA:rebuildLinks") }
+        assertNotEquals("Project B's links-to-cache task is listed", -1, projBRebuildLinksToCacheIndex)
+        assertNotEquals("Project B's links task is listed", -1, projARebuildLinksIndex)
         assertThat(
-            "Project B's symlinks-to-cache task comes before project A's symlinks task",
-            projBRebuildSymlinksToCacheIndex,
-            lessThan(projARebuildSymlinksIndex)
+            "Project B's links-to-cache task comes before project A's links task",
+            projBRebuildLinksToCacheIndex,
+            lessThan(projARebuildLinksIndex)
         )
     }
 }

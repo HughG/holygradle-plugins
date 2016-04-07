@@ -68,16 +68,16 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
 
         [emptyConfigLibDir, extLibDir, anotherLibDir].each {
             assertTrue("File/folder for packed dep has been created at ${it}", it.exists())
-            assertTrue("Symlink to packed dep has been created at ${it}", Link.isLink(it))
+            assertTrue("Link to packed dep has been created at ${it}", Link.isLink(it))
             // The output of "list()" doesn't include "./" and "../", so "> 0" tells us it's non-empty.
-            assertTrue("Symlink target folder is not empty under ${it}", it.list().length > 0)
+            assertTrue("Link target folder is not empty under ${it}", it.list().length > 0)
         }
     }
 
     /**
      * Test that, if you depend on a module only via configurations which have no artifacts, and those lead to other
-     * module configurations which do have artifacts, then (a) no symlink is created for the empty-configs module; and
-     * (b) symlinks are still created for the other modules.
+     * module configurations which do have artifacts, then (a) no link is created for the empty-configs module; and
+     * (b) links are still created for the other modules.
      *
      * This is a (regression) test for a case discovered while developing GR #4125.
      */
@@ -94,8 +94,8 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
 
     /**
      * Test that, if you depend on a module only via configurations which have no artifacts, and those lead to other
-     * module configurations which do have artifacts, then (a) no symlink is created for the empty-configs module; and
-     * (b) symlinks are still created for the other modules.
+     * module configurations which do have artifacts, then (a) no link is created for the empty-configs module; and
+     * (b) links are still created for the other modules.
      *
      * This is a (regression) test for a case discovered while developing GR #4125.
      */
@@ -127,15 +127,15 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
             launcher.forTasks("fAD")
         }
 
-        final Collection<File> symlinkPackedDepDirs = [extLibDir, anotherLibDir]
+        final Collection<File> linkPackedDepDirs = [extLibDir, anotherLibDir]
         allPackedDepDirs.each { File file ->
-            final boolean expectSymlink = symlinkPackedDepDirs.contains(file)
+            final boolean expectLink = linkPackedDepDirs.contains(file)
             assertEquals(
                 "Link to packed dep has been created at ${file}",
-                expectSymlink,
+                expectLink,
                 file.exists() && Link.isLink(file)
             )
-            if (expectSymlink) {
+            if (expectLink) {
                 // The output of "list()" doesn't include "./" and "../", so "> 0" tells us it's non-empty.
                 assertTrue("Link target folder is not empty under ${file}", file.list().length > 0)
             }

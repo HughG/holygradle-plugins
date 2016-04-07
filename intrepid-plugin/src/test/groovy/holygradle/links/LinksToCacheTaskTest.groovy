@@ -1,4 +1,4 @@
-package holygradle.symlinks
+package holygradle.links
 
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
@@ -13,7 +13,7 @@ import org.junit.Test
 import static org.junit.Assert.*
 import static org.hamcrest.core.IsEqual.*
 
-class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
+class LinksToCacheTaskTest extends AbstractHolyGradleTest {
     private File getIvyFile(String fileName) {
         return new File(getTestDir(), fileName)
     }
@@ -42,7 +42,7 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )
         if (addDummyArtifact) {
-            // Add a dummy artifact, otherwise the symlink won't be created (because no artifacts exist to be unpacked).
+            // Add a dummy artifact, otherwise the link won't be created (because no artifacts exist to be unpacked).
             version.addArtifacts([makeDummyResolvedArtifact("${moduleName}_dummy_artifact.zip")], "default")
         }
         return version
@@ -56,42 +56,42 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
         project
     }
 
-    private static SymlinksToCacheTask makeSymlinksTask(Project project) {
-        project.task("symlinksToCache", type: SymlinksToCacheTask) as SymlinksToCacheTask
+    private static LinksToCacheTask makeLinksTask(Project project) {
+        project.task("linksToCache", type: LinksToCacheTask) as LinksToCacheTask
     }
 
     /**
-     * Test that the task returns the expected set of versions to create symlinks for, in the simplest case.
+     * Test that the task returns the expected set of versions to create links for, in the simplest case.
      */
     @Test
     public void testStandAloneModule() {
         Project project = getProject()
         UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
 
-        SymlinksToCacheTask task = makeSymlinksTask(project)
+        LinksToCacheTask task = makeLinksTask(project)
         task.addUnpackModuleVersionWithAncestors(apricot)
 
         Collection<UnpackModuleVersion> versions = task.getOrderedVersions()
-        assertThat("Expected versions to be symlinked", versions.toArray(), equalTo([apricot].toArray()))
+        assertThat("Expected versions to be linked", versions.toArray(), equalTo([apricot].toArray()))
     }
 
     /**
-     * Test that the task isn't going to create symlinks for a module which has no artifacts.
+     * Test that the task isn't going to create links for a module which has no artifacts.
      */
     @Test
     public void testModuleWithNoArtifacts() {
         Project project = getProject()
         UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1", null, false)
 
-        SymlinksToCacheTask task = makeSymlinksTask(project)
+        LinksToCacheTask task = makeLinksTask(project)
         task.addUnpackModuleVersionWithAncestors(apricot)
 
         Collection<UnpackModuleVersion> versions = task.getOrderedVersions()
-        assertThat("Expected versions to be symlinked", versions.toArray(), equalTo([].toArray()))
+        assertThat("Expected versions to be linked", versions.toArray(), equalTo([].toArray()))
     }
 
     /**
-     * Test that the task returns the expected set of versions to create symlinks for, when there are two versions, one
+     * Test that the task returns the expected set of versions to create links for, when there are two versions, one
      * a dependency of another.
      */
     @Test
@@ -100,16 +100,16 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
         UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
         UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
 
-        SymlinksToCacheTask taskWithVersionsAddedInOrder = makeSymlinksTask(project)
+        LinksToCacheTask taskWithVersionsAddedInOrder = makeLinksTask(project)
         taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(coconut)
         taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(date)
 
         Collection<UnpackModuleVersion> versions = taskWithVersionsAddedInOrder.getOrderedVersions()
-        assertThat("Expected versions to be symlinked", versions.toArray(), equalTo([coconut, date].toArray()))
+        assertThat("Expected versions to be linked", versions.toArray(), equalTo([coconut, date].toArray()))
     }
 
     /**
-     * Test that the task returns the expected set of versions to create symlinks for, when there are two versions, one
+     * Test that the task returns the expected set of versions to create links for, when there are two versions, one
      * a dependency of another, and the versions happen to be added out-of-order.
      */
     @Test
@@ -118,11 +118,11 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
         UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
         UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
 
-        SymlinksToCacheTask taskWithVersionsAddedInOrder = makeSymlinksTask(project)
+        LinksToCacheTask taskWithVersionsAddedInOrder = makeLinksTask(project)
         taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(date)
         taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(coconut)
 
         Collection<UnpackModuleVersion> versions = taskWithVersionsAddedInOrder.getOrderedVersions()
-        assertThat("Expected versions to be symlinked", versions.toArray(), equalTo([coconut, date].toArray()))
+        assertThat("Expected versions to be linked", versions.toArray(), equalTo([coconut, date].toArray()))
     }
 }

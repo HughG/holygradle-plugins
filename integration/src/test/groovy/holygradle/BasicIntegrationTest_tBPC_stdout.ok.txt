@@ -24,14 +24,14 @@ Dependencies tasks
 ------------------
 beforeFetchSourceDependencies - Runs before source dependencies are fetched, to check authorisation setup. Extend it with doLast if needed.
 collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder.
-deleteSymlinks - Remove all symlinks.
-deleteSymlinksToCache - Delete all symlinks to the unpack cache
+deleteLinks - Remove all links.
+deleteLinksToCache - Delete all links to the unpack cache
 extractPackedDependencies - Extract all packed dependencies, to the unpack cache or to the workspace
-fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks.
+fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links.
 fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
-rebuildSymlinks - Rebuild all symlinks.
-rebuildSymlinksToCache - Rebuild all symlinks to the unpack cache
+rebuildLinks - Rebuild all links.
+rebuildLinksToCache - Rebuild all links to the unpack cache
 zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
 
 DevEnv tasks
@@ -99,6 +99,10 @@ unitTestReleaseIndependently - Runs the Release unit tests for 'tBPC'. Deprecate
 Other tasks
 -----------
 buildAndTestAll - Build 'tBPC' and all dependent projects in Debug and Release, and run unit tests.
+deleteSymlinks - deleteSymlinks is deprecated and will be removed in future.  Use deleteLinks instead
+deleteSymlinksToCache - deleteSymlinksToCache is deprecated and will be removed in future.  Use deleteLinksToCache instead
+rebuildSymlinks - rebuildSymlinks is deprecated and will be removed in future.  Use rebuildLinks instead
+rebuildSymlinksToCache - rebuildSymlinksToCache is deprecated and will be removed in future.  Use rebuildLinksToCache instead
 
 To see all tasks and more detail, run with --all.
 

@@ -55,7 +55,7 @@ class UnpackModuleVersion {
             if (relativePath != null) {
                 final String moduleVersionId = "${dep.@org}:${dep.@name}:${dep.@rev}"
                 // We've occasionally seen hand-crafted ivy.xml files which have a trailing slash on the relativePath,
-                // which leads to us creating symlinks one level down from where we want them; so, strip it if present.
+                // which leads to us creating links one level down from where we want them; so, strip it if present.
                 if (relativePath.endsWith('/')) {
                     relativePath = relativePath[0..-2]
                 }
@@ -110,7 +110,7 @@ class UnpackModuleVersion {
     }
     
     // TODO: will need to track all parents because each one (unpacked to a different location in
-    // the central cache) will need to create a symlink to this module in the cache.
+    // the central cache) will need to create a link to this module in the cache.
     public UnpackModuleVersion getParent() {
         parentUnpackModuleVersion
     }
@@ -149,7 +149,7 @@ class UnpackModuleVersion {
     }
     
     // Return the name of the directory that should be constructed in the workspace for the unpacked artifacts. 
-    // Depending on some other configuration, this directory name could be used for a symlink or a real directory.
+    // Depending on some other configuration, this directory name could be used for a link or a real directory.
     public String getTargetDirName() {
         if (packedDependency00 != null) {
             return packedDependency00.getTargetNameWithVersionNumber(moduleVersion.getVersion())
@@ -161,7 +161,7 @@ class UnpackModuleVersion {
     }
     
     // Return the full path of the directory that should be constructed in the workspace for the unpacked artifacts. 
-    // Depending on some other configuration, this path could be used for a symlink or a real directory.
+    // Depending on some other configuration, this path could be used for a link or a real directory.
     public File getTargetPathInWorkspace(Project project) {
         if (packedDependency00 != null) {
             // If we have a packed dependency then we can directly construct the target path.
@@ -213,18 +213,18 @@ class UnpackModuleVersion {
     }
 
     /**
-     * If true, a symlink for this module should be created, to the central cache, otherwise no symlink should be
-     * created.  A symlink should be created if
+     * If true, a link for this module should be created, to the central cache, otherwise no link should be created.
+     * A link should be created if
      * <ul>
      *     <li>the relevant {@code packedDependencies} entry has {@code unpackToCache = true} (the default);</li>
-     *     <li>that entry has not had {@code noCreateSymlinkToCache() called on it; and</li>
+     *     <li>that entry has not had {@code noCreateLinkToCache() called on it; and</li>
      *     <li>this module version actually has any artifacts -- if not, nothing will be unpacked in the cache, so there
-     *     will be no folder to which to make a symlink.</li>
+     *     will be no folder to which to make a link.</li>
  *     </ul>
-     * @return A flag indicating whether to create a symlink to the unpack cache for this version.
+     * @return A flag indicating whether to create a link to the unpack cache for this version.
      */
-    public boolean shouldCreateSymlinkToCache() {
-        getSelfOrAncestorPackedDependency().shouldCreateSymlinkToCache() && hasArtifacts()
+    public boolean shouldCreateLinkToCache() {
+        getSelfOrAncestorPackedDependency().shouldCreateLinkToCache() && hasArtifacts()
     }
 
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 

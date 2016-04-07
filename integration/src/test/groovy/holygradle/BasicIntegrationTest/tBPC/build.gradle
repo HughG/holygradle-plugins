@@ -55,7 +55,7 @@ packedDependencies {
     }
 }
 
-symlinks {
+links {
     to "mylib/externals"
 }
 

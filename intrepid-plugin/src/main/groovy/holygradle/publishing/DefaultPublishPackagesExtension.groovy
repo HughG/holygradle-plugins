@@ -70,7 +70,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 }
 
                 ivyPublishTask.doFirst {
-                    this.failIfPackedDependenciesNotCreatingSymlink(packedDependencies)
+                    this.failIfPackedDependenciesNotCreatingLink(packedDependencies)
                     this.verifyGroupName()
                     this.verifyVersionNumber()
                 }
@@ -313,14 +313,14 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return currentVersionNumber
     }
 
-    // Throw an exception if any packed dependencies are marked with noCreateSymlinkToCache()
-    public void failIfPackedDependenciesNotCreatingSymlink(Collection<PackedDependencyHandler> packedDependencies) {
-        Collection<PackedDependencyHandler> nonSymlinkedPackedDependencies =
-            packedDependencies.findAll { it.shouldUnpackToCache() && !it.shouldCreateSymlinkToCache() }
-        if (!nonSymlinkedPackedDependencies.empty) {
-            String dependenciesDescription = (nonSymlinkedPackedDependencies*.dependencyCoordinate).join(", ")
+    // Throw an exception if any packed dependencies are marked with noCreateLinkToCache()
+    public void failIfPackedDependenciesNotCreatingLink(Collection<PackedDependencyHandler> packedDependencies) {
+        Collection<PackedDependencyHandler> nonLinkedPackedDependencies =
+            packedDependencies.findAll { it.shouldUnpackToCache() && !it.shouldCreateLinkToCache() }
+        if (!nonLinkedPackedDependencies.empty) {
+            String dependenciesDescription = (nonLinkedPackedDependencies*.dependencyCoordinate).join(", ")
             throw new RuntimeException(
-                "Cannot publish ${project.name} because some packed dependencies are using noCreateSymlinkToCache(), " +
+                "Cannot publish ${project.name} because some packed dependencies are using noCreateLinkToCache(), " +
                 "which means Gradle cannot know the real version of those dependencies: [${dependenciesDescription}]"
             )
         }
@@ -419,7 +419,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
-    // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or symlinked) to.
+    // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or linked) to.
     public void addDependencyRelativePaths(Project project, Collection<PackedDependencyHandler> packedDependencies, Collection<SourceDependencyHandler> sourceDependencies) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck

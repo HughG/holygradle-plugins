@@ -4,10 +4,10 @@ import holygradle.custom_gradle.PluginUsages
 import holygradle.dependencies.DependencyHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.io.FileHelper
+import holygradle.links.LinkHandler
 import holygradle.publishing.RepublishHandler
 import holygradle.scm.SourceControlRepository
 import holygradle.source_dependencies.SourceDependencyHandler
-import holygradle.symlinks.SymlinkHandler
 import org.gradle.api.Project
 import org.gradle.util.ConfigureUtil
 import holygradle.Helper
@@ -241,10 +241,10 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
             buildScript.append("\n")
         }
         
-        // Collect symlinks for 'this' project.
-        SymlinkHandler allSymlinks = new SymlinkHandler()
-        SymlinkHandler thisSymlinkHandler = project.extensions.findByName("symlinks") as SymlinkHandler
-        allSymlinks.addFrom(project.name, thisSymlinkHandler)
+        // Collect links for 'this' project.
+        LinkHandler allLinks = new LinkHandler()
+        LinkHandler thisLinkHandler = project.extensions.findByName("links") as LinkHandler
+        allLinks.addFrom(project.name, thisLinkHandler)
         
         // sourceDependencies block
         Collection<SourceDependencyHandler> pinnedSourceDeps =
@@ -366,8 +366,8 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
         }
         buildScript.append("\n")
         
-        // The 'symlinks' block.
-        allSymlinks.writeScript(buildScript)
+        // The 'links' block.
+        allLinks.writeScript(buildScript)
         
         // Generate the 'publishPackages' block:
         if (publishInfoSpecified()) {

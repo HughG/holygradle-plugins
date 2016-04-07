@@ -1,9 +1,9 @@
-package holygradle.symlinks
+package holygradle.links
 
 import org.gradle.api.*
 import org.gradle.util.ConfigureUtil
 
-class SymlinkHandler {
+class LinkHandler {
     class Mapping {
         final String linkPath
         final String targetPath
@@ -16,48 +16,60 @@ class SymlinkHandler {
 
     private String fromLocation = "."
     private Collection<String> toLocations = []
-    private Collection<SymlinkHandler> children = []
+    private Collection<LinkHandler> children = []
     
-    public static SymlinkHandler createExtension(Project project) {
-        project.extensions.create("symlinks", SymlinkHandler)
+    public static LinkHandler createExtension(Project project) {
+        LinkHandler links = project.extensions.create("links", LinkHandler)
+        final String deprecationMessage =
+            "WARNING: The 'symlinks' DSL is deprecated because the Holy Gradle now defaults to creating directory " +
+            "junctions.  Use 'links' instead."
+        project.ext.symlinks = { Closure closure ->
+            project.logger.warn(deprecationMessage)
+            ConfigureUtil.configure(closure, links)
+        }
+        project.ext.getSymlinks = {
+            project.logger.warn(deprecationMessage)
+            links
+        }
+        return links
     }
-    
-    SymlinkHandler() { }
-    
-    SymlinkHandler(String fromLocation) {
+
+    LinkHandler() { }
+
+    LinkHandler(String fromLocation) {
         this.fromLocation = fromLocation
     }
-    
-    SymlinkHandler(SymlinkHandler that) {
+
+    LinkHandler(LinkHandler that) {
         this.fromLocation = that.getFromLocation()
         this.merge(that)
     }
 
     // Copy the "to locations" and "child handlers", but not the "fromLocation", from other to this
-    private void merge(SymlinkHandler other) {
+    private void merge(LinkHandler other) {
         to(other.getToLocations())
         other.childHandlers.each { child ->
-            children.add(new SymlinkHandler(child))
+            children.add(new LinkHandler(child))
         }
     }
 
-    public void addFrom(String fromLocation, SymlinkHandler handler) {
-        SymlinkHandler fromHandler = from(fromLocation)
+    public void addFrom(String fromLocation, LinkHandler handler) {
+        LinkHandler fromHandler = from(fromLocation)
         fromHandler.merge(handler)
     }
     
-    public SymlinkHandler from(String location) {
+    public LinkHandler from(String location) {
         String childLocation = location
         if (fromLocation != ".") {
             childLocation = fromLocation + "/" + location
         }
-        SymlinkHandler child = new SymlinkHandler(childLocation)
+        LinkHandler child = new LinkHandler(childLocation)
         children.add(child)
         child
     }
     
-    public SymlinkHandler from(String location, Closure c) {
-        SymlinkHandler handler = from(location)
+    public LinkHandler from(String location, Closure c) {
+        LinkHandler handler = from(location)
         if (c != null) {
             ConfigureUtil.configure(c, handler)
         }
@@ -82,7 +94,7 @@ class SymlinkHandler {
         toLocations
     }
     
-    public Collection<SymlinkHandler> getChildHandlers() {
+    public Collection<LinkHandler> getChildHandlers() {
         children
     }
     
@@ -93,12 +105,12 @@ class SymlinkHandler {
     }
     
     private int countToLocations() {
-        (int)children.sum(toLocations.size()) { SymlinkHandler it -> it.countToLocations() }
+        (int)children.sum(toLocations.size()) { LinkHandler it -> it.countToLocations() }
     }
     
     public void writeScript(StringBuilder str) {
         if (countToLocations() > 0) {
-            str.append("symlinks {\n")
+            str.append("links {\n")
             writeScriptIndented(str, 4)
             str.append("}\n")
             str.append("\n")
