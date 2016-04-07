@@ -44,6 +44,24 @@ things for users, and also for plugin developers.
 
 ==== 7.7.x
 
+===== 7.7.5
+(TODO)
+
+UnitTest::
+
+* GR #6675 Bug fix and further improvements to the unit-test plugin:
+
+** The previous changes for #6675 always re-created empty test output files on every build (that is, when the task was
+configured) even if that build didn't involve running the tests.  That meant that test results from previous runs would
+be lost when you ran any other task.  Now the output files are not overwritten until the test tasks run.
+
+** You can now choose to send test "standard error" output to just a file, or to both a file and standard output, in the
+same way as "standard output".  See
+link:plugin-unit-test.html#_seterroroutput[] and link:plugin-unit-test.html#_seterroroutputtee[] for details.
+
+Intrepid {br} DevEnv {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils ::
+- No changes.
+
 ===== 7.7.4
 (a5902c826e99 at 2016-03-23 09:57:55 UTC)
 

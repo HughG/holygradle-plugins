@@ -15,7 +15,9 @@ class TestHandler {
     private Collection<String> commandLineChunks = []
     private String redirectOutputFilePath
     private Object standardOutputTemplate
-    private Object teeTemplate
+    private Object standardOutputTeeTemplate
+    private Object errorOutputTemplate
+    private Object errorOutputTeeTemplate
     private Object workingDir
     private Collection<String> selectedFlavours = new ArrayList<String>(DEFAULT_FLAVOURS)
 
@@ -71,7 +73,37 @@ class TestHandler {
      */
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
     public void setStandardOutputTee(Object teeTemplate) {
-        this.teeTemplate = teeTemplate
+        this.standardOutputTeeTemplate = teeTemplate
+    }
+
+    /**
+     * Sets the standard error of the test executable to the given {@code standardErrorTemplate}.  The argument is
+     * interpreted as a {@link File} as for the {@link Project#file} method, and then treated as a template: any
+     * "&lt;flavour&gt;" strings are replaced in the filename.  At task configuration time the parent folder of the
+     * file is created if it does not already exist.
+     *
+     * This method is similar to {@link org.gradle.process.ExecSpec@setErrorOutput} but there is no matching
+     * {@code getStandardError} method because there may be no single {@link OutputStream} to return: there may be one
+     * such stream for each task.
+     *
+     * @param standardErrorTemplate An {@link Object} used as a template to set the error output file for each test task.
+     */
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
+    public void setErrorOutput(Object standardErrorTemplate) {
+        this.errorOutputTemplate = standardErrorTemplate
+    }
+
+    /**
+     * Redirects the standard error of the test executable to both Gradle's standard error and the given
+     * {@code teeTemplate}.  The argument is interpreted as a {@link File} as for the {@link Project#file} method, and
+     * then treated as a template: any "&lt;flavour&gt;" strings are replaced in the filename.  At task configuration
+     * time the parent folder of the file is created if it does not already exist.
+     *
+     * @param teeTemplate An {@link Object} used as a template to set a tee error output file for each test task.
+     */
+    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
+    public void setErrorOutputTee(Object teeTemplate) {
+        this.errorOutputTeeTemplate = teeTemplate
     }
 
     @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
@@ -95,7 +127,7 @@ class TestHandler {
         selectedFlavours.addAll(newFlavours)
     }
 
-    private OutputStream makeOutputStream(String flavour, Object target) {
+    private static OutputStream makeOutputStream(Project project, String flavour, Object target) {
         final File outputFile = project.file(target)
         final File flavouredOutputFile = new File(replaceFlavour(outputFile.toString(), flavour))
         FileHelper.ensureMkdirs(flavouredOutputFile.parentFile, "as parent folder for test output")
@@ -148,21 +180,8 @@ class TestHandler {
             cmd[0] = exePath.path
             task.commandLine cmd
 
-            // ---- Set up the output stream.
-            final OutputStream testOutputStream
-            if (standardOutputTemplate != null) {
-                testOutputStream = makeOutputStream(flavour, standardOutputTemplate)
-            } else if (redirectOutputFilePath != null) {
-                testOutputStream = makeOutputStream(flavour, new File(project.projectDir, redirectOutputFilePath))
-            } else {
-                testOutputStream = task.standardOutput
-            }
-            if (task.standardOutput != testOutputStream) {
-                task.standardOutput = testOutputStream
-            }
-            if (teeTemplate != null) {
-                task.standardOutput = new TeeOutputStream(task.standardOutput, makeOutputStream(flavour, teeTemplate))
-            }
+            // ---- Set up the output and/or error stream.
+            configureTaskOutputStreams(flavour, task)
 
             // ---- Set up the workingDir.
             if (workingDir != null) {
@@ -171,6 +190,78 @@ class TestHandler {
         }
     }
 
+    private void configureTaskOutputStreams(String flavour, Exec task) {
+        final OutputStream originalStandardOutput = task.standardOutput
+        final OutputStream originalErrorOutput = task.errorOutput
+
+        task.ext.lazyConfiguration = { Exec it ->
+            final OutputStream testOutputStream
+            if (standardOutputTemplate != null) {
+                testOutputStream = makeOutputStream(project, flavour, standardOutputTemplate)
+            } else if (redirectOutputFilePath != null) {
+                testOutputStream = makeOutputStream(project, flavour, new File(project.projectDir, redirectOutputFilePath))
+            } else {
+                testOutputStream = it.standardOutput
+            }
+            configureOutput(
+                flavour,
+                it,
+                "standard",
+                originalStandardOutput,
+                testOutputStream,
+                standardOutputTeeTemplate,
+                it.&getStandardOutput,
+                it.&setStandardOutput
+            )
+
+            final OutputStream testErrorStream
+            if (errorOutputTemplate != null) {
+                testErrorStream = makeOutputStream(project, flavour, errorOutputTemplate)
+            } else {
+                testErrorStream = it.errorOutput
+            }
+            configureOutput(
+                flavour,
+                it,
+                "error",
+                originalErrorOutput,
+                testErrorStream,
+                errorOutputTeeTemplate,
+                it.&getErrorOutput,
+                it.&setErrorOutput
+            )
+        }
+    }
+
+    // Only public so that it can be called from a Closure.
+    public static void configureOutput(
+        String flavour,
+        Exec task,
+        String streamType,
+        OutputStream originalOutputStream,
+        OutputStream outputStream,
+        Object teeTemplate,
+        Closure<OutputStream> getStream,
+        Closure setStream
+    ) {
+        final OutputStream currentOutputStream = getStream()
+        if (currentOutputStream != outputStream) {
+            if (currentOutputStream != originalOutputStream) {
+                task.logger.warn(
+                    "Ignoring ${streamType} output stream override for ${task.name} because the task's output stream " +
+                    "has already been changed from its original value"
+                )
+            } else {
+                setStream(outputStream)
+            }
+        }
+        if (teeTemplate != null) {
+            setStream(new TeeOutputStream(
+                currentOutputStream,
+                makeOutputStream(task.project, flavour, teeTemplate)
+            ))
+        }
+    }
 
     public static void defineTasks(Project project) {
         Collection<String> allFlavours = TestFlavourHandler.getAllFlavours(project)

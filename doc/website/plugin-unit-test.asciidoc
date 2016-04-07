@@ -92,7 +92,7 @@ tests {
         commandLine "--output_format=XML"
         workingDir = new File(projectDir, "foo/test_results/foo_vc10_u<f>64.xml")
         // or workingDir new File("${projectDir}/foo/test_results/foo_vc10_u<f>64.xml")
-        // or setStandardOutput file("foo/test_results/foo_vc10_u<f>64.xml")
+        // or workingDir file("foo/test_results/foo_vc10_u<f>64.xml")
     }
 }
 ----
@@ -135,6 +135,19 @@ tests {
 
 -> Set this property at most once.
 
+==== setErrorOutput
+
+This settable property is similar to <<_setstandardoutput>> but it redirects the "standard error"
+stream for the test process, instead of the "standard output" stream.  You can redirect both the
+standard error and standard output streams to separate files.
+
+WARNING: Do not attempt to redirect standard error and standard output to the same file.  This
+will result in unpredictable mixing of output, and may also result in exceptions if Gradle tries
+to close one stream when the application is still writing to the other -- because they are really
+the same stream.
+
+-> Set this property at most once.
+
 ==== setStandardOutputTee
 
 This settable property is similar to <<_setstandardoutput>> but it redirects output to a file
@@ -152,6 +165,17 @@ tests {
 ----
 
 -> Set this property at most once.
+
+==== setErrorOutputTee
+
+This settable property is similar to <<_setstandardoutputtee>> but it redirects the "standard error"
+stream for the test process, instead of the "standard output" stream.  You can redirect both the
+standard error and standard output streams to separate files.
+
+WARNING: Do not attempt to redirect standard error and standard output to the same file.  This
+will result in unpredictable mixing of output, and may also result in exceptions if Gradle tries
+to close one stream when the application is still writing to the other -- because they are really
+the same stream.
 
 ==== flavour
 
