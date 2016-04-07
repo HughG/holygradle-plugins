@@ -13,18 +13,25 @@ with tools such as the gloss:holygradle[].  The easiest way to use it is through
 web interface is mainly useful for investigating problems.
 
 The Holy Gradle is a set of plugins for the gloss:gradle[] tool, which is a Java application.
-They have only been tested on the following platform.
+They have only been tested on the following platforms.
 
-* Windows 7 (and Windows Server 2008 R2)
+* Windows 7 (and Windows Server 2008 R2), Windows 8.1
 * Java 7 (JRE or JDK)
 
 == Preparation
 
 === Windows
 
-If you are an Administrator on your system, then you need to turn User Account Control off.  This
-is because the gloss:holygradle[] plugins create gloss:symbolic-link[]s, and Windows disables
-this by default for Administrator accounts.
+==== Holy Gradle before 7.8.0
+
+If you are using a version of the Holy Gradle before 7.8.0 and you are a local Administrator on
+your system, then you need to turn User Account Control off.  This is because the gloss:holygradle[]
+plugins create gloss:symbolic-link[]s, and Windows disables this by default for Administrator
+accounts.  On Windows 8.1 and above you also need to run the Holy Gradle with Administrator
+priveleges -- that means, from an Administrator Command Prompt.
+
+From version 7.8.0 the Holy Gradle creates directory junctions instead, which do not have these
+permission problems.
 
 === Java
 

@@ -278,8 +278,8 @@ automatically omits from publication any configuration whose name starts with "+
 +compileFoo+ configurations because its contents are independent of Visual Studio Platform and
 Configuration variations.
 * +build+: Files needed as part of the build process for any module which uses this one.  For
-example, this might include batch files to copy or symlink this module's DLLs into a target folder
-created by the module using it.
+example, this might include batch files to copy or gloss:hard-link[] this module's DLLs into a
+target folder created by the module using it.
 * +compileVc10X64Debug+: files needed to compile against the +Debug+ Visual Studio "Configuration"
 of this module, e.g., static libraries ("+.lib+").  This configuration will extend from +headers+.
 Visual Studio's notion of configuration is separate from the idea in Gradle and Artifactory
@@ -702,8 +702,9 @@ gloss:gradle-user-home[] for unpacking.  This tests that all dependencies are av
 ==== Check Build
 
 At this point you should be able to build your Visual Studio solution, provided the Include and
-Library Paths it uses match the symlinks for the dependencies.  You may find Visual Studio's
-Property Sheets useful for this, as they allow common settings to be included in multiple projects.
+Library Paths it uses match the directory gloss:link[]s for the dependencies.  You may find Visual
+Studio's Property Sheets useful for this, as they allow common settings to be included in multiple
+projects.
 
 Note that Gradle creates a directory called +build+ for its own use, and the gloss:holygradle[]
 creates one called +packages+ as a temporary storage area when creating gloss:package[]s.  If you

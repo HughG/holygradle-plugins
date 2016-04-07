@@ -21,7 +21,7 @@ This is a custom plugin for Gradle for retrieving source-code dependencies and o
 * Packed dependencies
 ** Retrieving dependencies consisting of many files into your workspace
 ** Central cache for unpacked dependencies & link from workspace to central cache
-** Configurable symlinks from consumer module to multiple locations in unpacked dependency
+** Configurable links from consumer module to multiple locations in unpacked dependency
 ** Support for multiple versions of the same component (i.e. version conflicts)
 * Publishing
 ** Support for creating multiple packages (i.e. zip files)
@@ -610,6 +610,10 @@ will be shared with other developers. You may wish to use a link:custom-gradle.h
 link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the
 path.
 
+If you set this to point to a network share, the Holy Gradle will use a gloss:symlink[].  If your user account has local
+Administrator rights, then this requires the Gradle process to run with Administrator privileges on Windows 8 and above.
+Putting your cache on a share is not recommended, for performance reasons.
+
 [[useRelativePathFromIvyXml]]
 ==== Relative paths for transitive dependencies
 
@@ -1177,7 +1181,7 @@ WARNING: Previous versions of the gloss:holygradle[] allowed published packed de
 transitive dependencies should appear at some other relative location.  This feature is deprecated and will be removed
 in future.  See <<useRelativePathFromIvyXml>>.
 
-==== Ivy files
+=== Ivy files
 
 WARNING: This feature is deprecated and will be removed in future.  See <<useRelativePathFromIvyXml>>.
 
