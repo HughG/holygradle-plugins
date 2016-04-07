@@ -1,12 +1,15 @@
 package holygradle.io
 
 import java.nio.file.Files
+import org.gradle.api.logging.Logging
 import org.gradle.api.logging.Logger
 
 /**
  * Utility class for abstracting Symlinks and Directory Junctions
  */
 class Link {
+    private static final Logger LOGGER = Logging.getLogger(Link.class)
+
     public static boolean isLink(File link) {
         return Files.isSymbolicLink(link.toPath()) ||
             Junction.isJunction(link)
@@ -18,7 +21,7 @@ class Link {
         }
     }
 
-    public static void rebuild(File link, File target, Logger logger) {
+    public static void rebuild(File link, File target) {
         // Delete the link first in case it already exists as the wrong type.  The Junction.rebuild and Symlink.rebuild
         // methods will also do this check themselves in case they are called directly, but we need to do it here also
         // in case we are deleting a symlink to replace it with a directory junction, or vice versa.
@@ -29,19 +32,19 @@ class Link {
         try {
             Junction.rebuild(link, target)
         } catch (Exception e) {
-            logger?.debug("Failed to create a directory junction from '${link}' to '${target}'. Falling back to symlinks.", e)
-            rebuildAsSymlink(link, target, logger)
+            LOGGER.debug("Failed to create a directory junction from '${link}' to '${target}'. Falling back to symlinks.", e)
+            rebuildAsSymlink(link, target)
         }
     }
 
 
-    private static void rebuildAsSymlink(File link, File target, Logger logger) {
+    private static void rebuildAsSymlink(File link, File target) {
         // If that fails, fall back to symlinks
         try {
             Symlink.rebuild(link, target)
-        } catch (Exception e2) {
-            logger?.error("Directory junction and symlink creation failed from '${link}' to '${target}'.", e2)
-            throw e2
+        } catch (Exception e) {
+            LOGGER.error("Directory junction and symlink creation failed from '${link}' to '${target}'.", e)
+            throw e
         }
     }
 

@@ -128,13 +128,12 @@ class Junction {
     }
 
     private static File getCanonicalTarget(File canonicalLink, File target) {
-        if (target.absolute) {
-            target
-        } else {
-            // If [target] is relative, we want createSymbolicLink to create a link relative to [link] (as opposed to
-            // relative to the current working directory) so we have to calculate this.
-            new File(canonicalLink.parentFile, target.path).canonicalFile
-        }
+        // If [target] is relative, we want to create a link relative to [link] (as opposed to relative to the current
+        // working directory) so we have to calculate this.
+        final File absoluteTarget = (target.absolute) ? target : new File(canonicalLink.parentFile, target.path)
+        // We also have to return the canonical filename to make sure that there are no relative path parts ('..') in
+        // the path, because the low-level junction-creation code prevents Windows from resolving this itself.
+        return absoluteTarget.canonicalFile
     }
 
     @Category(Integer)
@@ -261,7 +260,7 @@ class Junction {
         // filesystem which, in the case of NTFS, has a limit of 32767 characters; see
         // <https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx>.  This allows us to delete
         // links even if they've been created at a location beyond the MAX_PATH limit.  This can be necessary for the
-        // Holy Gradle integration tests, depending on the checkout location, and may be useful in projects whcih use it.
+        // Holy Gradle integration tests, depending on the checkout location, and may be useful in projects which use it.
         String path = IGNORE_MAX_PATH_PREFIX + link.canonicalPath
         return withReparsePointHandle(path, Kernel32.FILE_READ_ATTRIBUTES) { WinNT.HANDLE reparsePointHandle ->
             Memory reparseDataBuffer = new Memory(Ntifs.MAXIMUM_REPARSE_DATA_BUFFER_SIZE)

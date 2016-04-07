@@ -45,7 +45,7 @@ class LinksToCacheTask extends DefaultTask {
 
                 switch (mode) {
                     case Mode.BUILD:
-                        Link.rebuild(linkDir, targetDir, this.logger)
+                        Link.rebuild(linkDir, targetDir)
                         break;
                     case Mode.CLEAN:
                         Link.delete(linkDir)

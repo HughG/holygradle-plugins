@@ -2,7 +2,6 @@ package holygradle.io
 
 import groovy.io.FileVisitResult
 import holygradle.custom_gradle.util.RetryHelper
-import holygradle.custom_gradle.util.Symlink
 
 import java.nio.file.Files
 

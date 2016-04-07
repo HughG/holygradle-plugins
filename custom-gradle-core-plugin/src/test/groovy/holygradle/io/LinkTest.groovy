@@ -40,7 +40,7 @@ class LinkTest extends AbstractHolyGradleTest {
         }
 
         // Act
-        Link.rebuild(link, target, null)
+        Link.rebuild(link, target)
 
         // Assert
         Assert.assertTrue("Link exists", link.exists())
@@ -64,7 +64,7 @@ class LinkTest extends AbstractHolyGradleTest {
         Symlink.rebuild(link, target)
 
         // Act
-        Link.rebuild(link, target, null)
+        Link.rebuild(link, target)
 
         // Assert
         Assert.assertTrue("${link} should be a directory junction after rebuild.", Junction.isJunction(link))
@@ -81,10 +81,10 @@ class LinkTest extends AbstractHolyGradleTest {
 
         Link.delete(link)
 
-        Logger logger = Logging.getLogger(this.class)
+        Logger logger = Logging.getLogger(Link.class)
 
         // Act
-        Link.rebuild(link, target, logger)
+        Link.rebuild(link, target)
 
         // Assert
         Assert.assertTrue(logger.toString().contains(

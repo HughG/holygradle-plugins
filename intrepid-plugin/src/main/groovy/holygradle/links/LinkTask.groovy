@@ -10,7 +10,7 @@ class LinkTask extends DefaultTask {
         Map<File, File> localEntries = entries // capture private for closure
         doFirst {
             localEntries.each { File linkDir, File targetDir ->
-                Link.rebuild(linkDir, targetDir, this.logger)
+                Link.rebuild(linkDir, targetDir)
             }
         }
     }

@@ -111,6 +111,38 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
     }
 
     /**
+     * Test that you can create a link to a target which exists, using an absolute path.
+     */
+    @Test
+    public void testCreateLinkToCompletePathWithRelativePart() {
+        // Arrange
+        File link = new File(testDir, "link_to_existing").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        File existingDir = new File(link.parentFile, "../${testDir.name}/existing_folder")
+        Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
+        final String sep = File.separator
+        Assert.assertTrue(
+            "target '$existingDir' contains a relative part '${sep}..${sep}'",
+            existingDir.path.contains("${sep}..${sep}")
+        )
+        if (link.exists()) {
+            Link.delete(link)
+        }
+        if (existingDir.exists() && !existingDir.isDirectory()) {
+            Assert.fail("Test pre-condition: '${existingDir}' should not exist, or should be a directory")
+        }
+        FileHelper.ensureMkdirs(existingDir, "for test setup")
+
+
+        // Act
+        rebuild(link, existingDir)
+
+        // Assert
+        File target = getTarget(link)
+        Assert.assertEquals("Target of '$link'", existingDir.canonicalFile, target.canonicalFile)
+    }
+
+    /**
      * Test that an exception is thrown if you try to create a link to a non-existent target.
      *
      * This is a regression test for behaviour intentionally changed.  The Symlink class used to always create a
