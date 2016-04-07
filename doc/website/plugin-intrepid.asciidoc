@@ -145,7 +145,8 @@ For the above script the intrepid plugin makes the following tasks available:
 Dependencies tasks
 ------------------
 fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links.
-rebuildSymlinks - Rebuild all links.
+rebuildLinks - Rebuild all links.
+deleteLinks - Delete all links.
 
 Publishing tasks
 ----------------
@@ -565,11 +566,15 @@ This property defines whether the dependency should be unpacked to the central c
 
 -> Default value: **true**
 
-==== noCreateSymlinkToCache()
+[[_noCreateSymlinkToCache]]
+[[_noCreateLinkToCache]]
+==== noCreateLinkToCache()
 
-Calling this method on a packed dependency causes the +rebuildSymlinks+ and +deleteSymlinks+ task to ignore it.  This allows you to create your own folder or symlink in the appropriate location, to replace a packed dependency with, for example, a locally-built version.  It is the complement of the +usePublishedVersion+ property for source dependencies.
+Calling this method on a packed dependency causes the +rebuildLinks+ and +deleteLinks+ task to ignore it.  This allows you to create your own folder or link in the appropriate location, to replace a packed dependency with, for example, a locally-built version.  It is the complement of the +usePublishedVersion+ property for source dependencies.
 
 It is expected that developers will normally only use this method temporarily in their local check-out, and not commit it to shared version-controlled source.  If this method is called on a packed dependency, then attempting to publish the containing project will throw an exception, because Gradle cannot know the real version of the dependency.
+
+Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this method was called +noCreateSymlinkToCache+.
 
 ==== readonly
 
@@ -644,18 +649,21 @@ packedDependenciesSettings {
 
 If this value is set in the root project, it will affect all sub-projects unless they override it.
 
-=== symlinks
+[[_symlinks]]
+[[_links]]
+=== links
 
-This extension allows you to define symlinks for +packedDependencies+ or +sourceDependencies+ e.g. this extract of build-script for a module named +consumer_module+
+This extension allows you to define directory links for +packedDependencies+ or +sourceDependencies+.  For example,
+this extract of build-script for a module named +consumer_module+
 
 [source,groovy]
 ----
-symlinks {
+links {
     to "dependency_module", "dependency_module/common"
 }
 ----
 
-will result in symlinks as follows:
+will result in links (by default, directory junctions) as follows:
 
 ----
 <workspace>
@@ -663,24 +671,25 @@ will result in symlinks as follows:
 |
 +---consumer_module
 |   |   build.gradle
-|   |   common            (symlink --------|
-|   |   dependency_module (symlink ---|    |
-|   +---src                           |    |
-|   |   ...                           |    |
-|   +---lib                           |    |
-|       ...                           |    |
-|                                     |    |
-+---dependency_module   <-------------|    |
-    |   build.gradle                       |
-    +---src                                |
-    |   ...                                |
-    +---common  <--------------------------|
+|   |   common            (link --------|
+|   |   dependency_module (link ---|    |
+|   +---src                        |    |
+|   |   ...                        |    |
+|   +---lib                        |    |
+|       ...                        |    |
+|                                  |    |
++---dependency_module   <----------|    |
+    |   build.gradle                    |
+    +---src                             |
+    |   ...                             |
+    +---common  <-----------------------|
 ----
 
+Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this block was called +links+.
 
 ==== to
 
-This method takes one or more parameters. Each parameter defines a location in the retrieved source-code dependency folder. The name of the resulting symlink will always correspond to the last component of the path argument.
+This method takes one or more parameters. Each parameter defines a location in the retrieved source-code dependency folder. The name of the resulting link will always correspond to the last component of the path argument.
 
 -> Call this method any number of times with any number of arguments.
 
@@ -1125,13 +1134,22 @@ This task collects the same files as <<_collectdependencies>> but puts them in a
 default the file is named +local_artifacts_{date}_UTC.zip+ where +{date}+ is the local machine date, converted to UTC.
 This task is a subclass of the usual Gradle +Zip+ task, so the +baseName+ and other aspects can be customised as normal.
 
-=== rebuildSymlinks
+[[_rebuildSymlinks]]
+[[_rebuildLinks]]
+=== rebuildLinks
 
 This task performs a subset of the functionality of the +fetchAllDependencies+ task - it simply rebuilds all the links for all dependencies.
 
-=== deleteSymlinks
+Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this task was called +rebuildSymlinks+.
 
-This task deletes any links created by +rebuildSymlinks+ or +fetchAllDependencies+. This is not a blanket deletion of all links; only links which **would** be created by the other tasks are deleted.
+[[_deleteSymlinks]]
+[[_deleteLinks]]
+=== deleteLinks
+
+This task deletes any links created by +rebuildLinks+ or +fetchAllDependencies+. This does not delete *all* links under
+the project folder; only links which would be created by the other tasks are deleted.
+
+Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this task was called +deleteSymlinks+.
 
 === packageEverything
 

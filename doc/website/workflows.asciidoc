@@ -885,13 +885,13 @@ However, if a dependency has been removed from the +build.gradle+ file by the ne
 update dependencies.  Therefore, you should run
 
 ----
-gw deleteSymlinks
+gw deleteLinks
 ----
 
 or
 
 ----
-gw delSym
+gw delL
 ----
 
 before updating your working copy.  With Mercurial, you can automate this by adding a pre-update
@@ -899,7 +899,7 @@ hook for the repository to your +%USERPROFILE%\mercurial.ini+, as follows.
 
 ----
 [hooks]
-preupdate.deleteSymlinks = gw deleteSymlinks
+preupdate.deleteLinks = gw deleteLinks
 ----
 
 You could make this a global hook if all your repositories use Gradle; or, if only some do, but they
@@ -907,7 +907,7 @@ all use the Holy Gradle plugins, you could guard it with an +if+, as follows.
 
 ----
 [hooks]
-preupdate.deleteSymlinks = if exist gw.bat gw deleteSymlinks
+preupdate.deleteLinks = if exist gw.bat gw deleteLinks
 ----
 
 [[_fetch_dependencies_in_typical_workflow]]
@@ -954,7 +954,7 @@ section covers how to do that.
 First, run the following command.
 
 ----
-gw deleteSymlinks
+gw deleteLinks
 ----
 
 This ensures that all existing links are removed, before you change the description of the
