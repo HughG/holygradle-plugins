@@ -851,6 +851,7 @@ This value can be set in each project in a multi-project build.  If it's not set
 
 [[_sourceDependencies]]
 === sourceDependencies
+
 This is a container for source-dependency objects. The first level below +sourceDependencies+ defines the names of the individual source code dependencies e.g.
 
 [source,groovy]
@@ -865,9 +866,27 @@ sourceDependencies {
 
 declares that there are two source-code dependencies and they should be retrieved to the directories '<workspace>/foo' and '<workspace>/bar' respectively.
 
-==== Relative Paths
+[[_relative_paths]]
+[[_relative_paths_and_subprojects]]
+==== Relative Paths and Subprojects
 
-Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate subdirectories of the workspace. See <<_relative_paths>>.
+Source dependencies and packed dependencies are specified as relative paths rather than being immediate subdirectories
+of the workspace. See <<_relative_paths_2>>.
+
+Note that Gradle's concept of _subprojects_ applies to source dependencies, but not in the way you might expect.
+Gradle projects can have subprojects, which are subfolders of a source repository containing a +build.gradle+, selected
+using `include 'path/to/subproject'` in the root project's +settings.gradle+.  A project can discover and operate on its
+subprojects in its +build.gradle+, and the +build.gradle+ for a project is (normally) evaluated before the
++build.gradle+ of its subprojects.  If the +settings.gradle+ includes `'foo'` and `'foo/bar'` then +foo+ will be a
+subproject of the root project, and +bar+ will be a subproject of +foo+.  However, any source dependency in any Holy
+Gradle project is added as a direct subproject of the root project, ignoring where it appears in the folder hierarchy of
+the root project.  This is because the Holy Gradle allows source dependency to exist on disk at a location outside the
+folder of the project which depends on it; also, it does not require the root project to know about all transitive
+source dependencies.
+
+The Gradle concept of project/module dependencies _does_ apply to source dependencies, as described under
+<<_sourceDependencies_configuration>>.
+
 
 ==== Credentials
 
@@ -935,9 +954,11 @@ sourceDependencies {
 
 This method defines the configuration mapping for the dependency - see the +<dependency ... conf="..."/>+ attribute
 in the example module descriptor above.  Mappings are defined _from_ configurations in this module _to_
-configurations in the dependency module. These mappings will be included in the module descriptor when this module is
-published. The "to" configurations also determine which packaged artifacts from the dependency module will be fetched
-and unpacked.
+configurations in the dependency module.  This creates a Gradle project dependency between the two projects; see the
+documentation for 
+link:https://docs.gradle.org/1.4/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html[DependencyHandler].  This
+dependency means that mappings will be included in the module descriptor when this module is published. The "to"
+configurations also determine which packaged artifacts from the dependency module will be fetched and unpacked.
 
 More details on extending configurations, and mapping sets of related configurations between modules,
 can be found in the link:workflows.html#_configurations[] section of the link:workflows.html page.
@@ -2020,7 +2041,7 @@ This task publishes the artifacts of your module:
 
 You may notice a task called +publishIvyPublicationToIvyRepository+ or similar. This exists because the +intrepid+ plugin uses the +ivy-publish+ plugin.
 
-[[_relative_paths]]
+[[_relative_paths_2]]
 == Relative paths
 
 Both +sourceDependencies+ and +packedDependencies+ support project-relative paths and workspace-relative paths. This

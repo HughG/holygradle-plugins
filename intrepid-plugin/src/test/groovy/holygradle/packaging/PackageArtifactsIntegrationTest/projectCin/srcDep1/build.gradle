@@ -4,7 +4,7 @@ buildscript {
 gplugins.apply()
 
 sourceDependencies {
-    "srcDep1" {
+    "../srcDep2" {
         hg "http://dummy_url"
     }
 }

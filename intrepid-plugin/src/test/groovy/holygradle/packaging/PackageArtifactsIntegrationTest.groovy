@@ -9,22 +9,14 @@ import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import org.gradle.api.file.FileTree
 import org.gradle.api.file.FileVisitDetails
-import org.gradle.process.ExecSpec
 import org.gradle.testfixtures.ProjectBuilder
-import org.hamcrest.core.IsEqual
-import org.junit.Rule
+import org.junit.Assert
 import org.junit.Test
-import org.junit.rules.ErrorCollector
 
 import java.util.zip.ZipFile
 
-import static org.junit.Assert.assertNotNull
-import static org.junit.Assert.assertTrue
 
 class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest {
-    @Rule
-    public ErrorCollector collector = new ErrorCollector()
-
     @Test
     public void testBasicConfiguration() {
         File projectDir = new File(getTestDir(), "projectA")
@@ -36,7 +28,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
 
         Collection<PackageArtifactHandler> packageArtifacts =
             project.extensions.findByName("packageArtifacts") as Collection<PackageArtifactHandler>
-        assertNotNull(packageArtifacts)
+        Assert.assertNotNull(packageArtifacts)
     }
     
     @Test
@@ -57,17 +49,24 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
             launcher.forTasks("packageEverything")
         }
         
-        assertTrue(packagesDir.exists())
-        assertTrue(new File(packagesDir, "projectB-foo.zip").exists())
-        assertTrue(new File(packagesDir, "projectB-bar.zip").exists())
+        Assert.assertTrue(packagesDir.exists())
+        Assert.assertTrue(new File(packagesDir, "projectB-foo.zip").exists())
+        Assert.assertTrue(new File(packagesDir, "projectB-bar.zip").exists())
         File buildScriptFile = new File(packagesDir, "projectB-buildScript.zip")
-        assertTrue(buildScriptFile.exists())
+        Assert.assertTrue(buildScriptFile.exists())
         ZipFile buildScriptZipFile = new ZipFile(buildScriptFile)
-        assertNotNull("build file is in zip", buildScriptZipFile.getEntry("build.gradle"))
+        Assert.assertNotNull("build file is in zip", buildScriptZipFile.getEntry("build.gradle"))
 
-        checkBuildInfo(project.zipTree(new File("packages", "projectB-buildScript.zip")), collector)
+        checkBuildInfoFiles(project.zipTree(new File("packages", "projectB-buildScript.zip")))
     }
 
+    /**
+     * This is a regression test for GR #6124.  It ensures that the build_info folder in the buildScript package for
+     * every project lists the source dependency information for it and the transitive set of its source dependencies.
+     * Originally it didn't list source dependency information at all; then it only listed immediate dependencies; then
+     * it immediate plus subprojects recursively, which was wrong because source dependencies are subprojects of the
+     * root project, not of each other.
+     */
     @Test
     public void testPackageSourceDependencies() {
         File projectTemplateDir = new File(getTestDir(), "projectCin")
@@ -76,72 +75,88 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
 
         FileUtils.copyDirectory(projectTemplateDir, projectDir)
 
-        File packagesDir = new File(projectDir, "packages")
-
         // Create a dummy project to provide access to FileTree methods
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
 
+        HgUtil.hgExec(project, "init", "srcDep1")
+        HgUtil.hgExec(project, "init", "srcDep2")
         HgUtil.hgExec(project, "init", "noBuildFile")
-        HgUtil.hgExec(project, "init", "subProj")
         HgUtil.hgExec(project, "init")
 
         // Run fAD to make sure the settings.gradle and settings-subprojects.txt are created.
+        // First for srcDep1 ...
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fAD")
             launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
         }
+        // ... then srcDep12 ...
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
+        }
+        // ... then noBuildScript ...
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fAD")
+            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
+        }
+        // ... and lastly just to get a successful run.
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fAD")
         }
 
+        // Now do the actual test.
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("packageEverything")
         }
 
-        File buildScriptFile = new File(packagesDir, "projectC-buildScript.zip")
-        assertTrue(buildScriptFile.exists())
-
-        checkBuildInfo(
-            project.zipTree(new File("packages", "projectC-buildScript.zip")),
-            collector,
-            [
-                "build_info/source_path.txt",
-                "build_info/source_revision.txt",
-                "build_info/source_url.txt",
-
-                "build_info/source_dependencies",
-
-                "build_info/source_dependencies/noBuildFile",
-                "build_info/source_dependencies/noBuildFile/source_path.txt",
-                "build_info/source_dependencies/noBuildFile/source_revision.txt",
-                "build_info/source_dependencies/noBuildFile/source_url.txt",
-
-                "build_info/source_dependencies/subProj",
-                "build_info/source_dependencies/subProj/source_path.txt",
-                "build_info/source_dependencies/subProj/source_revision.txt",
-                "build_info/source_dependencies/subProj/source_url.txt"
-            ]
-        )
+        checkBuildInfoZip(project, project.projectDir, ["srcDep1", "srcDep2", "noBuildFile"])
+        checkBuildInfoZip(project, new File(project.projectDir, "srcDep1"), ["srcDep2", "noBuildFile"])
+        checkBuildInfoZip(project, new File(project.projectDir, "srcDep2"), ["noBuildFile"])
     }
 
-    public static void checkBuildInfo(FileTree directory, ErrorCollector collector, Collection<String> checkFiles = []) {
-        checkFiles.addAll([
-            "build_info",
-            "build_info/versions.txt"
-        ])
+    private static void checkBuildInfoZip(Project rootProject, File projectDir, Collection<String> srcDepNames) {
+        File packagesDir = new File(projectDir, "packages")
+        File buildScriptFile = new File(packagesDir, "${projectDir.name}-buildScript.zip")
+        Set<String> expectedFiles = new LinkedHashSet<>()
+        collectSourceDependencyFiles(expectedFiles, srcDepNames)
+        Assert.assertTrue(buildScriptFile.exists())
+        checkBuildInfoFiles(rootProject.zipTree(buildScriptFile), expectedFiles)
+    }
 
-        Map<String, Boolean> fileMap = checkFiles.collectEntries { [it, false] }
+    private static final String[] SOURCE_DEP_INFO_FILES = [
+        "source_path.txt",
+        "source_revision.txt",
+        "source_url.txt",
+    ]
 
-        directory.visit { FileVisitDetails visitor ->
-            String fileRelativePath = visitor.relativePath.toString()
-
-            if (fileMap.containsKey(fileRelativePath)) {
-                fileMap[fileRelativePath] = true
+    private static void collectSourceDependencyFiles(
+        Set<String> set,
+        Collection<String> subprojectNames
+    ) {
+        SOURCE_DEP_INFO_FILES.each {
+            set.add("build_info/$it")
+        }
+        subprojectNames.each { subprojectName ->
+            SOURCE_DEP_INFO_FILES.each {
+                set.add("build_info/source_dependencies/${subprojectName}/$it")
             }
         }
+    }
 
-        fileMap.each { file ->
-            collector.checkThat("File '$file.key' was not found", file.value, IsEqual.equalTo(true))
+    public static void checkBuildInfoFiles(
+        FileTree directory,
+        Set<String> expectedFiles = []
+    ) {
+        expectedFiles.addAll([
+            "build_info/versions.txt"
+        ])
+        Set<String> actualFiles = new LinkedHashSet<>()
+
+        directory.visit { FileVisitDetails visitor ->
+            actualFiles.add(visitor.relativePath.toString())
         }
+
+        Set<String> missingFiles = expectedFiles - actualFiles
+        Assert.assertTrue("Missing files:\n${missingFiles.join('\n    ')}", missingFiles.empty)
     }
 }
