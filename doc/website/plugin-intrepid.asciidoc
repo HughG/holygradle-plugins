@@ -1454,7 +1454,31 @@ path.
 ==== Relative paths for transitive dependencies
 
 By default, when a packed dependency has further transitive dependencies, the unpacked directories/symlinks for those
-will appear next to the packed dependency.
+will appear next to the packed dependency.  If a transitive dependency is also specified as a direct dependency, and the
+path specified for it as a direct dependency is different from this default path, then the specified path is used.  For
+example, suppose you have the following script.
+
+[source,groovy]
+----
+packedDependencies {
+    "libA" {
+        dependency "com.example-corp.common:libA:1.0"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+    "subdir/libB" {
+        dependency "com.example-corp.common:libB:1.0"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+}
+----
+
+If +libA+ (with path +_rootDir_/libB+) depends on +libB+ then the default path for +libB+ would be +_rootDir_/libB+; but
+instead path +_rootDir_/subdir/libB+ will be used.
+
+WARNING: It is recommended to put all dependencies paths under a single folder.  If you do not, then the location of
+the links for transitive dependencies may be unpredictable.  In the above example, if both +libA+ and +libB+ depend on
++libC+, then the path for +libC+ may be either +_rootDir_/libC+ or +_rootDir_/subdir/libC+, and the Holy Gradle does not
+guarantee which will be used.
 
 Previous versions of the Holy Gradle allowed published modules to specify the relative location where each transitive
 packed dependency should appear.  This design caused various problems, as follows.

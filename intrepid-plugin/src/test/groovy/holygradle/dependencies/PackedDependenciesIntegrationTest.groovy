@@ -46,4 +46,19 @@ Multiple different dependencies/versions are targeting the same locations."""
             ))
         }
     }
-}
+
+    @Test
+    public void testSameModuleVersionAtMultipleLocations() {
+        final projectDir = new File(getTestDir(), "unpacking_one_version_to_many_locations")
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
+                """FAILURE: Build failed with an exception.
+
+* What went wrong:
+Module version holygradle.test:external-lib:1.1 is specified by packed dependencies at both path 'sub/extlib' and """ +
+"'extlib'.  A single version can only be specified at one path.  If you need it to appear at more than one " +
+"location you can explicitly create links."
+            ))
+        }
+    }}
