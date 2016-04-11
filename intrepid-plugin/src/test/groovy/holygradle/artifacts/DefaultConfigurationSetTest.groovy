@@ -10,42 +10,12 @@ import org.junit.rules.ExpectedException
 class DefaultConfigurationSetTest extends AbstractHolyGradleTest {
     @Rule public ExpectedException thrown = ExpectedException.none();
 
-    public static final ArrayList<String> ASPECTS = ["main", "test"]
-    public static final ArrayList<String> COLOURS = ["orange", "purple"]
-    public static final LinkedHashMap<String, ArrayList<String>> REQUIRED_AXES = [
-        "aspect": ASPECTS,
-        "lifecycleStage": ["make", "use"]
-    ]
-    public static final LinkedHashMap<String, ArrayList<String>> OPTIONAL_AXES = [
-        "colour": COLOURS,
-        "size": ["medium", "large"]
-    ]
+    public static final ArrayList<String> ASPECTS = DefaultConfigurationSetTypeTest.ASPECTS
+    public static final ArrayList<String> COLOURS = DefaultConfigurationSetTypeTest.COLOURS
     // It's not important what this order is, but it is important that it's stable -- i.e., that the methods return
     // LinkedList-based lists and maps.
-    public static final ArrayList<String> COMMON_CONFIGURATION_NAMES = [
-        "main_make_common",
-        "test_make_common",
-        "main_use_common",
-        "test_use_common"
-    ]
-    public static final ArrayList<String> MAIN_CONFIGURATION_NAMES = [
-        "main_make_orange_medium",
-        "test_make_orange_medium",
-        "main_use_orange_medium",
-        "test_use_orange_medium",
-        "main_make_purple_medium",
-        "test_make_purple_medium",
-        "main_use_purple_medium",
-        "test_use_purple_medium",
-        "main_make_orange_large",
-        "test_make_orange_large",
-        "main_use_orange_large",
-        "test_use_orange_large",
-        "main_make_purple_large",
-        "test_make_purple_large",
-        "main_use_purple_large",
-        "test_use_purple_large"
-    ]
+    public static final ArrayList<String> COMMON_CONFIGURATION_NAMES = DefaultConfigurationSetTypeTest.COMMON_CONFIGURATION_NAMES
+    public static final ArrayList<String> MAIN_CONFIGURATION_NAMES = DefaultConfigurationSetTypeTest.MAIN_CONFIGURATION_NAMES
     public static final ArrayList<String> COMMON_AND_MAIN_CONFIGURATION_NAMES =
         COMMON_CONFIGURATION_NAMES + MAIN_CONFIGURATION_NAMES
 

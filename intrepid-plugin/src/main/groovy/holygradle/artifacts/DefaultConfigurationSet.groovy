@@ -48,20 +48,18 @@ class DefaultConfigurationSet implements ConfigurationSet {
         List<Map<String,String>> axisValueInclusionFilters,
         Template template
     ) {
-        int axesSize = axes.size()
-        // IntelliJ mistakenly thinks this is a Set<List<List<String>>>
-        //noinspection GroovyAssignabilityCheck
-        // This is sorted because toSet() creates a HashSet which doesn't guarantee order over time (or between versions
-        // of Java). It is desirable for the configuration set order to remain the same (and tests will fail if they
-        // don't). This produces reasonable grouping of configurations while preserving order across Java versions.
-        def axesSets = axes.values().collect {
-            def set = new LinkedHashSet<List<String>>(it.size())
+        // This uses collect instead of "*.toSet" because toSet() creates a HashSet which doesn't guarantee order over
+        // time (or between versions of Java). It is desirable for the configuration set order to remain the same (and
+        // tests will fail if they don't). This produces reasonable grouping of configurations while preserving order
+        // across Java versions.
+        List<Set<String>> axesSets = axes.values().collect {
+            def set = new LinkedHashSet<String>(it.size())
             set.addAll(it)
             return set
         }
-
         Set<List<String>> allValueCombinations = Sets.cartesianProduct(axesSets)
         List<String> axesKeys = axes.keySet().toList()
+        int axesSize = axes.size()
         for (List<String> values in allValueCombinations) {
             Map<String, String> binding = [:]
             for (int i = 0; i < axesSize; i++) {
