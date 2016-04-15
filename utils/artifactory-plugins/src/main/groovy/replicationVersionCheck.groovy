@@ -67,6 +67,7 @@ class ArtifactoryAPI {
 
     private final Logger log
     private final RESTClient client
+    private def systemConfiguration = null
 
     public static ArtifactoryAPI getLocalApi(Logger log, Security security, Closure asSystem) {
         if (LOCAL_CRED.size() != 2 || LOCAL_CRED.any { it == null || it.trim().empty }) {
@@ -91,7 +92,14 @@ class ArtifactoryAPI {
         return new ArtifactoryAPI(log, LOCAL_SERVER_URI, localUsername, LOCAL_CRED[1])
     }
 
-    public ArtifactoryAPI(Logger log, String server, String username, String password) {
+    public ArtifactoryAPI(
+        Logger log,
+        String server,
+        String username,
+        String password,
+        String proxyHost = null,
+        Integer proxyPort = null
+    ) {
         this.log = log
         client = new RESTClient(server)
         client.parser['application/vnd.org.jfrog.artifactory.system.Version+json'] = client.parser['application/json']
@@ -102,6 +110,12 @@ class ArtifactoryAPI {
         String auth = "${username}:${password}"
         String authEncoded = auth.bytes.encodeBase64().toString()
         client.setHeaders(['Authorization': 'Basic ' + authEncoded])
+
+        // Set the proxy to use, if supplied.  (Currently this doesn't support proxies which need auth.)
+        if (proxyHost && proxyPort) {
+            // client.setProxy(proxyHost, proxyPort, client.uri.scheme)
+            client.setProxy(proxyHost, proxyPort, 'http')
+        }
 
         ParserRegistry.setDefaultCharset(null)
     }
@@ -118,13 +132,20 @@ class ArtifactoryAPI {
         return [version.split('\\.').collect { Integer.parseInt(it) }, Integer.parseInt(revision)]
     }
 
-    public def getMailServerConfiguration() {
-        String query = '/artifactory/api/system/configuration'
-        HttpResponseDecorator resp = (HttpResponseDecorator) (client.get(path: query))
-        if (resp.status != 200) {
-            throw new CancelException("ERROR: problem obtaining mail server config: {$resp.status} from ${query}", 500)
+    private def getSystemConfiguration() {
+        if (systemConfiguration == null) {
+            String query = '/artifactory/api/system/configuration'
+            HttpResponseDecorator resp = (HttpResponseDecorator) (client.get(path: query))
+            if (resp.status != 200) {
+                throw new CancelException("ERROR: problem obtaining mail server config: {$resp.status} from ${query}", 500)
+            }
+            systemConfiguration = resp.data
         }
-        def config = resp.data
+        return systemConfiguration
+    }
+
+    public def getMailServerConfiguration() {
+        def config = getSystemConfiguration()
         def mailServerConfig = config.mailServer
         if (!mailServerConfig) {
             throw new CancelException(
@@ -133,6 +154,19 @@ class ArtifactoryAPI {
             )
         }
         return mailServerConfig
+    }
+
+    public def getProxy(String proxyKey) {
+        def config = getSystemConfiguration()
+        def proxiesConfig = config.proxies
+        if (!proxiesConfig) {
+            throw new CancelException("ERROR: Failed to find any proxies configured (seeking ${proxyKey})", 500)
+        }
+        def proxy = proxiesConfig.proxy.find { it.key == proxyKey }
+        if (!proxy) {
+            throw new CancelException("ERROR: Failed to find configuration for proxy key ${proxyKey}", 500)
+        }
+        return [proxy.host.text(), proxy.port.text().toInteger()]
     }
 }
 
@@ -192,8 +226,8 @@ class EmailNotifier {
         )
 
         String currentUserEmail = security.currentUser().email
-        log.debug("sendNotifications: security.currentUsername = ${security.currentUsername}")
-        log.debug("sendNotifications: currentUserEmail = ${currentUserEmail}")
+        // log.debug("sendNotifications: security.currentUsername = ${security.currentUsername}")
+        // log.debug("sendNotifications: currentUserEmail = ${currentUserEmail}")
         boolean isValidCurrentUserEmail = (currentUserEmail != null && !currentUserEmail.trim().empty)
         List<String> emailAddresses = ALERT_EMAIL_ADDRESSES
         if (isValidCurrentUserEmail) {
@@ -231,44 +265,58 @@ class VersionMatchChecker {
         // the lists are not the same size, then the extra items from one list are dropped, so we need to check that as
         // a later step.
         List<List<Integer>> leftWithRightVersionComponents = [leftVersion, rightVersion].transpose()
-        log.debug("leftWithRightVersionComponents = ${leftWithRightVersionComponents}")
-        boolean arePairedComponentsGreaterThan = false
+        // log.debug("leftWithRightVersionComponents = ${leftWithRightVersionComponents}")
+        // log.debug("leftRevision = ${leftRevision}, rightRevision = ${rightRevision}")
+        int comparePairedComponents = 0
         for (pair in leftWithRightVersionComponents) {
             def (leftComponent, rightComponent) = pair
             // We don't use a switch here because we may want to break out of the for.
             def comp = leftComponent <=> rightComponent
+            // log.info("left ${leftComponent} <=> right ${rightComponent} is ${comp}")
             if (comp == -1) { // less than
+                comparePairedComponents = -1
                 break
             } else if (comp == 0) { // equal
                 // We will just continue
             } else /* comp == 1 */ { // greater than
-                arePairedComponentsGreaterThan = true
+                comparePairedComponents = 1
                 break
             }
         }
 
         // If the paired version parts are equal, but the left version has more parts, we assume it is a greater (newer)
         // version.
-        boolean isLeftVersionLengthGreaterThan = leftVersion.size() > rightVersion.size()
+        int compareVersionLength = leftVersion.size() <=> rightVersion.size()
 
-        // Lastly check the "rev"
-        boolean isLeftRevisionGreaterThan = leftRevision > rightRevision
+        // If the paired version parts are equal and the length is the same, lastly check the "rev".
+        int compareRevision = leftRevision <=> rightRevision
 
-        log.debug("${arePairedComponentsGreaterThan}, ${isLeftVersionLengthGreaterThan}, ${isLeftRevisionGreaterThan}")
-        return arePairedComponentsGreaterThan ||
-            isLeftVersionLengthGreaterThan ||
-            isLeftRevisionGreaterThan
+        int result = comparePairedComponents ?:
+            compareVersionLength ?:
+            compareRevision
+        // log.debug("${comparePairedComponents} ?: ${compareVersionLength} ?: ${compareRevision} = ${result}")
+        return result == 1
     }
 
     public void checkServerVersionsMatch(RepoPath localRepoPath, String description, Closure asSystem) {
         final ArtifactoryAPI localApi = ArtifactoryAPI.getLocalApi(log, security, asSystem)
         def localVersion = localApi.getVersionWithRevision()
+        def remoteRepoName = localRepoPath.repoKey
+        final String CACHE_REPO_NAME_SUFFIX = '-cache'
+        if (remoteRepoName.endsWith(CACHE_REPO_NAME_SUFFIX)) {
+            remoteRepoName = remoteRepoName.substring(0, remoteRepoName.size() - CACHE_REPO_NAME_SUFFIX.size())
+            // log.debug("Trimmed name to ${remoteRepoName}")
+        }
+
         HttpRepositoryConfiguration remoteRepoConf =
-            repositories.getRepositoryConfiguration(localRepoPath.repoKey) as HttpRepositoryConfiguration
+            repositories.getRepositoryConfiguration(remoteRepoName) as HttpRepositoryConfiguration
         String remoteServerUri = new URIBuilder(remoteRepoConf.url).setPath("/").toString()
-        final ArtifactoryAPI remoteApi = new ArtifactoryAPI(log, remoteServerUri, remoteRepoConf.username, remoteRepoConf.password)
+        def (proxyHost, proxyPort) = localApi.getProxy(remoteRepoConf.proxy)
+        final ArtifactoryAPI remoteApi = new ArtifactoryAPI(
+            log, remoteServerUri, remoteRepoConf.username, remoteRepoConf.password, proxyHost, proxyPort
+        )
         def remoteVersion = remoteApi.getVersionWithRevision()
-        log.debug("Remote version is ${remoteVersion}, local version is ${localVersion}, ${description}")
+        // log.debug("Remote version is ${remoteVersion}, local version is ${localVersion}, ${description}")
         if (versionIsGreaterThan(remoteVersion, localVersion)) {
             final String errorMessage = "Server version mismatch during replication ${description}: " +
                 "remote = ${remoteVersion} is greater than local = ${localVersion}"
