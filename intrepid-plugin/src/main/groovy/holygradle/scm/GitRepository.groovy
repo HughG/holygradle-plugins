@@ -22,6 +22,8 @@ class GitRepository implements SourceControlRepository {
     }
 
     public String getUrl() {
+        // TODO 2016-04-15 HughG: Instead of this, run "git remote show origin" and capture the output.
+        // May need to strip "username[:password]@" from URL.
         File config = new File(workingCopyDir, "/.git/config")
         String url = "unknown"
         if (config.exists()) {

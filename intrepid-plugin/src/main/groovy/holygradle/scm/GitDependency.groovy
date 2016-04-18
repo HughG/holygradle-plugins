@@ -31,7 +31,7 @@ class GitDependency extends SourceDependency {
     private void cacheCredentials(String username, String password, String repoUrl) {
         if (!credentialHelperIsConfigured()) {
             // Enable Windows Credential Manager support
-            ExecResult execResult = project.exec { ExecSpec ->
+            ExecResult execResult = project.exec { ExecSpec spec ->
                 spec.setIgnoreExitValue true
                 spec.commandLine "git config credential.helper wincred"
             }

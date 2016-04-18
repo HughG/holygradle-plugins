@@ -139,7 +139,7 @@ BOOL IsMercurialCredential(const wstring& target_name, const wstring& username) 
 
 BOOL IsGitCredential(const wstring& target_name, const wstring& username) {
     // git://<scheme>://<username>@<hostname>
-    if (target_name.find("git://") != 0) { // Starts with "git://"
+    if (target_name.find(L"git://") != 0) { // Starts with "git://"
         return FALSE;
     }
     
@@ -147,14 +147,14 @@ BOOL IsGitCredential(const wstring& target_name, const wstring& username) {
     if (username_pos == wstring::npos) { // Contains username
         return FALSE;
     }
-    if (target_name.substr(username_pos - 3, 3) != "://") { // Username preceded by "://"
+    if (target_name.substr(username_pos - 3, 3) != L"://") { // Username preceded by "://"
         return FALSE;
     }
     if (username_pos - 3 <= 10) { // "://<username>" is preceded by at least one character
         return FALSE;
     }
     
-    if (target_name.find("@") != (username_pos + username.size())) { // Username followed by "@"
+    if (target_name.find(L"@") != (username_pos + username.size())) { // Username followed by "@"
         return FALSE;
     }
     if (target_name.size() <= (username_pos + username.size() + 1)) { // Text follows the "@"
