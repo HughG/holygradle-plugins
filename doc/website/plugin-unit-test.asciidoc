@@ -78,11 +78,22 @@ Wherever `<f>` appears in the command line, it will be replaced with a single ch
 letter of the flavour in lower case (for example, `d` or `r`), and `<F>` will be replaced with
 the first letter in upper case.
 
+The first argument to this method is the executable and it should be specified in one of the
+following ways.
+
+* As a filename with no path part, to be found on the system +PATH+; for example, "+cmd.exe+"
+* As a relative path, which is taken relative to the project's +projectDir+; for example, "+path/to/test.exe+".
+* As an absolute path; for example, "+${project.projectDir}/../path/to/integration_test.exe+".
+
 -> Call this method at least once.
 
 ==== workingDir
 
 This method and property allow you to set the working directory for the unit test executable.
+
+NOTE: If the <<_commandline>> specifies a rellative path, it is _not_ relative to this working
+directory.  This property only sets the "current directory" for the test process when it is
+runnning.
 
 [source,groovy]
 ----

@@ -146,38 +146,43 @@ class TestHandler {
 
             // ---- Set up the command line.
             List<String> cmd = commandLineChunks.collect { replaceFlavour(it, flavour) }
-            // Look for the command exe one of three places,
-            // But proceed even if we don't find it as it may
-            // be relying on system path (e.g., "cmd.exe")
-            File exePath = new File(cmd[0])
-            if (!exePath.exists()) {
+
+            // The Holy Gradle has so far tried to be "magically helpful" because some users got confused by the way it
+            // finds EXEs in a multi-project build.  It would look for the EXE relative to the root project's projectDir
+            // as well as the current project and, failing that, assume it was on the path.  I think the right answer is
+            // to educate users about project.exec.
+            final exePathString = cmd[0]
+            File exePath = new File(exePathString)
+            File tryProjectPath = project.file(exePathString)
+            if (tryProjectPath.exists()) {
+                // The exe string was an absolute path or exists relative to the project dir, so we should use that.
+                // By default on Windows (with the Oracle JDK), the Exec task looks in the java.exe dir, the
+                // current dir of the Gradle process (or is it the root project dir?), and the path.
+                cmd[0] = tryProjectPath.path
+            } else if (exePath.parent == null) {
+                // The exe string has no directory parts, so Exec task will find it on the system path.
+            } else {
                 // TODO 2015-03-21 HughG: Remove this at next major revision change.
-                File tryPath = new File(project.projectDir, cmd[0])
-                if (tryPath.exists()) {
+                File tryRootPath = project.rootProject.file(exePathString)
+                if (tryRootPath.exists()) {
                     project.logger.warn(
-                        "Test executable was specified as '${exePath}' but found relative to project.projectDir at " +
-                        "'${tryPath}'.  This automatic path search will be removed in a future version of the Holy " +
-                        "Gradle.  Please add '\${projectDir}' to the executable path explicitly or use the " +
-                        "project.file(String) method, which returns a file relative to the projectDir."
+                        "For test ${name} in ${project}, " +
+                        "the test executable was specified as '${exePathString}' but found relative to " +
+                        "project.rootProject.projectDir at '${tryRootPath}'.  This root project path search will be " +
+                        "removed in a future version of the Holy Gradle.  Please use the rootProject.file(String) " +
+                        "method, which returns a file relative to the rootProject.projectDir."
                     )
-                    exePath = tryPath
+                    cmd[0] = tryRootPath.path
+                } else {
+                    // Note that, if the file doesn't exist at configuration time, it may just be that the test EXE hasn't
+                    // been built yet.
+                    project.logger.debug(
+                        "For test ${name} in ${project}, " +
+                        "the test executable was specified as '${exePathString}' but was NOT found relative to " +
+                        "that project or the root project, so may not run."
+                    )
                 }
             }
-            if (!exePath.exists()) {
-                // TODO 2015-03-21 HughG: Remove this at next major revision change.
-                File tryPath = new File(project.rootProject.projectDir, cmd[0])
-                if (tryPath.exists()) {
-                    project.logger.warn(
-                        "Test executable was specified as '${exePath}' but found relative to " +
-                        "project.rootProject.projectDir at '${tryPath}'.  This automatic path search will be removed " +
-                        "in a future version of the Holy Gradle.  Please add '\${rootProject.projectDir}' to the " +
-                        "executable path explicitly or use the rootProject.file(String) method, which returns a file " +
-                        "relative to the projectDir."
-                    )
-                    exePath = tryPath
-                }
-            }
-            cmd[0] = exePath.path
             task.commandLine cmd
 
             // ---- Set up the output and/or error stream.
