@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.8.x
 
 ===== 7.8.0
-(TODO)
+(adb85b78fe9b at 2016-04-19 15:03:19 UTC)
 
 CustomGradleCorePlugin {br} Intrepid::
 
