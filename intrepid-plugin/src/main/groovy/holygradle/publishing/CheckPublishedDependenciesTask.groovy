@@ -31,7 +31,9 @@ class CheckPublishedDependenciesTask extends DefaultTask {
             Map<String, Boolean> modules = [:]
             packedDependenciesStateSource.allUnpackModules.each { module ->
                 module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                    String coord = versionInfo.getFullCoordinate().replace(":", "/")
+                    // Add a trailing slash because, if we request without one, Artifactory will just respond with a
+                    // "302 Found" redirect whcih adds a trailing slash; so this saves us time.
+                    String coord = versionInfo.getFullCoordinate().replace(":", "/") + '/'
                     modules[versionInfo.getFullCoordinate()] = helper.artifactExists(coord)
                 }
             }
