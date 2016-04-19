@@ -42,6 +42,27 @@ things for users, and also for plugin developers.
 
 === 7.x
 
+==== 7.8.x
+
+===== 7.8.0
+(TODO)
+
+CustomGradleCorePlugin {br} Intrepid::
+
+* GR #6570 Create directory junctions instead of directory symbolic links by default.  On Windows 7, if you have local
+Administrator rights, you need to turn UAC down or off to be able to create symlinks, which is somewhat annoying and
+unsafe.  On Windows 8 and above you also need to run from an elevated (Administrator) Command Prompt, which is even more
+so.  This release uses directory junctions instead, for symlinks to the unpack cache and for the +links+ DSL (renamed
+from +symlinks+).
+** This is a Windows security restriction, apparently related to the fact that the target of a network share can be
+changed by the server, so a symlink to a network share might be an unexpected security risk.  Directory junctions cannot
+point to network shares and so processes do not need special permissions to create them.
+** If your unpack cache or other link targets are on a network share it will use symlinks for those, and then you still
+may need to run from an elevated Command Prompt.
+
+DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ==== 7.7.x
 
 ===== 7.7.6
@@ -59,7 +80,15 @@ UnitTest::
 look for the executable relative to the root project's +projectDir+.  It now only looks in the current project's
 +projectDir+ or on the system +PATH+, similar to the default behaviour for +Exec+ and +project.exec+.
 
-DevEnv {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils ::
+Utils::
+* GR #6588 Fix for upgrading from Artifactory 3.3.0 to 4.7.1.  Fixes for the replicationVersionCheck Artifactory plugin;
+should still be compatible with 3.3.0 but that wasn't tested.
+** We now need to explicitly use the proxy for a remote repo to connect to the remote server to find out its version.
+** The comparison logic was flawed.
+** Artifactory 3.3.0 passes the name of the remote repo to the beforeReplicateXxx hooks, but 4.7.1 passes the "-cache"
+repo name; so we now strip off that suffix if it exists.
+
+DevEnv {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper ::
 - No changes.
 
 ===== 7.7.5

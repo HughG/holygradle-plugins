@@ -1415,7 +1415,7 @@ Calling this method on a packed dependency causes the +rebuildLinks+ and +delete
 
 It is expected that developers will normally only use this method temporarily in their local check-out, and not commit it to shared version-controlled source.  If this method is called on a packed dependency, then attempting to publish the containing project will throw an exception, because Gradle cannot know the real version of the dependency.
 
-Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this method was called +noCreateSymlinkToCache+.
+Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this method was called +noCreateSymlinkToCache+.
 
 ==== readonly
 
@@ -1550,7 +1550,7 @@ will result in links (by default, directory junctions) as follows:
     +---common  <-----------------------|
 ----
 
-Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this block was called +links+.
+Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this block was called +links+.
 
 ==== to
 
@@ -2051,7 +2051,7 @@ This task is a subclass of the usual Gradle +Zip+ task, so the +baseName+ and ot
 
 This task performs a subset of the functionality of the +fetchAllDependencies+ task - it simply rebuilds all the links for all dependencies.
 
-Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this task was called +rebuildSymlinks+.
+Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this task was called +rebuildSymlinks+.
 
 [[_deletesymlinks]]
 [[_deleteSymlinks]]
@@ -2061,7 +2061,7 @@ Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this task was ca
 This task deletes any links created by +rebuildLinks+ or +fetchAllDependencies+. This does not delete *all* links under
 the project folder; only links which would be created by the other tasks are deleted.
 
-Note that, before Holy Gradle link:release_notes.html#[_7_8_0], this task was called +deleteSymlinks+.
+Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this task was called +deleteSymlinks+.
 
 === packageEverything
 
