@@ -87,7 +87,7 @@ class RecursivelyFetchSourceTask extends DefaultTask {
         allUnpackModules.each { UnpackModule module ->
             module.versions.values().each { UnpackModuleVersion versionInfo ->
                 if (!versionInfo.hasArtifacts()) {
-                    // Nothing will have been unpacked/symlinked, so don't try to include it.
+                    // Nothing will have been unpacked/linked, so don't try to include it.
                     logger.info("Not writing settings entry for empty packedDependency ${versionInfo.moduleVersion}")
                     return
                 }

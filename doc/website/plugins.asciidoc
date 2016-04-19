@@ -211,9 +211,9 @@ The link:plugin-intrepid.html[] supports the following.
 module instead.
 * Packed dependencies
 ** Retrieving dependencies which are ZIP files and unpacking them into your workspace.
-** Unzipping to a per-user cache and creating a symlink to there from your workspace, to save space
+** Unzipping to a per-user cache and creating a link to there from your workspace, to save space
 when multiple workspaces have the same dependencies.
-** Explicit creation of extra symlinks within workspace if required.
+** Explicit creation of extra directory links within workspace if required.
 ** Control of folder naming to allow multiple versions of the same component.
 * Publishing
 ** Creating "gloss:package[]d artifacts" (that is, ZIP files).

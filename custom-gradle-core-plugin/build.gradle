@@ -4,6 +4,13 @@
     plugin's resources folder -- because the batch file internally grabs its own location using the
     "%~dp0" trick.
 */
+
+apply plugin: 'java'
+
+dependencies {
+    compile group: 'net.java.dev.jna', name: 'jna', version: '3.2.7'
+}
+
 task(copyGwBat, type: Copy) {
     // We don't need a copy of either of these files, because we'll read the info from project
     // properties.  But these files will have changed if those property values changed since the

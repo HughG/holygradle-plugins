@@ -18,6 +18,6 @@ sourceDependencies {
     }
 }
 
-symlinks {
+links {
     to "../projB/ext_dep"
 }

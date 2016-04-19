@@ -384,7 +384,7 @@ collect files into one or more ZIP files (gloss:package[]s) when publishing, and
 (into your gloss:gradle-user-home[]) when dependencies are downloaded.  All packages are unpacked
 into the same folder, so that folder will contain the union of all those files.  It also extends the
 gloss:gradle[] dependency syntax to specify a relative folder path for each dependency, and the
-unzipped files appear at that location in your gloss:workspace[] using gloss:symlink[]s.  The
+unzipped files appear at that location in your gloss:workspace[] using gloss:link[]s.  The
 compiler can then be configured to look for the dependency files at those locations.
 
 ==== Source Dependencies

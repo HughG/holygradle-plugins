@@ -1,12 +1,10 @@
 package holygradle.packaging
 
 import holygradle.io.FileHelper
-import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import holygradle.testUtil.HgUtil
 import org.gradle.api.Project
-import org.gradle.process.ExecSpec
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Rule
 import org.junit.Test
@@ -16,7 +14,8 @@ import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-import static org.junit.Assert.*
+import static org.junit.Assert.assertNotNull
+import static org.junit.Assert.assertNull
 
 /**
  * Integration tests for {@link holygradle.packaging.PackageArtifactBuildScriptHandler}
@@ -144,10 +143,8 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         FileHelper.ensureDeleteDirRecursive(projectCPackagesDir)
 
         // Invoke fAD once so that the settings file is created successfully, if it's not already there.
-        // Expect this to fail due to source dependencies.
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(RecursivelyFetchSourceTask.NEW_SUBPROJECTS_MESSAGE)
         }
 
         invokeGradle(projectCDir) { WrapperBuildLauncher launcher ->

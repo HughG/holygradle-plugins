@@ -2,7 +2,6 @@ package holygradle.io
 
 import groovy.io.FileVisitResult
 import holygradle.custom_gradle.util.RetryHelper
-import holygradle.custom_gradle.util.Symlink
 
 import java.nio.file.Files
 
@@ -14,7 +13,6 @@ class FileHelper {
         if (!file.exists()) {
             return
         }
-        // Check it's not a directory, because Commons IO method does a recursive delete in that case.
         if (file.isDirectory()) {
             throw new IOException("Failed to delete ${file}${formatPurpose(purpose)} because it is a directory, not a file")
         }
@@ -48,7 +46,7 @@ class FileHelper {
                 postRoot: true,
                 visitRoot: true,
             ) { File f ->
-                if (Symlink.isJunctionOrSymlink(f) || !f.isDirectory()) {
+                if (Link.isLink(f) || !f.isDirectory()) {
                     f.writable = true
                     Files.delete(f.toPath())
                 }

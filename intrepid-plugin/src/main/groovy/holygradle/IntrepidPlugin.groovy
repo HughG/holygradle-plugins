@@ -6,8 +6,11 @@ import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
-import holygradle.custom_gradle.util.Symlink
 import holygradle.dependencies.*
+import holygradle.io.Link
+import holygradle.links.LinkHandler
+import holygradle.links.LinkTask
+import holygradle.links.LinksToCacheTask
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.publishing.DefaultPublishPackagesExtension
 import holygradle.publishing.PublishPackagesExtension
@@ -16,9 +19,6 @@ import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.source_dependencies.SourceDependenciesStateHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.source_dependencies.SourceDependencyTaskHandler
-import holygradle.symlinks.SymlinkHandler
-import holygradle.symlinks.SymlinkTask
-import holygradle.symlinks.SymlinksToCacheTask
 import holygradle.unpacking.GradleZipHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
@@ -147,8 +147,8 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define 'sourceControl' DSL.
         SourceControlRepositories.createExtension(project)
         
-        // Define 'symlinks' DSL block.
-        SymlinkHandler symlinks = SymlinkHandler.createExtension(project)
+        // Define 'links' DSL block (and deprecated 'symlinks' one).
+        LinkHandler links = LinkHandler.createExtension(project)
         
         // Define 'packageArtifacts' DSL for the project.
         PackageArtifactHandler.createContainer(project)
@@ -172,23 +172,33 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
         }
 
-        SymlinksToCacheTask deleteSymlinksToCacheTask = (SymlinksToCacheTask)project.task(
-            "deleteSymlinksToCache", type: SymlinksToCacheTask
+        LinksToCacheTask deleteLinksToCacheTask = (LinksToCacheTask)project.task(
+            "deleteLinksToCache", type: LinksToCacheTask
         ) { Task it ->
             it.group = "Dependencies"
-            it.description = "Delete all symlinks to the unpack cache"
+            it.description = "Delete all links to the unpack cache"
         }
-        deleteSymlinksToCacheTask.initialize(SymlinksToCacheTask.Mode.CLEAN)
-        SymlinksToCacheTask rebuildSymlinksToCacheTask = (SymlinksToCacheTask)project.task(
-            "rebuildSymlinksToCache", type: SymlinksToCacheTask
+        deleteLinksToCacheTask.initialize(LinksToCacheTask.Mode.CLEAN)
+        project.task("deleteSymlinksToCache") { Task t ->
+            t.dependsOn deleteLinksToCacheTask
+            t.description = "${t.name} is deprecated and will be removed in future.  Use deleteLinksToCache instead"
+            t.doFirst { logger.warn(t.description) }
+        }
+        LinksToCacheTask rebuildLinksToCacheTask = (LinksToCacheTask)project.task(
+            "rebuildLinksToCache", type: LinksToCacheTask
         ) { Task it ->
             it.group = "Dependencies"
-            it.description = "Rebuild all symlinks to the unpack cache"
-            // We need to make sure we unpack before trying to create a symlink to the cache, or we will end up with
-            // broken file symlinks, instead of working directory symlinks.
+            it.description = "Rebuild all links to the unpack cache"
+            // We need to make sure we unpack before trying to create a link to the cache, or we will end up failing to
+            // create directory junctions, or with broken file symlinks instead of working directory symlinks.
             it.dependsOn unpackDependenciesTask
         }
-        rebuildSymlinksToCacheTask.initialize(SymlinksToCacheTask.Mode.BUILD)
+        rebuildLinksToCacheTask.initialize(LinksToCacheTask.Mode.BUILD)
+        project.task("rebuildSymlinksToCache") { Task t ->
+            t.dependsOn rebuildLinksToCacheTask
+            t.description = "${t.name} is deprecated and will be removed in future.  Use rebuildLinksToCache instead"
+            t.doFirst { logger.warn(t.description) }
+        }
 
         final FETCH_ALL_DEPENDENCIES_TASK_NAME = "fetchAllDependencies"
         RecursivelyFetchSourceTask fetchAllSourceDependenciesTask = (RecursivelyFetchSourceTask)project.task(
@@ -200,27 +210,37 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.recursiveTaskName = FETCH_ALL_DEPENDENCIES_TASK_NAME
         }
 
-        Task deleteSymlinksTask = project.task("deleteSymlinks", type: DefaultTask) { Task it ->
+        Task deleteLinksTask = project.task("deleteLinks", type: DefaultTask) { Task it ->
             it.group = "Dependencies"
-            it.description = "Remove all symlinks."
-            it.dependsOn deleteSymlinksToCacheTask
+            it.description = "Remove all links."
+            it.dependsOn deleteLinksToCacheTask
         }
-        SymlinkTask rebuildSymlinksTask = (SymlinkTask)project.task("rebuildSymlinks", type: SymlinkTask) { Task it ->
+        project.task("deleteSymlinks") { Task t ->
+            t.dependsOn deleteLinksTask
+            t.description = "${t.name} is deprecated and will be removed in future.  Use deleteLinks instead"
+            t.doFirst { logger.warn(t.description) }
+        }
+        LinkTask rebuildLinksTask = (LinkTask)project.task("rebuildLinks", type: LinkTask) { Task it ->
             it.group = "Dependencies"
-            it.description = "Rebuild all symlinks."
-            it.dependsOn rebuildSymlinksToCacheTask
-            // Some symlinks might be to other source folders, so make sure we fetch them first.
+            it.description = "Rebuild all links."
+            it.dependsOn rebuildLinksToCacheTask
+            // Some links might be to other source folders, so make sure we fetch them first.
             it.dependsOn fetchAllSourceDependenciesTask
         }
-        rebuildSymlinksTask.initialize()
+        rebuildLinksTask.initialize()
+        project.task("rebuildSymlinks") { Task t ->
+            t.dependsOn rebuildLinksTask
+            t.description = "${t.name} is deprecated and will be removed in future.  Use rebuildLinks instead"
+            t.doFirst { logger.warn(t.description) }
+        }
 
         Task fetchAllDependenciesTask = project.task(
             FETCH_ALL_DEPENDENCIES_TASK_NAME,
             type: DefaultTask
         ) { Task it ->
             it.group = "Dependencies"
-            it.description = "Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary symlinks."
-            it.dependsOn rebuildSymlinksTask
+            it.description = "Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links."
+            it.dependsOn rebuildLinksTask
         }
         RecursivelyFetchSourceTask fetchFirstLevelSourceDependenciesTask = (RecursivelyFetchSourceTask)project.task(
             "fetchFirstLevelSourceDependencies",
@@ -343,16 +363,16 @@ public class IntrepidPlugin implements Plugin<Project> {
         }
          
         /**************************************
-         * Create symlinks
+         * Create links
          **************************************/
         project.gradle.projectsEvaluated {
-            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for symlinks tasks") {
-                symlinks.getMappings().each {
+            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for links tasks") {
+                links.getMappings().each {
                     final File linkDir = new File(project.projectDir, it.linkPath)
                     final File targetDir = new File(project.projectDir, it.targetPath)
-                    rebuildSymlinksTask.addLink(linkDir, targetDir)
-                    deleteSymlinksTask.doLast {
-                        Symlink.delete(linkDir)
+                    rebuildLinksTask.addLink(linkDir, targetDir)
+                    deleteLinksTask.doLast {
+                        Link.delete(linkDir)
                     }
                 }
             }
@@ -386,13 +406,13 @@ public class IntrepidPlugin implements Plugin<Project> {
         }
 
         project.gradle.projectsEvaluated {
-            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for populating symlink-to-cache tasks") {
-                // Initialize for symlinks from workspace to the unpack cache, for each dependency which was unpacked to
+            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for populating link-to-cache tasks") {
+                // Initialize for links from workspace to the unpack cache, for each dependency which was unpacked to
                 // the unpack cache (as opposed to unpacked directly to the workspace).
                 //
                 // Need to do this in projectsEvaluated so we can be sure that all packed dependencies have been set up.
-                deleteSymlinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
-                rebuildSymlinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
+                deleteLinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
+                rebuildLinksToCacheTask.addUnpackModuleVersions(packedDependenciesState)
             }
 
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for populating pathsForPackedDependencies") {
@@ -406,17 +426,17 @@ public class IntrepidPlugin implements Plugin<Project> {
         }
 
         project.afterEvaluate {
-            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for cross-project symlink task dependencies") {
-                // Make the symlink creation in this project depend on that in its source dependencies.  This makes it
-                // possible to create symlinks (using the "symlinks" DSL) which point to symlinks in other projects.
-                // Without this dependency, the target symlinks might not have been created when this project tries to
-                // create symlinks to them.
+            profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for cross-project link task dependencies") {
+                // Make the link creation in this project depend on that in its source dependencies.  This makes it
+                // possible to create links (using the "links" DSL) which point to links in other projects.  Without
+                // this dependency, the target links might not have been created when this project tries to create links
+                // to them.
                 //
                 // Need to do this in project.afterEvaluate so we can be sure that all configurations and source
                 // dependencies have been set up but we don't need to know about subprojects' source dependencies).
                 sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration conf ->
-                    rebuildSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, rebuildSymlinksTask.name)
-                    deleteSymlinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, deleteSymlinksTask.name)
+                    rebuildLinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, rebuildLinksTask.name)
+                    deleteLinksTask.dependsOn conf.getTaskDependencyFromProjectDependency(true, deleteLinksTask.name)
                 }
             }
         }

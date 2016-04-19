@@ -28,7 +28,10 @@ This repository contains:
 
 ## Banned words list
 
-For confidentiality reasons, the 'build.gradle' will automatically add a pretxncommit hook to your clone of this repo, which checks that commits don't contain any words in a "banned" list, which should exist at 'local\holy-gradle-plugins-banned-words.txt'.  You must create a symlink from 'local' to a folder of your choice, containing a file with that name.
+For confidentiality reasons, the 'build.gradle' will automatically add a pretxncommit hook to your clone of this repo,
+which checks that commits don't contain any words in a "banned" list, which should exist at
+'local\holy-gradle-plugins-banned-words.txt'.  You must create a directory junction or symlink from 'local' to a folder
+of your choice, containing a file with that name.
 
 ## Creating gradle.properties
 Create 'gradle.properties' in the root of your workspace add define these properties:
@@ -82,6 +85,14 @@ You can replace "Really" with "Locally" to publish to a folder called "local_rep
 publishing, if you want.  See the section on publishing below for more details.
 
 # Testing
+
+> NOTE: On Windows 8 and above, the SymlinkTest subclass needs to be run with Administrator privileges if the current
+> user is a member of the Administrators group.  If you run these tests from a non-admin command prompt, you'll get
+> an exception like the following.
+> 
+>     java.nio.file.FileSystemException: <filename>: A required privilege is not held by the client
+> 
+> We may remove symlink support, and hence this test, once directory junction creation has been fully tested.
 
 Run tests with `gw test` for unit tests, and `gw integTest` for integration tests.  These use JUnit, so you can do the
 usual Gradle JUnit tricks, such as running a single test class (which is especially useful for integration tests, as

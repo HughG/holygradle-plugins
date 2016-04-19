@@ -405,7 +405,7 @@ appropriate distribution of that tool and publish it to Artifactory.
 
 For each such module, you add a "packed dependency", specifying
 
-* the relative location at which a symlink to the unpacked module should be created;
+* the relative location at which a link to the unpacked module should be created;
 * the +group+, +name+, and +version+ of the module; and
 * a mapping from configurations of your module, to configurations of the dependency module.
 
@@ -525,7 +525,7 @@ afterEvaluate {
 
 ==== Fetch Dependencies
 
-At this point, you should be able to have Gradle fetch, unpack, and symlink all your packed
+At this point, you should be able to have Gradle fetch, unpack, and link all your packed
 (pre-built) dependencies.  To do this, run the following at the Windows Command Prompt.
 
 ----
@@ -544,7 +544,7 @@ option to the command line, immediately after +gw+.  For more information, see t
 the link:plugin-my-credentials.html[].
 
 If your project's direct dependencies have further dependencies of their own, they will be fetched,
-unpacked, and symlinked as well.  The location of the symlinks for these indirect dependencies is
+unpacked, and linked as well.  The location of the links for these indirect dependencies is
 determined by the modules which depend on them, using a +relativePath+ attribute in their +ivy.xml+
 file, added by +intrepid+.
 
@@ -563,7 +563,7 @@ When a developer at a disconnected site gets a copy of these files, they should 
 +local_artifacts+ folder in the same place as the project's +build.gradle+.  (The folder can also
 be in any folder above the project root, to share it between multiple projects.)  The developer
 can then run +gw fAD+ and all dependencies will be unpacked to the gloss:gradle[] cache, with
-symlinks added at the correct locations in the project folder.  From version
+links added at the correct locations in the project folder.  From version
 link:release_notes.html#_7_5_0[] of the Holy Gradle, the +local_artifacts+ contains a +build_info+
 folder which contains a note of which source code repository and revision was used to generate it.
 This means that the team which receives it can check that they have the correct version of the ZIP
@@ -598,8 +598,9 @@ gloss:gradle-user-home[] for unpacking.  This tests that all dependencies are av
 ==== Check Build
 
 At this point you should be able to build your Visual Studio solution, provided the Include and
-Library Paths it uses match the symlinks for the dependencies.  You may find Visual Studio's
-Property Sheets useful for this, as they allow common settings to be included in multiple projects.
+Library Paths it uses match the directory gloss:link[]s for the dependencies.  You may find Visual
+Studio's Property Sheets useful for this, as they allow common settings to be included in multiple
+projects.
 
 Note that Gradle creates a directory called +build+ for its own use, and the gloss:holygradle[]
 creates one called +packages+ as a temporary storage area when creating gloss:package[]s.  If you
@@ -787,17 +788,17 @@ First you will update your local copy of the source code in whatever way is norm
 For example, if you are using Mercurial, this is probably just by running +hg pull+ and +hg update+.
 
 However, if a dependency has been removed from the +build.gradle+ file by the new changes, then the
-+intrepid+ plugin will no longer know about it, and so will leave a stale symlink when you use it to
++intrepid+ plugin will no longer know about it, and so will leave a stale link when you use it to
 update dependencies.  Therefore, you should run
 
 ----
-gw deleteSymlinks
+gw deleteLinks
 ----
 
 or
 
 ----
-gw delSym
+gw delL
 ----
 
 before updating your working copy.  With Mercurial, you can automate this by adding a pre-update
@@ -805,7 +806,7 @@ hook for the repository to your +%USERPROFILE%\mercurial.ini+, as follows.
 
 ----
 [hooks]
-preupdate.deleteSymlinks = gw deleteSymlinks
+preupdate.deleteLinks = gw deleteLinks
 ----
 
 You could make this a global hook if all your repositories use Gradle; or, if only some do, but they
@@ -813,7 +814,7 @@ all use the Holy Gradle plugins, you could guard it with an +if+, as follows.
 
 ----
 [hooks]
-preupdate.deleteSymlinks = if exist gw.bat gw deleteSymlinks
+preupdate.deleteLinks = if exist gw.bat gw deleteLinks
 ----
 
 [[_fetch_dependencies_in_typical_workflow]]
@@ -860,17 +861,17 @@ section covers how to do that.
 First, run the following command.
 
 ----
-gw deleteSymlinks
+gw deleteLinks
 ----
 
-This ensures that all existing symlinks are removed, before you change the description of the
+This ensures that all existing links are removed, before you change the description of the
 packed dependencies.  Once you have changed the +packedDependencies+ block, Gradle will not know to
-delete the symlinks for any dependencies which were removed.  Of course, if you forget to do this at
+delete the links for any dependencies which were removed.  Of course, if you forget to do this at
 this point, you can delete them manually.
 
 WARNING: If you forget to do it before you commit your changes, you may fail to update the Include
 and Library Paths in your Visual Studio projects.  You will not notice this because the build still
-works for you, because the symlinks still exist.  However, it may fail for other developers if they
+works for you, because the links still exist.  However, it may fail for other developers if they
 use the Mercurial hooks suggested in the <<_typical_workflow>> section.  This is another good reason
 to use an auto-build.
 
@@ -884,8 +885,8 @@ You can edit the +packedDependencies+ block to do any of the following:
 [[_fetch_dependencies_after_changing_them]]
 ==== Fetch Dependencies
 
-Run +gw fAD+ again.  This will download and unpack any new dependencies, and create symlinks
-for them.  This will not remove symlinks for dependencies which were removed -- see above for how to
+Run +gw fAD+ again.  This will download and unpack any new dependencies, and create links
+for them.  This will not remove links for dependencies which were removed -- see above for how to
 do that.  Also it will not remove the ZIP files and their unpacked files from your Gradle cache --
 for that, see the section on <<_gradle_cache_clean_up>>.
 
@@ -985,7 +986,7 @@ authentication details have changed, there should be no need to do this.
 If you want to check out and build second or further copies of a repo on the same PC, Gradle and
 the Holy Gradle plugins will save you some time.  Check out the source and run +gw fAD+ as usual.
 You should find that dependencies don't need to be downloaded or unpacked, and the only time spent
-is to check versions and create symlinks.
+is to check versions and create links.
 
 // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 

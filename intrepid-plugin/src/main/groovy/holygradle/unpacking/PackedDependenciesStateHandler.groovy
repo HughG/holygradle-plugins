@@ -22,7 +22,7 @@ import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
  *
  * The Holy Gradle's intrepid plugin, Perhaps through historical lack of understanding of the design of Gradle, tries to
  * "put" all resolved module versions into one structure per project, not divided by configuration.  In saying "put", I
- * mean specifically that it does this in order to create, in the project's folder hierarchy, symlinks to the unzipped
+ * mean specifically that it does this in order to create, in the project's folder hierarchy, links to the unzipped
  * versions of a module's artifacts, in the "unpackCache" folder in the Gradle home dir.  The structure of this
  * information is
  *
@@ -30,10 +30,10 @@ import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
  *
  * Each UnpackModuleVersion also holds
  *   - a mapping from resolved artifacts to the names of the project configurations which caused them to be included;
- *   - a mapping from the IDs of its dependencies to the relative paths at which each should be symlinked
+ *   - a mapping from the IDs of its dependencies to the relative paths at which each should be linked
  *
  * (The implementation around this arrangement has a couple of problems: it is very awkward to use multiple versions of
- * the same module; and it is not possible to symlink the same module version in at multiple locations -- although the
+ * the same module; and it is not possible to link the same module version in at multiple locations -- although the
  * latter is intended to be supported, I think.)
  *
  * The purpose of this class is to build the latter structure from the former.
