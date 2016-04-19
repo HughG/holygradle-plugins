@@ -44,6 +44,24 @@ things for users, and also for plugin developers.
 
 ==== 7.7.x
 
+===== 7.7.6
+(14b9d6237fb2 at 2016-04-19 12:00:20 UTC)
+
+Intrepid::
+
+* GR #6588 Fix for upgrading from Artifactory 3.3.0 to 4.7.1.  The checkPackedDependencies command was sending the
+wrong content type in the "Accept" header when checking for which module versions exist.  The older Artifactory version
+ignored it but 4.7.1 complained with "406 Not Acceptable".
+
+UnitTest::
+
+* GR #6675 Bug fix and further improvements to the unit-test plugin.  Deprecated the behaviour that test tasks would
+look for the executable relative to the root project's +projectDir+.  It now only looks in the current project's
++projectDir+ or on the system +PATH+, similar to the default behaviour for +Exec+ and +project.exec+.
+
+DevEnv {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils ::
+- No changes.
+
 ===== 7.7.5
 (76dfef3c465a at 2016-04-11 13:35:09 UTC)
 
