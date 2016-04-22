@@ -119,14 +119,6 @@
                     <option name="myName" value="my" />
                   </DPropertyElement>
                   <DPropertyElement>
-                    <option name="name" value="packedDependencies" />
-                    <option name="static" value="false" />
-                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
-                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
-                    <option name="myStatic" value="false" />
-                    <option name="myName" value="packedDependencies" />
-                  </DPropertyElement>
-                  <DPropertyElement>
                     <option name="name" value="packedDependenciesSettings" />
                     <option name="static" value="false" />
                     <option name="type" value="holygradle.dependencies.PackedDependencySettingsHandler" />
@@ -141,6 +133,14 @@
                     <option name="myType" value="holygradle.unpacking.PackedDependenciesStateHandler" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="packedDependenciesState" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="packedDependencies" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packedDependencies" />
                   </DPropertyElement>
                   <DPropertyElement>
                     <option name="name" value="publishPackages" />
@@ -315,4 +315,3 @@
     </option>
   </component>
 </project>
-

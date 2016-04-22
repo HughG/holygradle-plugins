@@ -21,8 +21,22 @@
             <option value="$PROJECT_DIR$/unit-test-plugin" />
           </set>
         </option>
+        <option name="myModules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/artifactory-manager-plugin" />
+            <option value="$PROJECT_DIR$/credential-store" />
+            <option value="$PROJECT_DIR$/custom-gradle" />
+            <option value="$PROJECT_DIR$/custom-gradle-core-plugin" />
+            <option value="$PROJECT_DIR$/devenv-plugin" />
+            <option value="$PROJECT_DIR$/integration" />
+            <option value="$PROJECT_DIR$/intrepid-plugin" />
+            <option value="$PROJECT_DIR$/my-credentials-plugin" />
+            <option value="$PROJECT_DIR$/stamper-plugin" />
+            <option value="$PROJECT_DIR$/unit-test-plugin" />
+          </set>
+        </option>
       </GradleProjectSettings>
     </option>
   </component>
 </project>
-
