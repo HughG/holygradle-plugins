@@ -5,7 +5,9 @@ import holygradle.Helper
 import holygradle.io.FileHelper
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.file.CopySpec
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
+import org.gradle.api.tasks.WorkResult
 
 import java.util.regex.Matcher
 import java.util.zip.ZipEntry
@@ -87,6 +89,7 @@ class SourceOverrideHandler {
     }
 
     public void generateDependencyFiles() {
+        // TODO 2016-02-25 HughG: Fail if location not set.
         if (project.hasProperty("useCachedIvyFiles")) {
             project.logger.info("Skipping generation of fresh ivy file for ${dependencyCoordinate}")
             sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
@@ -126,6 +129,8 @@ class SourceOverrideHandler {
         } else {
             throw new RuntimeException("No Ivy file generation available for '${name}'. Please ensure your source override contains a generateSourceOverrideDetails.bat, a compatible gw.bat or provide a custom generation method in your build.gradle.")
         }
+
+        project.logger.info("generateDependencyFiles result: ${sourceOverrideIvyFileCache}, ${sourceOverrideDependencyFileCache}")
     }
 
     public void createDummyModuleFiles() {
@@ -148,18 +153,23 @@ class SourceOverrideHandler {
         dummyArtifact.closeEntry()
         dummyArtifact.close()
 
-        def ivyFileName = "ivy-${dummyVersionString}.xml"
-
-        project.copy {
-            into tempDir
-            from(ivyFile.parentFile) {
+        String tempIvyFileName = "ivy-${dummyVersionString}.xml"
+        // Explicitly check if the source exists, because project.copy will silently succeed if it doesn't.
+        if (!ivyFile.exists()) {
+            throw new RuntimeException(
+                "Cannot copy '${ivyFile}' to '${new File(tempDir, tempIvyFileName)}' because the source does not exist"
+            )
+        }
+        project.copy { CopySpec copySpec ->
+            copySpec.into tempDir
+            copySpec.from(ivyFile.parentFile) {
                 include ivyFile.name
-                rename { ivyFileName }
+                rename { tempIvyFileName }
             }
         }
 
         // Modify the ivy file to reflect our source
-        def ivyXmlFile = new File(tempDir, ivyFileName)
+        def ivyXmlFile = new File(tempDir, tempIvyFileName)
         XmlParser xmlParser = new XmlParser(false, true)
         Node ivyXml = xmlParser.parse(ivyXmlFile)
 

@@ -22,6 +22,7 @@ import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.symlinks.SymlinksToCacheTask
 import holygradle.unpacking.*
+import org.apache.ivy.plugins.conflict.StrictConflictException
 import org.gradle.api.DefaultTask
 import org.gradle.api.NamedDomainObjectContainer
 import holygradle.unpacking.GradleZipHelper
@@ -36,8 +37,14 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.DependencyResolutionListener
 import org.gradle.api.artifacts.DependencyResolveDetails
+import org.gradle.api.artifacts.ResolutionStrategy
 import org.gradle.api.artifacts.ResolvableDependencies
+import org.gradle.api.artifacts.result.DependencyResult
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.artifacts.result.ResolvedModuleVersionResult
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
+import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.StrictConflictResolution
 import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
@@ -471,6 +478,11 @@ public class IntrepidPlugin implements Plugin<Project> {
             private Exception beforeResolveException = null
 
             void beforeResolve(ResolvableDependencies resolvableDependencies) {
+                if (!resolvableDependencies.path.startsWith(':')) {
+                    // This is a buildscript configuration, so there's nothing for us to do with source overrides.
+                    return
+                }
+                project.logger.lifecycle("beforeResolve ${resolvableDependencies.path}")
                 Configuration configuration = project.configurations.findByName(resolvableDependencies.name)
                 if (configuration == null) {
                     return
@@ -478,17 +490,44 @@ public class IntrepidPlugin implements Plugin<Project> {
 
                 // Add the version forcing bit to each configuration here
                 sourceOverrides.each { SourceOverrideHandler handler ->
+                    project.logger.lifecycle("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}")
                     try {
                         handler.createDummyModuleFiles()
                     } catch (Exception e) {
                         // Throwing in the beforeResolve handler leaves logging in a broken state so we need to catch
                         // this exception and throw it later.
                         beforeResolveException = e
+                        // Now do an early exit from the closure, as if we had thrown.
+                        return
                     }
+                    // TODO 2016-02-26 HUGR: This "eachDependency" call should be the outer loop, outside the resolution
+                    // handler altogether!
                     configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                        project.logger.lifecycle("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}; dep ${details.requested} target ${details.target}")
+                        // TODO 2016-02-26 HUGR: If there's a dependency conflict, the 'requested' version may NOT be
+                        // the one in the source override handler, even though the current 'target' version is.  I'm
+                        // not sure if source overrides should always be compared against the target, or the requested
+                        // and the target, or optionally (by default?) you specify a source override without a version,
+                        // or what.
                         if (details.requested.group == handler.groupName &&
                             details.requested.name == handler.dependencyName &&
-                            details.requested.version == handler.versionStr) {
+                            details.requested.version == handler.versionStr
+                        ) {
+                            project.logger.lifecycle("  MATCH requested: using ${handler.dummyVersionString}")
+                            details.useVersion(handler.dummyVersionString)
+                        }
+                        if (details.target.group == handler.groupName &&
+                            details.target.name == handler.dependencyName &&
+                            details.target.version == handler.versionStr
+                        ) {
+                            project.logger.lifecycle("  MATCH target: using ${handler.dummyVersionString}")
+                            details.useVersion(handler.dummyVersionString)
+                        }
+                        if (details.target.group == handler.groupName &&
+                            details.target.name == handler.dependencyName &&
+                            details.target.version.endsWith("+")
+                        ) {
+                            project.logger.warn("  MATCH FLOATING version: using ${handler.dummyVersionString}")
                             details.useVersion(handler.dummyVersionString)
                         }
                     }
@@ -496,10 +535,28 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
 
             // Todo: Make this not run once per configuration
-            void afterResolve(ResolvableDependencies dependencies) {
+            void afterResolve(ResolvableDependencies resolvableDependencies) {
+                if (!resolvableDependencies.path.startsWith(':')) {
+                    // This is a buildscript configuration, so there's nothing for us to do with source overrides.
+                    return
+                }
+
+                project.logger.lifecycle("source overrides: afterResolve ${resolvableDependencies.path})")
                 if (beforeResolveException != null) {
-                    // This exception is stored from earlier and thrown here
-                    throw new RuntimeException("beforeResolve handler failed.", beforeResolveException)
+                    // This exception is stored from earlier and thrown here.  Usually this is too deeply nested for
+                    // Gradle to output useful information at the default logging level, so we also explicitly log the
+                    // the nested exception.
+                    final String message = "beforeResolve handler failed"
+                    project.logger.error("${message}: ${beforeResolveException.toString()}")
+                    throw new RuntimeException(message, beforeResolveException)
+                }
+
+                resolvableDependencies.resolutionResult.allDependencies.each { DependencyResult result ->
+                    if (result instanceof ResolvedDependencyResult) {
+                        project.logger.lifecycle("  resolved ${result.requested} to ${((ResolvedDependencyResult)result).selected}")
+                    } else {
+                        project.logger.lifecycle("  UNRESOLVED ${result.requested}: ${(UnresolvedDependencyResult)result}")
+                    }
                 }
 
                 // Todo: This should be able to be pre-calculated but Groovy's closure capture rules are making it harder than it should be
@@ -535,12 +592,17 @@ public class IntrepidPlugin implements Plugin<Project> {
                     // Compare source override full dependencies to the current dependency
                     def dependencyCache = sourceOverrideCache.get(handler)
 
-                    dependencies.resolutionResult.allModuleVersions { ResolvedModuleVersionResult module ->
+                    List<String> mismatchMessages = new LinkedList<String>()
+                    resolvableDependencies.resolutionResult.allModuleVersions { ResolvedModuleVersionResult module ->
                         dependencyCache.each { configName, config ->
                             def moduleKey = "${module.id.group.toString()}:${module.id.name.toString()}"
                             if (config.containsKey(moduleKey)) {
                                 if (config.get(moduleKey) != module.id.version.toString()) {
-                                    throw new RuntimeException("Module '${module.id}' does not match the dependency declared in source override '${handler.name}' (${moduleKey}:${config.get(moduleKey)}). You may have to declare a matching source override in the source project.")
+                                    final String message = "Module '${module.id}' does not match the dependency " +
+                                        "declared in source override '${handler.name}' " +
+                                        "(${moduleKey}:${config.get(moduleKey)}); " +
+                                        "you may have to declare a matching source override in the source project."
+                                    mismatchMessages << message
                                 }
                             }
                         }
@@ -554,10 +616,41 @@ public class IntrepidPlugin implements Plugin<Project> {
                             dependencyCache2.each { configName2, config2 ->
                                 config.each { dep, version ->
                                     if (config2.containsKey(dep) && config2.get(dep) != version) {
-                                        throw new RuntimeException("Module in source override '${handler.name}' (${dep}:${version}) does not match module in source override '${handler2.name}' (${dep}:${config2.get(dep)}). You may have to declare a matching source override.")
+                                        final String message = "Module in source override '${handler.name}' " +
+                                            "(${dep}:${version}) does not match module in source override " +
+                                            "'${handler2.name}' (${dep}:${config2.get(dep)}); " +
+                                            "you may have to declare a matching source override."
+                                        mismatchMessages << message
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    if (!mismatchMessages.empty) {
+                        StringWriter stringWriter = new StringWriter()
+                        stringWriter.withPrintWriter { pw ->
+                            pw.println(
+                                "The module version for one or more source overrides does not match the version " +
+                                "for the same module in one or more places; please check the following messages."
+                            )
+                            for (message in mismatchMessages) {
+                                pw.print("    ")
+                                pw.println(message)
+                            }
+                        }
+                        String message = stringWriter.toString()
+
+                        final Configuration configuration = project.configurations.getByName(resolvableDependencies.name)
+                        final ResolutionStrategy strategy = configuration.resolutionStrategy
+                        final boolean hasStrictResolutionStrategy =
+                            (strategy instanceof ResolutionStrategyInternal) &&
+                                ((ResolutionStrategyInternal)strategy).conflictResolution instanceof StrictConflictResolution
+
+                        if (hasStrictResolutionStrategy) {
+                            throw new RuntimeException(message)
+                        } else {
+                            project.logger.warn(message)
                         }
                     }
                 }
