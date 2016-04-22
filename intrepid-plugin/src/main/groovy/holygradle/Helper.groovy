@@ -3,7 +3,6 @@ package holygradle
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.source_dependencies.SourceDependencyHandler
-import org.apache.commons.lang.StringUtils
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
@@ -13,8 +12,6 @@ import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import org.gradle.testfixtures.ProjectBuilder
 
-import javax.annotation.PostConstruct
-import java.lang.reflect.Method
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -197,8 +194,9 @@ Please run the task 'fixMercurialIni'."""
 
     public static String convertPathToVersion(String path) {
         String canonicalPath = new File(path).canonicalPath
-        String sanitisedPath = canonicalPath.replaceAll(/[^a-zA-Z0-9-._+=]/, "_") // Replace any non-valid version characters with an underscore
-                                            .replaceAll(/_+/, "_") // Remove any instances of multiple adjacent underscores)
+        String sanitisedPath = canonicalPath
+            .replaceAll(/[^a-zA-Z0-9-._+=]/, "_") // Replace any non-valid version characters with an underscore
+            .replaceAll(/_+/, "_") // Remove any instances of multiple adjacent underscores)
 
         int maxLength = 50
 
@@ -224,6 +222,9 @@ Please run the task 'fixMercurialIni'."""
         int firstCut = Math.floor((length - middle.length()) / 2.0)
         int secondCut = Math.ceil((length - middle.length()) / 2.0)
 
-        return str.substring(0, firstCut) + middle + str.substring(str.length() - secondCut, str.length())
+        return new StringBuilder(str.substring(0, firstCut))
+            .append(middle)
+            .append(str.substring(str.length() - secondCut, str.length()))
+            .toString()
     }
 }

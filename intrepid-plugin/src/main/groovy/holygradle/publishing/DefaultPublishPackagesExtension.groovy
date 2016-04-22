@@ -424,6 +424,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
 
     public void addDependencySourceTags(Project project, Collection<SourceDependencyHandler> sourceDependencies) {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode()."@xmlns:${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}" = SourceOverrideHandler.HOLY_GRADLE_NAMESPACE
             xml.asNode().dependencies.dependency.each { depNode ->

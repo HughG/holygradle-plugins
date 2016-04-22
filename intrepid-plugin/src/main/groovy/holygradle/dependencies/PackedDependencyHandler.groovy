@@ -46,27 +46,6 @@ class PackedDependencyHandler extends DependencyHandler {
         this.projectForHandler = projectForHandler
     }
 
-    public PackedDependencyHandler(
-        String depName,
-        Project projectForHandler,
-        String dependencyCoordinate,
-        Collection<AbstractMap.SimpleEntry<String, String>> configurations
-    ) {
-        this(depName, projectForHandler)
-        this.projectForHandler = projectForHandler
-        initialiseDependencyId(dependencyCoordinate)
-        this.configurationMappings.addAll(configurations)
-    }
-    
-    public PackedDependencyHandler(
-        String depName,
-        Project projectForHandler,
-        ModuleVersionIdentifier dependencyCoordinate
-    ) {
-        this(depName, projectForHandler)
-        dependencyId = dependencyCoordinate
-    }
-
     private PackedDependencyHandler getParentHandler() {
         if (projectForHandler == null) {
             null
@@ -101,6 +80,7 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
 
+    @SuppressWarnings("GroovyUnusedDeclaration") // API method for use in build scripts.
     public void noCreateSymlinkToCache() {
         createSymlinkToCache = false
     }

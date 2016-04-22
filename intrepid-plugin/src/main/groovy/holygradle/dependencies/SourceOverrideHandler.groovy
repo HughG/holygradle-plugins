@@ -7,7 +7,6 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.file.CopySpec
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
-import org.gradle.api.tasks.WorkResult
 
 import java.util.regex.Matcher
 import java.util.zip.ZipEntry
@@ -20,7 +19,6 @@ class SourceOverrideHandler {
     private String name
     private Project project
     private ModuleVersionIdentifier dependencyId = null
-    private ModuleVersionIdentifier dummyDependencyId = null
     private String dummyVersionString
     private String from
     private Closure<SourceOverrideHandler> sourceOverrideIvyFile
@@ -66,6 +64,7 @@ class SourceOverrideHandler {
         from
     }
 
+    @SuppressWarnings("GroovyUnusedDeclaration") // API method for use in build scripts.
     public void ivyFileGenerator(Closure<SourceOverrideHandler> generator) {
         sourceOverrideIvyFile = generator
     }
@@ -173,7 +172,7 @@ class SourceOverrideHandler {
         XmlParser xmlParser = new XmlParser(false, true)
         Node ivyXml = xmlParser.parse(ivyXmlFile)
 
-        def hg = new Namespace(SourceOverrideHandler.HOLY_GRADLE_NAMESPACE, SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME)
+        def hg = new Namespace(HOLY_GRADLE_NAMESPACE, HOLY_GRADLE_NAMESPACE_NAME)
 
         ivyXml.info.@organisation = groupName
         ivyXml.info.@module = dependencyName
@@ -187,9 +186,9 @@ class SourceOverrideHandler {
             }
         }
 
-        ivyXml.dependencies.dependency.each { dep ->
+        ivyXml.dependencies.dependency.each { Node dep ->
             if (dep.attributes()[hg.'isSource']?.toBoolean()) {
-                dep.@rev = Helper.convertPathToVersion(dep.attributes()[hg.'absolutePath'])
+                dep.@rev = Helper.convertPathToVersion(dep.attributes()[hg.'absolutePath'] as String)
             }
         }
 

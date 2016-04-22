@@ -172,8 +172,10 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         parentUnpackModule?.getVersion(parentDependencyVersion)
                     }
 
-                Collection<UnpackModuleVersion> parents = resolvedDependency.getParents().findAll { parentDepencency ->
-                    ModuleVersionIdentifier parentDependencyVersion = parentDepencency.module.id
+                // IntelliJ insists that findResults is returning a HashSet<ResolvedDependency>, which is nonsense.
+                //noinspection GroovyAssignabilityCheck
+                Collection<UnpackModuleVersion> parents = resolvedDependency.getParents().findResults { parentDependency ->
+                    ModuleVersionIdentifier parentDependencyVersion = parentDependency.module.id
                     UnpackModule parentUnpackModule = unpackModules[parentDependencyVersion.module]
                     parentUnpackModule?.getVersion(parentDependencyVersion)
                 }

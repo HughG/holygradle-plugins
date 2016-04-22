@@ -2,12 +2,9 @@ package holygradle.dependencies
 
 import groovy.xml.StreamingMarkupBuilder
 import groovy.xml.XmlUtil
-import holygradle.source_dependencies.SourceDependencyHandler
-import org.apache.ivy.core.resolve.ResolvedModuleRevision
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ConfigurationContainer
-import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 
@@ -18,11 +15,10 @@ class SummariseAllDependenciesTask extends DefaultTask {
             project.logger.info("Writing dependencies to ${file.canonicalPath}")
             def markupBuilder = new StreamingMarkupBuilder()
 
-            def xml = markupBuilder.bind {
+            Writable xml = markupBuilder.bind {
                 mkp.xmlDeclaration()
                 Configurations {
-                    project.configurations.each { config ->
-
+                    project.configurations.each((Closure){ Configuration config ->
                         Configuration(name: config.name) {
                             recursiveFlattenModules(config.resolvedConfiguration.firstLevelModuleDependencies).each { dep ->
                                 // Check if this is a source dependency
@@ -44,9 +40,9 @@ class SummariseAllDependenciesTask extends DefaultTask {
                                 )
                             }
                         }
-                    }
+                    })
                 }
-            }
+            } as Writable
 
             file.text = XmlUtil.serialize(xml)
         }

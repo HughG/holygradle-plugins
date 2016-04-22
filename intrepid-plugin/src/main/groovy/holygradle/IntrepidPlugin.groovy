@@ -1,6 +1,5 @@
 package holygradle
 
-import com.google.common.io.Files
 import holygradle.artifacts.*
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
@@ -21,28 +20,13 @@ import holygradle.source_dependencies.SourceDependencyTaskHandler
 import holygradle.symlinks.SymlinkHandler
 import holygradle.symlinks.SymlinkTask
 import holygradle.symlinks.SymlinksToCacheTask
-import holygradle.unpacking.*
-import org.apache.ivy.plugins.conflict.StrictConflictException
-import org.gradle.api.DefaultTask
-import org.gradle.api.NamedDomainObjectContainer
 import holygradle.unpacking.GradleZipHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
-import org.gradle.api.DefaultTask
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ConfigurationContainer
-import org.gradle.api.artifacts.DependencyResolutionListener
-import org.gradle.api.artifacts.DependencyResolveDetails
-import org.gradle.api.artifacts.ResolutionStrategy
-import org.gradle.api.artifacts.ResolvableDependencies
-import org.gradle.api.artifacts.result.DependencyResult
-import org.gradle.api.artifacts.result.ResolvedDependencyResult
-import org.gradle.api.artifacts.result.ResolvedModuleVersionResult
-import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.*
+import org.gradle.api.artifacts.*
+import org.gradle.api.artifacts.result.*
 import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.StrictConflictResolution
 import org.gradle.api.publish.PublishingExtension
@@ -139,7 +123,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
 
         // Define the 'sourceOverrides' DSL for the project
-        Collection<SourceOverrideHandler> sourceOverrides = SourceOverrideHandler.createContainer(project)
+        /*Collection<SourceOverrideHandler> sourceOverrides =*/ SourceOverrideHandler.createContainer(project)
 
         // Define the 'dependenciesState' DSL for the project.
         /*DependenciesStateHandler dependenciesState =*/ DependenciesStateHandler.createExtension(project)
@@ -232,7 +216,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         }
         rebuildSymlinksTask.initialize()
 
-        Task fetchAllDependenciesTask = project.task(
+        /*Task fetchAllDependenciesTask =*/ project.task(
             FETCH_ALL_DEPENDENCIES_TASK_NAME,
             type: DefaultTask
         ) { Task it ->
@@ -262,7 +246,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                 Helper.fixMercurialIni()
             }
         }
-        SummariseAllDependenciesTask allDependenciesTask = (SummariseAllDependenciesTask)project.task(
+        /*SummariseAllDependenciesTask allDependenciesTask =*/ (SummariseAllDependenciesTask)project.task(
             "summariseAllDependencies",
             type: SummariseAllDependenciesTask
         ) { SummariseAllDependenciesTask it ->
