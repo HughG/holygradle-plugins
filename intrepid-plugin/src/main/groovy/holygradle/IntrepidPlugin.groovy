@@ -437,7 +437,6 @@ public class IntrepidPlugin implements Plugin<Project> {
     }
 
     private void setupSourceReplacementListener(Project project) {
-        Collection<PackedDependencyHandler> packedDependencies = project.packedDependencies
         NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
 
         // Todo: throw an exception if source overrides are defined in a non-root project. It would be nice to actually
@@ -466,7 +465,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                     // This is a buildscript configuration, so there's nothing for us to do with source overrides.
                     return
                 }
-                project.logger.lifecycle("beforeResolve ${resolvableDependencies.path}")
+                project.logger.debug("source overrides: beforeResolve ${resolvableDependencies.path}")
                 Configuration configuration = project.configurations.findByName(resolvableDependencies.name)
                 if (configuration == null) {
                     return
@@ -474,7 +473,7 @@ public class IntrepidPlugin implements Plugin<Project> {
 
                 // Add the version forcing bit to each configuration here
                 sourceOverrides.each { SourceOverrideHandler handler ->
-                    project.logger.lifecycle("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}")
+                    project.logger.debug("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}")
                     try {
                         handler.createDummyModuleFiles()
                     } catch (Exception e) {
@@ -487,7 +486,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                     // TODO 2016-02-26 HUGR: This "eachDependency" call should be the outer loop, outside the resolution
                     // handler altogether!
                     configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                        project.logger.lifecycle("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}; dep ${details.requested} target ${details.target}")
+                        project.logger.debug("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}; dep ${details.requested} target ${details.target}")
                         // TODO 2016-02-26 HUGR: If there's a dependency conflict, the 'requested' version may NOT be
                         // the one in the source override handler, even though the current 'target' version is.  I'm
                         // not sure if source overrides should always be compared against the target, or the requested
@@ -497,14 +496,14 @@ public class IntrepidPlugin implements Plugin<Project> {
                             details.requested.name == handler.dependencyName &&
                             details.requested.version == handler.versionStr
                         ) {
-                            project.logger.lifecycle("  MATCH requested: using ${handler.dummyVersionString}")
+                            project.logger.debug("  MATCH requested: using ${handler.dummyVersionString}")
                             details.useVersion(handler.dummyVersionString)
                         }
                         if (details.target.group == handler.groupName &&
                             details.target.name == handler.dependencyName &&
                             details.target.version == handler.versionStr
                         ) {
-                            project.logger.lifecycle("  MATCH target: using ${handler.dummyVersionString}")
+                            project.logger.debug("  MATCH target: using ${handler.dummyVersionString}")
                             details.useVersion(handler.dummyVersionString)
                         }
                         if (details.target.group == handler.groupName &&
@@ -525,7 +524,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                     return
                 }
 
-                project.logger.lifecycle("source overrides: afterResolve ${resolvableDependencies.path})")
+                project.logger.debug("source overrides: afterResolve ${resolvableDependencies.path}")
                 if (beforeResolveException != null) {
                     // This exception is stored from earlier and thrown here.  Usually this is too deeply nested for
                     // Gradle to output useful information at the default logging level, so we also explicitly log the
@@ -537,9 +536,9 @@ public class IntrepidPlugin implements Plugin<Project> {
 
                 resolvableDependencies.resolutionResult.allDependencies.each { DependencyResult result ->
                     if (result instanceof ResolvedDependencyResult) {
-                        project.logger.lifecycle("  resolved ${result.requested} to ${((ResolvedDependencyResult)result).selected}")
+                        project.logger.debug("  resolved ${result.requested} to ${((ResolvedDependencyResult)result).selected}")
                     } else {
-                        project.logger.lifecycle("  UNRESOLVED ${result.requested}: ${(UnresolvedDependencyResult)result}")
+                        project.logger.debug("  UNRESOLVED ${result.requested}: ${(UnresolvedDependencyResult)result}")
                     }
                 }
 

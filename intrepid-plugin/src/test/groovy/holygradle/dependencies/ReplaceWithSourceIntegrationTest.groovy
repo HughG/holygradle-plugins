@@ -1,6 +1,8 @@
 package holygradle.dependencies
 
+import holygradle.Helper
 import holygradle.custom_gradle.util.Symlink
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.apache.commons.io.FileUtils
@@ -20,7 +22,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         if (projectDir.exists()) {
             Symlink.delete(frameworkDirectory)
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -49,7 +51,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         if (projectDir.exists()) {
             Symlink.delete(frameworkDirectory)
             Symlink.delete(anotherDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -76,7 +78,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         if (projectDir.exists()) {
             Symlink.delete(frameworkDirectory)
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -103,7 +105,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         if (projectDir.exists()) {
             Symlink.delete(frameworkDirectory)
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -132,16 +134,19 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             Symlink.delete(applicationDirectory)
             Symlink.delete(frameworkDirectory)
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
         copySourceFiles()
 
+        String expectedDummyVersion = Helper.convertPathToVersion(new File(projectDir, "../source/ext-1.1").toString())
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                "Module 'holygradle.test:external-lib:D_Projects_holy-gradle-...ationTest_source_ext-1.1' does not match the dependency declared in source override 'application' (holygradle.test:external-lib:1.1). You may have to declare a matching source override in the source project."
+                "Module 'holygradle.test:external-lib:${expectedDummyVersion}' does not " +
+                "match the dependency declared in source override 'application' (holygradle.test:external-lib:1.1); " +
+                "you may have to declare a matching source override in the source project."
             )
         }
     }
@@ -158,7 +163,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             Symlink.delete(applicationDirectory)
             Symlink.delete(frameworkDirectory)
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -167,7 +172,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                "Module 'holygradle.test:external-lib:1.0' does not match the dependency declared in source override 'application' (holygradle.test:external-lib:1.1). You may have to declare a matching source override in the source project."
+                "Module 'holygradle.test:external-lib:1.0' does not match the dependency declared in source override " +
+                "'application' (holygradle.test:external-lib:1.1); you may have to declare a matching source " +
+                "override in the source project."
             )
         }
     }
@@ -188,7 +195,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             gwFile.delete()
 
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -214,7 +221,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             gwFile.delete()
 
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -237,7 +244,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         if (projectDir.exists()) {
             Symlink.delete(externalDirectory)
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
@@ -258,7 +265,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         if (projectDir.exists()) {
             Symlink.delete(externalDirectory)
             externalDirectory.delete()
-            assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
+            FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         println("%"*50)

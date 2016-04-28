@@ -33,10 +33,13 @@ class ProjectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("extractPackedDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-"""Could not resolve all dependencies for configuration ':everything'.
-> A conflict was found between the following modules:
-   - holygradle.test:external-lib:1.0
-   - holygradle.test:external-lib:1.1
+"""Failed to notify dependency resolution listener.
+> Failed to notify dependency resolution listener.
+   > Failed to notify dependency resolution listener.
+      > Could not resolve all dependencies for configuration ':everything'.
+         > A conflict was found between the following modules:
+            - holygradle.test:external-lib:1.0
+            - holygradle.test:external-lib:1.1
 """
             ))
         }
