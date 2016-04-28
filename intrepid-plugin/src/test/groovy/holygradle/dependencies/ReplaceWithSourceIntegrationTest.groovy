@@ -268,8 +268,6 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
-        println("%"*50)
-
         FileUtils.copyDirectory(templateDir, projectDir)
         copySourceFiles()
 

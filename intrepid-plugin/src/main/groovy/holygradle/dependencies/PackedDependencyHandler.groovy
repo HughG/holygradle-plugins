@@ -31,9 +31,6 @@ class PackedDependencyHandler extends DependencyHandler {
 
     public PackedDependencyHandler(String depName) {
         super(depName)
-
-        //throw new RuntimeException("No project for PackedDependencyHandler for $depName")
-
     }
 
     public PackedDependencyHandler(String depName, Project projectForHandler) {
@@ -179,16 +176,16 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
 
+    /**
+     * Returns the {@link SourceOverrideHandler} from the root project which corresponds to this dependency, if there is
+     * one; otherwise return null.
+     * @return the {@link SourceOverrideHandler} from the root project which corresponds to this dependency, if there is
+     * one, otherwise null.
+     */
     public SourceOverrideHandler getSourceOverride() {
-        if (project == null) {
-            return null;
-        }
-
-        // Search for this dependency in the list of source overrides for the project
-        return project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
-            handler.dependencyCoordinate == getDependencyCoordinate()
-        }
+        return project.rootProject.sourceOverrides.find { it.dependencyCoordinate == dependencyCoordinate }
     }
+
     public String getGroupName() {
         getDependencyId().group
     }

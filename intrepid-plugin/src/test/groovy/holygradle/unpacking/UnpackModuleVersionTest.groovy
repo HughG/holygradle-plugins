@@ -1,6 +1,7 @@
 package holygradle.unpacking
 
 import holygradle.dependencies.PackedDependenciesSettingsHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.test.*
 import org.junit.Test
 import org.gradle.api.Project
@@ -22,12 +23,12 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     // +---eggfruit (org:eggfruit:1.5)
     private Map<String, UnpackModuleVersion> getTestModules() {
         Map<String, UnpackModuleVersion> modules = [:]
-        modules["root"] = getUnpackModuleVersion("root", "1.0")
-        modules["apricot"] = getUnpackModuleVersion("apricot", "1.1", modules["root"])
-        modules["blueberry"] = getUnpackModuleVersion("blueberry", "1.2", modules["root"])
-        modules["coconut"] = getUnpackModuleVersion("coconut", "1.3", modules["root"])
-        modules["date"] = getUnpackModuleVersion("date", "1.4", modules["coconut"])
-        modules["eggfruit"] = getUnpackModuleVersion("eggfruit", "1.5", modules["apricot"])
+        modules["root"] = getUnpackModuleVersion(project, "root", "1.0")
+        modules["apricot"] = getUnpackModuleVersion(project, "apricot", "1.1", modules["root"])
+        modules["blueberry"] = getUnpackModuleVersion(project, "blueberry", "1.2", modules["root"])
+        modules["coconut"] = getUnpackModuleVersion(project, "coconut", "1.3", modules["root"])
+        modules["date"] = getUnpackModuleVersion(project, "date", "1.4", modules["coconut"])
+        modules["eggfruit"] = getUnpackModuleVersion(project, "eggfruit", "1.5", modules["apricot"])
         modules
     }
         
@@ -35,12 +36,17 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         return new File(getTestDir(), fileName)
     }
 
-    private UnpackModuleVersion getUnpackModuleVersion(String moduleName, String moduleVersion, UnpackModuleVersion parent=null) {
+    private UnpackModuleVersion getUnpackModuleVersion(
+        Project project,
+        String moduleName,
+        String moduleVersion,
+        UnpackModuleVersion parent = null
+    ) {
         new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             getIvyFile(moduleName + ".xml"),
             (parent == null) ? [] : [parent],
-            (parent == null) ? new PackedDependencyHandler(moduleName) : null
+            (parent == null) ? new PackedDependencyHandler(moduleName, project) : null
         )
     }
     
@@ -49,19 +55,21 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir =
             new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
+        project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "rootDefault")
+        SourceOverrideHandler.createContainer(project)
         project
     }
     
     @Test
     public void testStandAloneModule() {
         Project project = getProject()
-        UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
+        UnpackModuleVersion apricot = getUnpackModuleVersion(project, "apricot", "1.1")
 
         assertEquals("org:apricot:1.1", apricot.getFullCoordinate())
         assertNotNull("getPackedDependency not null", apricot.getPackedDependency())
         assertEquals("apricot", apricot.getPackedDependency().name)
         assertEquals("getSelfOrAncestorPackedDependency has a single entry", apricot.getSelfOrAncestorPackedDependencies().size(), 1)
-        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependencies()[0].name)
+        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependencies().first().name)
         assertEquals("getParent is empty", apricot.getParents().size(), 0)
 
         UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
@@ -78,7 +86,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     @Test
     public void testSingleModuleApplyUpToDateChecks() {
         Project project = getProject()
-        UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
+        UnpackModuleVersion apricot = getUnpackModuleVersion(project, "apricot", "1.1")
     
         PackedDependencyHandler packedDep = apricot.getPackedDependency()
         packedDep.applyUpToDateChecks = true
@@ -90,7 +98,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     
     @Test
     public void testSingleModuleIncludeVersionNumberInPath() {
-        PackedDependencyHandler eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty")
+        PackedDependencyHandler eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty", project)
         UnpackModuleVersion eggfruit = new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
             getIvyFile("eggfruit.xml"),
@@ -104,7 +112,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     @Test
     public void testSingleModuleNotUnpackToCache() {
         Project project = getProject()
-        UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
+        UnpackModuleVersion coconut = getUnpackModuleVersion(project, "coconut", "1.3")
         
         PackedDependencyHandler coconutPackedDep = coconut.getPackedDependency()
         coconutPackedDep.unpackToCache = false
@@ -123,8 +131,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     @Test
     public void testOneChild() {
         Project project = getProject()
-        UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
-        UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
+        UnpackModuleVersion coconut = getUnpackModuleVersion(project, "coconut", "1.3")
+        UnpackModuleVersion date = getUnpackModuleVersion(project, "date", "1.4", coconut)
 
         assertNotEquals("getParents not empty", date.getParents().size(), 0)
         assertEquals([coconut], date.getParents())
@@ -137,7 +145,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
         assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
 
-        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependencies()[0])
+        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependencies().first())
         
         File targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))

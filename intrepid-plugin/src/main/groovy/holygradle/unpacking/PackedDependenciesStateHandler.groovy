@@ -86,9 +86,6 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
         project.logger.debug("    and packedDependencies ${packedDependencies*.name.sort().join('\r\n')}")
 
-        Set<ResolvedDependenciesVisitor.ResolvedDependencyId> dependencyConfigurationsAlreadySeen =
-            new HashSet<ResolvedDependenciesVisitor.ResolvedDependencyId>()
-
         ResolvedDependenciesVisitor.traverseResolvedDependencies(
             dependencies,
             { ResolvedDependency resolvedDependency ->
@@ -102,31 +99,17 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 // other modules).
 
                 ModuleVersionIdentifier id = resolvedDependency.module.id
-
-                final ResolvedDependenciesVisitor.ResolvedDependencyId newId =
-                    new ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
-                project.logger.debug("Adding ${newId} to ${dependencyConfigurationsAlreadySeen}")
-                final boolean isNewModuleConfiguration = dependencyConfigurationsAlreadySeen.add(newId)
-                if (!isNewModuleConfiguration) {
-                    project.logger.debug(
-                        "collectUnpackModules: Skipping ${id}, conf ${resolvedDependency.configuration}, " +
-                        "because it has already been visited"
-                    )
-                }
-
-                final boolean moduleIsInBuild = dependenciesStateHandler.isModuleInBuild(id)
-                if (moduleIsInBuild) {
+                final boolean isNonBuildModuleConfiguration = !dependenciesStateHandler.isModuleInBuild(id)
+                if (!isNonBuildModuleConfiguration) {
                     project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
                 }
-
-                final boolean isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
 
                 // Is there an ivy file corresponding to this dependency?
                 File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                 final boolean ivyFileExists = ivyFile?.exists()
                 // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
                 // we can throw an exception later (after we've checked all dependencies).
-                if (isNewNonBuildModuleConfiguration && !ivyFileExists) {
+                if (isNonBuildModuleConfiguration && !ivyFileExists) {
                     if (ivyFile == null) {
                         project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
                     } else {
@@ -139,8 +122,8 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
                 }
                 return new ResolvedDependenciesVisitor.VisitChoice(
-                    isNewNonBuildModuleConfiguration && ivyFileExists,
-                    isNewModuleConfiguration && ivyFileExists
+                    isNonBuildModuleConfiguration && ivyFileExists,
+                    ivyFileExists
                 )
             },
             { ResolvedDependency resolvedDependency ->
@@ -159,19 +142,10 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     project.logger.debug("collectUnpackModules: created module for ${id.module}")
                 }
 
-                // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on 'this'
-                // UnpackModuleVersion. There will only be a parent if this is a transitive dependency, and not if it
-                // is a direct dependency of the project.
+                // Find all parent UnpackModuleVersion instances, i.e., ones which have a dependency on 'this'
+                // UnpackModuleVersion. There will only be parents if this is a transitive dependency, and not if it
+                // is only a direct dependency of the project.
                 //
-                // TODO: There could be more than one parent. Deal with it gracefully.  We might need to drop the "have
-                // seen it before" filter from the visitDependencyPredicate.
-                UnpackModuleVersion parentUnpackModuleVersion =
-                    resolvedDependency.getParents().findResult { parentDependency ->
-                        ModuleVersionIdentifier parentDependencyVersion = parentDependency.module.id
-                        UnpackModule parentUnpackModule = unpackModules[parentDependencyVersion.module]
-                        parentUnpackModule?.getVersion(parentDependencyVersion)
-                    }
-
                 // IntelliJ insists that findResults is returning a HashSet<ResolvedDependency>, which is nonsense.
                 //noinspection GroovyAssignabilityCheck
                 Collection<UnpackModuleVersion> parents = resolvedDependency.getParents().findResults { parentDependency ->
@@ -200,18 +174,12 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
                     File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                    unpackModuleVersion = new UnpackModuleVersion(
-                        id,
-                        ivyFile,
-                        (parentUnpackModuleVersion == null) ? [] : [parentUnpackModuleVersion],
-                        thisPackedDep
-                    )
+                    unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parents, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
-                        "(pUMV = ${parentUnpackModuleVersion}, tPD = ${thisPackedDep?.name})"
+                        "(parents = ${parents}, tPD = ${thisPackedDep?.name})"
                     )
-
                 }
 
                 project.logger.debug("collectUnpackModules: adding ${id.module} originalConf ${originalConf.name} artifacts ${resolvedDependency.moduleArtifacts}")
@@ -299,15 +267,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 project.logger.error(
                     "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
                 )
-                versions.each { UnpackModuleVersion version ->
-                    project.logger.error("    ${version.fullCoordinate} in configurations ${version.originalConfigurations}")
-                    // Todo: In theory we could traverse the whole tree and print every parent
-                    while (version.parents.size() > 0) {
-                        version = version.parents.first()
-                        project.logger.error("        which is from ${version.fullCoordinate}")
-                    }
-                    project.logger.error("        which is from packed dependency ${version.packedDependency.name}")
-                }
+                versions.each { logUnpackModuleVersionAncestry(it, 1) }
             }
             return found || thisTargetHasClashes
         }
@@ -317,5 +277,19 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
         unpackModules = new ArrayList(unpackModulesMap.values())
         unpackModules
+    }
+
+    private void logUnpackModuleVersionAncestry(UnpackModuleVersion version, int indent) {
+        String prefix = "    " * indent
+        project.logger.error("${prefix}${version.fullCoordinate} in configurations ${version.originalConfigurations}")
+        PackedDependencyHandler packedDependency = version.packedDependency
+        if (packedDependency != null) {
+            project.logger.error("${prefix}  directly from packed dependency ${packedDependency.name}")
+        }
+        version.parents.each { parent ->
+            project.logger.error("${prefix}  indirectly from ${version.fullCoordinate}")
+            logUnpackModuleVersionAncestry(parent, indent + 1)
+        }
+
     }
 }

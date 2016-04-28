@@ -14,10 +14,14 @@ import org.gradle.testfixtures.ProjectBuilder
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 class Helper {
     // Recursively navigates down subprojects to gather the names of all sourceDependencies which
     // have not specified sourceControlRevisionForPublishedArtifacts.
+    public static final int MAX_VERSION_STRING_LENGTH = 50
+
     public static Collection<SourceDependencyHandler> getTransitiveSourceDependencies(Project project) {
         doGetTransitiveSourceDependencies(project.sourceDependencies as Collection<SourceDependencyHandler>)
     }
@@ -192,24 +196,40 @@ Please run the task 'fixMercurialIni'."""
         }
     }
 
+    /**
+     * Converts a file path to a version string, by escaping characters not valid in a version string, and by shortening
+     * it to {@link Helper#MAX_VERSION_STRING_LENGTH}.  The string is clamped to a maximum length because it may itself
+     * be used as part of a file path and some parts of Windows are limited to 260 charactes for the entire file path.
+     * @param path A file path
+     * @return A valid version string, of length at most {@link Helper#MAX_VERSION_STRING_LENGTH}.
+     */
     public static String convertPathToVersion(String path) {
         String canonicalPath = new File(path).canonicalPath
-        String sanitisedPath = canonicalPath
-            .replaceAll(/[^a-zA-Z0-9-._+=]/, "_") // Replace any non-valid version characters with an underscore
-            .replaceAll(/_+/, "_") // Remove any instances of multiple adjacent underscores)
+        // "Escape" any invalid version characters (org.apache.ivy.core.module.id.ModuleRevisionId#STRICT_CHARS_PATTERN)
+        // to a form which is both a valid Ivy revision string and a valid Windows filename.
+        String sanitisedPath = canonicalPath.replaceAll(/[^a-zA-Z0-9-._+=]/) { String[] group ->
+            char ch = group[0].charAt(0)
+            switch (ch) {
+                case 0x5F: // '_'
+                    return '__'
+                case { ch < 0x100 }:
+                    return String.format("_a%02x", ch)
+                default:
+                    return String.format("_u%04x", ch)
+            }
+        }
 
-        int maxLength = 50
-
-        // Todo: Consider adding a config flag to turn this off
         return abbreviateMiddle(
             sanitisedPath,
             "...",
-            maxLength
+            MAX_VERSION_STRING_LENGTH
         )
     }
 
     /**
-     * This exists in StringUtils 2.5 but the version that Gradle uses is 2.4
+     * Returns a new string which is a possibly-shortened version of the string {@code str} -- at most the given
+     * {@code length} -- with its middle characters replaced by the string {@code middle}.
+     * This exists in StringUtils 2.5 but the version that Gradle 1.4 uses is 2.4
      */
     public static String abbreviateMiddle(String str, String middle, int length) {
         if (str.length() <= length ||
