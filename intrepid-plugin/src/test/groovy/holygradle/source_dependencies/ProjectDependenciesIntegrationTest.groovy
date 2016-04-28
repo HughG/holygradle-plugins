@@ -46,7 +46,6 @@ class ProjectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
      * packedDependency module, in configuration A1, and another module/project B (in a sourceDependency) depends on a
      * different version, in configuration B1, BUT there is no configuration of A that depends on B1.  Should succeed.
      */
-    @Ignore("Will fail until GR #2291 is fixed")
     @Test
     public void conflictInUnusedConfig() {
         File projectDir = new File(getTestDir(), "conflictInUnusedConfig")
