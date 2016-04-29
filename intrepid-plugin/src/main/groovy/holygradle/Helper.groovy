@@ -208,7 +208,7 @@ Please run the task 'fixMercurialIni'."""
         // "Escape" any invalid version characters (org.apache.ivy.core.module.id.ModuleRevisionId#STRICT_CHARS_PATTERN)
         // to a form which is both a valid Ivy revision string and a valid Windows filename.
         String sanitisedPath = canonicalPath.replaceAll(/[^a-zA-Z0-9-._+=]/) { String[] group ->
-            char ch = group[0].charAt(0)
+            int ch = (int) group[0].charAt(0)
             switch (ch) {
                 case 0x5F: // '_'
                     return '__'

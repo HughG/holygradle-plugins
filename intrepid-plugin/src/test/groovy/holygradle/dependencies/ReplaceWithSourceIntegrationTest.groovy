@@ -292,7 +292,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         File sourceDir = new File(getTestDir(), "source")
 
         if (sourceDir.exists()) {
-            FileUtils.deleteDirectory(sourceDir)
+            FileHelper.ensureDeleteDirRecursive(sourceDir)
         }
 
         FileUtils.copyDirectory(templateDir, sourceDir)

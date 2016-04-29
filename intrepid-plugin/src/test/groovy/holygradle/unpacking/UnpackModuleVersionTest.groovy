@@ -45,7 +45,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             getIvyFile(moduleName + ".xml"),
-            (parent == null) ? [] : [parent],
+            ((parent == null) ? [] : [parent]).toSet(),
             (parent == null) ? new PackedDependencyHandler(moduleName, project) : null
         )
     }
@@ -102,7 +102,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         UnpackModuleVersion eggfruit = new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
             getIvyFile("eggfruit.xml"),
-            null,
+            new HashSet<UnpackModuleVersion>(),
             eggfruitPackedDep
         )
         
@@ -135,7 +135,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         UnpackModuleVersion date = getUnpackModuleVersion(project, "date", "1.4", coconut)
 
         assertNotEquals("getParents not empty", date.getParents().size(), 0)
-        assertEquals([coconut], date.getParents())
+        assertEquals([coconut].toSet(), date.getParents())
 
         UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
         File unpackCache =
