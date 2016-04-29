@@ -91,7 +91,7 @@ project.ext.setUpTests = { Project project ->
         t.description = "Run the integration tests (test classes ending in 'IntegrationTest')."
         t.include "**/*IntegrationTest.*"
         t.exclude "**/Abstract*.*"
-        t.testReportDir = file("${project.reporting.baseDir}/$name")
+        t.reports.html.destination = file("${project.reporting.baseDir}/$name")
         // The overall "integration" project has integration tests but doesn't publish its own plugin: it tests all
         // the plugins from other projects.
         if (project.name != "integration") {
@@ -147,7 +147,7 @@ project.ext.setUpTests = { Project project ->
         project.task('showTestReport', type: DefaultTask) {
             group = "Verification"
             description "Opens the unit test report."
-            File report = new File(project.test.testReportDir, "index.html")
+            File report = new File(project.test.reports.html.destination, "index.html")
             doLast {
                 project.exec {
                     commandLine "cmd", "/c", "if exist ${report} start ${report}"
@@ -158,7 +158,7 @@ project.ext.setUpTests = { Project project ->
     project.task('showIntegrationTestReport', type: DefaultTask) {
         group = "Verification"
         description "Opens the integration test report."
-        File report = new File(project.integTest.testReportDir, "index.html")
+        File report = new File(project.integTest.reports.html.destination, "index.html")
         doLast {
             project.exec {
                 commandLine "cmd", "/c", "if exist ${report} start ${report}"

@@ -12,7 +12,7 @@ configurations {
 
 dependencies {
     gradleApi gradleApi()
-    groovy localGroovy()
+    compile localGroovy()
 }
 
 String initScriptsPath = 'src/initScripts/'

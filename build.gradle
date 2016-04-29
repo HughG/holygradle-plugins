@@ -46,7 +46,7 @@ subprojects {
 
         // Specify common dependencies for all projects.
         dependencies {
-            groovy localGroovy()
+            compile localGroovy()
             compile gradleApi()
             testCompile files("../buildSrc/build/classes/main/")
         }

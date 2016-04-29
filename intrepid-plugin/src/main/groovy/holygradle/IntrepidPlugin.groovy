@@ -288,7 +288,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         if (project.hasProperty(EVERYTHING_CONFIGURATION_PROPERTY)) {
             // Define an 'everything' configuration which depends on all other configurations.
             Configuration everythingConf =
-                    configurations.findByName(EVERYTHING_CONFIGURATION_NAME) ?: configurations.add(EVERYTHING_CONFIGURATION_NAME)
+                    configurations.findByName(EVERYTHING_CONFIGURATION_NAME) ?: configurations.create(EVERYTHING_CONFIGURATION_NAME)
             project.gradle.projectsEvaluated {
                 configurations.each((Closure) { Configuration conf ->
                     if (conf.name != EVERYTHING_CONFIGURATION_NAME && conf.visible) {

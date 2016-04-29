@@ -8,7 +8,7 @@ group = "holygradle"
 apply plugin: "groovy"
 
 dependencies {
-    groovy localGroovy()
+    compile localGroovy()
 
     // These libraries can be found in // from http://repo.jfrog.org/artifactory/libs-releases/org/artifactory/artifactory-papi/
     compile "org.slf4j:slf4j-api:1.7.5" // (also from repo1)

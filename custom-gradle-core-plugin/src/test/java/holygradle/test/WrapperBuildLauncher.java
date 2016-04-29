@@ -19,47 +19,80 @@ public class WrapperBuildLauncher implements BuildLauncher {
     public WrapperBuildLauncher(BuildLauncher launcher) {
         this.launcher = launcher;
     }
-    
+
+    @Override
     public BuildLauncher addProgressListener(ProgressListener listener) {
         launcher.addProgressListener(listener);
         return this;
     }
+
+    @Override
     public BuildLauncher forTasks(Iterable<? extends Task> tasks) {
         launcher.forTasks(tasks);
         return this;
     }
+
+    @Override
+    public BuildLauncher forLaunchables(Launchable... launchables) {
+        launcher.forLaunchables(launchables);
+        return this;
+    }
+
+    @Override
+    public BuildLauncher forLaunchables(Iterable<? extends Launchable> iterable) {
+        launcher.forLaunchables(iterable);
+        return this;
+    }
+
+    @Override
     public BuildLauncher forTasks(String... tasks) {
         launcher.forTasks(tasks);
         return this;
     }
+
+    @Override
     public BuildLauncher forTasks(Task... tasks) {
         launcher.forTasks(tasks);
         return this;
     }
+
+    @Override
     public void run() {
         forwardAddedArguments();
         launcher.run();
     }
+
+    @Override
     public void run(ResultHandler<? super Void> handler) {
         forwardAddedArguments();
         launcher.run(handler);
     }
+
+    @Override
     public BuildLauncher setJavaHome(File javaHome) {
         launcher.setJavaHome(javaHome);
         return this;
     }
+
+    @Override
     public BuildLauncher setJvmArguments(String... jvmArguments) {
         launcher.setJvmArguments(jvmArguments);
         return this;
     }
+
+    @Override
     public BuildLauncher setStandardError(OutputStream outputStream) {
         launcher.setStandardError(outputStream);
         return this;
     }
+
+    @Override
     public BuildLauncher setStandardInput(InputStream inputStream) {
         launcher.setStandardInput(inputStream);
         return this;
     }
+
+    @Override
     public BuildLauncher setStandardOutput(OutputStream outputStream) {
         launcher.setStandardOutput(outputStream);
         return this;
@@ -70,6 +103,7 @@ public class WrapperBuildLauncher implements BuildLauncher {
      * @param arguments Gradle command line arguments
      * @return this
      */
+    @Override
     public BuildLauncher withArguments(String... arguments) {
         launcher.withArguments(arguments);
         return this;
