@@ -20,7 +20,7 @@ class SummariseAllDependenciesTask extends DefaultTask {
                 Configurations {
                     project.configurations.each((Closure){ Configuration config ->
                         Configuration(name: config.name) {
-                            recursiveFlattenModules(config.resolvedConfiguration.firstLevelModuleDependencies).each { dep ->
+                            flattenModules(config.resolvedConfiguration.firstLevelModuleDependencies).each { dep ->
                                 // Check if this is a source dependency
                                 Project sourceDep = project.dependenciesState.findModuleInBuild(
                                     new DefaultModuleVersionIdentifier(
@@ -48,16 +48,17 @@ class SummariseAllDependenciesTask extends DefaultTask {
         }
     }
 
-    public Set<ResolvedDependency> recursiveFlattenModules(Set<ResolvedDependency> input) {
-        if (input.empty) {
-            return []
+    public Set<ResolvedDependency> flattenModules(Set<ResolvedDependency> input) {
+        // Non-recursive breadth-first traversal (though we don't really care about the traversal order).
+        LinkedHashSet<ResolvedDependency> collected = new LinkedHashSet<>()
+        Queue<ResolvedDependency> toVisit = new LinkedList<>()
+        toVisit.addAll(input)
+        while (!toVisit.empty) {
+            ResolvedDependency dep = toVisit.remove()
+            collected.add(dep)
+            toVisit.addAll(dep.children)
         }
 
-        def collected = []
-        input.each { ResolvedDependency dep ->
-            collected.add(recursiveFlattenModules(dep.children).flatten())
-        }
-
-        return collected.plus(input).flatten()
+        return collected
     }
 }

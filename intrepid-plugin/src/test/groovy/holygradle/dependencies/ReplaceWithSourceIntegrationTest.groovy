@@ -307,7 +307,11 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure("No Ivy file generation available for 'ext_11'. Please ensure your source override contains a generateSourceOverrideDetails.bat, a compatible gw.bat or provide a custom generation method in your build.gradle")
+            launcher.expectFailure(
+                "No Ivy file generation available for 'ext_11'. Please ensure your source override contains " +
+                "a generateSourceOverrideDetails.bat, or a compatible gw.bat, " +
+                "or else provide a custom generation method in your build.gradle"
+            )
         }
     }
 

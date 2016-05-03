@@ -22,11 +22,11 @@ class SourceOverrideHandler {
     private ModuleVersionIdentifier dependencyId = null
     private String dummyVersionString
     private String from
-    private Closure<SourceOverrideHandler> sourceOverrideIvyFile
+    private Closure<SourceOverrideHandler> ivyFileGenerator
     private boolean hasGeneratedDependencyFiles = false
     private boolean hasGeneratedDummyModuleFiles = false
-    private File sourceOverrideIvyFileCache = null
-    private File sourceOverrideDependencyFileCache = null
+    private File sourceOverrideIvyFile = null
+    private File sourceOverrideDependencyFile = null
 
     public static Collection<SourceOverrideHandler> createContainer(Project project) {
         project.extensions.sourceOverrides = project.container(SourceOverrideHandler) { String name ->
@@ -68,25 +68,25 @@ class SourceOverrideHandler {
 
     @SuppressWarnings("GroovyUnusedDeclaration") // API method for use in build scripts.
     public void ivyFileGenerator(Closure<SourceOverrideHandler> generator) {
-        sourceOverrideIvyFile = generator
+        ivyFileGenerator = generator
     }
 
     public Closure<SourceOverrideHandler> getIvyFileGenerator() {
-        sourceOverrideIvyFile
+        ivyFileGenerator
     }
 
     public File getIvyFile() {
-        if (sourceOverrideIvyFileCache == null) {
+        if (sourceOverrideIvyFile == null) {
             generateDependencyFiles()
         }
-        return sourceOverrideIvyFileCache
+        return sourceOverrideIvyFile
     }
 
     public File getDependenciesFile() {
-        if (sourceOverrideDependencyFileCache == null) {
+        if (sourceOverrideDependencyFile == null) {
             generateDependencyFiles()
         }
-        return sourceOverrideDependencyFileCache
+        return sourceOverrideDependencyFile
     }
 
     public void generateDependencyFiles() {
@@ -99,47 +99,56 @@ class SourceOverrideHandler {
             return
         }
 
+        final File ivyXmlFile = new File(from, "build/publications/ivy/ivy.xml")
+        final File allDependenciesXmlFile = new File(from, "all-dependencies.xml")
+        final File gradleWrapperScript = new File(from, "gw.bat")
+        final File generateSourceOverrideDetailsScript = new File(from, "generateSourceOverrideDetails.bat")
+
         if (project.hasProperty("useCachedIvyFiles")) {
             project.logger.info("Skipping generation of fresh ivy file for ${dependencyCoordinate}")
-            sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
-            sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
+            sourceOverrideIvyFile = ivyXmlFile
+            sourceOverrideDependencyFile = allDependenciesXmlFile
         }
 
         // First check the cache map (only the Ivy File cache, tolerate the dependency file cache being null)
-        if (sourceOverrideIvyFileCache != null) {
+        if (sourceOverrideIvyFile != null) {
             project.logger.info("Using cached ivy file for ${dependencyCoordinate}")
         } else if (getIvyFileGenerator()) {
-            project.logger.info("Using custom ivy file generator code for ${dependencyCoordinate}")
+            project.logger.info("Using custom ivy file generator for ${dependencyCoordinate}")
             def generator = getIvyFileGenerator()
-            (sourceOverrideIvyFileCache, sourceOverrideDependencyFileCache) = generator(this)
-        } else if (new File(from, "generateSourceOverrideDetails.bat").exists()) {
+            (sourceOverrideIvyFile, sourceOverrideDependencyFile) = generator(this)
+        } else if (generateSourceOverrideDetailsScript.exists()) {
             // Otherwise try to run a user provided Ivy file generator
             project.logger.info("Using standard ivy file generator batch script for ${dependencyCoordinate}")
-            project.logger.info("Batch File: ${new File(from, "generateSourceOverrideDetails.bat").canonicalPath}")
+            project.logger.info("Batch File: ${generateSourceOverrideDetailsScript.canonicalPath}")
             project.exec { ExecSpec spec ->
                 spec.workingDir from
-                spec.executable new File(from, "generateSourceOverrideDetails.bat").canonicalPath
+                spec.executable generateSourceOverrideDetailsScript.canonicalPath
                 spec.standardOutput = new ByteArrayOutputStream()
             }
-            sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
-            sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
-        } else if (new File(from, "gw.bat").exists()) { // Otherwise try to run gw.bat
+            sourceOverrideIvyFile = ivyXmlFile
+            sourceOverrideDependencyFile = allDependenciesXmlFile
+        } else if (gradleWrapperScript.exists()) { // Otherwise try to run gw.bat
             project.logger.info("Using gw.bat ivy file generation for ${dependencyCoordinate}")
-            project.logger.info("${new File(from, "generateSourceOverrideDetails.bat").canonicalPath} not found")
+            project.logger.info("${generateSourceOverrideDetailsScript.canonicalPath} not found")
 
             project.exec { ExecSpec spec ->
                 spec.workingDir from
-                spec.executable new File(from, "gw.bat").canonicalPath
+                spec.executable gradleWrapperScript.canonicalPath
                 spec.args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
                 spec.standardOutput = new ByteArrayOutputStream()
             }
-            sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
-            sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
+            sourceOverrideIvyFile = ivyXmlFile
+            sourceOverrideDependencyFile = allDependenciesXmlFile
         } else {
-            throw new RuntimeException("No Ivy file generation available for '${name}'. Please ensure your source override contains a generateSourceOverrideDetails.bat, a compatible gw.bat or provide a custom generation method in your build.gradle.")
+            throw new RuntimeException(
+                "No Ivy file generation available for '${name}'. " +
+                "Please ensure your source override contains a generateSourceOverrideDetails.bat, " +
+                "or a compatible gw.bat, or else provide a custom generation method in your build.gradle."
+            )
         }
 
-        project.logger.info("generateDependencyFiles result: ${sourceOverrideIvyFileCache}, ${sourceOverrideDependencyFileCache}")
+        project.logger.info("generateDependencyFiles result: ${sourceOverrideIvyFile}, ${sourceOverrideDependencyFile}")
         hasGeneratedDependencyFiles = true
     }
 
@@ -152,7 +161,7 @@ class SourceOverrideHandler {
             project.buildDir,
             "holygradle/source_replacement/${groupName}/${dependencyName}/${dummyVersionString}"
         )
-        FileHelper.ensureMkdirs(tempDir, "Failed to create source replacement dummy file repository")
+        FileHelper.ensureMkdirs(tempDir, "for source replacement dummy file repository")
 
         project.logger.info("Writing dummy artifact for ${dummyDependencyCoordinate}")
         File dummyArtifactFile = new File(tempDir, "dummy_artifact-${dummyVersionString}.zip")
