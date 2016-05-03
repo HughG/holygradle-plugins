@@ -154,7 +154,7 @@ class UnpackModuleVersion {
         return parents.collectMany { p -> p.getSelfOrAncestorPackedDependencies()}
     }
 
-    private static <TSource, TValue> TValue getUniqueValue(
+    private <TSource, TValue> TValue getUniqueValue(
         String methodName,
         Collection<TSource> sources,
         Closure<TValue> getValue

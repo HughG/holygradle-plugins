@@ -26,6 +26,7 @@ import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import org.gradle.api.artifacts.result.*
 import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.StrictConflictResolution
@@ -439,92 +440,132 @@ public class IntrepidPlugin implements Plugin<Project> {
     private void setupSourceReplacementListener(Project project) {
         NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
 
-        // Todo: throw an exception if source overrides are defined in a non-root project. It would be nice to actually
-        // support this but we will have to walk back up the tree to do it
-
-        // Todo: Force this to the start of the repo list
-        // Consider checking whether there are any source overrides before adding this. This will need to be done on a
-        // trigger on the container because there are no items in the list at this point.
-        File tempDir = new File(
-            project.buildDir,
-            "holygradle/source_replacement"
-        )
-        FileHelper.ensureMkdirs(tempDir)
-
-        project.repositories {
-            ivy {
-                url tempDir.toURI().toURL()
+        // Fail if source overrides are added in a non-root project, because it will be even more effort to tie together
+        // overrides across subprojects and cross-check them.  We'd like to support that some day, maybe.  We could just
+        // not add the DSL handler to non-root projects, but then the user would only get a MissingMethodException
+        // instead of a useful error message.
+        sourceOverrides.whenObjectAdded {
+            if (project != project.rootProject) {
+                throw new RuntimeException("Currently sourceOverrides can only be used in the root project.")
             }
         }
 
+        // If and when any source overrides are added, we also need to add a repo to contain dummy entries for all the
+        // overridden module versions.  We force this to the start of the project repo list because it will contain
+        // relatively few entries, and those versions won't appear in any normal repo.
+        IvyArtifactRepository sourceOverrideDummyModulesRepo = null
+        sourceOverrides.whenObjectAdded {
+            if (sourceOverrideDummyModulesRepo == null) {
+                File tempDir = new File(project.buildDir, "holygradle/source_replacement")
+                FileHelper.ensureMkdirs(tempDir)
+                sourceOverrideDummyModulesRepo = project.repositories.ivy { it.url = tempDir.toURI() }
+                project.repositories.remove(sourceOverrideDummyModulesRepo)
+                project.repositories.addFirst(sourceOverrideDummyModulesRepo)
+            }
+        }
+
+        // Add a dependency resolve rule for all configurations, which applies source overrides (if there are any).  We
+        // use ConfigurationContainer#all so that this is applied for each configuration when it's created.
+        project.configurations.all((Closure){ Configuration configuration ->
+            // Gradle automatically converts Closures to Action<>, so ignore IntelliJ warning.
+            //noinspection GroovyAssignabilityCheck
+            configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                project.logger.debug(
+                    "Checking for source replacements: requested ${details.requested}, target ${details.target}, " +
+                    "in ${configuration}"
+                )
+                for (SourceOverrideHandler handler in sourceOverrides) {
+                    if (shouldUseSourceOverride(project, details, handler)) {
+                        details.useVersion(handler.dummyVersionString)
+                        break
+                    }
+                }
+            }
+        })
+
         def listener = new DependencyResolutionListener() {
             private Exception beforeResolveException = null
+            // Mapping each handler
+            //   to each configuration in the replacement project
+            //     to each "group:name" dependency in that configuration (including all transitive deps, not just
+            // direct)
+            //       to the "version" for that dependency (which might be a "normal" version or also a replacement).
+            //
+            // We use LinkedHashMaps to get a stable order for which things appear first in the error messages.
+            private LinkedHashMap<
+                SourceOverrideHandler, LinkedHashMap<String, LinkedHashMap<String,String>>
+            > sourceOverrideDependencies = null
+
+            // TODO 2016-04-29 HUGR: We should extend source overrides to allow different overrides per configuration,
+            // but currently we don't.  So, we only need to calculate this once, which is helpful for the common case
+            // where there are no conflicts.  (Even if we did it per configuration, we might be able to be smart about
+            // not re-doing work if we considered extendsFrom relationships.)  In that case, we probably need to support
+            // adding overrides in subprojects, because they might need to apply to configurations which are not
+            // connected to any in the root project.
+            private List<String> conflictBetweenOverrideMessages = null
 
             void beforeResolve(ResolvableDependencies resolvableDependencies) {
-                if (!resolvableDependencies.path.startsWith(':')) {
-                    // This is a buildscript configuration, so there's nothing for us to do with source overrides.
-                    return
+                if (findProjectConfiguration(resolvableDependencies) == null) {
+                    project.logger.debug("source overrides: beforeResolve SKIPPING ${resolvableDependencies.path}")
+                    return // because source overrides aren't applicable to the buildscript or to detached configurations
                 }
                 project.logger.debug("source overrides: beforeResolve ${resolvableDependencies.path}")
-                Configuration configuration = project.configurations.findByName(resolvableDependencies.name)
-                if (configuration == null) {
-                    return
-                }
 
-                // Add the version forcing bit to each configuration here
+                // Create dummy module files for each source override.  (Internally it will only do this once per build
+                // run.)  We do this in beforeResolve handler because we don't need to do it unless we are actually
+                // resolving some configurations: for tasks like "tasks" we don't need to.
                 sourceOverrides.each { SourceOverrideHandler handler ->
-                    project.logger.debug("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}")
+                    project.logger.debug(
+                        "beforeResolve ${resolvableDependencies.name}; " +
+                        "generating dummy module files for ${handler.dependencyCoordinate}"
+                    )
                     try {
-                        handler.createDummyModuleFiles()
+                        handler.generateDummyModuleFiles()
                     } catch (Exception e) {
                         // Throwing in the beforeResolve handler leaves logging in a broken state so we need to catch
                         // this exception and throw it later.
                         beforeResolveException = e
-                        // Now do an early exit from the closure, as if we had thrown.
-                        return
-                    }
-                    // TODO 2016-02-26 HUGR: This "eachDependency" call should be the outer loop, outside the resolution
-                    // handler altogether!
-                    configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                        project.logger.debug("beforeResolve ${resolvableDependencies.name}; handler for ${handler.dependencyCoordinate}; dep ${details.requested} target ${details.target}")
-                        // TODO 2016-02-26 HUGR: If there's a dependency conflict, the 'requested' version may NOT be
-                        // the one in the source override handler, even though the current 'target' version is.  I'm
-                        // not sure if source overrides should always be compared against the target, or the requested
-                        // and the target, or optionally (by default?) you specify a source override without a version,
-                        // or what.
-                        if (details.requested.group == handler.groupName &&
-                            details.requested.name == handler.dependencyName &&
-                            details.requested.version == handler.versionStr
-                        ) {
-                            project.logger.debug("  MATCH requested: using ${handler.dummyVersionString}")
-                            details.useVersion(handler.dummyVersionString)
-                        }
-                        if (details.target.group == handler.groupName &&
-                            details.target.name == handler.dependencyName &&
-                            details.target.version == handler.versionStr
-                        ) {
-                            project.logger.debug("  MATCH target: using ${handler.dummyVersionString}")
-                            details.useVersion(handler.dummyVersionString)
-                        }
-                        if (details.target.group == handler.groupName &&
-                            details.target.name == handler.dependencyName &&
-                            details.target.version.endsWith("+")
-                        ) {
-                            project.logger.warn("  MATCH FLOATING version: using ${handler.dummyVersionString}")
-                            details.useVersion(handler.dummyVersionString)
-                        }
                     }
                 }
             }
 
-            // Todo: Make this not run once per configuration
             void afterResolve(ResolvableDependencies resolvableDependencies) {
-                if (!resolvableDependencies.path.startsWith(':')) {
-                    // This is a buildscript configuration, so there's nothing for us to do with source overrides.
-                    return
+                final Configuration projectConfiguration = findProjectConfiguration(resolvableDependencies)
+                if (projectConfiguration == null) {
+                    project.logger.debug("source overrides: afterResolve SKIPPING ${resolvableDependencies.path}")
+                    return // because source overrides aren't applicable to the buildscript or to detached configurations
                 }
 
                 project.logger.debug("source overrides: afterResolve ${resolvableDependencies.path}")
+                rethrowIfBeforeResolveHadException()
+                debugLogResolvedDependencies(resolvableDependencies)
+                Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies =
+                    getSourceOverrideDependencies()
+
+                List<String> conflictMessages = new LinkedList<String>()
+
+                sourceOverrideDependencies.each { handler, deps ->
+                    // Compare source override full dependencies to the current dependency
+                    collectConflictsForProjectVsOverride(conflictMessages, resolvableDependencies, handler, deps)
+                }
+
+                // Compare source override full dependencies to each other
+                collectConflictsBetweenOverrides(conflictMessages, sourceOverrideDependencies)
+
+                logOrThrowIfConflicts(conflictMessages, projectConfiguration)
+            }
+
+            private Configuration findProjectConfiguration(ResolvableDependencies resolvableDependencies) {
+                final String depsPath = resolvableDependencies.path
+                if (depsPath.startsWith(':')) {
+                    return project.configurations.findByName(resolvableDependencies.name)
+                } else {
+                    // This is a buildscript configuration, or maybe a copy or detached configuration.
+                    return null
+                }
+            }
+
+            private void rethrowIfBeforeResolveHadException() {
                 if (beforeResolveException != null) {
                     // This exception is stored from earlier and thrown here.  Usually this is too deeply nested for
                     // Gradle to output useful information at the default logging level, so we also explicitly log the
@@ -533,113 +574,207 @@ public class IntrepidPlugin implements Plugin<Project> {
                     project.logger.error("${message}: ${beforeResolveException.toString()}")
                     throw new RuntimeException(message, beforeResolveException)
                 }
+            }
 
-                resolvableDependencies.resolutionResult.allDependencies.each { DependencyResult result ->
-                    if (result instanceof ResolvedDependencyResult) {
-                        project.logger.debug("  resolved ${result.requested} to ${((ResolvedDependencyResult)result).selected}")
-                    } else {
-                        project.logger.debug("  UNRESOLVED ${result.requested}: ${(UnresolvedDependencyResult)result}")
+            private void debugLogResolvedDependencies(ResolvableDependencies resolvableDependencies) {
+                if (project.logger.isDebugEnabled()) {
+                    resolvableDependencies.resolutionResult.allDependencies.each { DependencyResult result ->
+                        if (result instanceof ResolvedDependencyResult) {
+                            project.logger.debug(
+                                "  resolved ${result.requested} to ${((ResolvedDependencyResult) result).selected}"
+                            )
+                        } else {
+                            project.logger.debug(
+                                "  UNRESOLVED ${result.requested}: ${(UnresolvedDependencyResult) result}"
+                            )
+                        }
                     }
                 }
+            }
 
-                // Todo: This should be able to be pre-calculated but Groovy's closure capture rules are making it harder than it should be
-                def sourceOverrideCache = new HashMap<SourceOverrideHandler, HashMap<String, HashMap<String, String>>>()
-
-                // Pre-generate dependency files for each source override
-                sourceOverrides.each { SourceOverrideHandler handler ->
-                    handler.generateDependencyFiles()
+            private Map<SourceOverrideHandler, Map<String, Map<String, String>>> getSourceOverrideDependencies() {
+                if (sourceOverrideDependencies == null) {
+                    readSourceOverrideDependencies()
                 }
+                return sourceOverrideDependencies
+            }
 
-                // Pre-calculate the dependencies so we only have to loop once
+            private void readSourceOverrideDependencies() {
+                sourceOverrideDependencies =
+                    new LinkedHashMap<SourceOverrideHandler, LinkedHashMap<String, LinkedHashMap<String,String>>>()
+
                 sourceOverrides.each { SourceOverrideHandler handler ->
                     File dependencyFile = handler.dependenciesFile
                     def dependencyXml = new XmlSlurper(false, false).parse(dependencyFile)
 
                     // Build hashsets from the dependency XML
-                    def remoteConfigurations = new HashMap<String, HashMap<String, String>>()
-                    dependencyXml.Configuration.each { config ->
-                        def remoteDependencies = new HashMap<String, String>()
-
-                        config.Dependency.each { dep ->
-                            def calculatedVersion = dep.@isSource.toBoolean() ? Helper.convertPathToVersion(dep.@absolutePath.toString()) : dep.@version.toString()
-                            remoteDependencies.put("${dep.@group.toString()}:${dep.@name.toString()}", calculatedVersion)
-                        }
-
-                        remoteConfigurations.put(config.@name, remoteDependencies)
-                    }
-
-                    sourceOverrideCache.put(handler, remoteConfigurations)
+                    sourceOverrideDependencies[handler] =
+                        dependencyXml.Configuration.list().collectEntries(new LinkedHashMap<>()) { config -> [
+                            config.@name.toString(),
+                            config.Dependency.list().collectEntries(new LinkedHashMap<>()) { dep -> [
+                                "${dep.@group.toString()}:${dep.@name.toString()}",
+                                (
+                                    dep.@isSource.toBoolean()
+                                        ? Helper.convertPathToVersion(dep.@absolutePath.toString())
+                                        : dep.@version.toString()
+                                )
+                            ]}
+                        ]} as LinkedHashMap<String, LinkedHashMap<String, String>>
                 }
+            }
 
-                sourceOverrides.each { SourceOverrideHandler handler ->
-                    // Compare source override full dependencies to the current dependency
-                    def dependencyCache = sourceOverrideCache.get(handler)
-
-                    List<String> mismatchMessages = new LinkedList<String>()
-                    resolvableDependencies.resolutionResult.allModuleVersions { ResolvedModuleVersionResult module ->
-                        dependencyCache.each { configName, config ->
-                            def moduleKey = "${module.id.group.toString()}:${module.id.name.toString()}"
-                            if (config.containsKey(moduleKey)) {
-                                if (config.get(moduleKey) != module.id.version.toString()) {
-                                    final String message = "Module '${module.id}' does not match the dependency " +
-                                        "declared in source override '${handler.name}' " +
-                                        "(${moduleKey}:${config.get(moduleKey)}); " +
-                                        "you may have to declare a matching source override in the source project."
-                                    mismatchMessages << message
-                                }
+            private collectConflictsForProjectVsOverride(
+                List<String> conflictMessages,
+                ResolvableDependencies resolvableDependencies,
+                SourceOverrideHandler handler,
+                Map<String, Map<String, String>> deps
+            ) {
+                resolvableDependencies.resolutionResult.allModuleVersions { ResolvedModuleVersionResult module ->
+                    deps.each { configName, config ->
+                        def moduleKey = "${module.id.group.toString()}:${module.id.name.toString()}"
+                        if (config.containsKey(moduleKey)) {
+                            if (config.get(moduleKey) != module.id.version.toString()) {
+                                final String message = "For ${project} configuration ${resolvableDependencies.path}, " +
+                                    "module '${module.id}' does not match the dependency " +
+                                    "declared in source override '${handler.name}' configuration ${configName} " +
+                                    "(${moduleKey}:${config.get(moduleKey)}); " +
+                                    "you may have to declare a matching source override in the source project."
+                                conflictMessages << message
                             }
-                        }
-                    }
-
-                    // Compare source override full dependencies to each other
-                    sourceOverrides.each { SourceOverrideHandler handler2 ->
-                        def dependencyCache2 = sourceOverrideCache.get(handler2)
-
-                        dependencyCache.each { configName, config ->
-                            dependencyCache2.each { configName2, config2 ->
-                                config.each { dep, version ->
-                                    if (config2.containsKey(dep) && config2.get(dep) != version) {
-                                        final String message = "Module in source override '${handler.name}' " +
-                                            "(${dep}:${version}) does not match module in source override " +
-                                            "'${handler2.name}' (${dep}:${config2.get(dep)}); " +
-                                            "you may have to declare a matching source override."
-                                        mismatchMessages << message
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (!mismatchMessages.empty) {
-                        StringWriter stringWriter = new StringWriter()
-                        stringWriter.withPrintWriter { pw ->
-                            pw.println(
-                                "The module version for one or more source overrides does not match the version " +
-                                "for the same module in one or more places; please check the following messages."
-                            )
-                            for (message in mismatchMessages) {
-                                pw.print("    ")
-                                pw.println(message)
-                            }
-                        }
-                        String message = stringWriter.toString()
-
-                        final Configuration configuration = project.configurations.getByName(resolvableDependencies.name)
-                        final ResolutionStrategy strategy = configuration.resolutionStrategy
-                        final boolean hasStrictResolutionStrategy =
-                            (strategy instanceof ResolutionStrategyInternal) &&
-                                ((ResolutionStrategyInternal)strategy).conflictResolution instanceof StrictConflictResolution
-
-                        if (hasStrictResolutionStrategy) {
-                            throw new RuntimeException(message)
-                        } else {
-                            project.logger.warn(message)
                         }
                     }
                 }
             }
+
+            private void collectConflictsBetweenOverrides(
+                List<String> conflictMessages,
+                Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies
+            ) {
+                conflictMessages.addAll(getConflictsBetweenOverrides(sourceOverrideDependencies))
+            }
+
+            private List<String> getConflictsBetweenOverrides(
+                Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies
+            ) {
+                if (conflictBetweenOverrideMessages == null) {
+                    conflictBetweenOverrideMessages = new LinkedList<>()
+                    calculateConflictsBetweenOverrides(conflictBetweenOverrideMessages, sourceOverrideDependencies)
+                }
+                return conflictBetweenOverrideMessages
+            }
+
+            private void calculateConflictsBetweenOverrides(
+                List<String> conflictMessages,
+                Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies
+            ) {
+                // The conflict check between different overrides is symmetrical, so we don't need to do it N^2 times,
+                // only half that.
+                Map<SourceOverrideHandler, Set<SourceOverrideHandler>> alreadyCompared =
+                    new HashMap<>().withDefault { new HashSet<>() }
+                sourceOverrideDependencies.each {
+                    SourceOverrideHandler handler,
+                    Map<String, Map<String, String>> deps
+                    ->
+                    sourceOverrideDependencies.each {
+                        SourceOverrideHandler handler2,
+                        Map<String, Map<String, String>> deps2
+                            ->
+                            if (handler == handler2 || alreadyCompared[handler].contains(handler2)) {
+                                return
+                            }
+                            deps.each { configName, config ->
+                                deps2.each { configName2, config2 ->
+                                    config.each { dep, version ->
+                                        if (config2.containsKey(dep) && config2.get(dep) != version) {
+                                            final String message = "For ${project}, module in " +
+                                                "source override '${handler.name}' configuration ${configName} " +
+                                                "(${dep}:${version}) " +
+                                                "does not match module in " +
+                                                "source override '${handler2.name}' configuration ${configName} " +
+                                                "(${dep}:${config2.get(dep)}); " +
+                                                "you may have to declare a matching source override."
+                                            conflictMessages << message
+                                        }
+                                    }
+                                }
+                            }
+                            alreadyCompared[handler].add(handler2)
+                            alreadyCompared[handler2].add(handler)
+                    }
+                }
+            }
+
+            private void logOrThrowIfConflicts(
+                List<String> conflictMessages,
+                Configuration configuration
+            ) {
+                if (!conflictMessages.empty) {
+                    conflictMessages = conflictMessages.sort().unique()
+
+                    StringWriter stringWriter = new StringWriter()
+                    stringWriter.withPrintWriter { pw ->
+                        pw.println(
+                            "The module version for one or more source overrides does not match the version " +
+                            "for the same module in one or more places; please check the following messages."
+                        )
+                        for (message in conflictMessages) {
+                            pw.print("    ")
+                            pw.println(message)
+                        }
+                    }
+                    String message = stringWriter.toString()
+
+                    if (hasStrictResolutionStrategy(configuration)) {
+                        throw new RuntimeException(message)
+                    } else {
+                        project.logger.warn(message)
+                    }
+                }
+            }
+
+            private boolean hasStrictResolutionStrategy(Configuration configuration) {
+                final ResolutionStrategy strategy = configuration.resolutionStrategy
+                final boolean hasStrictResolutionStrategy =
+                    (strategy instanceof ResolutionStrategyInternal) &&
+                        ((ResolutionStrategyInternal) strategy).conflictResolution instanceof
+                            StrictConflictResolution
+                return hasStrictResolutionStrategy
+            }
         }
 
         project.gradle.addListener(listener)
+    }
+
+    private static boolean shouldUseSourceOverride(
+        Project project,
+        DependencyResolveDetails details,
+        SourceOverrideHandler handler
+    ) {
+        // If there's a dependency conflict, the 'requested' version may not be the one in the source
+        // override handler, even though the current 'target' version is, so check both.
+        if (details.requested.group == handler.groupName &&
+            details.requested.name == handler.dependencyName &&
+            details.requested.version == handler.versionStr
+        ) {
+            project.logger.debug("  MATCH requested: using ${handler.dummyVersionString}")
+            return true
+        }
+        if (details.target.group == handler.groupName &&
+            details.target.name == handler.dependencyName &&
+            details.target.version == handler.versionStr
+        ) {
+            project.logger.debug("  MATCH target: using ${handler.dummyVersionString}")
+            return true
+        }
+        if (details.target.group == handler.groupName &&
+            details.target.name == handler.dependencyName &&
+            details.target.version.endsWith("+")
+        ) {
+            project.logger.debug(
+                "  MATCH FLOATING version for source override ${handler.name}: using ${handler.dummyVersionString}"
+            )
+            return true
+        }
+        return false
     }
 }

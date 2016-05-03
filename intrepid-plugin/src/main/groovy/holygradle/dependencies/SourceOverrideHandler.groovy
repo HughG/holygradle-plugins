@@ -7,6 +7,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.file.CopySpec
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
+import org.gradle.process.ExecSpec
 
 import java.util.regex.Matcher
 import java.util.zip.ZipEntry
@@ -22,7 +23,8 @@ class SourceOverrideHandler {
     private String dummyVersionString
     private String from
     private Closure<SourceOverrideHandler> sourceOverrideIvyFile
-    private boolean hasCreatedDummyModule = false
+    private boolean hasGeneratedDependencyFiles = false
+    private boolean hasGeneratedDummyModuleFiles = false
     private File sourceOverrideIvyFileCache = null
     private File sourceOverrideDependencyFileCache = null
 
@@ -88,7 +90,15 @@ class SourceOverrideHandler {
     }
 
     public void generateDependencyFiles() {
-        // TODO 2016-02-25 HughG: Fail if location not set.
+        if (from == null) {
+            throw new RuntimeException(
+                "Cannot generate dependency files for source override '${name}': the 'from' location has not been set"
+            )
+        }
+        if (hasGeneratedDependencyFiles) {
+            return
+        }
+
         if (project.hasProperty("useCachedIvyFiles")) {
             project.logger.info("Skipping generation of fresh ivy file for ${dependencyCoordinate}")
             sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
@@ -106,10 +116,10 @@ class SourceOverrideHandler {
             // Otherwise try to run a user provided Ivy file generator
             project.logger.info("Using standard ivy file generator batch script for ${dependencyCoordinate}")
             project.logger.info("Batch File: ${new File(from, "generateSourceOverrideDetails.bat").canonicalPath}")
-            project.exec {
-                workingDir from
-                executable new File(from, "generateSourceOverrideDetails.bat").canonicalPath
-                standardOutput = new ByteArrayOutputStream()
+            project.exec { ExecSpec spec ->
+                spec.workingDir from
+                spec.executable new File(from, "generateSourceOverrideDetails.bat").canonicalPath
+                spec.standardOutput = new ByteArrayOutputStream()
             }
             sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
             sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
@@ -117,11 +127,11 @@ class SourceOverrideHandler {
             project.logger.info("Using gw.bat ivy file generation for ${dependencyCoordinate}")
             project.logger.info("${new File(from, "generateSourceOverrideDetails.bat").canonicalPath} not found")
 
-            project.exec {
-                workingDir from
-                executable new File(from, "gw.bat").canonicalPath
-                args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
-                standardOutput = new ByteArrayOutputStream()
+            project.exec { ExecSpec spec ->
+                spec.workingDir from
+                spec.executable new File(from, "gw.bat").canonicalPath
+                spec.args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
+                spec.standardOutput = new ByteArrayOutputStream()
             }
             sourceOverrideIvyFileCache = new File(from, "build/publications/ivy/ivy.xml")
             sourceOverrideDependencyFileCache = new File(from, "all-dependencies.xml")
@@ -130,10 +140,11 @@ class SourceOverrideHandler {
         }
 
         project.logger.info("generateDependencyFiles result: ${sourceOverrideIvyFileCache}, ${sourceOverrideDependencyFileCache}")
+        hasGeneratedDependencyFiles = true
     }
 
-    public void createDummyModuleFiles() {
-        if (hasCreatedDummyModule) {
+    public void generateDummyModuleFiles() {
+        if (hasGeneratedDummyModuleFiles) {
             return
         }
 
@@ -143,14 +154,13 @@ class SourceOverrideHandler {
         )
         FileHelper.ensureMkdirs(tempDir, "Failed to create source replacement dummy file repository")
 
-        ZipOutputStream dummyArtifact = new ZipOutputStream(
-            new FileOutputStream(
-                new File(tempDir, "dummy_artifact-${dummyVersionString}.zip")
-            )
-        )
+        project.logger.info("Writing dummy artifact for ${dummyDependencyCoordinate}")
+        File dummyArtifactFile = new File(tempDir, "dummy_artifact-${dummyVersionString}.zip")
+        ZipOutputStream dummyArtifact = new ZipOutputStream(new FileOutputStream(dummyArtifactFile))
         dummyArtifact.putNextEntry(new ZipEntry("file.txt"))
         dummyArtifact.closeEntry()
         dummyArtifact.close()
+        project.logger.info("Wrote dummy artifact for ${dummyDependencyCoordinate} to '${dummyArtifactFile}'")
 
         String tempIvyFileName = "ivy-${dummyVersionString}.xml"
         // Explicitly check if the source exists, because project.copy will silently succeed if it doesn't.
@@ -198,8 +208,9 @@ class SourceOverrideHandler {
             nodePrinter.setPreserveWhitespace(true)
             nodePrinter.print(ivyXml)
         }
+        project.logger.info("Wrote new ivy file for ${dependencyCoordinate} to '${ivyXmlFile}'")
 
-        hasCreatedDummyModule = true
+        hasGeneratedDummyModuleFiles = true
     }
 
     private void initialiseDependencyId(String dependencyCoordinate) {

@@ -4,6 +4,7 @@ import holygradle.Helper
 import holygradle.custom_gradle.util.Symlink
 import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
+import holygradle.test.RegressionFileHelper
 import holygradle.test.WrapperBuildLauncher
 import org.apache.commons.io.FileUtils
 import org.junit.Test
@@ -122,6 +123,10 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
     }
 
+    /**
+     * This tests that, if you have two source overrides, and one has a dependency on a different (non-overridden)
+     * version of the other in some connected configurations, then we spot that conflict and fail the build.
+     */
     @Test
     public void incompatibleTransitiveDependencies() {
         File templateDir = new File(getTestDir(), "projectEIn")
@@ -144,13 +149,21 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                "Module 'holygradle.test:external-lib:${expectedDummyVersion}' does not " +
-                "match the dependency declared in source override 'application' (holygradle.test:external-lib:1.1); " +
+                "For root project 'projectE' configuration :bar, " +
+                "module 'holygradle.test:external-lib:${expectedDummyVersion}' " +
+                "does not match the dependency declared in " +
+                "source override 'application' configuration compileVc10Debug " +
+                "(holygradle.test:external-lib:1.1); " +
                 "you may have to declare a matching source override in the source project."
             )
         }
     }
 
+    /**
+     * This tests that, if you have two source overrides, and each both have a dependency on a different
+     * (non-overridden) version of the same module in some connected configurations, then we spot that conflict and fail
+     * the build.
+     */
     @Test
     public void incompatibleSourceOverrideTransitiveDependencies() {
         File templateDir = new File(getTestDir(), "projectJIn")
@@ -172,10 +185,52 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                "Module 'holygradle.test:external-lib:1.0' does not match the dependency declared in source override " +
-                "'application' (holygradle.test:external-lib:1.1); you may have to declare a matching source " +
-                "override in the source project."
+                "For root project 'projectJ', " +
+                "module in source override 'application' configuration compileVc10Debug " +
+                "(holygradle.test:external-lib:1.1) " +
+                "does not match " +
+                "module in source override 'framework' configuration compileVc10Debug " +
+                "(holygradle.test:external-lib:1.0); " +
+                "you may have to declare a matching source override."
             )
+        }
+    }
+
+    /**
+     * This tests that, if you have a direct dependency on one (non-overridden) version of a module, and a source
+     * override of another module which has a direct dependency on a different (non-overridden) version of that module,
+     * then we spot that conflict and fail the build.
+     */
+    @Test
+    public void incompatibleDirectVsSourceOverrideTransitiveDependencies() {
+        File templateDir = new File(getTestDir(), "projectKIn")
+        File projectDir = new File(getTestDir(), "projectK")
+        File applicationDirectory = new File(projectDir, "application")
+        File frameworkDirectory = new File(projectDir, "framework")
+        File externalDirectory = new File(projectDir, "ext_11")
+
+        if (projectDir.exists()) {
+            Symlink.delete(applicationDirectory)
+            Symlink.delete(frameworkDirectory)
+            Symlink.delete(externalDirectory)
+            FileHelper.ensureDeleteDirRecursive(projectDir)
+        }
+
+        FileUtils.copyDirectory(templateDir, projectDir)
+        copySourceFiles()
+
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("fetchAllDependencies")
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
+               """Failed to notify dependency resolution listener.
+> Failed to notify dependency resolution listener.
+   > Failed to notify dependency resolution listener.
+      > Could not resolve all dependencies for configuration ':bar'.
+         > A conflict was found between the following modules:
+            - holygradle.test:external-lib:1.1
+            - holygradle.test:external-lib:1.0
+"""
+            ))
         }
     }
 
