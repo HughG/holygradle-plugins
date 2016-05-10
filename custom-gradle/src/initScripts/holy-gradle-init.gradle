@@ -96,14 +96,14 @@ class HolyGradlePlugins {
         
         boolean usingSnapshots = false
         // Tell the user if individual plugins are set to SNAPSHOT versions.
-        if (version.endsWith("-SNAPSHOT")) {
-            println "Detected a changing module (e.g., under development) due to -SNAPSHOT in version: $plugin $version"
+        if (version.endsWith("SNAPSHOT-0")) {
+            println "Detected a changing module (e.g., under development) due to SNAPSHOT-0 in version: $plugin $version"
             usingSnapshots = true
         }
         // Set all plugins as SNAPSHOT versions if the global property is set.
         String pluginsSnapshotsUser = System.getProperty("holygradle.pluginsSnapshotsUser")
         if (pluginsSnapshotsUser != null) {
-            version = "${pluginsSnapshotsUser}-SNAPSHOT"
+            version = "${pluginsSnapshotsUser}SNAPSHOT-0"
             usingSnapshots = true
         }
         if (usingSnapshots) {
@@ -191,7 +191,7 @@ gradle.projectsLoaded { Gradle gradle ->
     logger.lifecycle("Gradle user home: ${gradle.gradleUserHomeDir}")
     logger.lifecycle("Holy Gradle init script version: ${holyGradleInitScriptVersion}")
     logger.lifecycle("Holy Gradle init script source version: ${holyGradleInitScriptSourceVersion}")
-    if (holyGradleInitScriptVersion.endsWith("-SNAPSHOT")) {
+    if (holyGradleInitScriptVersion.endsWith("SNAPSHOT-0")) {
         logger.warn(
             "Using SNAPSHOT version. " +
             "Gradle wrapper will NOT automatically download the latest. " +

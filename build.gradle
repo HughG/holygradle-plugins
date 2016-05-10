@@ -93,12 +93,6 @@ subprojects {
             }
         }
     }
-    
-    // Don't cache SNAPSHOT dependencies for any length of time.
-    // TODO 2013-16-18 HughG: Really, we shouldn't use any SNAPSHOT dependencies.
-    configurations.all {
-        resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
-    }
 }
 
 /*

@@ -18,10 +18,10 @@ task createReleaseVersionFile {
     outputs.file(versionFile)
     doLast {
         versionFile.withWriter { BufferedWriter writer ->
-            String username = System.getProperty("user.name").toLowerCase()
-            boolean isSnapshot = (project.version == "${username}-SNAPSHOT")
-            String ver = isSnapshot ? "0.0.0.0" : project.version
-            String commaVer = isSnapshot ? "0,0,0,0" : project.version.replaceAll('\\.', ',')
+            final String version = project.version
+            boolean isSnapshot = version.endsWith("SNAPSHOT-0")
+            String ver = isSnapshot ? "0.0.0.0" : version
+            String commaVer = isSnapshot ? "0,0,0,0" : version.replaceAll('\\.', ',')
             writer.writeLine "#define RELEASE_VERSION \"${ver}\""
             writer.writeLine "#define RELEASE_VERSION_WITH_COMMAS ${commaVer}"
         }

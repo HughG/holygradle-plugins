@@ -11,7 +11,7 @@ if (publishVersionFromProperty != null) {
     publishVersion = publishVersionFromProperty
 } else {
     String username = System.getProperty("user.name").toLowerCase()
-    publishVersion = "${username}-SNAPSHOT"
+    publishVersion = "${username}SNAPSHOT-0"
 }
 project.allprojects { Project p ->
     p.version = publishVersion
@@ -48,7 +48,7 @@ project.ext.getIsPublishing = {
     Task publishReally = project.task("publish${publishingGroup}Really") { Task t ->
         setPublishTaskDescription(t, publishingGroup, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
 
-        final boolean isSnapshot = project.version.toString().endsWith('-SNAPSHOT')
+        final boolean isSnapshot = project.version.toString().endsWith('SNAPSHOT-0')
         final localPublishingGroup = publishingGroup // capture for closure
         if (!isSnapshot) {
             doLast {
@@ -125,7 +125,7 @@ project.gradle.taskGraph.whenReady {
     if (project.getIsPublishing()) {
         project.tasks['setHgVersionInfo'].doLast {
             // Fail early if any release publishing preconditions are not met.
-            if (!project.version.toString().endsWith('-SNAPSHOT')) {
+            if (!project.version.toString().endsWith('SNAPSHOT-0')) {
                 if (project.getHasUncommittedChanges()) {
                     throw new RuntimeException("Cannot publish a non-SNAPSHOT version with uncommitted changes.")
                 }
@@ -173,7 +173,7 @@ project.subprojects {
         t.dependsOn rootProject.tasks["beforePublish"]
         rootProject.tasks[t.name].dependsOn t
 
-        final boolean isSnapshot = project.version.toString().endsWith('-SNAPSHOT')
+        final boolean isSnapshot = project.version.toString().endsWith('SNAPSHOT-0')
         t.ext.targetUri = isSnapshot ? PUBLISH_SNAPSHOT_TARGET_URI: PUBLISH_RELEASE_TARGET_URI
         t.repositories.ivy {
             credentials {

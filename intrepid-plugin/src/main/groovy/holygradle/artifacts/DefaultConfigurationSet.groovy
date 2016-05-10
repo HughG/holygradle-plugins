@@ -262,7 +262,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
     /**
      * Returns a map from axis-value bindings (as defined by this set's {@link DefaultConfigurationSetType}) to the
      * actual configurations in this set (which may add a prefix string to their names).  The elements of this list will
-     * be the same as, and in the same order as, the return value of {@link #getConfigurations()}.
+     * be the same as, and in the same order as, the return value of {@link #getConfigurations(Project)}.
      *
      * @return A map from axis-value bindings to the actual configurations in this set
      */

@@ -74,7 +74,7 @@ project.ext.setUpTests = { Project project ->
             project.tasks["publishPluginsLocally"].dependsOn(t)
         }
         if (project.hasProperty('noTest')) {
-             if (project.version.endsWith('-SNAPSHOT')) {
+             if (project.version.endsWith('SNAPSHOT-0')) {
                 // Skip unit testing.
                 t.enabled = false
             } else {
@@ -128,7 +128,7 @@ project.ext.setUpTests = { Project project ->
     }
     // Make the real publish tasks depend on the integration test (unless disabled)
     if (project.hasProperty('noIntegTest')) {
-         if (project.version.endsWith('-SNAPSHOT')) {
+         if (project.version.endsWith('SNAPSHOT-0')) {
             // Skip integration testing.
         } else {
             if (!project.hasProperty('publishWithoutTests')) {

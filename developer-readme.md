@@ -123,7 +123,7 @@ lets you test a new version of the plugins on a real project, without causing pr
 `gw publishCustomGradleReally` and/or `gw publishPluginsReally` to publish the custom-gradle distribution, and/or the
 whole set of plugins.
 
- - Without any other arguments, the version used will be `<user>-SNAPSHOT`, where `<user>` is your system username (not
+ - Without any other arguments, the version used will be `<user>SNAPSHOT-0`, where `<user>` is your system username (not
 your BitBucket username).
  - To publish a release version, pass the version number with `-PpublishVersion=<version number>`.
  - To skip unit testing (for example, when repeatedly using `-DintegTest.single`), pass `-PnoTest`.  This only works for
@@ -158,13 +158,13 @@ To avoid annoying people with broken plugins you should test your changes by pub
 
  - In your global `gradle.properties` which lives in your `GRADLE_USER_HOME` directory, add a line such as:
 `systemProp.holygradle.pluginsSnapshotsUser=nm2501`. This will automatically change the requested versions to
-`<user>-SNAPSHOT`.  (This switch-over is part of the `holy-gradle-init.gradle` script in the custom-gradle distribution,
+`<user>SNAPSHOT-0`.  (This switch-over is part of the `holy-gradle-init.gradle` script in the custom-gradle distribution,
 rather than being part of Gradle itself.)
  - When you're testing your changes you can tell if it has picked up your new plugin because Gradle will print messages
 whenever artifacts are downloaded e.g.
 ```
-Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/ivy-nm2501-SNAPSHOT.xml
-Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAPSHOT.jar
+Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/ivy-nm2501SNAPSHOT-0.xml
+Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/devenv-plugin-nm2501SNAPSHOT-0.jar
 ```
  - You can also run `gw versionInfo` to get a complete list of version numbers.
 
@@ -173,7 +173,7 @@ Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAP
 ## clone/update the plugins
 ## if necessary, follow the "getting started" steps detailed above
 ## add your println/log entries to the plugins for helping to diagnosing the problem
-## use "gw -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>-SNAPSHOT
+## use "gw -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>SNAPSHOT-0
 ## now to force the user's build script to use the snapshots you've just published, set the property "systemProp.holygradle.pluginsSnapshotsUser=<user>" in your %GRADLE_USER_HOME%/gradle.properties file.
 ## before fixing, try to add a new integration test that replicates the issue, to help verify the fix and prevent future regression
  

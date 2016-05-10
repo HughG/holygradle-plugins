@@ -8,7 +8,7 @@ gplugins.apply()
     will be used, which probably isn't what was intended.
 */
 boolean usingPluginSnapshots = (System.getProperty('holygradle.pluginsSnapshotsUser') != null)
-if (usingPluginSnapshots != wrapperVersion.endsWith('-SNAPSHOT')) {
+if (usingPluginSnapshots != wrapperVersion.endsWith('SNAPSHOT-0')) {
     throw new RuntimeException(
         "ERROR: holygradle.pluginsSnapshotsUser override is active but you are attempting to " +
         "publish a wrapper for a non-snapshot version (${wrapperVersion}).  This would instead " +
