@@ -7,13 +7,15 @@ syntax: glob
 # Generated
 credential-store/project_version_info.h
 credential-store/release_version_info.h
+custom-gradle-core-plugin/src/main/resources/holygradle/gw.bat
 custom-gradle-core-plugin/src/main/resources/holygradle/hgVersionInfo.txt
 custom-gradle-core-plugin/src/main/resources/holygradle/publishVersion.txt
+custom-gradle-core-plugin/src/main/resources/holygradle/init.d/holy-gradle-init.gradle
+
 # Other
 *.bak
 */src/test/**/*.test.txt
 **/packages/
-custom-gradle-core-plugin/src/main/resources/holygradle/gw.bat
 distributionUrlBase.txt
 credential-store.exe
 *-subprojects.txt

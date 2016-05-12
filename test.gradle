@@ -116,12 +116,8 @@ project.ext.setUpTests = { Project project ->
             // doFirst block, because the project version isn't set at task creation time, but is by task execution.
             maybeForwardHttpProxyProperties(t)
             maybeForwardExtraArguments(t)
-            final String customDistBaseName = project.findProject(":custom-gradle").CUSTOM_GRADLE_BASE_NAME
-            final String customDistName = "${customDistBaseName}-${project.version}"
-            final String distributionPath = "holygradle/custom-gradle/${project.version}/${customDistName}.zip"
-            final String distributionURIString = URI.create(project.PUBLISH_LOCAL_TARGET_URI + distributionPath).toString()
             t.systemProperty("holygradle.pluginsRepoOverride", project.PUBLISH_LOCAL_TARGET_URI.toString())
-            t.systemProperty("holygradle.distributionForIntegrationTest", distributionURIString)
+            t.systemProperty("holygradle.customInitScriptPath", project.rootProject.file('/custom-gradle-core-plugin/src/init.d/holy-gradle-init.gradle').toString())
             t.systemProperty("holygradle.gradleUserHomeForIntegrationTest", project.LOCAL_GRADLE_USER_HOME.toString())
             t.systemProperty("holygradle.versionForIntegrationTest", project.version)
         }

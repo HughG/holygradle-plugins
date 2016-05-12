@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/artifactory-manager-plugin/artifactory-manager-plugin.iml" filepath="$PROJECT_DIR$/artifactory-manager-plugin/artifactory-manager-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/credential-store/credential-store.iml" filepath="$PROJECT_DIR$/credential-store/credential-store.iml" />
-      <module fileurl="file://$PROJECT_DIR$/custom-gradle/custom-gradle.iml" filepath="$PROJECT_DIR$/custom-gradle/custom-gradle.iml" />
       <module fileurl="file://$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" filepath="$PROJECT_DIR$/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/devenv-plugin/devenv-plugin.iml" filepath="$PROJECT_DIR$/devenv-plugin/devenv-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/holy-gradle-plugins.iml" filepath="$PROJECT_DIR$/holy-gradle-plugins.iml" />

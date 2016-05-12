@@ -17,7 +17,11 @@ task(copyGwBat, type: Copy) {
     // last time this task ran, so we use them to cause this task to re-run.
     from rootProject.tasks['setHgVersionInfo'].outputs.files
     from rootProject.tasks['setPublishVersion'].outputs.files
-
+    into('init.d') {
+        from 'src/init.d/'
+        filter { String line -> (line =~ /\[\[INIT_SCRIPT_SOURCE_VERSION\]\]/).replaceFirst(rootProject.hgVersionInfo) }
+        filter { String line -> (line =~ /\[\[INIT_SCRIPT_VERSION\]\]/).replaceFirst(project.version) }
+    }
     into new File(projectDir, "src/main/resources/holygradle")
     from(new File(rootProject.projectDir, "gw.bat")) {
         filter { String line -> (line =~ /\[\[GW_SCRIPT_SOURCE_VERSION\]\]/).replaceFirst(rootProject.hgVersionInfo) }

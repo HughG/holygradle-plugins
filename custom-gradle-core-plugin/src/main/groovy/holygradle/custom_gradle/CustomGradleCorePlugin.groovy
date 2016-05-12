@@ -44,9 +44,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            final String customGradleVersion = project.gradle.gradleVersion + "-" + project.holyGradleInitScriptVersion
             final File gwFile = new File(project.projectDir, "gw.bat")
-            wrapper.gradleVersion = customGradleVersion
             wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")
             wrapper.scriptFile = new File(project.projectDir, "gw")
             wrapper.doFirst {
@@ -78,7 +76,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 Files.delete(wrapper.propertiesFile.toPath())
 
                 File distributionPathFile = new File(project.projectDir, "/gradle/distributionPath.txt")
-                distributionPathFile.text = "plugins-release/holygradle/custom-gradle/${project.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
+                distributionPathFile.text = "gradle-${project.gradle.gradleVersion}-bin.zip"
             }
         }
     
@@ -118,8 +116,11 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                     println "  ${project.gradle.gradleHomeDir.path}\n"
                     println "Init script location: "
                     println " ${getInitScriptLocation(project)}\n"
+                    def pluginsRepo = project.hasProperty('holyGradlePluginsRepository') ?
+                            project.property('holyGradlePluginsRepository') :
+                            'NOT SET'
                     println "Plugin repository: "
-                    println "  ${project.holyGradlePluginsRepository}\n"
+                    println "  ${pluginsRepo}\n"
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35
