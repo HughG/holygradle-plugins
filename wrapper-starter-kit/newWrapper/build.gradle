@@ -42,12 +42,10 @@ createWrapper.dependsOn clean
 */
 createWrapper << {
     copy {
-        into(new File(projectDir, "."))
-        from(rootProject.projectDir) {
-            include "gw.bat"
-            include "gradle/base-url-lookup.txt"
-            include "gradle/certs/**"
-            include "gradle/init.d/**"
+        into(new File(projectDir, "gradle"))
+        from(new File(rootProject.projectDir, "gradle")) {
+            include "base-url-lookup.txt"
+            include "certs/**"
         }
     }
 }

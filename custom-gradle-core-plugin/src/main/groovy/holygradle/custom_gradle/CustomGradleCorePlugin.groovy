@@ -45,6 +45,8 @@ class CustomGradleCorePlugin implements Plugin<Project> {
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
             final File gwFile = new File(project.projectDir, "gw.bat")
+            final File holyGradleInitScriptFile = new File(project.projectDir, "/gradle/init.d/holy-gradle-init.gradle")
+            final File initDir = new File(project.projectDir, "/gradle/init.d/")
             wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")
             wrapper.scriptFile = new File(project.projectDir, "gw")
             wrapper.doFirst {
@@ -56,10 +58,25 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                         "You can only use this task in a sub-project which does not contain its own gw.bat"
                     )
                 }
+
+                if (holyGradleInitScriptFile.exists()) {
+                    throw new RuntimeException(
+                        "You can only use this task in a sub-project which does not contain its own gradle/init.d/holy-gradle-init.gradle"
+                    )
+                }
             }
             wrapper.doLast {
                 gwFile.withOutputStream { os ->
                     os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/gw.bat")
+                }
+
+                // Create Init Dir if it does not exist.
+                if (!initDir.exists()) {
+                    initDir.mkdir()
+                }
+
+                holyGradleInitScriptFile.withOutputStream { os ->
+                    os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/init.d/holy-gradle-init.gradle")
                 }
 
                 // We move the default ".properties" file to ".properties.in", removing the "distributionUrl=" line.

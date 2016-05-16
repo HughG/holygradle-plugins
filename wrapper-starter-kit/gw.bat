@@ -105,7 +105,7 @@ goto findLocalArtifactsLoop
 if not "x%LOCAL_ARTIFACTS_DIR_PATH%"=="x" (
   @rem We have to use goto here, instead of an "else (...)", because Windows will try to parse the
   @rem "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%" inside the else, and fail because the variable isn't set.
-  if exist "%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/wrapper" (
+  if exist "%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle" (
     @rem If the wrapper folder exists inside local_artifacts folder then write wrapper properties 
     @rem based on local_artifacts location.
     goto writeWrapperPropertiesForLocalArtifacts
@@ -158,7 +158,7 @@ goto writeWrapperProperties
 :writeWrapperPropertiesForLocalArtifacts
 
 REM If local artifacts contain gradle distribution then use it.
-<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/> "%APP_HOME%gradle\distributionUrlBase.txt"
+<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle/gradle-1.4-bin/> "%APP_HOME%gradle\distributionUrlBase.txt"
 
 set DISTRIBUTION_LOCAL_PATH_FILE="%APP_HOME%gradle\distributionLocalPath.txt"
 echo %~nx0 found "%LOCAL_ARTIFACTS_DIR_PATH%"
