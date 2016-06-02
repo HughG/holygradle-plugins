@@ -45,6 +45,7 @@ createWrapper << {
         into(new File(projectDir, "gradle"))
         from(new File(rootProject.projectDir, "gradle")) {
             include "base-url-lookup.txt"
+            include "proxy-lookup.txt"
             include "certs/**"
         }
     }

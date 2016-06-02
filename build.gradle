@@ -25,7 +25,7 @@ ensureHgHook(
 // Force-copy build bootstrap files to independenct sub-projects, so they stay up to date.
 ["https-setup-kit", "wrapper-starter-kit"].each {
     File otherProjectDir = new File(projectDir, it)
-    ["gw.bat", "gradle/base-url-lookup.txt", "gradle/certs/**"].each { String copyPattern ->
+    ["gw.bat", "gradle/base-url-lookup.txt", "gradle/proxy-lookup.txt", "gradle/certs/**"].each { String copyPattern ->
         copy {
             into(otherProjectDir)
             from(projectDir) {
