@@ -70,7 +70,7 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
 )
 
 set INIT_SCRIPT_OPTS=
-FOR /R "%APP_HOME%\gradle\init.d\" %%f IN (*.gradle) DO (
+FOR %%f IN ("%APP_HOME%\gradle\init.d\*.gradle") DO (
     SET "INIT_SCRIPT_OPTS=!INIT_SCRIPT_OPTS! -I "%%f""
 )
 
@@ -150,18 +150,18 @@ if exist "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" (
 
 @rem Try to find a proxy server and port based on the DNS suffix values on the local machine.
 if exist "%~dp0gradle\proxy-lookup.txt" (
-for /f "tokens=6" %%S in ('ipconfig ^| findstr "Connection-specific DNS Suffix"') do (
-  for /f "eol=# tokens=1,2,3 usebackq" %%T in ("%~dp0gradle\proxy-lookup.txt") do (
-    if "%%S"=="%%T" (
-      echo In domain "%%S", defaulting proxy server to "%%U" on port "%%V".
-      set HOLY_GRADLE_PROXY_OPTS=-Dhttp.proxyHost=%%U -Dhttp.proxyPort=%%V -Dhttps.proxyHost=%%U -Dhttps.proxyPort=%%V
-      goto end_proxy_search
+  for /f "tokens=6" %%S in ('ipconfig ^| findstr "Connection-specific DNS Suffix"') do (
+    for /f "eol=# tokens=1,2,3 usebackq" %%T in ("%~dp0gradle\proxy-lookup.txt") do (
+      if "%%S"=="%%T" (
+        echo In domain "%%S", defaulting proxy server to "%%U" on port "%%V".
+        set HOLY_GRADLE_PROXY_OPTS=-Dhttp.proxyHost=%%U -Dhttp.proxyPort=%%V -Dhttps.proxyHost=%%U -Dhttps.proxyPort=%%V
+        goto end_proxy_search
+      )
     )
   )
-)
 :end_proxy_search
-echo >nul
-@rem We need a do-nothing command above because a label must label a command, not a closing parenthesis.
+  echo >nul
+  @rem We need a do-nothing command above because a label must label a command, not a closing parenthesis.
 )
 
 if not exist "%APP_HOME%gradle\gradle-wrapper.properties.in" (

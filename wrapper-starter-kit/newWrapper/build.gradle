@@ -38,7 +38,8 @@ createWrapper.dependsOn clean
 /*
     Copy files in from the root project (wrapper-starter-kit), which will itself have had them copied into it by the
     top-level build.gradle.  If you modify the copy patterns here, you should also update the ones near the start of
-    that top-level build.gradle file.
+    that top-level build.gradle file.  These are only the site-local, private init files; the general ones will be
+    written in by the "wrapper" task.
 */
 createWrapper << {
     copy {

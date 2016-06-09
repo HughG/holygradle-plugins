@@ -2,6 +2,7 @@ package holygradle.custom_gradle
 
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.VersionNumber
+import holygradle.io.FileHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -71,9 +72,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 }
 
                 // Create Init Dir if it does not exist.
-                if (!initDir.exists()) {
-                    initDir.mkdir()
-                }
+                FileHelper.ensureMkdirs(initDir, "to hold Holy Gradle init script")
 
                 holyGradleInitScriptFile.withOutputStream { os ->
                     os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/init.d/holy-gradle-init.gradle")
