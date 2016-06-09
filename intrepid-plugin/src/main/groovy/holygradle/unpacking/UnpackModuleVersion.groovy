@@ -9,31 +9,25 @@ import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {
     public final ModuleVersionIdentifier moduleVersion
+    public final Closure<File> getIvyFile
     public boolean includeVersionNumberInPath
     // A map from artifacts to sets of configurations that include the artifacts.
     public final Map<ResolvedArtifact, Set<String>> artifacts = [:].withDefault { new HashSet<String>() }
     // The set of configurations in the containing project which lead to this module being included.
     public final Set<String> originalConfigurations = new HashSet<String>()
-    private final Map<String, String> dependencyRelativePaths = [:]
+    private final Object dependencyRelativePathsInitSync = new Object()
+    private Map<String, String> dependencyRelativePaths = null
     private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
     
     UnpackModuleVersion(
         ModuleVersionIdentifier moduleVersion,
-        File ivyFile,
-        UnpackModuleVersion parentUnpackModuleVersion,
-        PackedDependencyHandler packedDependency00
-    ) {
-        this(moduleVersion, ivyFile.text, parentUnpackModuleVersion, packedDependency00)
-    }
-
-    UnpackModuleVersion(
-        ModuleVersionIdentifier moduleVersion,
-        String ivyText,
+        Closure<File> getIvyFile,
         UnpackModuleVersion parentUnpackModuleVersion,
         PackedDependencyHandler packedDependency00
     ) {
         this.moduleVersion = moduleVersion
+        this.getIvyFile = getIvyFile
         this.parentUnpackModuleVersion = parentUnpackModuleVersion
         this.packedDependency00 = packedDependency00
         if (packedDependency00 == null) {
@@ -46,24 +40,33 @@ class UnpackModuleVersion {
         if (packedDependency00 == null && parentUnpackModuleVersion == null) {
             throw new RuntimeException("Module '${moduleVersion}' has no parent module.")
         }
+    }
 
-        // Read the relative paths for any of the dependencies.  (No point trying to use static types here as we're
-        // using GPath, so the returned objects have magic properties.)
-        def ivyXml = new XmlSlurper(false, false).parseText(ivyText)
-        ivyXml.dependencies.dependency.each { dep ->
-            def relativePath = dep.@relativePath?.toString()
-            if (relativePath != null) {
-                final String moduleVersionId = "${dep.@org}:${dep.@name}:${dep.@rev}"
-                // We've occasionally seen hand-crafted ivy.xml files which have a trailing slash on the relativePath,
-                // which leads to us creating symlinks one level down from where we want them; so, strip it if present.
-                if (relativePath.endsWith('/')) {
-                    relativePath = relativePath[0..-2]
+    private Map<String, String> getDependencyRelativePaths() {
+        if (dependencyRelativePaths == null) {
+            synchronized (dependencyRelativePathsInitSync) {
+                dependencyRelativePaths = [:]
+                String ivyText = getIvyFile().text
+                // Read the relative paths for any of the dependencies.  (No point trying to use static types here as we're
+                // using GPath, so the returned objects have magic properties.)
+                def ivyXml = new XmlSlurper(false, false).parseText(ivyText)
+                ivyXml.dependencies.dependency.each { dep ->
+                    def relativePath = dep.@relativePath?.toString()
+                    if (relativePath != null) {
+                        final String moduleVersionId = "${dep.@org}:${dep.@name}:${dep.@rev}"
+                        // We've occasionally seen hand-crafted ivy.xml files which have a trailing slash on the relativePath,
+                        // which leads to us creating symlinks one level down from where we want them; so, strip it if present.
+                        if (relativePath.endsWith('/')) {
+                            relativePath = relativePath[0..-2]
+                        }
+                        dependencyRelativePaths[moduleVersionId] = relativePath
+                    }
                 }
-                dependencyRelativePaths[moduleVersionId] = relativePath
             }
         }
+        dependencyRelativePaths
     }
-    
+
     public String getIncludeInfo() {
         if (includeVersionNumberInPath) {
             "(includes version number)"
@@ -90,18 +93,30 @@ class UnpackModuleVersion {
     // This method returns the relative path specified in the Ivy file from this module to 
     // the given module.
     private String getRelativePathForDependency(UnpackModuleVersion moduleVersion) {
-        String coordinate = moduleVersion.getFullCoordinate()
-        if (dependencyRelativePaths.containsKey(coordinate)) {
-            return dependencyRelativePaths[coordinate]
-        } else {
-            // If the relative path from this module to the dependency is not specified in the Ivy, return an empty
-            // string, which means that the dependency should be put next to this module, in a folder named after the
-            // dependency.  (Or, if useRelativePathFromIvyXml is true then, for backward-compatibility, we put it in
-            // as sub-folder nameed after the dependency.)
-            return ""
-        }
+        // If the relative path from this module to the dependency is not specified in the Ivy, return an empty
+        // string, which means that the dependency should be put next to this module, in a folder named after the
+        // dependency.  (Or, if useRelativePathFromIvyXml is true then, for backward-compatibility, we put it in
+        // as sub-folder nameed after the dependency.)
+        return getDependencyRelativePaths().get(moduleVersion.getFullCoordinate(), "")
     }
-    
+
+    private String getRelativePathForDependency(Project project) {
+        String relativePathForDependency = ""
+        if (PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).useRelativePathFromIvyXml) {
+            relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
+            if (relativePathForDependency == "") {
+                // If the relative path is empty we need to supply the name of the target directory ourselves.
+                relativePathForDependency = getTargetDirName()
+            }
+        } else {
+            if (relativePathForDependency == "") {
+                // If the relative path is empty we need to supply the name of the target directory ourselves.
+                relativePathForDependency = "../" + getTargetDirName()
+            }
+        }
+        return relativePathForDependency
+    }
+
     // This returns the packedDependencies entry corresponding to this dependency. This will
     // return null if no such entry exists, which would be the case if this is a transitive
     // dependency.
@@ -175,19 +190,7 @@ class UnpackModuleVersion {
         } else {
             // If we don't return above then this must be a transitive dependency.
 
-            String relativePathForDependency = ""
-            if (PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).useRelativePathFromIvyXml) {
-                relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
-                if (relativePathForDependency == "") {
-                    // If the relative path is empty we need to supply the name of the target directory ourselves.
-                    relativePathForDependency = getTargetDirName()
-                }
-            } else {
-                if (relativePathForDependency == "") {
-                    // If the relative path is empty we need to supply the name of the target directory ourselves.
-                    relativePathForDependency = "../" + getTargetDirName()
-                }
-            }
+            String relativePathForDependency = getRelativePathForDependency(project)
 
             if (relativePathForDependency.startsWith("/") || 
                 relativePathForDependency.startsWith("\\")
@@ -205,7 +208,7 @@ class UnpackModuleVersion {
             }
         }
     }
-    
+
     // If true this module should be unpacked to the central cache, otherwise it should be unpacked
     // directly to the workspace.
     private boolean shouldUnpackToCache() {
@@ -248,10 +251,7 @@ class UnpackModuleVersion {
                 "n/a" :
                 packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             ) +
-            "', parent relative path='" + (packedDependency00 == null ?
-                parentUnpackModuleVersion?.getRelativePathForDependency(this) :
-                "n/a"
-            ) +
+            "', target dir name='" + targetDirName +
             "', parentUnpackModuleVersion=" + parentUnpackModuleVersion?.moduleVersion +
             '}';
     }

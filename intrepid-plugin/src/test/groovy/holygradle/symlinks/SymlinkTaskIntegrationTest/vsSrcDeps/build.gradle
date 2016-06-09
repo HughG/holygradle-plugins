@@ -15,6 +15,6 @@ repositories.ivy {
 sourceDependencies {
     "projB" {
         hg "http://a_dummy_url_that_we_wont_need"
-        publishing.configuration "foo->default"
+        configuration "foo->default"
     }
 }

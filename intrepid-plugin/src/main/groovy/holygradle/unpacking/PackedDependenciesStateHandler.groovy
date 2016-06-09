@@ -5,7 +5,6 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.ResolvedDependenciesVisitor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
-import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
 
 /**
  * This project extension provides information about the state of packed dependencies when they are resolved.
@@ -79,8 +78,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         Configuration originalConf,
         Set<ResolvedDependency> dependencies,
         Collection<PackedDependencyHandler> packedDependencies,
-        Map<ModuleIdentifier, UnpackModule> unpackModules,
-        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles
+        Map<ModuleIdentifier, UnpackModule> unpackModules
     ) {
         project.logger.debug("collectUnpackModules for ${originalConf}")
         project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
@@ -121,26 +119,9 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
                 final boolean isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
 
-                // Is there an ivy file corresponding to this dependency?
-                File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
-                final boolean ivyFileExists = ivyFile?.exists()
-                // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
-                // we can throw an exception later (after we've checked all dependencies).
-                if (isNewNonBuildModuleConfiguration && !ivyFileExists) {
-                    if (ivyFile == null) {
-                        project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
-                    } else {
-                        project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
-                    }
-                    modulesWithoutIvyFiles.add(id)
-                }
-
-                if (ivyFileExists) {
-                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                }
                 return new ResolvedDependenciesVisitor.VisitChoice(
-                    isNewNonBuildModuleConfiguration && ivyFileExists,
-                    isNewModuleConfiguration && ivyFileExists
+                    isNewNonBuildModuleConfiguration,
+                    isNewModuleConfiguration
                 )
             },
             { ResolvedDependency resolvedDependency ->
@@ -177,7 +158,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
                 } else {
-
+                    System.out.println("collectUnpackModules in ${project}: seeking packed dep for ${id}")
                     // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
                     // dependency is a transitive dependency, "thisPackedDep" will be null.
                     PackedDependencyHandler thisPackedDep = packedDependencies.find {
@@ -185,13 +166,24 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         // multiple versions were requested in the dependency graph.  In that case, we still want to
                         // regard this packed dependency as mapping to the given UnpackModuleVersion, i.e., to the
                         // resolved dependency version.
+                        System.out.println("  collectUnpackModules: trying ${it.name} (${it.dependencyId})")
                         return (it.groupName == id.group) &&
                             (it.dependencyName == id.name)
                     }
 
-                    File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
-                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                    unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parentUnpackModuleVersion, thisPackedDep)
+                    Closure<File> getIvyFile = {
+                        File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
+                        final boolean ivyFileExists = ivyFile?.exists()
+                        if (ivyFileExists) {
+                            project.logger.debug("collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}")
+                        } else {
+                            project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
+                        }
+
+                        ivyFile
+                    }
+
+                    unpackModuleVersion = new UnpackModuleVersion(id, getIvyFile, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
@@ -224,21 +216,15 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
         // Build a list (without duplicates) of all artifacts the project depends on.
         unpackModulesMap = [:]
-        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
         project.configurations.each((Closure){ Configuration conf ->
             ResolvedConfiguration resConf = conf.resolvedConfiguration
             collectUnpackModules(
                 conf,
                 resConf.getFirstLevelModuleDependencies(),
                 packedDependencies,
-                unpackModulesMap,
-                modulesWithoutIvyFiles
+                unpackModulesMap
             )
         })
-
-        if (!modulesWithoutIvyFiles.isEmpty()) {
-            throw new RuntimeException("Some dependencies had no ivy.xml file")
-        }
 
         // Check if we need to force the version number to be included in the path in order to prevent
         // two different versions of a module to be unpacked to the same location.

@@ -10,7 +10,7 @@ import static org.hamcrest.number.OrderingComparison.*
 class SymlinkTaskIntegrationTest extends AbstractHolyGradleIntegrationTest
 {
     /**
-     * Tests that, if one project B has a source dependency on another project A, then the symlinks to the unpack cache
+     * Tests that, if one project A has a source dependency on another project B, then the symlinks to the unpack cache
      * for A will be rebuilt before any explicitly-created symlinks in B.  This is a requirement because project B might
      * want to symlink to an unpacked dependency in A, but it can't do that if A's symlinks-to-cache don't already
      * exist.
