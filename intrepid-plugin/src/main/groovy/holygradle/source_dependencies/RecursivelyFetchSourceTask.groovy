@@ -91,7 +91,7 @@ class RecursivelyFetchSourceTask extends DefaultTask {
                     logger.info("Not writing settings entry for empty packedDependency ${versionInfo.moduleVersion}")
                     return
                 }
-                final File targetPathInWorkspace = versionInfo.getTargetPathInWorkspace(project)
+                final File targetPathInWorkspace = versionInfo.getTargetPathInWorkspace()
                 final relativePathInWorkspace =
                     Helper.relativizePath(targetPathInWorkspace, project.rootProject.projectDir)
                 pathsForPackedDependencies.add(relativePathInWorkspace)

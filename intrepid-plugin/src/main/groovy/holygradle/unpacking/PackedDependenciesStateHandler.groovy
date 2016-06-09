@@ -183,7 +183,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         ivyFile
                     }
 
-                    unpackModuleVersion = new UnpackModuleVersion(id, getIvyFile, parentUnpackModuleVersion, thisPackedDep)
+                    unpackModuleVersion = new UnpackModuleVersion(project, id, getIvyFile, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
@@ -232,7 +232,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             [:].withDefault { new ArrayList<UnpackModuleVersion>() }
         unpackModulesMap.values().each { UnpackModule module ->
             module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+                File targetPath = versionInfo.getTargetPathInWorkspace().getCanonicalFile()
                 targetLocations[targetPath].add(versionInfo)
             }
 

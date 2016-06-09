@@ -36,6 +36,7 @@ class SymlinksToCacheTaskTest extends AbstractHolyGradleTest {
         boolean addDummyArtifact = true
     ) {
         UnpackModuleVersion version = new UnpackModuleVersion(
+            project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             { getIvyFile(moduleName + ".xml") },
             parent,

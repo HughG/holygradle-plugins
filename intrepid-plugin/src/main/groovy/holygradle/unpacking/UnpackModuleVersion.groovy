@@ -8,6 +8,7 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {
+    public final Project project
     public final ModuleVersionIdentifier moduleVersion
     public final Closure<File> getIvyFile
     public boolean includeVersionNumberInPath
@@ -21,11 +22,13 @@ class UnpackModuleVersion {
     private PackedDependencyHandler packedDependency00 = null
     
     UnpackModuleVersion(
+        Project project,
         ModuleVersionIdentifier moduleVersion,
         Closure<File> getIvyFile,
         UnpackModuleVersion parentUnpackModuleVersion,
         PackedDependencyHandler packedDependency00
     ) {
+        this.project = project
         this.moduleVersion = moduleVersion
         this.getIvyFile = getIvyFile
         this.parentUnpackModuleVersion = parentUnpackModuleVersion
@@ -100,7 +103,7 @@ class UnpackModuleVersion {
         return getDependencyRelativePaths().get(moduleVersion.getFullCoordinate(), "")
     }
 
-    private String getRelativePathForDependency(Project project) {
+    private String getRelativePathForDependency() {
         String relativePathForDependency = ""
         if (PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).useRelativePathFromIvyXml) {
             relativePathForDependency = parentUnpackModuleVersion.getRelativePathForDependency(this)
@@ -137,10 +140,10 @@ class UnpackModuleVersion {
      * @param project
      * @return An {@link UnpackEntry} object which describes how to unpack this module version
      */
-    public UnpackEntry getUnpackEntry(Project project) {
+    public UnpackEntry getUnpackEntry() {
         return new UnpackEntry(
             artifacts.keySet()*.file,
-            getUnpackDir(project),
+            getUnpackDir(),
             (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
             (boolean)getPackedDependency()?.shouldMakeReadonly()
         )
@@ -177,7 +180,7 @@ class UnpackModuleVersion {
     
     // Return the full path of the directory that should be constructed in the workspace for the unpacked artifacts. 
     // Depending on some other configuration, this path could be used for a symlink or a real directory.
-    public File getTargetPathInWorkspace(Project project) {
+    public File getTargetPathInWorkspace() {
         if (packedDependency00 != null) {
             // If we have a packed dependency then we can directly construct the target path.
             // We don't need to go looking through transitive dependencies.
@@ -190,7 +193,7 @@ class UnpackModuleVersion {
         } else {
             // If we don't return above then this must be a transitive dependency.
 
-            String relativePathForDependency = getRelativePathForDependency(project)
+            String relativePathForDependency = getRelativePathForDependency()
 
             if (relativePathForDependency.startsWith("/") || 
                 relativePathForDependency.startsWith("\\")
@@ -204,7 +207,7 @@ class UnpackModuleVersion {
                 }
             } else {
                 // Recursively navigate up the parent hierarchy, appending relative paths.
-                return new File(parentUnpackModuleVersion.getTargetPathInWorkspace(project), relativePathForDependency)
+                return new File(parentUnpackModuleVersion.targetPathInWorkspace, relativePathForDependency)
             }
         }
     }
@@ -232,14 +235,14 @@ class UnpackModuleVersion {
 
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
     // cache or it could be to somewhere in the workspace.
-    public File getUnpackDir(Project project) {
+    public File getUnpackDir() {
         if (shouldUnpackToCache()) {
             // Our closest packed-dependency entry (which could be for 'this' module, or any parent module)
             // dictated that we should unpack to the global cache.
             Helper.getGlobalUnpackCacheLocation(project, moduleVersion)
         } else {
             // We're unpacking directly into the workspace.
-            getTargetPathInWorkspace(project)
+            targetPathInWorkspace
         }
     }
 
@@ -251,7 +254,7 @@ class UnpackModuleVersion {
                 "n/a" :
                 packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             ) +
-            "', target dir name='" + targetDirName +
+            "', target path='" + targetPathInWorkspace +
             "', parentUnpackModuleVersion=" + parentUnpackModuleVersion?.moduleVersion +
             '}';
     }
