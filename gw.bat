@@ -110,7 +110,7 @@ if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
   @rem Try to find a server URL based on the DNS suffix values on the local machine.
   if exist "%~dp0gradle\base-url-lookup.txt" (
     for /f "tokens=6" %%S in ('ipconfig ^| findstr "Connection-specific DNS Suffix"') do (
-      for /f "eol=# tokens=1,2" %%T in ("%~dp0gradle\base-url-lookup.txt") do (
+      for /f "eol=# tokens=1,2 usebackq" %%T in ("%~dp0gradle\base-url-lookup.txt") do (
         if "%%S"=="%%T" (
           echo In domain "%%S", defaulting HOLY_GRADLE_REPOSITORY_BASE_URL to "%%U".
           set HOLY_GRADLE_REPOSITORY_BASE_URL=%%U
@@ -119,7 +119,8 @@ if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
       )
     )
 :end_dns_search
-    @rem We need a comment here because a label must label a command, not a closing parenthesis.
+    ver >nul
+    @rem We need a do-nothing command here because a label must label a command, not a closing parenthesis.
   )
 
   if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
