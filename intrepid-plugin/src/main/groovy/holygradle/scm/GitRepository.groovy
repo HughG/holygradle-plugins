@@ -1,8 +1,7 @@
 package holygradle.scm
 
+import holygradle.process.ExecuteAndReturnStringException
 import org.gradle.process.ExecSpec
-
-import java.util.regex.Matcher
 
 class GitRepository implements SourceControlRepository {
     private final File workingCopyDir
@@ -22,21 +21,25 @@ class GitRepository implements SourceControlRepository {
     }
 
     public String getUrl() {
-        // TODO 2016-04-15 HughG: Instead of this, run "git remote show origin" and capture the output.
         // May need to strip "username[:password]@" from URL.
-        File config = new File(workingCopyDir, "/.git/config")
-        String url = "unknown"
-        if (config.exists()) {
-            config.text.eachLine {
-                Matcher match = it =~ /url = (.+)/
-                if (match.size() != 0) {
-                    final List<String> matches = match[0] as List<String>
-                    url = matches[1]
-                }
-                return
+        File localWorkingCopyDir = workingCopyDir // capture private for closure
+        String command_result = ""
+        try {
+            command_result = gitCommand.execute { ExecSpec spec ->
+                spec.workingDir = localWorkingCopyDir
+                spec.args(
+                        "config",
+                        "--get",
+                        "remote.origin.url"
+                )
+            }
+        } catch (ExecuteAndReturnStringException e) {
+            // If error code = 1 we assume it is because no URL has been set
+            if (e.getExitValue() != 1) {
+                throw e
             }
         }
-        url
+        return command_result
     }
 
     public String getRevision() {
