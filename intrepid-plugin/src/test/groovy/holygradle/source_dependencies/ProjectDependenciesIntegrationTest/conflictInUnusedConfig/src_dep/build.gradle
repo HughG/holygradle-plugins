@@ -5,8 +5,13 @@ gplugins.apply()
 
 configurations {
     someChildConfig
-    otherChildConfig //.extendsFrom someChildConfig
+    otherChildConfig
 }
+
+repositories.ivy {
+    url "..\\..\\..\\..\\testUtil\\repository\\"
+}
+
 // Declare a packed dependency for this root project
 packedDependencies {
     "ext_dep_with_config_requiring_1_1_everything" {
