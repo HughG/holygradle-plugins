@@ -2,6 +2,7 @@ package holygradle.scm
 
 import holygradle.io.FileHelper
 import holygradle.test.*
+import holygradle.testUtil.GitUtil
 import holygradle.testUtil.HgUtil
 import holygradle.testUtil.ZipUtil
 import org.gradle.api.Project
@@ -87,6 +88,60 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             "The SourceControlRepository reports its directory correctly",
             project.projectDir.getCanonicalFile(),
             sourceControl.getLocalDir()
+        )
+
+        new File(project.projectDir, EXAMPLE_FILE as String).withPrintWriter {
+            PrintWriter w -> w.println("two")
+        }
+
+        assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges())
+    }
+
+    /**
+     * Integration test of the GitRepository class.
+     */
+    @Test
+    public void testGit() {
+        ////////////////////////////////////////////////////////////////////////////////
+        // Create a repo to run the test in.
+        File projectDir = new File(getTestDir(), "testGit")
+        FileHelper.ensureDeleteDirRecursive(projectDir)
+        FileHelper.ensureMkdirs(projectDir)
+
+        Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+        // Make the project dir into a repo, then add the extension.
+        GitUtil.gitExec(project, "init")
+        SourceControlRepositories.createExtension(project)
+
+        // Add a file.
+        (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
+        GitUtil.gitExec(project, "add", EXAMPLE_FILE)
+        // Set the commit message, user, and date, so that the hash will be the same every time.
+        GitUtil.gitExec(project,
+                "commit",
+                "-m", "Added another file."
+        )
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // Now run the actual test
+        def sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
+
+        assertTrue(
+                "A GitRepository instance has been created for the project",
+                sourceControl instanceof GitRepository
+        )
+        assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
+        println(sourceControl.getUrl())
+        assertEquals("The master repo is ''", "", sourceControl.getUrl())
+        assertEquals(
+                "The SourceControlRepository reports its protocol correctly",
+                "git",
+                sourceControl.getProtocol()
+        )
+        assertEquals(
+                "The SourceControlRepository reports its directory correctly",
+                project.projectDir.getCanonicalFile(),
+                sourceControl.getLocalDir()
         )
 
         new File(project.projectDir, EXAMPLE_FILE as String).withPrintWriter {

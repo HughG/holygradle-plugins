@@ -16,10 +16,25 @@ class ExecHelper {
             spec.setErrorOutput stderr
             spec.setIgnoreExitValue true
         }
-
-        if (execResult.getExitValue() != 0) {
-            throw new RuntimeException(stderr.toString().trim())
+        int exit_value = execResult.getExitValue()
+        if (exit_value != 0) {
+            throw new ExecuteAndReturnStringException(stderr.toString().trim(), exit_value)
         }
         stdout.toString().trim();
+    }
+}
+
+/**
+ * Custom exception which allows code to check the exit value for this specific situation
+ */
+class ExecuteAndReturnStringException extends RuntimeException {
+    private int exit_value;
+
+    public ExecuteAndReturnStringException(String message, int exit_value) {
+        super(message)
+        this.exit_value = exit_value
+    }
+    public int getExitValue() {
+        return exit_value
     }
 }

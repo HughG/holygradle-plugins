@@ -22,6 +22,8 @@ class HgRepository implements SourceControlRepository {
     }
     
     public String getUrl() {
+        // TODO 2016-04-15 HughG: Instead of this, run "hg paths default" and capture the output.
+        // May need to strip "username[:password]@" from URL.
         File hgrc = new File(workingCopyDir, "/.hg/hgrc")
         String url = "unknown"
         if (hgrc.exists()) {
