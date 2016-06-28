@@ -906,14 +906,35 @@ foo.hg "http://path/to/foo@384039b6ec8b44cec59dc48b264056882f60b7a7"
 
 This will result in a clone that has been updated to the specific Mercurial revision.
 
-After the source dependency has been retrieved you may make local modifications or update to a different revision and rerunning +fetchAllDependencies+ will have no effect on your local copy.
+After the source dependency has been retrieved you may make local modifications or update to a different revision and
+rerunning +fetchAllDependencies+ will have no effect on your local copy.
 
 -> Call this method at most once.
 
--> You must call one of +hg+ or +svn+.
+-> You must call one of +hg+, +git+, or +svn+.
 
 NOTE: If the Mercurial repository has an +https:+ URL, some setup may be required.  See
 link:troubleshooting.html#_mercurial_https_access[].
+
+==== git
+
+This method takes one parameter - the URL of the Git repository to clone.
+
+You can optionally specify a particular Git revision after an '@' character e.g.
+
+[source,groovy]
+----
+foo.git "http://path/to/foo.git@384039b6ec8b44cec59dc48b264056882f60b7a7"
+----
+
+This will result in a clone that has been updated to the specific Git revision.
+
+After the source dependency has been retrieved you may make local modifications or update to a different revision and
+rerunning +fetchAllDependencies+ will have no effect on your local copy.
+
+-> Call this method at most once.
+
+-> You must call one of +hg+, +git+, or +svn+.
 
 ==== svn
 
@@ -928,15 +949,18 @@ bar.svn "http://path/to/bar@143"
 
 This will result in a checkout of the repository, pinned to a specific version.
 
-After the source dependency has been retrieved you may make local modifications or update to a different revision and rerunning +fetchAllDependencies+ will have no effect on your local copy.
+After the source dependency has been retrieved you may make local modifications or update to a different revision and
+rerunning +fetchAllDependencies+ will have no effect on your local copy.
 
 -> Call this method at most once.
 
--> You must call one of +hg+ or +svn+.
+-> You must call one of +hg+, +git+, or +svn+.
 
 ==== branch
 
-This is an optional property that defines which named branch of the repository to use. This is only valid for 'hg' repositories, and the default value is 'null' which equates to retrieving the default branch. This is equivalent to +hg clone http://path/to/foo --branch special foo+.
+This is an optional property that defines which named branch of the repository to use. This is only valid for Mercurial
+and Git repositories, and the default value is 'null' which equates to retrieving the default branch. This is equivalent
+to +hg clone --branch special -- http://path/to/foo foo+ or +git clone --branch special -- http://path/to/foo.git foo+.
 
 Usage:
 
