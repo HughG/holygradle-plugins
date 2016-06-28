@@ -204,7 +204,7 @@ The link:plugin-intrepid.html[] supports the following.
 * Configurations
 ** Create sets of related configurations following standard patterns.
 * Source code dependencies
-** Retrieving source code repositories from gloss:subversion[] or gloss:mercurial[].
+** Retrieving source code repositories from gloss:subversion[], gloss:mercurial[] or gloss:git[].
 ** Caching gloss:subversion[] and gloss:mercurial[] credentials in the gloss:credential-manager[].
 ** Specifying dependency metadata when publishing a module with its source code dependencies.
 ** Overriding a source code dependency and using already-published versions of that

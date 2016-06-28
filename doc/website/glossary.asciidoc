@@ -104,6 +104,11 @@ configurations({ ConfigurationHandler c ->
 
 [[gloss-dsl]] DSL::
     See gloss:domain-specific-language[].
+[[gloss-git]] Git::
+    A distributed version control system: see https://git-scm.com/.  The gloss:holygradle[]
+    has support for cloning repositories from a Git repository, including it in your
+    gloss:gradle[] build automatically, and recording the source version with your gloss:module[]
+    when publishing it.
 [[gloss-gradle]] Gradle::
     An open source tool for gloss:dependency-management[] and gloss:build-management[].  Here 
     "dependency management" means getting and publishing versioned software modules, mostly 

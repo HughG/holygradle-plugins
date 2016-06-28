@@ -30,12 +30,7 @@ class GitRepository implements SourceControlRepository {
                     "remote.origin.url"
             )
         }, {int error_code ->
-            if (error_code == 1) {
-                // The section or key is invalid, probably just no remote set
-                return false
-            } else {
-                return true
-            }
+            return (error_code != 1)
         })
         return command_result
     }

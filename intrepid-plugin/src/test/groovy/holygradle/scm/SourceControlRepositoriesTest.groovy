@@ -6,9 +6,11 @@ import holygradle.testUtil.GitUtil
 import holygradle.testUtil.HgUtil
 import holygradle.testUtil.ZipUtil
 import org.gradle.api.Project
+import org.junit.Rule
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.experimental.runners.Enclosed
+import org.junit.rules.ExpectedException
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
@@ -266,6 +268,9 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
 
         private final ArrayList<String> sourceControlNames
 
+        @Rule
+        public final ExpectedException exception = ExpectedException.none();
+
         MultipleSourceControlFolders(ArrayList<String> sourceControlNames) {
             this.sourceControlNames = sourceControlNames
         }
@@ -291,12 +296,9 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             }
 
             Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
-            try {
-                SourceControlRepositories.createExtension(project)
-                fail("Expected an exception to be thrown when creating project in folder with multiple source control types")
-            } catch (RuntimeException e) {
-                // Do nothing because this is what is expected
-            }
+            // Expect an exception to be thrown when creating project in folder with multiple source control types
+            exception.expect(RuntimeException)
+            SourceControlRepositories.createExtension(project)
         }
     }
 }
