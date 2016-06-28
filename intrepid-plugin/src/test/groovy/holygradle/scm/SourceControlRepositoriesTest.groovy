@@ -8,9 +8,13 @@ import holygradle.testUtil.ZipUtil
 import org.gradle.api.Project
 import org.junit.Test
 import org.gradle.testfixtures.ProjectBuilder
+import org.junit.experimental.runners.Enclosed
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
 import static org.junit.Assert.*
 
+@RunWith(Enclosed)
 class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
     private static final String EXAMPLE_FILE = "ahoy.txt"
 
@@ -131,7 +135,6 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
                 sourceControl instanceof GitRepository
         )
         assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
-        println(sourceControl.getUrl())
         assertEquals("The master repo is ''", "", sourceControl.getUrl())
         assertEquals(
                 "The SourceControlRepository reports its protocol correctly",
@@ -258,4 +261,42 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         assertNull(repo)
     }
 
+    @RunWith(Parameterized)
+    static class MultipleSourceControlFolders extends AbstractHolyGradleTest {
+
+        private final ArrayList<String> sourceControlNames
+
+        MultipleSourceControlFolders(ArrayList<String> sourceControlNames) {
+            this.sourceControlNames = sourceControlNames
+        }
+
+        @Parameterized.Parameters
+        public static ArrayList<Object[]> data() {
+            [
+                [[".git", ".svn"]],
+                [[".git", ".hg"]],
+                [[".hg", ".svn"]],
+                [[".git", ".svn", ".hg"]]
+            ]*.toArray()
+        }
+
+        @Test
+        void testMultipleSourceControlFoldersThrowsException() {
+            File projectDir = new File(getTestDir(), "testMultipleSourceControlFoldersThrowsException")
+            FileHelper.ensureDeleteDirRecursive(projectDir)
+            FileHelper.ensureMkdirs(projectDir)
+            for (String folderName : sourceControlNames) {
+                File folderNameDir = new File(projectDir, folderName)
+                FileHelper.ensureMkdirs(folderNameDir)
+            }
+
+            Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+            try {
+                SourceControlRepositories.createExtension(project)
+                fail("Expected an exception to be thrown when creating project in folder with multiple source control types")
+            } catch (RuntimeException e) {
+                // Do nothing because this is what is expected
+            }
+        }
+    }
 }

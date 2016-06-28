@@ -1,6 +1,5 @@
 package holygradle.scm
 
-import holygradle.process.ExecuteAndReturnStringException
 import org.gradle.process.ExecSpec
 
 class GitRepository implements SourceControlRepository {
@@ -23,22 +22,21 @@ class GitRepository implements SourceControlRepository {
     public String getUrl() {
         // May need to strip "username[:password]@" from URL.
         File localWorkingCopyDir = workingCopyDir // capture private for closure
-        String command_result = ""
-        try {
-            command_result = gitCommand.execute { ExecSpec spec ->
-                spec.workingDir = localWorkingCopyDir
-                spec.args(
-                        "config",
-                        "--get",
-                        "remote.origin.url"
-                )
+        String command_result = gitCommand.execute({ ExecSpec spec ->
+            spec.workingDir = localWorkingCopyDir
+            spec.args(
+                    "config",
+                    "--get",
+                    "remote.origin.url"
+            )
+        }, {int error_code ->
+            if (error_code == 1) {
+                // The section or key is invalid, probably just no remote set
+                return false
+            } else {
+                return true
             }
-        } catch (ExecuteAndReturnStringException e) {
-            // If error code = 1 we assume it is because no URL has been set
-            if (e.getExitValue() != 1) {
-                throw e
-            }
-        }
+        })
         return command_result
     }
 
