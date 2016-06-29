@@ -203,15 +203,16 @@ abort: error: _ssl.c:490: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICAT
 ----
 
 One way to fix this in Mercurial is to add the certificate to a +web.cacerts+ file, as described at
-link:http://mercurial.selenic.com/wiki/CACertificates[].  However, the gloss:holygradle[] uses its
-own bundled version of Merurial which will ignore the +web.cacerts+ file set up in that way.  If
-you try to use this method, you will get an error like the following.
+link:http://mercurial.selenic.com/wiki/CACertificates[].  However, before release 
+link:release_notes.html#_plugins_7.3.0[7.3.0] the gloss:holygradle[] used its own bundled version of
+Merurial which would ignore the +web.cacerts+ file set up in that way.  If you try to use this method
+with an older version of the Holy Gradle, you will get an error like the following.
 
 ----
 abort: could not find web.cacerts: C:\temp\Mercurial251\cacert.pem
 ----
 
-Instead you should use
+Instead you should upgrade and/or use
 link:http://mercurial.selenic.com/wiki/CACertificates#Host_certificate_fingerprints[Host certificate fingerprints].
 
 
