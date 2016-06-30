@@ -44,6 +44,19 @@ things for users, and also for plugin developers.
 
 ==== 7.8.x
 
+===== 7.8.1
+(311b92b40032 at 2016-06-29 16:53:08 UTC)
+
+CustomGradleCorePlugin::
+
+* Fixed a bug in +gw.bat+ which forced you to set the +HOLY_GRADLE_REPOSITORY_BASE_URL+ environment variable even if the
+file +.\gradle\base-url-lookup.txt+ existed.  When that file exists, the base URL should be set from that file.  This
+bug was introduced in 7.6.0.  As well as upgrading the version of the plugins, you should upgrade the gradle wrapper
+(for example, from the wrapper-starter-kit).
+
+Intrepid {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.8.0
 (adb85b78fe9b at 2016-04-19 15:03:19 UTC)
 
