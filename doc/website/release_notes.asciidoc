@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.8.x
 
 ===== 7.8.1
-()
+(311b92b40032 at 2016-06-29 16:53:08 UTC)
 
 CustomGradleCorePlugin::
 
