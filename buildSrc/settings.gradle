@@ -4,5 +4,8 @@ File propertiesFile = new File("buildSrc", "gradle.properties")
 if (!propertiesFile.exists()) {
     Path link = propertiesFile.toPath()
     Path target = Paths.get(".", "gradle.properties")
+    if (!target.toFile().exists()) {
+        throw new RuntimeException("You must create a gradle.properties in the root folder")
+    }
     Files.createLink(link, target)
 }
