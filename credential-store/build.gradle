@@ -1,7 +1,13 @@
 public File getDevEnvPath() {
-    String envVarComnTools = System.getenv("VS100COMNTOOLS")
+    if (!project.hasProperty('chosenDevEnvVersion')) {
+        throw new RuntimeException(
+            'Cannot configure ${project.name} to build because property chosenDevEnvVersion is not set. ' +
+            'The value should be something like "VS120".'
+        )
+    }
+    String envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
     if (envVarComnTools == null || envVarComnTools == "") {
-        throw new RuntimeException("'version' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
+        throw new RuntimeException("'chosenDevEnvVersion' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
     }
     File comnToolsPath = new File(envVarComnTools)
     File devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")

@@ -81,7 +81,7 @@ publishPackages {
     Test devenv.
 */
 DevEnv {
-    version "VS100"
+    version "VS120"
     solutionFile "no_such.sln"
     platform "x64", "Win32"
 }
