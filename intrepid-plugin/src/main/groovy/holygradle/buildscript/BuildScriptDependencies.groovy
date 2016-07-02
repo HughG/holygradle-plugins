@@ -1,7 +1,7 @@
 package holygradle.buildscript
 
-import holygradle.Helper
-import org.gradle.api.*
+import org.gradle.api.Project
+import org.gradle.api.Task
 
 class BuildScriptDependencies {
     private final Project project
@@ -22,8 +22,8 @@ class BuildScriptDependencies {
         this.project = project
     }
     
-    public void add(String dependencyName, boolean unpack=false) {
-        dependencies[dependencyName] = new BuildScriptDependency(project, dependencyName, unpack)
+    public void add(String dependencyName, boolean unpack = false, boolean optional = false) {
+        dependencies[dependencyName] = new BuildScriptDependency(project, dependencyName, unpack, optional)
     }
     
     public Task getUnpackTask(String dependencyName) {

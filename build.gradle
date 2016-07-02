@@ -71,26 +71,30 @@ subprojects {
     
     // Set common repo info for dependencies.
     repositories {
-        ivy {
-            url artifactoryServer + artifactoryPluginRepo
-            // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users, depending
-            // on local Artifactory configuration; or they may not be able to deploy into caches.
-            credentials {
-                username artifactoryUsername
-                password artifactoryPassword
+        if (project.hasProperty('artifactoryServer')) {
+            ivy {
+                url artifactoryServer + artifactoryPluginRepo
+                // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users,
+                // depending on local Artifactory configuration; or they may not be able to deploy into caches.
+                credentials {
+                    username artifactoryUsername
+                    password artifactoryPassword
+                }
             }
-        }
-        maven {
-            url artifactoryServer + 'remote-repos/'
-            // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
-            // Artifactory.  If you update dependencies to require a new version of something (say, http-builder) which
-            // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
-            // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
-            // server, that may require credentials.
-            credentials {
-                username artifactoryUsername
-                password artifactoryPassword
+            maven {
+                url artifactoryServer + 'remote-repos/'
+                // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
+                // Artifactory.  If you update dependencies to require a new version of something (say, http-builder)
+                // which exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in
+                // the local Artifactory server, it will be written to the local Artifactory server.  Depending on the
+                // setup of your server, that may require credentials.
+                credentials {
+                    username artifactoryUsername
+                    password artifactoryPassword
+                }
             }
+        } else {
+            mavenCentral()
         }
     }
     
@@ -105,8 +109,13 @@ subprojects {
  * PUBLISH_LOCAL_TARGET_URI is needed by both test.gradle and publish.gradle, so it's defined here,
  * keeping other related URIs with it for ease of understanding.
  */
-project.ext.PUBLISH_RELEASE_TARGET_URI = artifactoryServer + artifactoryPluginReleasePublishRepo + "/"
-project.ext.PUBLISH_SNAPSHOT_TARGET_URI = artifactoryServer + artifactoryPluginSnapshotPublishRepo + "/"
+if (project.hasProperty('artifactoryServer')) {
+    project.ext.PUBLISH_RELEASE_TARGET_URI = artifactoryServer + artifactoryPluginReleasePublishRepo + "/"
+    project.ext.PUBLISH_SNAPSHOT_TARGET_URI = artifactoryServer + artifactoryPluginSnapshotPublishRepo + "/"
+} else {
+    project.ext.PUBLISH_RELEASE_TARGET_URI = 'Cannot_publish_because_property_artfactoryServer_is_not_set'
+    project.ext.PUBLISH_SNAPSHOT_TARGET_URI = 'Cannot_publish_because_property_artfactoryServer_is_not_set'
+}
 project.ext.PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI().toString() + "/"
 /*
  * LOCAL_GRADLE_USER_HOME is passed to integration tests for the Gradle daemon (launched by the WrapperBuildLauncher in

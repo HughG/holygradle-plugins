@@ -1,6 +1,14 @@
+apply plugin: 'groovy'
+
+configurations {
+    optional
+}
+
 dependencies {
+    compile localGroovy()
     ["custom-gradle-core", "intrepid"].each { pluginProjectName ->
         compile project(":${pluginProjectName}-plugin")
+        optional project(path: ":${pluginProjectName}-plugin", configuration: 'optional')
         testCompile project(":${pluginProjectName}-plugin").sourceSets.test.output
     }
 

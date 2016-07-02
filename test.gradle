@@ -99,9 +99,12 @@ project.ext.setUpTests = { Project project ->
             t.dependsOn(project.tasks["publishPluginsLocally"])
 
             Task overallIntegTest = project.findProject(":integration").tasks["integTest"]
-            // Make sure we run the overall integration tests only after each plugins have been
-            // integration-tested.
-            overallIntegTest.dependsOn t
+
+            if (!project.hasProperty('rootIntegTestOnly')) {
+                // Make sure we run the overall integration tests only after each plugins have been
+                // integration-tested.
+                overallIntegTest.dependsOn t
+            }
 
             // Make the real publish tasks depend on the integration test 
             if (!project.hasProperty('noIntegTest')) {

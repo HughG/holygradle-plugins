@@ -29,10 +29,14 @@ prerequisites {
 /*
     Test my-credentials.
 */
+// First, set "holygradle_test" credentials so that they're guaranteed to be there to read.
+exec {
+    commandLine "${projectDir}/credential-store.exe", '"Intrepid - holygradle_test"', 'test', 'testpass'
+}
 repositories.ivy {
     credentials {
-        username my.username("Artifactory")
-        password my.password("Artifactory")
+        username my.username("holygradle_test")
+        password my.password("holygradle_test")
     }
     url (new File(project.projectDir, "local-repo").toURI())
 }

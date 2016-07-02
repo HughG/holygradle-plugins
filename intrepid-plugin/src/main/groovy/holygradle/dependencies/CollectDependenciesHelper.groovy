@@ -1,5 +1,6 @@
 package holygradle.dependencies
 
+import holygradle.artifacts.ConfigurationHelper
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.*
@@ -205,8 +206,9 @@ class CollectDependenciesHelper {
         if (logger.isDebugEnabled()) {
             logger.debug("getResolvedArtifacts(${conf}, ...)")
         }
-        ResolvedConfiguration resConf = conf.resolvedConfiguration
-        resConf.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
+        Set<ResolvedDependency> firstLevelDeps =
+            ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
+        firstLevelDeps.each { ResolvedDependency resolvedDependency ->
             if (logger.isDebugEnabled()) {
                 logger.debug("getResolvedArtifacts: resolvedDependency ${resolvedDependency.module.id}")
             }

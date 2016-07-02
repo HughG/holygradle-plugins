@@ -1,9 +1,9 @@
 package holygradle.custom_gradle
 
-import org.gradle.api.*
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.process.ExecSpec
 
 class VersionInfo {
@@ -53,22 +53,22 @@ class VersionInfo {
         if (buildscriptDependencies == null) {
             Map<String,String> pluginUsages = project.extensions.findByName("gplugins")?.usages as Map<String,String>
             buildscriptDependencies = [:]
-            project.getBuildscript().getConfigurations().each((Closure){ Configuration conf ->
-                conf.resolvedConfiguration.getResolvedArtifacts().each { ResolvedArtifact art ->
-                    ModuleVersionIdentifier depModuleVersion = art.getModuleVersion().getId()
-                    String requestedVersion = "none"
-                    
-                    if (pluginUsages != null) {
-                        pluginUsages.each { pluginName, pluginVersion ->
-                            if (depModuleVersion.getName().startsWith(pluginName)) {
-                                requestedVersion = pluginVersion
-                            }
+            ResolvedConfiguration classpathResolvedConfiguration =
+                project.buildscript.configurations['classpath'].resolvedConfiguration
+            classpathResolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact art ->
+                ModuleVersionIdentifier depModuleVersion = art.moduleVersion.id
+                String requestedVersion = "none"
+
+                if (pluginUsages != null) {
+                    pluginUsages.each { pluginName, pluginVersion ->
+                        if (depModuleVersion.name.startsWith(pluginName)) {
+                            requestedVersion = pluginVersion
                         }
-                    }     
-        
-                    buildscriptDependencies[depModuleVersion] = requestedVersion
+                    }
                 }
-            })
+
+                buildscriptDependencies[depModuleVersion] = requestedVersion
+            }
         }
         buildscriptDependencies
     }

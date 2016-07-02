@@ -1,5 +1,13 @@
+apply plugin: 'groovy'
+
+configurations {
+    optional
+}
+
 dependencies {
+    compile localGroovy()
     compile project(':credential-store')
     compile project(':custom-gradle-core-plugin')
+    optional project(path: ':custom-gradle-core-plugin', configuration: 'optional')
     testCompile project(':custom-gradle-core-plugin').sourceSets.test.output
 }

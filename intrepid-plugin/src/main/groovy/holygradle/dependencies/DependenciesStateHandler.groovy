@@ -1,5 +1,6 @@
 package holygradle.dependencies
 
+import holygradle.artifacts.ConfigurationHelper
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
@@ -335,7 +336,7 @@ class DependenciesStateHandler {
         if (ivyFiles == null && pomFiles == null) {
             // Create a configuration which has metadata artifacts for all transitive dependencies in conf.
             Collection<Dependency> metadataDeps = getDependenciesForMetadataFiles(
-                conf.resolvedConfiguration.firstLevelModuleDependencies
+                ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
             )
             //noinspection GroovyAssignabilityCheck
             Configuration ivyConf = copyConfigurationReplacingDependencies(conf, *metadataDeps)

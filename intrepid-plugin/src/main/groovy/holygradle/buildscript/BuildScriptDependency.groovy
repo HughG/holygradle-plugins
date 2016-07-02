@@ -1,32 +1,42 @@
 package holygradle.buildscript
 
 import holygradle.Helper
+import holygradle.artifacts.ConfigurationHelper
 import holygradle.custom_gradle.util.CamelCase
-import org.gradle.api.*
+import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedDependency
-import org.gradle.api.file.CopySpec
 import org.gradle.api.tasks.Copy
 
 class BuildScriptDependency {
     private String dependencyName
     private Task unpackTask = null
     private File dependencyPath = null
-    
-    public BuildScriptDependency(Project project, String dependencyName, boolean needsUnpacked) {
+
+    public BuildScriptDependency(
+        Project project,
+        String dependencyName,
+        boolean needsUnpacked,
+        boolean optional
+    ) {
         this.dependencyName = dependencyName
+        String configurationName =
+            optional ? ConfigurationHelper.OPTIONAL_CONFIGURATION_NAME : 'classpath'
+        Configuration configuration = project.buildscript.configurations[configurationName]
+        Set<ResolvedDependency> firstLevelDeps =
+            ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(configuration)
         ResolvedArtifact dependencyArtifact = null
-        project.buildscript.configurations.each((Closure){ Configuration conf ->
-            conf.resolvedConfiguration.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
-                resolvedDependency.allModuleArtifacts.each { ResolvedArtifact art ->
-                    if (art.name.startsWith(dependencyName)) {
-                        dependencyArtifact = art
-                    }
+        firstLevelDeps.each { ResolvedDependency resolvedDependency ->
+            resolvedDependency.allModuleArtifacts.each { ResolvedArtifact art ->
+                if (art.name.startsWith(dependencyName)) {
+                    dependencyArtifact = art
                 }
             }
-        })
-        
+        }
+
         if (needsUnpacked) {
             if (dependencyArtifact == null) {
                 unpackTask = project.task(getUnpackTaskName(), type: DefaultTask)

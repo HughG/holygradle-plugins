@@ -90,11 +90,13 @@ class SpeedyUnpackManyTask
     ) {
         File infoFile = getInfoFile(entry)
 
-        if (!entry.applyUpToDateChecks) {
-            // If we're not using the normal Gradle mechanism, just check the info file.
-            if (!quickCheckNeedToUnpack(infoFile, entry)) {
-                return
-            }
+        Collection<File> zipFilesToUnpack =
+            entry.applyUpToDateChecks ?
+                entry.zipFiles :
+                // If we're not using the normal Gradle mechanism, check the info file.
+                getZipFilesToUnpack(infoFile, entry)
+        if (zipFilesToUnpack.empty) {
+            return
         }
 
         if (entry.unpackDir.exists()) {
@@ -117,9 +119,9 @@ class SpeedyUnpackManyTask
         }
 
         Unzipper localUnzipper = unzipper // capture private for closure
-        entry.zipFiles.each { File file ->
+        zipFilesToUnpack.each { File file ->
             logger.lifecycle "Unpack ${file.name}"
-            logger.info "SpeedyUnpackManyTask: extracting ${file.path} to ${entry.unpackDir.path}"
+            logger.info "SpeedyUnpackManyTask: extracting ${file.path} to ${entry.unpackDir}"
             localUnzipper.unzip(file, entry.unpackDir)
 
             if (!entry.applyUpToDateChecks) {
@@ -146,25 +148,16 @@ class SpeedyUnpackManyTask
         new File(entry.unpackDir, "version_info.txt")
     }
 
-    private boolean quickCheckNeedToUnpack(File infoFile, UnpackEntry entry) {
-        boolean doUnpack = false
+    private Collection<File> getZipFilesToUnpack(File infoFile, UnpackEntry entry) {
         if (infoFile.exists()) {
             String infoText = infoFile.text
             logger.info "SpeedyUnpackManyTask: existing info file ${infoFile} contents: >>>\n${infoText}<<<"
-            for (File file in entry.zipFiles) {
-                if (!infoText.contains(file.name)) {
-                    logger.info "SpeedyUnpackManyTask: info file ${infoFile} doesn't contain '${file.name}'"
-                    doUnpack = true
-                    break
-                }
-            }
-            if (doUnpack) {
-                logger.info "SpeedyUnpackManyTask: info file ${infoFile} doesn't contain some of ${entry.zipFiles*.name}"
-            }
+            Collection<File> toUnpack = entry.zipFiles.findAll { !infoText.contains(it.name) }
+            logger.info "SpeedyUnpackManyTask: info file ${infoFile} doesn't contain ${toUnpack*.name}"
+            return toUnpack
         } else {
             logger.info "SpeedyUnpackManyTask: didn't find info file ${infoFile}"
-            doUnpack = true
+            return entry.zipFiles
         }
-        doUnpack
     }
 }

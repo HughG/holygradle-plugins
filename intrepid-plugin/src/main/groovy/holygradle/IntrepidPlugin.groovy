@@ -113,10 +113,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         BuildScriptDependencies buildScriptDependencies = BuildScriptDependencies.initialize(project)
         // Only define the build script dependencies for the root project because they're shared across all projects.
         if (project == project.rootProject) {
-            // 7zip
-            buildScriptDependencies.add("sevenZip", true)
-
-            // Mercurial
+            buildScriptDependencies.add("sevenZip", true, true)
             buildScriptDependencies.add("credential-store")
         }
 

@@ -174,13 +174,19 @@ project.subprojects {
         rootProject.tasks[t.name].dependsOn t
 
         final boolean isSnapshot = project.version.toString().endsWith('-SNAPSHOT')
-        t.ext.targetUri = isSnapshot ? PUBLISH_SNAPSHOT_TARGET_URI: PUBLISH_RELEASE_TARGET_URI
-        t.repositories.ivy {
-            credentials {
-                username artifactoryUsername
-                password artifactoryPassword
+        t.ext.targetUri = isSnapshot ? PUBLISH_SNAPSHOT_TARGET_URI : PUBLISH_RELEASE_TARGET_URI
+        if (project.hasProperty('artifactoryServer')) {
+            t.repositories.ivy {
+                credentials {
+                    username artifactoryUsername
+                    password artifactoryPassword
+                }
+                url t.targetUri
             }
-            url t.targetUri
+        } else {
+            t.doFirst {
+                throw new RuntimeException('Cannot publish because Artifactory server properties are not set')
+            }
         }
     }
     project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
