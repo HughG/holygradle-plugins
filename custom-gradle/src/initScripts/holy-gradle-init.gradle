@@ -35,7 +35,11 @@ class HolyGradlePlugins {
             }
         }
         // Point the buildscript to a source of dependencies for the Holy Gradle plugins.
-        if (project.property("holyGradleRemoteRepository") != null) {
+        if (project.property("holyGradleRemoteRepository") == null) {
+            buildscript.repositories {
+                mavenCentral()
+            }
+        } else {
             buildscript.repositories { RepositoryHandler repoHandler ->
                 repoHandler.maven { MavenArtifactRepository repo ->
                     repo.url = project.property("holyGradleRemoteRepository")
@@ -129,8 +133,18 @@ class HolyGradlePlugins {
         }
 
         // Actually add the plugins to the buildscript, and record the version.
+        final String OPTIONAL_CONFIGURATION_NAME = '__holygradle_optional'
+        if (!buildscript.configurations.findByName(OPTIONAL_CONFIGURATION_NAME)) {
+            buildscript.configurations.add(OPTIONAL_CONFIGURATION_NAME)
+        }
         buildscript.dependencies { DependencyHandler depHandler ->
             depHandler.add("classpath", "${group}:${pluginFullName}:${version}") { ExternalModuleDependency dep ->
+                dep.changing = usingSnapshots
+            }
+            depHandler.add(
+                OPTIONAL_CONFIGURATION_NAME,
+                [group: group, name: pluginFullName, version: version, configuration: 'optional']
+            ) { ExternalModuleDependency dep ->
                 dep.changing = usingSnapshots
             }
         }
@@ -260,10 +274,14 @@ gradle.allprojects { Project project ->
     String repoBase;
     String pluginsRepo;
     String remoteRepo;
-    if (usingLocalArtifacts) {
+    if (PLUGINS_REPO_OVERRIDE != null) {
+        repoBase = PLUGINS_REPO_OVERRIDE
+        pluginsRepo = PLUGINS_REPO_OVERRIDE
+        remoteRepo = null
+    } else if (usingLocalArtifacts) {
         // There is no sensible "base repo URL" in this case, and normal use of it will be overridden by the
         // "if (usingLocalArtifacts)" block above anyway, so just make it a dummy value.
-        repoBase = "__using_local_artifacts";
+        repoBase = "__using_local_artifacts"
         pluginsRepo = new File(localArtifactsFile, "ivy").toURI().toString()
         remoteRepo = new File(localArtifactsFile, "maven").toURI().toString()
     } else {

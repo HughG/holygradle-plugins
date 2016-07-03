@@ -82,6 +82,7 @@ Other tasks
 buildAndTestAll - Build 'tAPIT' and all dependent projects in Debug and Release, and run unit tests.
 deleteSymlinks - deleteSymlinks is deprecated and will be removed in future.  Use deleteLinks instead
 deleteSymlinksToCache - deleteSymlinksToCache is deprecated and will be removed in future.  Use deleteLinksToCache instead
+extractSevenZip - Unpack build dependency 'sevenZip'
 rebuildSymlinks - rebuildSymlinks is deprecated and will be removed in future.  Use rebuildLinks instead
 rebuildSymlinksToCache - rebuildSymlinksToCache is deprecated and will be removed in future.  Use rebuildLinksToCache instead
 

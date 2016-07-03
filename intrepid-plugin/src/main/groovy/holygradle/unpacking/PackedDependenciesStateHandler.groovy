@@ -1,12 +1,11 @@
 package holygradle.unpacking
 
+import holygradle.artifacts.ConfigurationHelper
 import holygradle.dependencies.DependenciesStateHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.ResolvedDependenciesVisitor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
-import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
-
 /**
  * This project extension provides information about the state of packed dependencies when they are resolved.
  *
@@ -247,10 +246,11 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         unpackModulesMap = [:]
         Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
         project.configurations.each((Closure){ Configuration conf ->
-            ResolvedConfiguration resConf = conf.resolvedConfiguration
+            Set<ResolvedDependency> firstLevelDeps =
+                ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
             collectUnpackModules(
                 conf,
-                resConf.getFirstLevelModuleDependencies(),
+                firstLevelDeps,
                 packedDependencies,
                 unpackModulesMap,
                 modulesWithoutIvyFiles

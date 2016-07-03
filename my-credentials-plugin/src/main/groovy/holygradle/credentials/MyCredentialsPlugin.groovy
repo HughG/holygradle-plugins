@@ -6,6 +6,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ResolvedArtifact
+import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.api.file.CopySpec
 
 class MyCredentialsPlugin implements Plugin<Project> {
@@ -16,18 +17,19 @@ class MyCredentialsPlugin implements Plugin<Project> {
         /**************************************
          * Dependencies
          **************************************/
-        
+
         ResolvedArtifact credentialStoreArtifact = null
-        project.getBuildscript().getConfigurations().each((Closure){ conf ->
-            conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { resolvedDependency ->
-                resolvedDependency.getAllModuleArtifacts().each { ResolvedArtifact art ->
-                    String artName = art.getName()
-                    if (artName.startsWith("credential-store")) {
-                        credentialStoreArtifact = art
-                    }
+        // credential-store is declared as attached to the 'compile' configuration in this plugin's
+        // build.gradle, but 'runtime' extends 'compile', and we're using it here at runtime.
+        ResolvedConfiguration runtimeResolvedConfiguration =
+            project.buildscript.configurations['classpath'].resolvedConfiguration
+        runtimeResolvedConfiguration.firstLevelModuleDependencies.each { resolvedDependency ->
+            resolvedDependency.allModuleArtifacts.each { ResolvedArtifact art ->
+                if (art.name.startsWith("credential-store")) {
+                    credentialStoreArtifact = art
                 }
             }
-        })
+        }
         String credentialStorePath = credentialStoreArtifact.getFile().path
         
         // Copy the credential-store to the root of the workspace.

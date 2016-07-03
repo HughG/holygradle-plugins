@@ -14,6 +14,8 @@ This repository contains:
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
+    - If you normally need JAVA_HOME to point to another version of Java such as JDK 1.8, you can set
+    HOLY_GRADLE_JAVA_HOME to your JDK 1.7 location, and the "gw.bat" in this repo will use that instead.
  - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  It will tell you about this in the "Event Log"
    window.  Set it to the value you normally use in your Windows environment variable (or the default,
    "%USERPROFILE%\.gradle").  After a short wait, IntelliJ will refresh.

@@ -703,7 +703,7 @@ the +build.gradle+ file to tell Gradle where to publish to, including appropriat
 [source, groovy]
 ----
 group = "com.example-corp.example-team"
-version = version = System.getenv("NEXT_VERSION_NUMBER") ?: Project.DEFAULT_VERSION
+version = System.getenv("NEXT_VERSION_NUMBER") ?: Project.DEFAULT_VERSION
 
 // ...
 

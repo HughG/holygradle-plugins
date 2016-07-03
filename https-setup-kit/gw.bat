@@ -67,6 +67,11 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
   if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
 )
 
+@rem If we're building the Holy Gradle, we just use the standard wrapper properties.
+if "%APP_HOME:~-21%"=="\holy-gradle-plugins\" (
+    goto skipWriteWrapperProperties
+)
+
 set DISTRIBUTION_ORIGINAL_PATH_FILE="%APP_HOME%gradle\distributionPath.txt"
 
 @rem Find a local_artifacts sub-folder, in this folder or any ancestor folder.
@@ -110,16 +115,17 @@ if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
   @rem Try to find a server URL based on the DNS suffix values on the local machine.
   if exist "%~dp0gradle\base-url-lookup.txt" (
     for /f "tokens=6" %%S in ('ipconfig ^| findstr "Connection-specific DNS Suffix"') do (
-      for /f "eol=# tokens=1,2" %%T in ("%~dp0gradle\base-url-lookup.txt") do (
+      for /f "eol=# tokens=1,2 usebackq" %%T in ("%~dp0gradle\base-url-lookup.txt") do (
         if "%%S"=="%%T" (
           echo In domain "%%S", defaulting HOLY_GRADLE_REPOSITORY_BASE_URL to "%%U".
           set HOLY_GRADLE_REPOSITORY_BASE_URL=%%U
-          goto end_dns_search
+          goto dnsSearchDone
         )
       )
     )
-:end_dns_search
-    @rem We need a comment here because a label must label a command, not a closing parenthesis.
+:dnsSearchDone
+    ver >nul
+    @rem We need a do-nothing command here because a label must label a command, not a closing parenthesis.
   )
 
   if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
@@ -162,6 +168,8 @@ set DISTRIBUTION_PATH_FILE=%DISTRIBUTION_LOCAL_PATH_FILE%
 
 :writeWrapperProperties
 copy >nul /y /a "%APP_HOME%gradle\gradle-wrapper.properties.in"+"%APP_HOME%gradle\distributionUrlBase.txt"+%DISTRIBUTION_PATH_FILE% "%APP_HOME%\gradle\gradle-wrapper.properties" /b
+
+:skipWriteWrapperProperties
 
 @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
 if exist "%~dp0local\holy-gradle-plugins\certs" (

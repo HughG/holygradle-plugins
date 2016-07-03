@@ -1,17 +1,35 @@
 apply plugin: 'groovy'
 
+def javaVersion = System.getProperty('java.specification.version')
+if (javaVersion != '1.7') {
+    throw new RuntimeException(
+        "The Holy Gradle can only be built with JDK 1.7.  If you need to set JAVA_HOME to a different version, " +
+        "please set HOLY_GRADLE_JAVA_HOME to a 1.7 JDK."
+    )
+    /*
+        If you try to build with JDK 8, you'll get the following error, for which there is no solution.
+
+        > BUG! exception in phase 'semantic analysis' in source unit
+        '...\holy-gradle-plugins\buildSrc\src\main\groovy\holygradle\buildHelpers\LinkTextFiller.groovy' null
+    */
+}
+
 repositories {
-    maven {
-        url artifactoryServer + 'remote-repos/'
-        // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
-        // Artifactory.  If you update dependencies to require a new version of something (such as svnkit) which
-        // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
-        // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
-        // server, that may require credentials.
-        credentials {
-            username artifactoryUsername
-            password artifactoryPassword
+    if (project.hasProperty('artifactoryServer')) {
+        maven {
+            url artifactoryServer + 'remote-repos/'
+            // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
+            // Artifactory.  If you update dependencies to require a new version of something (such as svnkit) which
+            // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
+            // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
+            // server, that may require credentials.
+            credentials {
+                username artifactoryUsername
+                password artifactoryPassword
+            }
         }
+    } else {
+        mavenCentral()
     }
 }
 

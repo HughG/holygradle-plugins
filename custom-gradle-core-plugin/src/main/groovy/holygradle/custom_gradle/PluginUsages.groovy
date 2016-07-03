@@ -1,7 +1,7 @@
 package holygradle.custom_gradle
 
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.api.artifacts.ResolvedDependency
 
 class PluginUsages {
@@ -14,17 +14,17 @@ class PluginUsages {
         Map<String,String> gpluginsUsages = project.extensions.findByName("gplugins")?.usages
         if (gpluginsUsages != null && gpluginsUsages.size() > 0) {
             Map<String, String> pluginVersions = [:]
-            project.getBuildscript().getConfigurations().each((Closure){ Configuration conf ->
-                conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { ResolvedDependency dep ->
-                    gpluginsUsages.keySet().each { String plugin ->
-                        if (dep.getModuleName().startsWith(plugin)) {
-                            pluginVersions[plugin] = dep.getModuleVersion()
-                        }
+            ResolvedConfiguration classpathResolvedConfiguration =
+                project.buildscript.configurations['classpath'].resolvedConfiguration
+            classpathResolvedConfiguration.firstLevelModuleDependencies.each { ResolvedDependency dep ->
+                gpluginsUsages.keySet().each { String plugin ->
+                    if (dep.moduleName.startsWith(plugin)) {
+                        pluginVersions[plugin] = dep.moduleVersion
                     }
                 }
-            })
+            }
             usages = pluginVersions
-        }            
+        }
     }
     
     public String getVersion(String plugin) {

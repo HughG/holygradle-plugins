@@ -14,9 +14,10 @@ public class SourceControlRepositories {
     ) {
         File svnFile = new File(location, ".svn")
         File hgFile = new File(location, ".hg")
-        if ([svnFile, hgFile].every { it.exists() }) {
+        File gitFile = new File(location, ".git")
+        if ([svnFile, hgFile, gitFile].every { it.exists() }) {
             throw new RuntimeException(
-                "${location} contains both a Subversion '.svn' and a Mercurial '.hg' folder, which is not supported, " +
+                "${location} contains Subversion '.svn', Mercurial '.hg' and/o Git '.git' folders, which is not supported, " +
                 "because it is impossible to tell which to use for source version information."
             )
         }
@@ -25,6 +26,8 @@ public class SourceControlRepositories {
             new SvnRepository(new CommandLine("svn.exe", rootProject.&exec), location)
         } else if (hgFile.exists()) {
             new HgRepository(new CommandLine("hg.exe", rootProject.&exec), location)
+        } else if (gitFile.exists()) {
+            new GitRepository(new CommandLine("git.exe", rootProject.&exec), location)
         } else if (useDummyIfNecessary) {
             new DummySourceControl()
         } else {

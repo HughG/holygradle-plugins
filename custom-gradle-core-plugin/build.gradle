@@ -5,9 +5,14 @@
     "%~dp0" trick.
 */
 
-apply plugin: 'java'
+apply plugin: 'groovy'
+
+configurations {
+    optional
+}
 
 dependencies {
+    compile localGroovy()
     compile group: 'net.java.dev.jna', name: 'jna', version: '3.2.7'
 }
 

@@ -1,5 +1,6 @@
 package holygradle.packaging
 
+import holygradle.artifacts.ConfigurationHelper
 import holygradle.io.FileHelper
 import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
@@ -24,6 +25,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
         project.ext.holyGradleInitScriptVersion = "1.2.3.4" // Required by custom-gradle-core-plugin.
         project.ext.holyGradlePluginsRepository = ""
+        project.buildscript.configurations.add(ConfigurationHelper.OPTIONAL_CONFIGURATION_NAME)
         project.apply plugin: 'intrepid'
 
         Collection<PackageArtifactHandler> packageArtifacts =

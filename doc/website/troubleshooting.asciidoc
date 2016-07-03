@@ -94,16 +94,35 @@ include::{localDoc}/troubleshooting_local_https_http.ascinc[]
 
 The gloss:holygradle[] sends passwords to gloss:artifactory[] and to source control repositories to
 get the dependencies for your project.  If these passwords are wrong, or you do not have the
-permissions to access them, you may get errors including the following.
+permissions to access them, you may get errors as shown below.
+
+==== Incorrect Password
+
+If your username and/or password are sent incorrectly to Artifactory, or not sent at all, you will
+get an error message including
 
 ----
 401 Unauthorized
 ----
 
-==== Incorrect Password
+for example:
 
-Your username and/or password may be sent incorrectly to Artifactory for any of these reasons.
+----
+FAILURE: Build failed with an exception.
+ 
+* What went wrong:
+Execution failed for task ':publishIvyPublicationToIvyRepository'.
+> Failed to publish publication 'ivy' to repository 'ivy'
+   > java.io.IOException: Could not PUT
+'https://artifactory.example-corp.com/artifactory/teamA-integration-local/com.example-corp.teamA/MyLib/0.0.0/MyLib-buildScript-0.0.0.zip'.
+Received status code 401 from server: Unauthorized
+----
 
+This can happen for any of these reasons.
+
+. You have not supplied a +credentials+ block for some repositories.  See the documentation for
+link:plugin-my-credentials.html[] for how to do this.  Note that the credentials for dependency
+repositories and for publishing repositories must be specified separately.
 . Your username and password are not stored in the gloss:credential-manager[].  You may need to run
 +gw.bat+ with the +--no-daemon+ argument to allow the password prompt dialog to be shown.  See the
 link:plugin-my-credentials.html[] page for more information.
@@ -120,12 +139,26 @@ support person to check.
 
 ==== Incorrect Artifactory Permissions
 
+If you have the correct credentials but you do not have permission to fetch files from or publish
+files to a certain path in Artifactory, you will get an error message containing
+
+----
+403 Forbidden
+----
+
 If you know which repositories you need access to, please contact the appropriate person from the
 link:support.html[] page to request access.  It is good practice also to "+CC:+" the person who runs
 the team which owns that repository.
 
 If you are not sure which repositories are causing the problem, please send the complete output of
 your command, plus your +build.gradle+ and +gradle.properties+, to the appropriate support contact.
+
+If you see a specific URL in the error message, it's useful to send it in your support request, but
+the permission problem may or may not be with that URL.  This is because of how a virtual
+gloss:repository[] works in Artifactory.  A single URL is used to search a list of other paths.
+If the files you need are under a path in the middle of the list, but you don't have permissions
+to access it, you may get an error about the last path in the list, even though that's not
+relevant.
 
 
 == Accessing Mercurial
