@@ -42,6 +42,19 @@ things for users, and also for plugin developers.
 
 === 7.x
 
+==== 7.9.x
+
+===== 7.9.0
+(11be4c326e36 at 2016-06-30 09:58:34 UTC)
+
+Intrepid::
+
+* GR #6692 Git support.  Git repos can now be source dependencies, by using the +git+ method instead of +hg+ or +svn+.
+This includes recording the source URL, revision, and branch in the +build_info+ folder in packaged artifacts.
+
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ==== 7.8.x
 
 ===== 7.8.1
@@ -107,6 +120,13 @@ DevEnv {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore 
 ===== 7.7.5
 (76dfef3c465a at 2016-04-11 13:35:09 UTC)
 
+CustomGradleCorePlugin::
+
+* In +gw.bat+ the +JAVA_HOME+ and +GRADLE_HOME+ environment variables are now copied from +HOLY_GRADLE_JAVA_HOME+ and
++HOLY_GRADLE_GRADLE_HOME+ if they exist.  This allows you to run other apps with a different version of Java, even
+though the Holy Gradle requires Java 1.7.  As well as upgrading the version of the plugins, you should upgrade the
+gradle wrapper (for example, from the wrapper-starter-kit).
+
 Intrepid::
 
 * GR #6664 Move the "everything" configuration behind a property flag.  Added an error message for the unlikely case of
@@ -124,7 +144,7 @@ be lost when you ran any other task.  Now the output files are not overwritten u
 same way as "standard output".  See
 link:plugin-unit-test.html#_seterroroutput[] and link:plugin-unit-test.html#_seterroroutputtee[] for details.
 
-DevEnv {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils ::
+DevEnv {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils ::
 - No changes.
 
 ===== 7.7.4
