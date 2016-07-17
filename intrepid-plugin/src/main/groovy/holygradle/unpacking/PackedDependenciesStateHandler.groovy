@@ -120,7 +120,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
                 return new ResolvedDependenciesVisitor.VisitChoice(
                     isNewNonBuildModuleConfiguration,
-                    isNewModuleConfiguration
+                    isNewNonBuildModuleConfiguration
                 )
             },
             { ResolvedDependency resolvedDependency ->

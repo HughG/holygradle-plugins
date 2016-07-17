@@ -143,34 +143,10 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         Project project = getProject()
         Map<String, UnpackModuleVersion> modules = getTestModules()
 
-        assertEquals(new File(project.projectDir, "root/../apricot"), modules["apricot"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/../blueberry"), modules["blueberry"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/../coconut"), modules["coconut"].getTargetPathInWorkspace(project))
-
-        File datePath = modules["date"].getTargetPathInWorkspace(project)
-        assertEquals(new File(project.projectDir, "root/../coconut/../date"), datePath)
-        assertEquals(new File(project.projectDir, "date"), datePath.getCanonicalFile())
-
-        File eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
-        assertEquals(new File(project.projectDir, "root/../apricot/../eggfruit"), eggfruitPath)
-        assertEquals(new File(project.projectDir, "eggfruit"), eggfruitPath.getCanonicalFile())
-
-    }
-
-    @Test
-    public void testRelativePathsUsingRelativePathFromIvyXml() {
-        Project project = getProject()
-        PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).useRelativePathFromIvyXml = true
-
-        Map<String, UnpackModuleVersion> modules = getTestModules()
-
-        assertEquals(new File(project.projectDir, "root/aa"), modules["apricot"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/sub/bb"), modules["blueberry"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/sub/coconut"), modules["coconut"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/sub/coconut/date"), modules["date"].getTargetPathInWorkspace(project))
-
-        File eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
-        assertEquals(new File(project.projectDir, "root/aa/../eggfruit"), eggfruitPath)
-        assertEquals(new File(project.projectDir, "root/eggfruit"), eggfruitPath.getCanonicalFile())
+        assertEquals(new File(project.projectDir, "apricot"), modules["apricot"].getTargetPathInWorkspace(project))
+        assertEquals(new File(project.projectDir, "blueberry"), modules["blueberry"].getTargetPathInWorkspace(project))
+        assertEquals(new File(project.projectDir, "coconut"), modules["coconut"].getTargetPathInWorkspace(project))
+        assertEquals(new File(project.projectDir, "date"), modules["date"].getTargetPathInWorkspace(project))
+        assertEquals(new File(project.projectDir, "eggfruit"), modules["eggfruit"].getTargetPathInWorkspace(project))
     }
 }
