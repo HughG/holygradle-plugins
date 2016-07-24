@@ -3,6 +3,7 @@ package holygradle.publishing
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.Action
 import org.gradle.api.artifacts.dsl.RepositoryHandler
+import org.gradle.api.publish.Publication
 
 public interface PublishPackagesExtension {
     void group(String publishGroup)
@@ -18,7 +19,9 @@ public interface PublishPackagesExtension {
     void nextVersionNumberEnvironmentVariable(String versionNumberEnvVar)
 
     void repositories(Action<RepositoryHandler> configure)
-    
+
+    Publication getDefaultPublication()
+
     void republish(Closure closure)
 
     RepublishHandler getRepublishHandler()

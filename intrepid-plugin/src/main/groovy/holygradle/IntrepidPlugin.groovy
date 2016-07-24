@@ -24,6 +24,7 @@ import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
 import org.gradle.api.DefaultTask
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -135,10 +136,18 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define the 'packedDependenciesState' DSL for the project.
         SourceDependenciesStateHandler sourceDependenciesState = SourceDependenciesStateHandler.createExtension(project)
 
+        // Define 'packageArtifacts' DSL for the project.
+        NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers = PackageArtifactHandler.createContainer(project)
+
         // Define 'publishPackages' DSL block.
         PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         project.extensions.create(
-            "publishPackages", DefaultPublishPackagesExtension, project, publishingExtension, packedDependencies
+            "publishPackages",
+            DefaultPublishPackagesExtension,
+            project,
+            packageArtifactHandlers,
+            publishingExtension,
+            packedDependencies
         )
         
         // Define 'sourceControl' DSL.
@@ -147,9 +156,6 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define 'links' DSL block (and deprecated 'symlinks' one).
         LinkHandler links = LinkHandler.createExtension(project)
         
-        // Define 'packageArtifacts' DSL for the project.
-        PackageArtifactHandler.createContainer(project)
-
         // Define 'sourceDependencyTasks' DSL
         Collection<SourceDependencyTaskHandler> sourceDependencyTasks = SourceDependencyTaskHandler.createContainer(project)
 

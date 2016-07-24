@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0">
   <configurations>
-    <conf name="runtime" visibility="public"/>
     <conf name="buildScript" visibility="public"/>
+    <conf name="runtime" visibility="public"/>
   </configurations>
   <publications>
     <artifact name="projectB-buildScript" type="zip" ext="zip" conf="buildScript"/>

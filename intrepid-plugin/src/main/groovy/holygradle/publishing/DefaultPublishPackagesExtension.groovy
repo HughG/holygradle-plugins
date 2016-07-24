@@ -1,24 +1,25 @@
 package holygradle.publishing
 
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.packaging.PackageArtifactHandler
 import holygradle.unpacking.PackedDependenciesStateSource
-import org.gradle.api.Action
-import org.gradle.api.DefaultTask
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.ArtifactRepository
 import org.gradle.api.artifacts.repositories.AuthenticationSupported
+import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.ivy.IvyArtifact
+import org.gradle.api.publish.ivy.IvyConfiguration
 import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
 import org.gradle.api.tasks.TaskCollection
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.util.ConfigureUtil
-
 // TODO 2016-07-10 HughG: Add artifacts!
 // TODO 2016-07-10 HughG: Check other new constraints on ivy-publish.
 
@@ -37,6 +38,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     public DefaultPublishPackagesExtension(
         Project project,
+        NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers,
         PublishingExtension publishingExtension,
         Collection<PackedDependencyHandler> packedDependencies
     ) {
@@ -62,6 +64,42 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             ivyPublication = pubs.maybeCreate("ivy", IvyPublication)
         }
         this.ivyPublication = ivyPublication
+
+        // Add a configuration to this publication for each one that has been or is later added to the project, and
+        // remove them if and when any are removed.  Note that the default ivy-publish behaviour in Gradle 1.4 was to
+        // add only visible configurations and the ones they extended from (even if those super-configurations were not
+        // themselves public.
+        configurations.all((Closure){ Configuration conf ->
+            // Gradle automatically converts Closure to the right Action<> type.
+            //noinspection GroovyAssignabilityCheck
+            ivyPublication.configurations { ivyConfs ->
+                IvyConfiguration ivyConf = ivyConfs.maybeCreate(conf.name)
+                conf.extendsFrom.each { ivyConf.extend(it.name) }
+            }
+        })
+        configurations.whenObjectRemoved((Closure){ Configuration conf ->
+            ivyPublication.configurations.each { IvyConfiguration ivyConf ->
+                ivyConf.extends.remove(conf.name)
+            }
+            IvyConfiguration ivyConf = ivyPublication.configurations.findByName(conf.name)
+            ivyPublication.configurations.remove(ivyConf)
+        })
+
+        // Add an artifact to this publication for each handler that has been or is later added, and remove artifacts
+        // if and when any are removed.
+        packageArtifactHandlers.all { PackageArtifactHandler handler ->
+            AbstractArchiveTask packageTask = project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
+            // Gradle automatically converts Closure to the right Action<> type.
+            //noinspection GroovyAssignabilityCheck
+            ivyPublication.artifact(packageTask) { IvyArtifact artifact ->
+                artifact.name = packageTask.baseName
+                artifact.conf = handler.configuration
+            }
+        }
+        packageArtifactHandlers.whenObjectRemoved { PackageArtifactHandler handler ->
+            AbstractArchiveTask packageTask = project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
+            ivyPublication.artifacts -= ivyPublication.artifacts.find { it.file == packageTask.archivePath }
+        }
 
         Task beforePublishTask = project.task("beforePublish") { Task t ->
             t.group = "Publishing"
@@ -92,6 +130,12 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             this.applyVersionNumber()
             
             TaskCollection<PublishToIvyRepository> ivyPublishTasks = project.tasks.withType(PublishToIvyRepository)
+
+            // Only use our default publication if no other publications have been added.
+            if (publishingExtension.publications.size() > 1) {
+                publishingExtension.publications.remove(ivyPublication)
+            }
+
             if (!ivyPublishTasks.empty) {
                 this.freezeDynamicDependencyVersions(project)
                 this.putConfigurationsInOriginalOrder()
@@ -194,7 +238,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public void repositories(Action<RepositoryHandler> configure) {
         configure.execute(repositories)
     }
-    
+
+    Publication getDefaultPublication() {
+        return ivyPublication
+    }
+
     public void republish(Closure closure) {
         if (republishHandler == null) {
             republishHandler = new RepublishHandler()
