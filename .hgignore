@@ -11,6 +11,8 @@ custom-gradle-core-plugin/src/main/resources/holygradle/gw.bat
 custom-gradle-core-plugin/src/main/resources/holygradle/hgVersionInfo.txt
 custom-gradle-core-plugin/src/main/resources/holygradle/publishVersion.txt
 custom-gradle-core-plugin/src/main/resources/holygradle/init.d/holy-gradle-init.gradle
+custom-gradle-core-plugin/src/main/resources/holygradle/init.d/hgVersionInfo.txt
+custom-gradle-core-plugin/src/main/resources/holygradle/init.d/publishVersion.txt
 
 # Other
 *.bak
@@ -23,6 +25,9 @@ credential-store.exe
 gradle*.properties
 base-url-lookup.txt
 proxy-lookup.txt
+gradle/cacerts
+gradle/cacerts.import.log
+gradle/certs/openssl_OctCosVis05_IP_SAN.crt
 syntax: regexp
 # Gradle / Java
 (^|/).gradle/
@@ -40,10 +45,12 @@ syntax: regexp
 ^credential-store/(Debug|Release)
 ^ivy\.xml
 ^wrapper-starter-kit/gradle/distributionPath\.txt
+^wrapper-starter-kit/gradle/init.d
 ^wrapper-starter-kit/newWrapper/gw(\.bat)?
 ^wrapper-starter-kit/newWrapper/gradle
 ^https-setup-kit/plainWrapper/(gw|gradlew)(\.bat)?
 ^https-setup-kit/plainWrapper/gradle
+^https-setup-kit/gradle/init.d/
 ^intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/(build_info|packages)/
