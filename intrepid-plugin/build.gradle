@@ -7,7 +7,7 @@ dependencies {
     // These dependencies are assumed to exist in an internal repository. They are not
     // currently published to a public local even though all necessary resources are
     // already in the public domain.
-    runtime group: 'org', name: 'sevenZip', version:'9.20.1', configuration: 'basic'
+    runtime group: 'org', name: 'sevenZip', version:'16.02_1', configuration: 'basic'
 
     // Project dependencies
     compile project(':credential-store')

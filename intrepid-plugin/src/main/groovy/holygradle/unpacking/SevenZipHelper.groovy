@@ -1,6 +1,7 @@
 package holygradle.unpacking
 
 import org.gradle.api.Project
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.Task
 import org.gradle.process.ExecSpec
 
@@ -55,7 +56,22 @@ class SevenZipHelper implements Unzipper {
         String sevenZipPath = new File((sevenZipUnpackTask.destinationDir as File), "7z.exe").path
         project.exec { ExecSpec spec ->
             spec.commandLine sevenZipPath, "x", zipFile.path, "-o${targetDirectory.path}", "-bd", "-y"
-            spec.setStandardOutput new ByteArrayOutputStream()
+
+            // If error logging is enabled, output the errors
+            if (project.logger.isEnabled(LogLevel.ERROR)) {
+                spec.setErrorOutput System.err
+            } else {
+                // Otherwise redirect to a dead stream
+                spec.setErrorOutput new ByteArrayOutputStream()
+            }
+
+            // If info logging is enabled, redirect standard output
+            if (project.logger.isEnabled(LogLevel.INFO)) {
+                spec.setStandardOutput System.out
+            } else {
+                // Otherwise discard it
+                spec.setStandardOutput new ByteArrayOutputStream()
+            }
         }
     }
 }

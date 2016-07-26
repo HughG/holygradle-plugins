@@ -1,5 +1,5 @@
 public File getDevEnvPath() {
-    String envVarComnTools = System.getenv("VS100COMNTOOLS")
+    String envVarComnTools = System.getenv("VS120COMNTOOLS")
     if (envVarComnTools == null || envVarComnTools == "") {
         throw new RuntimeException("'version' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
     }

@@ -49,6 +49,7 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/(Collect|Zip)DependenciesIntegrationTest/[^/]+/((gradle|build_info)/|local_artifacts|.*build\.gradle)
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
 ^intrepid-plugin/src/test/groovy/holygradle/unpacking/PackedDependenciesStateHandlerIntegrationTest/[^/]+/[^/]+-?(lib|framework)/
+^utils/artifactory-plugins/localConf/
 ^utils/versionListChecker/gradle
 ^utils/versionListChecker/gw.bat
 (^|/)ipch/
