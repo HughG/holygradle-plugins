@@ -26,7 +26,7 @@ executions {
     // get the plugin directory or something like that.  From experimentation, the current directory when the
     // "executions" block is executed is the "bin" folder of the installation.
     final File ARTIFACTORY_ROOT = new File("..")
-    final Set PLUGIN_GROUPS = new File(ARTIFACTORY_ROOT, "etc/plugins/storageSummary.groups.txt").readLines().toSet()
+    final Set PLUGIN_GROUPS = new File(ARTIFACTORY_ROOT, "etc/plugins/conf/storageSummary.groups.txt").readLines().toSet()
 
     /**
      * This execution is named 'storageSummary' and it can be invoked via the usual Artifactory REST API.

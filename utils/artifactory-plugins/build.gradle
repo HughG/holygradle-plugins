@@ -30,11 +30,18 @@ repositories {
     }
 }
 
+project.ext.localConfDir = "${projectDir}/localConf"
+if (!new File(localConfDir).exists()) {
+    "cmd /c mklink /j \"${localConfDir}\" \"${projectDir}\\..\\..\\local\\local-artifactory-plugins\\conf\"".execute().waitFor()
+}
+
 project.ext.pluginsPackageSubdir = "artifactory/etc/plugins"
+project.ext.pluginsConfSubdir = "${pluginsPackageSubdir}/conf"
 project.ext.contentPackageSubdir = "content"
 if (!project.hasProperty("pluginsDeployDir")) {
     project.ext.pluginsDeployDir = new File(buildDir, "deploy/artifactory-etc-plugins")
 }
+project.ext.pluginsConfDeployDir = new File(pluginsDeployDir, "conf")
 if (!project.hasProperty("contentDeployDir")) {
     project.ext.contentDeployDir = new File(buildDir, "deploy/webserver")
 }
@@ -64,9 +71,17 @@ task packageRepositoryGraph(type: Copy) {
 //
 // This isn't a Copy task because we expect some network cost to checking up-to-date-ness, and the set of files to copy
 // is small.
-task deployRepositoryGraph {
+task deploy {
     dependsOn packageRepositoryGraph
     doLast {
+        project.copy {
+            from("src/main/groovy") { include "*.groovy" }
+            into pluginsDeployDir
+        }
+        project.copy {
+            from localConfDir
+            into pluginsConfDeployDir
+        }
         project.copy {
             from new File(packageRepositoryGraph.destinationDir, pluginsPackageSubdir)
             into pluginsDeployDir
