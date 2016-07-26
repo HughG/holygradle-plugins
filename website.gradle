@@ -7,6 +7,11 @@ import java.util.regex.*
  * The following values and tasks are used to publish the static website.
  */
 project.ext.WEBSITE_DIR = "${projectDir}/doc/website"
+project.ext.LOCAL_WEBSITE_DIR = "${WEBSITE_DIR}/local"
+
+if (!new File(LOCAL_WEBSITE_DIR).exists()) {
+    "mklink /j \"${LOCAL_WEBSITE_DIR}\" \"${projectDir}\\local\\doc\\local-holy-gradle\"".execute().waitFor()
+}
 
 void initializeBuildWebsiteTask(
     Map options = [quickly: false, local: false],
