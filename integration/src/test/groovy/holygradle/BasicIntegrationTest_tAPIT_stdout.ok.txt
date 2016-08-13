@@ -5,6 +5,11 @@ Using pluginsRepoOverride=[active]
 All tasks runnable from root project
 ------------------------------------------------------------
 
+Build Setup tasks
+-----------------
+init - Initializes a new Gradle build. [incubating]
+wrapper - Generates Gradle wrapper files. [incubating]
+
 Credentials tasks
 -----------------
 cacheCredentials - Refreshes and caches all credentials.
@@ -54,12 +59,17 @@ dependencyInsight - Displays the insight into a specific dependency in root proj
 help - Displays a help message
 projects - Displays the sub-projects of root project 'tAPIT'.
 properties - Displays the properties of root project 'tAPIT'.
-tasks - Displays the tasks runnable from root project 'tAPIT' (some of the displayed tasks may belong to subprojects).
+tasks - Displays the tasks runnable from root project 'tAPIT'.
 
 Publishing tasks
 ----------------
+afterGenerateDescriptor - Actions to run after all Ivy descriptor generation tasks
+afterPublish - Actions to run after all publish tasks
+beforeGenerateDescriptor - Actions to run before any Ivy descriptor generation tasks
+beforePublish - Actions to run before any publish tasks
 createPublishNotes - Creates 'build_info' directory which will be included in published packages.
-generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'
+generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'.
+generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication.
 packageEverything - Creates all zip packages for project 'tAPIT'.
 publish - Publishes all publications for this module.
 repackageEverything - As 'packageEverything' but doesn't auto-generate any files.

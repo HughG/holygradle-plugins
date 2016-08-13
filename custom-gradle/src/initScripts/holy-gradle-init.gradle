@@ -135,7 +135,7 @@ class HolyGradlePlugins {
         // Actually add the plugins to the buildscript, and record the version.
         final String OPTIONAL_CONFIGURATION_NAME = '__holygradle_optional'
         if (!buildscript.configurations.findByName(OPTIONAL_CONFIGURATION_NAME)) {
-            buildscript.configurations.add(OPTIONAL_CONFIGURATION_NAME)
+            buildscript.configurations.create(OPTIONAL_CONFIGURATION_NAME)
         }
         buildscript.dependencies { DependencyHandler depHandler ->
             depHandler.add("classpath", "${group}:${pluginFullName}:${version}") { ExternalModuleDependency dep ->

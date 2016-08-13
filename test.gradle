@@ -1,5 +1,4 @@
 import java.nio.file.Files
-import java.nio.file.Path
 
 import org.gradle.process.JavaForkOptions
 
@@ -25,10 +24,6 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
     // build.  We _have to_ do this explicitly because (a) Gradle doesn't automatically update snapshot versions of
     // wrapper distributions; and (b) even if we're building a non-snapshot version, it might be the same as some
     // version we previously downloaded from the local_repo, if we were trying to publish a release build but it failed.
-    //
-    // Note that, because of Gradle defect http://issues.gradle.org/browse/GRADLE-2756, distributions used by the
-    // tooling API (as used by the integration tests) are always unpacked in the default Gradle user home directory,
-    // even if the user has configured it to be elsewhere.
     t.doFirst {
         // We have to set this up in a doFirst block, because the project version isn't set at task creation time,
         // but is by task execution, as long as one of the "publish locally" tasks is in the task graph.
@@ -36,9 +31,11 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
             throw new RuntimeException("${t.name} can only be used with a publish task, which will set the version")
         }
 
-        final File wrapperDir = new File(StartParameter.DEFAULT_GRADLE_USER_HOME, "wrapper")
+        final File wrapperDir = new File(LOCAL_GRADLE_USER_HOME, "wrapper")
         final File distsDir = new File(wrapperDir, "dists")
-        final File customDistDir = new File(distsDir, project.CUSTOM_GRADLE_BASE_NAME)
+        final Zip distTask = project.findProject(":custom-gradle").tasks["customDistribution"]
+        final String distName = distTask.archiveName.substring(0, distTask.archiveName.length() - distTask.extension.length())
+        final File customDistDir = new File(distsDir, distName)
         t.delete customDistDir
     }
 }
@@ -90,10 +87,11 @@ project.ext.setUpTests = { Project project ->
         t.include "**/*IntegrationTest.*"
         t.exclude "**/Abstract*.*"
         t.reports.html.destination = file("${project.reporting.baseDir}/$name")
+        
+        t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
         // The overall "integration" project has integration tests but doesn't publish its own plugin: it tests all
         // the plugins from other projects.
         if (project.name != "integration") {
-            t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
             t.dependsOn(project.tasks["publishPluginsLocally"])
 
             Task overallIntegTest = project.findProject(":integration").tasks["integTest"]
