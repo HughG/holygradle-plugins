@@ -35,7 +35,6 @@ class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleI
         FileHelper.ensureDeleteDirRecursive(publicationsDir)
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("generateDescriptorFileForIvyPublication")
-            launcher.addArguments("--info", "--full-stacktrace")
         }
 
         File ivyXml = new File(publicationsDir, "ivy/ivy.xml")
