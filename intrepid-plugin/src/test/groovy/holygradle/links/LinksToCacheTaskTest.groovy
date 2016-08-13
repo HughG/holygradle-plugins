@@ -14,10 +14,6 @@ import static org.junit.Assert.*
 import static org.hamcrest.core.IsEqual.*
 
 class LinksToCacheTaskTest extends AbstractHolyGradleTest {
-    private File getIvyFile(String fileName) {
-        return new File(getTestDir(), fileName)
-    }
-
     /**
      * Returns an instance of {@link ResolvedArtifact} whose {@link ResolvedArtifact#getFile()} method will return a
      * {@link File} pointing at {@code fileName}.
@@ -37,7 +33,6 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
     ) {
         UnpackModuleVersion version = new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
-            getIvyFile(moduleName + ".xml"),
             parent,
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )

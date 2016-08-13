@@ -1,37 +1,43 @@
 package holygradle.publishing
 
 import holygradle.dependencies.PackedDependencyHandler
-import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.PackedDependenciesStateSource
-import org.gradle.api.*
+import org.gradle.api.Action
+import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
-import org.gradle.api.artifacts.dsl.*
-import org.gradle.api.artifacts.repositories.*
+import org.gradle.api.artifacts.dsl.RepositoryHandler
+import org.gradle.api.artifacts.repositories.ArtifactRepository
+import org.gradle.api.artifacts.repositories.AuthenticationSupported
 import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.ivy.IvyModuleDescriptor
 import org.gradle.api.publish.ivy.IvyPublication
+import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
+import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
+import org.gradle.api.tasks.TaskCollection
 import org.gradle.util.ConfigureUtil
+
+// TODO 2016-07-10 HughG: Add artifacts!
+// TODO 2016-07-10 HughG: Check other new constraints on ivy-publish.
 
 public class DefaultPublishPackagesExtension implements PublishPackagesExtension {
     private final Project project
     private final PublishingExtension publishingExtension
     private final RepositoryHandler repositories
+    public final IvyPublication ivyPublication
     private final LinkedHashSet<String> originalConfigurationOrder = new LinkedHashSet()
     private RepublishHandler republishHandler
     private String nextVersionNumberStr = null
     private String autoIncrementFilePath = null
     private String environmentVariableName = null
-    public IvyModuleDescriptor mainIvyDescriptor
     private String publishGroup = null
     private String publishName = null
-    private boolean addRelativePaths = false
 
     public DefaultPublishPackagesExtension(
         Project project,
         PublishingExtension publishingExtension,
-        Collection<SourceDependencyHandler> sourceDependencies,
         Collection<PackedDependencyHandler> packedDependencies
     ) {
         this.project = project
@@ -48,39 +54,69 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         })
 
         this.publishingExtension = publishingExtension
-        this.repositories = publishingExtension.getRepositories()
-        final IvyPublication mainIvyPublication = (IvyPublication)publishingExtension.getPublications().getByName("ivy")
-        mainIvyDescriptor = mainIvyPublication.getDescriptor()
-                
-        // Configure the publish task to deal with the version number, include source dependencies and convert 
+        this.repositories = publishingExtension.repositories
+        IvyPublication ivyPublication = null
+        // Gradle automatically converts Closure to the right Action<> type.
+        //noinspection GroovyAssignabilityCheck
+        publishingExtension.publications { pubs ->
+            ivyPublication = pubs.maybeCreate("ivy", IvyPublication)
+        }
+        this.ivyPublication = ivyPublication
+
+        Task beforePublishTask = project.task("beforePublish") { Task t ->
+            t.group = "Publishing"
+            t.description = "Actions to run before any publish tasks"
+        }
+        Task afterPublishTask = project.task("afterPublish") { Task t ->
+            t.group = "Publishing"
+            t.description = "Actions to run after all publish tasks"
+        }
+        Task generateDescriptorTask = project.task("generateIvyModuleDescriptor") { Task t ->
+            t.group = "Publishing"
+            t.description = "Backwards-compatibility task for generating ivy.xml files for publication. " +
+                "This task will be removed in a future version of the Holy Gradle. It has been replaced by " +
+                "tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication."
+            t.doFirst {
+                t.logger.warn(
+                    "WARNING: Task ${t.name} will be removed in a future version of the Holy Gradle. " +
+                    "It has been replaced by  tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication."
+                )
+            }
+        }
+
+        // Configure the publish task to deal with the version number, include source dependencies and convert
         // dynamic dependency versions to fixed version numbers.
         project.gradle.projectsEvaluated {
             this.applyGroupName()
             this.applyModuleName()
             this.applyVersionNumber()
             
-            Task ivyPublishTask = project.tasks.findByName("publishIvyPublicationToIvyRepository")
-            if (ivyPublishTask != null) {
-
+            TaskCollection<PublishToIvyRepository> ivyPublishTasks = project.tasks.withType(PublishToIvyRepository)
+            if (!ivyPublishTasks.empty) {
                 this.freezeDynamicDependencyVersions(project)
                 this.putConfigurationsInOriginalOrder()
                 this.collapseMultipleConfigurationDependencies()
-                if (this.addDependencyRelativePaths) {
-                    this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
-                }
 
-                ivyPublishTask.doFirst {
+                beforePublishTask << {
                     this.failIfPackedDependenciesNotCreatingLink(packedDependencies)
                     this.verifyGroupName()
                     this.verifyVersionNumber()
                 }
-                ivyPublishTask.doLast {
+                afterPublishTask << {
                     this.incrementVersionNumber()
+                }
+                ivyPublishTasks.each {
+                    it.dependsOn beforePublishTask
+                    it.finalizedBy afterPublishTask
+                    // Add a mustRunAfter to make sure the afterPublish doesn't run until all publish tasks are done.
+                    afterPublishTask.mustRunAfter it
                 }
             }
 
-            Task generateDescriptorTask = project.tasks.findByName("generateIvyModuleDescriptor")
-            if (generateDescriptorTask != null) {
+            TaskCollection<GenerateIvyDescriptor> ivyDescriptorTasks = project.tasks.withType(GenerateIvyDescriptor)
+            ivyDescriptorTasks.each {
+                generateDescriptorTask.dependsOn it
+
                 // Rewrite "&gt;" to ">" in generated ivy.xml files, for human-readability.
                 generateDescriptorTask.doLast { Task t ->
                     if (t.didWork) {
@@ -105,9 +141,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 project.task("republish", type: DefaultTask) { Task task ->
                     task.group = "Publishing"
                     task.description = "'Republishes' the artifacts for the module."
-                    if (ivyPublishTask != null) {
-                        task.dependsOn ivyPublishTask
-                    }
+                    ivyPublishTasks.each { task.dependsOn it }
                 }
             }
         }
@@ -116,9 +150,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public void defineCheckTask(PackedDependenciesStateSource packedDependenciesStateSource) {
         RepublishHandler republishHandler = getRepublishHandler()
         if (republishHandler != null) {
-            String repoUrl = republishHandler.getToRepository()
-            Collection<ArtifactRepository> repos = project.getRepositories().matching { repo ->
-                repo instanceof AuthenticationSupported && repo.getCredentials().getUsername() != null
+            String repoUrl = republishHandler.toRepository
+            Collection<ArtifactRepository> repos = project.repositories.matching { repo ->
+                repo instanceof AuthenticationSupported && repo.credentials.username != null
             }
             if (repos.size() > 0 && repoUrl != null) {
                 AuthenticationSupported repo = (AuthenticationSupported)repos[0]
@@ -128,7 +162,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 ) { CheckPublishedDependenciesTask it ->
                     it.group = "Publishing"
                     it.description = "Check if all packed dependencies are accessible in the target repo."
-                    it.initialize(packedDependenciesStateSource, repoUrl, repo.getCredentials())
+                    it.initialize(packedDependenciesStateSource, repoUrl, repo.credentials)
                 }
             }
         }
@@ -157,14 +191,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return repositories
     }
 
-    boolean getAddDependencyRelativePaths() {
-        this.addRelativePaths
-    }
-
-    void setAddDependencyRelativePaths(boolean addRelativePaths) {
-        this.addRelativePaths = addRelativePaths
-    }
-
     public void repositories(Action<RepositoryHandler> configure) {
         configure.execute(repositories)
     }
@@ -175,10 +201,10 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
         ConfigureUtil.configure(closure, republishHandler)
     }
-    
+
     public RepublishHandler getRepublishHandler() {
         if (project != project.rootProject && republishHandler == null) {
-            return project.rootProject.publishPackages.getRepublishHandler()
+            return project.rootProject.publishPackages.republishHandler
         }
         return republishHandler
     }
@@ -193,7 +219,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
     
     private File getVersionFile() {
-        return new File(project.getProjectDir(), autoIncrementFilePath)
+        return new File(project.projectDir, autoIncrementFilePath)
     }
     
     private static String getVersionFromFile(File file)  {
@@ -256,7 +282,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 throw new RuntimeException(
                     "'publishPackages' specifies nextVersionNumberAutoIncrementFile " + 
                     "\"${autoIncrementFilePath}\", but that file does not " +
-                    "exist in the project directory: " + project.getProjectDir().getAbsolutePath()
+                    "exist in the project directory: " + project.projectDir.absolutePath
                 )
             }
         } else if (environmentVariableName != null) {
@@ -280,7 +306,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             nonNullCount++;
         }
         if (nonNullCount == 0) {
-            if (project.getVersion().toString() == "unspecified") {
+            if (project.version.toString() == "unspecified") {
                 throw new RuntimeException(
                     "One of 'nextVersionNumber', 'nextVersionNumberAutoIncrementFile' and 'nextVersionNumberEnvironmentVariable' must be " +
                     "set on 'publishPackages' unless you set the 'version' property on the project yourself."
@@ -332,7 +358,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
+        ivyPublication.descriptor.withXml { xml ->
             xml.asNode().configurations.each { Node confsNode ->
                 LinkedHashMap<String, Node> confNodes = new LinkedHashMap()
                 localOriginalConfigurationOrder.each { String confName ->
@@ -350,6 +376,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
+    // TODO 2016-07-03 HughG: This should use the source configurations from the dependency XML node
+    // instead of searching all configurations.  Otherwise we may get the wrong answer if there's
+    // more than one version of the same dependency, in different configurations.
     private static String getDependencyVersion(Project project, String group, String module) {
         String version = null
         project.configurations.each((Closure){ conf ->
@@ -368,7 +397,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public void freezeDynamicDependencyVersions(Project project) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
+        ivyPublication.descriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
                 if (depNode.@rev.endsWith("+")) {
                     depNode.@rev = getDependencyVersion(project, depNode.@org as String, depNode.@name as String)
@@ -380,9 +409,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     // This method goes through the "dependencies" node and converts each set of "dependency" children with the same
     // "org"/"name"/"rev" (but different "conf") attribute values into a single "dependency" node with a list-style
     // configuration mapping in the "conf" attribute ("a1->b1;a2->b2").  This is for human-readability.
-    //
-    // This method must be called before addDependencyRelativePaths, because it will drop attributes other than the ones
-    // mentioned above.
     public void collapseMultipleConfigurationDependencies() {
         // WARNING: This method loses any sub-nodes of each dependency node.  These can be "conf" (not needed, as we use
         // the "@conf" attribute) and "artifact", "exclude", "include" (only needed to override the target's ivy file,
@@ -395,7 +421,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
+        ivyPublication.descriptor.withXml { xml ->
             Map<String, List<String>> configsByCoord = new LinkedHashMap().withDefault { new ArrayList() }
             xml.asNode().dependencies.each { depsNode ->
                 depsNode.dependency.each { depNode ->
@@ -414,44 +440,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                         "rev": c[2],
                         "conf": sortedConfigs.join(";")
                     ])
-                }
-            }
-        }
-    }
-
-    // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or linked) to.
-    public void addDependencyRelativePaths(Project project, Collection<PackedDependencyHandler> packedDependencies, Collection<SourceDependencyHandler> sourceDependencies) {
-        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
-        //noinspection GroovyAssignabilityCheck
-        mainIvyDescriptor.withXml { xml ->
-            xml.asNode().dependencies.dependency.each { depNode ->
-                // If the dependency is a packed dependency, get its relative path from the 
-                // gradle script's packedDependencyHandler
-                PackedDependencyHandler packedDep = packedDependencies.find {
-                    it.getGroupName() == depNode.@org && 
-                    it.getDependencyName() == depNode.@name &&
-                    it.getVersionStr() == depNode.@rev
-                }
-                
-                if (packedDep != null) {
-                    project.logger.info "Adding relative path to packedDep node: ${packedDep.getGroupName()}:${packedDep.getDependencyName()}:${packedDep.getVersionStr()} path=${packedDep.getFullTargetPath()}"
-                    depNode.@relativePath = packedDep.getFullTargetPath()
-                } else {
-                    // Else if the dependency is a source dependency, get its relative path from the 
-                    // gradle script's sourceDependencyHandler
-                    SourceDependencyHandler sourceDep = sourceDependencies.find {
-                        ModuleVersionIdentifier latestPublishedModule = it.getDependencyId()
-                        latestPublishedModule.getGroup() == depNode.@org && 
-                        latestPublishedModule.getName() == depNode.@name &&
-                        latestPublishedModule.getVersion() == depNode.@rev
-                    }
-                    
-                    if (sourceDep != null) {
-                        project.logger.info "Adding relative path to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
-                        depNode.@relativePath = sourceDep.getFullTargetPath()
-                    } else {
-                        project.logger.warn "Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in source or packed dependencies"
-                    }
                 }
             }
         }

@@ -44,7 +44,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            final String customGradleVersion = project.gradle.gradleVersion + "-" + project.holyGradleInitScriptVersion
+            final String customGradleVersion = project.holyGradleInitScriptVersion
             final File gwFile = new File(project.projectDir, "gw.bat")
             wrapper.gradleVersion = customGradleVersion
             wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")

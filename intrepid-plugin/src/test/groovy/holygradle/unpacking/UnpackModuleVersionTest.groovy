@@ -30,15 +30,10 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         modules["eggfruit"] = getUnpackModuleVersion("eggfruit", "1.5", modules["apricot"])
         modules
     }
-        
-    private File getIvyFile(String fileName) {
-        return new File(getTestDir(), fileName)
-    }
 
     private UnpackModuleVersion getUnpackModuleVersion(String moduleName, String moduleVersion, UnpackModuleVersion parent=null) {
         new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
-            getIvyFile(moduleName + ".xml"),
             parent,
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )
@@ -93,7 +88,6 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         PackedDependencyHandler eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty")
         UnpackModuleVersion eggfruit = new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
-            getIvyFile("eggfruit.xml"),
             null,
             eggfruitPackedDep
         )

@@ -23,7 +23,7 @@ class LinkTaskIntegrationTest extends AbstractHolyGradleIntegrationTest
         File projectDir = new File(getTestDir(), "vsSrcDeps")
         OutputStream outputStream = new ByteArrayOutputStream()
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
-            launcher.addArguments("-m")
+            launcher.addArguments("-m", "-d")
             launcher.forTasks("fAD")
             launcher.setStandardOutput(outputStream)
         }

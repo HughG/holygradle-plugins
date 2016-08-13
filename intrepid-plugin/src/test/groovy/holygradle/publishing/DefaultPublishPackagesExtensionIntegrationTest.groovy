@@ -12,35 +12,30 @@ import static org.junit.Assert.assertTrue
 
 @RunWith(Parameterized.class)
 class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleIntegrationTest {
-    @Parameterized.Parameters(name = "{index}: {0} relativePath = {1}")
+    @Parameterized.Parameters(name = "{index}: {0}")
     public static Collection<Object[]> data() {
         return Sets.cartesianProduct([
             ["projectA", "projectB"].toSet(),
-            [false, true].toSet()
         ])*.toArray()
     }
 
     private final String testProjectDirName
-    private final boolean addRelativePaths
 
     DefaultPublishPackagesExtensionIntegrationTest(
-        String testProjectDirName,
-        boolean addRelativePaths
+        String testProjectDirName
     ) {
-
-        this.addRelativePaths = addRelativePaths
         this.testProjectDirName = testProjectDirName
     }
 
     @Test
     public void testDependenciesInIvyXml() {
-        String regressionFileNameBase = "${testProjectDirName}_${addRelativePaths ? 'relPath_' : ''}IvyXml"
+        String regressionFileNameBase = "${testProjectDirName}_IvyXml"
         File projectDir = new File(getTestDir(), testProjectDirName)
         File publicationsDir = new File(projectDir, "build/publications")
         FileHelper.ensureDeleteDirRecursive(publicationsDir)
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
-            launcher.forTasks("generateIvyModuleDescriptor")
-            launcher.addArguments("--info", "-PaddRelativePaths=${addRelativePaths}")
+            launcher.forTasks("generateDescriptorFileForIvyPublication")
+            launcher.addArguments("--info")
         }
 
         File ivyXml = new File(publicationsDir, "ivy/ivy.xml")

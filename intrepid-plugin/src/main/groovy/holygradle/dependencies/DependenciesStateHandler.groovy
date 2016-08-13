@@ -385,17 +385,4 @@ class DependenciesStateHandler {
             throw new RuntimeException("${conf} is not from ${project} or its buildscript")
         }
     }
-
-    /**
-     * Get the ivy file for the resolved dependency.  This may either be in the Gradle cache, or exist in a subdirectory
-     * of the project directory, named {@link CollectDependenciesHelper#LOCAL_ARTIFACTS_DIR_NAME}, which we create for
-     * developers who may not have access to the artifact repository.  May return null.
-     */
-    public File getIvyFile(
-        Configuration conf,
-        ResolvedDependency resolvedDependency
-    ) {
-        Map<ModuleVersionIdentifier, File> ivyFiles = getIvyFilesForConfiguration(conf)
-        return ivyFiles[resolvedDependency.module.id]
-    }
 }

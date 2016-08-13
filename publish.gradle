@@ -11,7 +11,7 @@ if (publishVersionFromProperty != null) {
     publishVersion = publishVersionFromProperty
 } else {
     String username = System.getProperty("user.name").toLowerCase()
-    publishVersion = "${username}SNAPSHOT-0"
+    publishVersion = "0.0-${username}SNAPSHOT-0"
 }
 project.allprojects { Project p ->
     p.version = publishVersion

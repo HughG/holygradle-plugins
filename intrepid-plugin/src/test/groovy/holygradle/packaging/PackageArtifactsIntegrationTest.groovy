@@ -23,7 +23,7 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         File projectDir = new File(getTestDir(), "projectA")
 
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
-        project.ext.holyGradleInitScriptVersion = "1.2.3.4" // Required by custom-gradle-core-plugin.
+        project.ext.holyGradleInitScriptVersion = "9.10.11.12" // Required by custom-gradle-core-plugin.
         project.ext.holyGradlePluginsRepository = ""
         project.buildscript.configurations.add(ConfigurationHelper.OPTIONAL_CONFIGURATION_NAME)
         project.apply plugin: 'intrepid'

@@ -17,10 +17,6 @@ public interface PublishPackagesExtension {
     
     void nextVersionNumberEnvironmentVariable(String versionNumberEnvVar)
 
-    boolean getAddDependencyRelativePaths()
-
-    void setAddDependencyRelativePaths(boolean addRelativePaths)
-
     void repositories(Action<RepositoryHandler> configure)
     
     void republish(Closure closure)

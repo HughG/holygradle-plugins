@@ -121,7 +121,7 @@ project.ext.LOCAL_GRADLE_USER_HOME = new File(project.projectDir as File, "local
 /*
  * CUSTOM_GRADLE_BASE_NAME is needed by the custom-gradle project, but also by the integration test setup.
  */
-project.ext.CUSTOM_GRADLE_BASE_NAME = "custom-gradle-${gradle.gradleVersion}"
+project.ext.CUSTOM_GRADLE_BASE_NAME = "custom-gradle"
 
 apply from: "versionInfo.gradle"
 apply from: "publish.gradle"

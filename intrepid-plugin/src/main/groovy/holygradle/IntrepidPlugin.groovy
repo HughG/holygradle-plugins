@@ -138,7 +138,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define 'publishPackages' DSL block.
         PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         project.extensions.create(
-            "publishPackages", DefaultPublishPackagesExtension, project, publishingExtension, sourceDependencies, packedDependencies
+            "publishPackages", DefaultPublishPackagesExtension, project, publishingExtension, packedDependencies
         )
         
         // Define 'sourceControl' DSL.

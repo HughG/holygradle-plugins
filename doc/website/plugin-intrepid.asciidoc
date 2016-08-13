@@ -2072,7 +2072,7 @@ resulting zip files prior to their being published. The zips will be placed in a
 subdirectory of the module.
 
 If you are testing the packaging, you may also wish to run the standard Gradle task,
-+generateIvyModuleDescriptor+.  This will create the gloss:ivy-xml[] for your module in
++generateDescriptorFileForIvyPublication+.  This will create the gloss:ivy-xml[] for your module in
 +${project.buildDir}/publications/ivy/ivy.xml+.
 
 === publish

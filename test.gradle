@@ -38,9 +38,7 @@ task cleanIntegrationTestState (type: Delete) { Delete t ->
 
         final File wrapperDir = new File(StartParameter.DEFAULT_GRADLE_USER_HOME, "wrapper")
         final File distsDir = new File(wrapperDir, "dists")
-        final String customDistBaseName = project.CUSTOM_GRADLE_BASE_NAME
-        final String customDistName = "${customDistBaseName}-${project.version}"
-        final File customDistDir = new File(distsDir, customDistName)
+        final File customDistDir = new File(distsDir, project.CUSTOM_GRADLE_BASE_NAME)
         t.delete customDistDir
     }
 }
@@ -119,9 +117,8 @@ project.ext.setUpTests = { Project project ->
             // doFirst block, because the project version isn't set at task creation time, but is by task execution.
             maybeForwardHttpProxyProperties(t)
             maybeForwardExtraArguments(t)
-            final String customDistBaseName = project.findProject(":custom-gradle").CUSTOM_GRADLE_BASE_NAME
-            final String customDistName = "${customDistBaseName}-${project.version}"
-            final String distributionPath = "holygradle/custom-gradle/${project.version}/${customDistName}.zip"
+            final String customDistName = project.findProject(":custom-gradle").CUSTOM_GRADLE_BASE_NAME
+            final String distributionPath = "holygradle/custom-gradle/${project.version}/${customDistName}-${project.version}.zip"
             final String distributionURIString = URI.create(project.PUBLISH_LOCAL_TARGET_URI + distributionPath).toString()
             t.systemProperty("holygradle.pluginsRepoOverride", project.PUBLISH_LOCAL_TARGET_URI.toString())
             t.systemProperty("holygradle.distributionForIntegrationTest", distributionURIString)

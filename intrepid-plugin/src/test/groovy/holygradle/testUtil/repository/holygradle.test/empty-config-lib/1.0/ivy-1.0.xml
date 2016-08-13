@@ -17,7 +17,7 @@
     <artifact name="empty-config-lib-source" type="zip" ext="zip" conf="source"/>
   </publications>
   <dependencies>
-    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="libs-&gt;compile" relativePath="../extlib"/>
-    <dependency org="holygradle.test" name="another-lib" rev="1.0" conf="more_libs-&gt;compile" relativePath="../anotherlib"/>
+    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="libs-&gt;compile"/>
+    <dependency org="holygradle.test" name="another-lib" rev="1.0" conf="more_libs-&gt;compile"/>
   </dependencies>
 </ivy-module>

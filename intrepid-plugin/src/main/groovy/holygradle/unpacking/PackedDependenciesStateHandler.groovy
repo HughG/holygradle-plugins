@@ -78,12 +78,12 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         Configuration originalConf,
         Set<ResolvedDependency> dependencies,
         Collection<PackedDependencyHandler> packedDependencies,
-        Map<ModuleIdentifier, UnpackModule> unpackModules,
-        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles
+        Map<ModuleIdentifier, UnpackModule> unpackModules
     ) {
         project.logger.debug("collectUnpackModules for ${originalConf}")
         project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
         project.logger.debug("    and packedDependencies ${packedDependencies*.name.sort().join('\r\n')}")
+        project.logger.info("collectUnpackModules:   origConf hierarchy names: ${originalConf.hierarchy*.name}")
 
         Set<ResolvedDependenciesVisitor.ResolvedDependencyId> dependencyConfigurationsAlreadySeen =
             new HashSet<ResolvedDependenciesVisitor.ResolvedDependencyId>()
@@ -93,12 +93,10 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             { ResolvedDependency resolvedDependency ->
                 // Visit this dependency only if: we've haven't seen it already for the configuration we're
                 // processing, it's not a module we're building from source (because we don't want to include those
-                // as UnpackModules), and we can find its ivy.xml file (because we need that for relativePath to
-                // other modules).
+                // as UnpackModules).
                 //
                 // Visit this dependency's children only if: we've haven't seen it already for the configuration
-                // we're processing, and we can find its ivy.xml file (because we need that for relativePath to
-                // other modules).
+                // we're processing.
 
                 ModuleVersionIdentifier id = resolvedDependency.module.id
 
@@ -120,26 +118,9 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
                 final boolean isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
 
-                // Is there an ivy file corresponding to this dependency?
-                File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
-                final boolean ivyFileExists = ivyFile?.exists()
-                // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
-                // we can throw an exception later (after we've checked all dependencies).
-                if (isNewNonBuildModuleConfiguration && !ivyFileExists) {
-                    if (ivyFile == null) {
-                        project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
-                    } else {
-                        project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
-                    }
-                    modulesWithoutIvyFiles.add(id)
-                }
-
-                if (ivyFileExists) {
-                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                }
                 return new ResolvedDependenciesVisitor.VisitChoice(
-                    isNewNonBuildModuleConfiguration && ivyFileExists,
-                    isNewModuleConfiguration && ivyFileExists
+                    isNewNonBuildModuleConfiguration,
+                    isNewModuleConfiguration
                 )
             },
             { ResolvedDependency resolvedDependency ->
@@ -176,6 +157,8 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     // regard this packed dependency as mapping to the given UnpackModuleVersion, i.e., to the
                     // resolved dependency version. We know that there can only be one resolved version per
                     // configuration so by checking the configuration matches we can be sure this is it.
+                    project.logger.info("collectUnpackModules: comparing PD ${it.dependencyId} to ${id}")
+                    project.logger.info("collectUnpackModules:   PD conf map keys: ${it.configurationMappings*.key}")
                     return (it.groupName == id.group) &&
                         (it.dependencyName == id.name) &&
                         (it.configurationMappings.any { entry ->
@@ -209,9 +192,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         unpackModuleVersion.packedDependency = thisPackedDep
                     }
                 } else {
-                    File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
-                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                    unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parentUnpackModuleVersion, thisPackedDep)
+                    unpackModuleVersion = new UnpackModuleVersion(id, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
@@ -244,7 +225,6 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
         // Build a list (without duplicates) of all artifacts the project depends on.
         unpackModulesMap = [:]
-        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
         project.configurations.each((Closure){ Configuration conf ->
             Set<ResolvedDependency> firstLevelDeps =
                 ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
@@ -252,14 +232,9 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 conf,
                 firstLevelDeps,
                 packedDependencies,
-                unpackModulesMap,
-                modulesWithoutIvyFiles
+                unpackModulesMap
             )
         })
-
-        if (!modulesWithoutIvyFiles.isEmpty()) {
-            throw new RuntimeException("Some dependencies had no ivy.xml file")
-        }
 
         // Build a map of target locations to module versions
         Map<File, Collection<UnpackModuleVersion>> targetLocations =

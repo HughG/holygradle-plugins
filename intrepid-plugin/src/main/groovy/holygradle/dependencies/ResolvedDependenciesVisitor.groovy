@@ -59,6 +59,15 @@ class ResolvedDependenciesVisitor {
             this.visitDependency = visitDependency
             this.visitChildren = visitChildren
         }
+
+
+        @Override
+        public String toString() {
+            return "VisitChoice{" +
+                "visitDependency=" + visitDependency +
+                ", visitChildren=" + visitChildren +
+                '}';
+        }
     }
 
     /**
@@ -82,9 +91,10 @@ class ResolvedDependenciesVisitor {
         dependencies.each { resolvedDependency ->
             try {
                 dependencyStack.push(resolvedDependency)
-                //println("tRD: ${dependencyStack.join(' <- ')}")
+                println("tRD: ${dependencyStack.join(' <- ')}")
 
                 VisitChoice visitChoice = getVisitChoice(resolvedDependency)
+                println("  ${visitChoice}")
 
                 if (visitChoice.visitDependency) {
                     dependencyAction(resolvedDependency)
