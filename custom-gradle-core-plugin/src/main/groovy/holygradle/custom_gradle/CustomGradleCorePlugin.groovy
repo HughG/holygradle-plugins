@@ -20,7 +20,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
      * @return The path to the <tt>custom-gradle</tt> init script.
      */
     String getInitScriptLocation(Project project) {
-        project.gradle.gradleHomeDir.path + "/init.d/holy-gradle-init.gradle"
+        project.gradle.startParameter.allInitScripts.find { it.name == "holy-gradle-init.gradle" }
     }
     
     void apply(Project project) {

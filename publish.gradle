@@ -20,7 +20,6 @@ project.allprojects { Project p ->
 
 void setPublishTaskDescription(
     Task t,
-    String publishingGroup,
     String snapshotTargetUri,
     String releaseTargetUri
 ) {
@@ -31,7 +30,7 @@ void setPublishTaskDescription(
     } else {
         targetDescription = "${snapshotTargetUri} for snapshots, or ${releaseTargetUri} for releases"
     }
-    t.description = "Publish snapshot or (using 'publishVersion' property) release of ${publishingGroup} to ${targetDescription}"
+    t.description = "Publish snapshot or (using 'publishVersion' property) release to ${targetDescription}"
 }
 
 // Set up publish tasks for root project.
@@ -44,41 +43,27 @@ project.ext.publishReallyTasks = []
 project.ext.getIsPublishing = {
     project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }
 }
-["Plugins", "CustomGradle"].each { String publishingGroup ->
-    Task publishReally = project.task("publish${publishingGroup}Really") { Task t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
+Task publishReally = project.task("publishPluginsReally") { Task t ->
+    setPublishTaskDescription(t, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
 
         final boolean isSnapshot = project.version.toString().endsWith('-SNAPSHOT')
-        final localPublishingGroup = publishingGroup // capture for closure
-        if (!isSnapshot) {
-            doLast {
-                // Tag the repo
-                String tagPrefixEnding
-                switch (localPublishingGroup) {
-                    case "Plugins":
-                        tagPrefixEnding = 'P';
-                        break;
-                    case "CustomGradle":
-                        tagPrefixEnding = 'C';
-                        break;
-                    default:
-                        throw new RuntimeException("Internal error: unknown publishingGroup ${localPublishingGroup}")
-                }
-                final String tag = "TR${tagPrefixEnding}_${project.version.tr('.', '-')}"
-                project.exec {
-                    workingDir projectDir
-                    commandLine 'hg.exe', 'tag', '-f', '-m', "${t.name} for ${tag}", tag
-                }
-                println "Tagged public repo; now push the tag."
+    if (!isSnapshot) {
+        doLast {
+            // Tag the repo
+            final String tag = "TRP_${project.version.tr('.', '-')}"
+            project.exec {
+                workingDir projectDir
+                commandLine 'hg.exe', 'tag', '-f', '-m', "${t.name} for ${tag}", tag
             }
+            println "Tagged public repo; now push the tag."
         }
     }
-    project.publishTasks << publishReally
-    project.publishReallyTasks << publishReally
+}
+project.publishTasks << publishReally
+project.publishReallyTasks << publishReally
 
-    project.publishTasks << project.task("publish${publishingGroup}Locally") { Task t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI, PUBLISH_LOCAL_TARGET_URI)
-    }
+project.publishTasks << project.task("publishPluginsLocally") { Task t ->
+    setPublishTaskDescription(t, PUBLISH_LOCAL_TARGET_URI, PUBLISH_LOCAL_TARGET_URI)
 }
 project.publishTasks.each { Task t ->
     t.dependsOn beforePublish
@@ -154,16 +139,11 @@ project.subprojects {
             url PUBLISH_LOCAL_TARGET_URI
         }
     }
-    
-    String publishingGroup =
-        (project.name.endsWith("-plugin") || project.name == "credential-store") ?
-            "Plugins" :
-            "CustomGradle";
 
     // Set up publish tasks for each subproject.
     project.ext.publishTasks = []
-    project.publishTasks << project.task("publish${publishingGroup}Really", type: Upload) { Upload t ->
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
+    project.publishTasks << project.task("publishPluginsReally", type: Upload) { Upload t ->
+        setPublishTaskDescription(t, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
         t.configuration = configurations.default
         t.uploadDescriptor = true
         t.descriptorDestination = new File(project.buildDir, "ivy.xml")
@@ -183,9 +163,9 @@ project.subprojects {
             url t.targetUri
         }
     }
-    project.publishTasks << project.task("publish${publishingGroup}Locally", type: Upload) { Upload t ->
+    project.publishTasks << project.task("publishPluginsLocally", type: Upload) { Upload t ->
         t.configuration = configurations.default
-        setPublishTaskDescription(t, publishingGroup, PUBLISH_LOCAL_TARGET_URI, PUBLISH_LOCAL_TARGET_URI)
+        setPublishTaskDescription(t, PUBLISH_LOCAL_TARGET_URI, PUBLISH_LOCAL_TARGET_URI)
         t.uploadDescriptor = true
         t.descriptorDestination = new File(project.buildDir as File, "ivy.xml")
         t.dependsOn(t.configuration.getTaskDependencyFromProjectDependency(true, t.name))
