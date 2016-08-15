@@ -19,11 +19,20 @@ class CommandLine implements Command {
     }
 
     @Override
-    String execute(Closure configureExecSpec) {
+    String execute(Closure configureExecSpec, Closure throwOnError) {
         String localHgPath = hgPath
-        ExecHelper.executeAndReturnResultAsString(exec) { ExecSpec spec ->
-            spec.executable localHgPath
-            configureExecSpec(spec)
-        }
+        ExecHelper.executeAndReturnResultAsString(
+            exec,
+            { ExecSpec spec ->
+                spec.executable localHgPath
+                configureExecSpec(spec)
+            },
+            throwOnError
+        )
+    }
+
+    @Override
+    String execute(Closure configureExecSpec) {
+        execute(configureExecSpec, {return true})
     }
 }
