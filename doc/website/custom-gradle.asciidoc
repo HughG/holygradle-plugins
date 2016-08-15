@@ -61,6 +61,24 @@ The DNS suffix is taken from the output of +ipconfig.exe+.
 For versions before 7.5.0, you must set this manually in your user environment settings.  You should not need to change
 it unless your server name changes, or you are working at a different site.
 
+==== Setup of Proxy
+
+From version link:release_notes.html#&#x5f;custom_gradle_7.5.0[7.5.0] of the gloss:gradle-wrapper[], +gw.bat+ will
+attempt to set this variable based on the file +gradle/proxy-lookup.txt+.  You can add this file to your source code,
+or it may be available as part of a +wrapper-starter-kit+ in your organisation -- see
+link:first_steps.html#&#x5f;setting_up_a_gradle_wrapper[] for details.  The file should be a text file with several
+lines of the format "+_DNS-suffix_ _Proxy-Server-Name_ _Proxy-Server-Port_+", for example as follows.
+
+----
+foo.com foo_proxy 8080
+bar.com bar_proxy 8080
+----
+
+The DNS suffix is taken from the output of +ipconfig.exe+.
+
+For versions before 7.5.0, you must set this manually in your user environment settings.  You should not need to change
+it unless your server name changes, or you are working at a different site.
+
 ==== Project Property for Base URL
 
 From version 7.2.0, the property +project.holyGradleRepositoryBase+ is automatically added to your project.  This

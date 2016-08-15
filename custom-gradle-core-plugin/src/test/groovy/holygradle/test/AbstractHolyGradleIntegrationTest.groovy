@@ -12,17 +12,16 @@ import java.util.concurrent.TimeUnit
 import static org.junit.Assert.*
 
 class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
-    protected final URI distributionURI;
+    protected final File customInitScript;
     protected final File gradleUserHome;
     protected final File pluginsRepoOverride;
 
     /**
      * This Java system property key must match the one in test.gradle, in the root project.  It must be supplied, and
-     * its value identifies the (file) URI of the local repo which contains the custom-gradle distribution to be used
-     * for integration tests.  (It is used by this class when it is run by JUnit, directly from a Gradle task in the
-     * test.gradle file.  It's not used by the launched build process or the scripts it runs.)
+     * its value identifies the path to the custom gradle init script. The custom gradle script applies the holygradle
+     * plugins to the project hence is required to be provided for projects which intend to use the holygradle plug-ins
      */
-    private static final String DISTRIBUTION_SYSTEM_PROPERTY_KEY = "holygradle.distributionForIntegrationTest"
+    private static final String CUSTOM_INIT_SCRIPT_SYSTEM_PROPERTY_KEY = "holygradle.customInitScriptPath"
     /**
      * This Java system property key must match the one in test.gradle, in the root project.  It must be supplied, and
      * its value identifies the local folder to be used as the "Gradle user home" for integration tests.  This is to
@@ -61,7 +60,7 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
     }
 
     AbstractHolyGradleIntegrationTest() {
-        distributionURI = URI.create(getRequiredSystemProperty(DISTRIBUTION_SYSTEM_PROPERTY_KEY))
+        customInitScript = new File(getRequiredSystemProperty(CUSTOM_INIT_SCRIPT_SYSTEM_PROPERTY_KEY))
         gradleUserHome = new File(getRequiredSystemProperty(GRADLE_USER_HOME_SYSTEM_PROPERTY_KEY))
         pluginsRepoOverride = new File(getRequiredSystemProperty(PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY))
     }
@@ -78,7 +77,6 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
         connector
             .forProjectDirectory(projectDir)
             .useGradleUserHomeDir(gradleUserHome)
-            .useDistribution(distributionURI)
         // Set a short idle timeout, so that the daemon stops soon after the test.  This is in case the custom
         // distribution we're testing changes before the next test run.  In that case, we need to delete the unpacked
         // version from the Gradle user home, but we can't do that if the daemon still has a lock on the files.
@@ -88,6 +86,8 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
         try {
             WrapperBuildLauncher launcher = new WrapperBuildLauncher(connection.newBuild())
             maybeAddHttpProxyArguments(launcher)
+            // Use custom init script.
+            launcher.addArguments("-I", customInitScript.toString())
             // Access plugins from a local repo.
             launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}", "-u")
             maybeAddExtraArguments(launcher)

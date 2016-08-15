@@ -8,7 +8,7 @@ gplugins.apply()
     will be used, which probably isn't what was intended.
 */
 boolean usingPluginSnapshots = (System.getProperty('holygradle.pluginsSnapshotsUser') != null)
-if (usingPluginSnapshots != wrapperVersion.endsWith('SNAPSHOT-0')) {
+if (usingPluginSnapshots && !isSnapshotWrapperVersion) {
     throw new RuntimeException(
         "ERROR: holygradle.pluginsSnapshotsUser override is active but you are attempting to " +
         "publish a wrapper for a non-snapshot version (${wrapperVersion}).  This would instead " +
@@ -35,12 +35,18 @@ task clean << {
 
 createWrapper.dependsOn clean
 
-// The URL lookup file will be deleted by the clean task, so copy it back in from the parent project.
+/*
+    Copy files in from the root project (wrapper-starter-kit), which will itself have had them copied into it by the
+    top-level build.gradle.  If you modify the copy patterns here, you should also update the ones near the start of
+    that top-level build.gradle file.  These are only the site-local, private init files; the general ones will be
+    written in by the "wrapper" task.
+*/
 createWrapper << {
     copy {
         into(new File(projectDir, "gradle"))
         from(new File(rootProject.projectDir, "gradle")) {
             include "base-url-lookup.txt"
+            include "proxy-lookup.txt"
             include "certs/**"
         }
     }

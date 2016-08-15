@@ -18,32 +18,6 @@ void maybeForwardExtraArguments(JavaForkOptions forkOptions) {
     maybeForward(forkOptions, "holygradle.extraArgsForIntegrationTest")
 }
 
-
-task cleanIntegrationTestState (type: Delete) { Delete t ->
-    // We delete any previously-downloaded custom-gradle distribution, to ensure we're testing the latest
-    // build.  We _have to_ do this explicitly because (a) Gradle doesn't automatically update snapshot versions of
-    // wrapper distributions; and (b) even if we're building a non-snapshot version, it might be the same as some
-    // version we previously downloaded from the local_repo, if we were trying to publish a release build but it failed.
-    t.doFirst {
-        // We have to set this up in a doFirst block, because the project version isn't set at task creation time,
-        // but is by task execution, as long as one of the "publish locally" tasks is in the task graph.
-        if (!project.getIsPublishing()) {
-            throw new RuntimeException("${t.name} can only be used with a publish task, which will set the version")
-        }
-
-        final File wrapperDir = new File(LOCAL_GRADLE_USER_HOME, "wrapper")
-        final File distsDir = new File(wrapperDir, "dists")
-        final Zip distTask = project.findProject(":custom-gradle").tasks["customDistribution"]
-        final String distName = distTask.archiveName.substring(0, distTask.archiveName.length() - distTask.extension.length())
-        final File customDistDir = new File(distsDir, distName)
-        t.delete customDistDir
-    }
-}
-
-// Make the local custom-gradle publish task depend on the integration test clean-up.  The clean-up can't run by itself
-// because it requires the publish task to be in the task graph, to set the version.
-(project.rootProject.tasks["publishCustomGradleLocally"] as Task).dependsOn(cleanIntegrationTestState)
-
 project.ext.setUpTests = { Project project ->
     // For any projects with a "test" task, other than the custom distribution project, add
     //   - extra test dependencies;
@@ -88,7 +62,6 @@ project.ext.setUpTests = { Project project ->
         t.exclude "**/Abstract*.*"
         t.reports.html.destination = file("${project.reporting.baseDir}/$name")
         
-        t.dependsOn(project.findProject(":custom-gradle").tasks["publishCustomGradleLocally"])
         // The overall "integration" project has integration tests but doesn't publish its own plugin: it tests all
         // the plugins from other projects.
         if (project.name != "integration") {
@@ -115,11 +88,8 @@ project.ext.setUpTests = { Project project ->
             // doFirst block, because the project version isn't set at task creation time, but is by task execution.
             maybeForwardHttpProxyProperties(t)
             maybeForwardExtraArguments(t)
-            final String customDistName = project.findProject(":custom-gradle").CUSTOM_GRADLE_BASE_NAME
-            final String distributionPath = "holygradle/custom-gradle/${project.version}/${customDistName}-${project.version}.zip"
-            final String distributionURIString = URI.create(project.PUBLISH_LOCAL_TARGET_URI + distributionPath).toString()
             t.systemProperty("holygradle.pluginsRepoOverride", project.PUBLISH_LOCAL_TARGET_URI.toString())
-            t.systemProperty("holygradle.distributionForIntegrationTest", distributionURIString)
+            t.systemProperty("holygradle.customInitScriptPath", project.rootProject.file('/custom-gradle-core-plugin/src/init.d/holy-gradle-init.gradle').toString())
             t.systemProperty("holygradle.gradleUserHomeForIntegrationTest", project.LOCAL_GRADLE_USER_HOME.toString())
             t.systemProperty("holygradle.versionForIntegrationTest", project.version)
         }

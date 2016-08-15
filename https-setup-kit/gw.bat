@@ -12,6 +12,7 @@
 @rem ##########################################################################
 
 setlocal
+setlocal EnableDelayedExpansion
 
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS=
@@ -20,6 +21,7 @@ set DIRNAME=%~dp0
 if "%DIRNAME%" == "" set DIRNAME=.
 set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%
+SET GRADLE_DISTRIBUTION_URL=http\://services.gradle.org/distributions/
 
 @rem Allow use of Holy Gradle specific options to override system Java settings
 if defined HOLY_GRADLE_JAVA_HOME set JAVA_HOME=%HOLY_GRADLE_JAVA_HOME%
@@ -67,11 +69,16 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
   if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
 )
 
-@rem If we're building the Holy Gradle, we just use the standard wrapper properties.
+@rem If we're building the Holy Gradle, we just use the standard wrapper properties,
+@rem and there will be no project-local init-scripts for us to run.
 if "%APP_HOME:~-21%"=="\holy-gradle-plugins\" (
     goto skipWriteWrapperProperties
 )
 
+set INIT_SCRIPT_OPTS=
+FOR %%f IN ("%APP_HOME%\gradle\init.d\*.gradle") DO (
+    SET "INIT_SCRIPT_OPTS=!INIT_SCRIPT_OPTS! -I "%%f""
+)
 set DISTRIBUTION_ORIGINAL_PATH_FILE="%APP_HOME%gradle\distributionPath.txt"
 
 @rem Find a local_artifacts sub-folder, in this folder or any ancestor folder.
@@ -103,7 +110,11 @@ goto findLocalArtifactsLoop
 if not "x%LOCAL_ARTIFACTS_DIR_PATH%"=="x" (
   @rem We have to use goto here, instead of an "else (...)", because Windows will try to parse the
   @rem "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%" inside the else, and fail because the variable isn't set.
-  goto writeWrapperPropertiesForLocalArtifacts
+  if exist "%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle" (
+    @rem If the wrapper folder exists inside local_artifacts folder then write wrapper properties 
+    @rem based on local_artifacts location.
+    goto writeWrapperPropertiesForLocalArtifacts
+  )
 )
 
 @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
@@ -136,25 +147,46 @@ if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
   )
 )
 
+
+@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+if exist "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" (
+  copy "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" "%~dp0gradle\proxy-lookup.txt"
+)
+
+@rem Try to find a proxy server and port based on the DNS suffix values on the local machine.
+if exist "%~dp0gradle\proxy-lookup.txt" (
+  for /f "tokens=6" %%S in ('ipconfig ^| findstr "Connection-specific DNS Suffix"') do (
+    for /f "eol=# tokens=1,2,3 usebackq" %%T in ("%~dp0gradle\proxy-lookup.txt") do (
+      if "%%S"=="%%T" (
+        echo In domain "%%S", defaulting proxy server to "%%U" on port "%%V".
+        set HOLY_GRADLE_PROXY_OPTS=-Dhttp.proxyHost=%%U -Dhttp.proxyPort=%%V -Dhttps.proxyHost=%%U -Dhttps.proxyPort=%%V
+        goto proxySearchDone
+      )
+    )
+  )
+:proxySearchDone
+  echo >nul
+  @rem We need a do-nothing command above because a label must label a command, not a closing parenthesis.
+)
+
+if not exist "%APP_HOME%gradle\gradle-wrapper.properties.in" (
+    echo Not generating "%APP_HOME%\gradle\gradle-wrapper.properties" because ".in" file does not exist.
+    goto skipWriteWrapperProperties
+)
+
+
 @rem Write the distribution base URL to a file and concat with the properties and path.
 @rem Note that this "set" trick (to echo without a newline) sets ERRORLEVEL to 1.
 if not "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%"=="/" set HOLY_GRADLE_REPOSITORY_BASE_URL=%HOLY_GRADLE_REPOSITORY_BASE_URL%/
-<nul set /p=distributionUrl=%HOLY_GRADLE_REPOSITORY_BASE_URL%> "%APP_HOME%gradle\distributionUrlBase.txt"
-if "%APP_HOME:~-21%"=="\wrapper-starter-kit\" (
-  if "x%WRAPPER_STARTER_KIT_VERSION%"=="x" (
-    echo To publish the wrapper-starter-kit you must set WRAPPER_STARTER_KIT_VERSION to
-    echo the version of the custom-gradle distribution to use to publish the new wrapper.
-    echo This may or may not be the same as the version you want to publish.
-    goto fail
-  ) else (
-    <nul set /p=plugins-release/holygradle/custom-gradle/%WRAPPER_STARTER_KIT_VERSION%/custom-gradle-1.4-%WRAPPER_STARTER_KIT_VERSION%.zip> "%APP_HOME%\gradle\distributionPath.txt"
-  )
-)
+<nul set /p=distributionUrl=%GRADLE_DISTRIBUTION_URL%> "%APP_HOME%gradle\distributionUrlBase.txt"
 set DISTRIBUTION_PATH_FILE=%DISTRIBUTION_ORIGINAL_PATH_FILE%
 goto writeWrapperProperties
 
 :writeWrapperPropertiesForLocalArtifacts
-<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/> "%APP_HOME%gradle\distributionUrlBase.txt"
+
+REM If local artifacts contain gradle distribution then use it.
+<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle/gradle-1.4-bin/> "%APP_HOME%gradle\distributionUrlBase.txt"
+
 set DISTRIBUTION_LOCAL_PATH_FILE="%APP_HOME%gradle\distributionLocalPath.txt"
 echo %~nx0 found "%LOCAL_ARTIFACTS_DIR_PATH%"
 echo so will generate "%APP_HOME%gradle\gradle-wrapper.properties"
@@ -227,7 +259,7 @@ set TRUST_STORE_OPTS="-Djavax.net.ssl.trustStore=%APP_HOME%gradle\cacerts" "-Dja
 set CLASSPATH=%APP_HOME%gradle\gradle-wrapper.jar
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% %TRUST_STORE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% %HOLY_GRADLE_PROXY_OPTS% %TRUST_STORE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION% %INIT_SCRIPT_OPTS%
 
 :end
 @rem End local scope for the variables with windows NT shell

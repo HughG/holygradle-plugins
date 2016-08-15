@@ -16,9 +16,20 @@ This repository contains:
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
     - If you normally need JAVA_HOME to point to another version of Java such as JDK 1.8, you can set
     HOLY_GRADLE_JAVA_HOME to your JDK 1.7 location, and the "gw.bat" in this repo will use that instead.
- - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  It will tell you about this in the "Event Log"
-   window.  Set it to the value you normally use in your Windows environment variable (or the default,
-   "%USERPROFILE%\.gradle").  After a short wait, IntelliJ will refresh.
+ - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  
+   - It will tell you about this in the "Event Log" window. You can open the "Event Log" window by clicking on the 
+    icon in the bottom right corner of the window. The event log will show a message like the following.
+    ```
+    "Load error: undefined path variables GRADLE_USER_HOME is undefined. __Fix it__
+    Path variables are used to substitute absolute paths in IDEA project files and allow project file sharing in
+    version control systems. Some of the files describing the current project settings contain unknown path
+    variables and IDEA cannot restore those paths. (__show balloon__)".
+    ```
+    Click on the link on __Fix it__ and set it to the value you normally use in your Windows environment variable 
+    (or the default, "%USERPROFILE%\.gradle").  After a short wait, IntelliJ will refresh.
+   - You can also do this by opening the Path Varible settings. 
+    For this open File > Settings > Appearance & Behavior > Path Variables here you should add a setting for
+    GRADLE_USER_HOME with the path to your gradle cache. 
  - You may also need to configure IntelliJ to point to your installed JDK, in the "Project Structure" dialog.
  - An Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.

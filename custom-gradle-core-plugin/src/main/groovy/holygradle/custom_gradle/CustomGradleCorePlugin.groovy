@@ -2,6 +2,7 @@ package holygradle.custom_gradle
 
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.VersionNumber
+import holygradle.io.FileHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -44,9 +45,9 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            final String customGradleVersion = project.holyGradleInitScriptVersion
             final File gwFile = new File(project.projectDir, "gw.bat")
-            wrapper.gradleVersion = customGradleVersion
+            final File holyGradleInitScriptFile = new File(project.projectDir, "/gradle/init.d/holy-gradle-init.gradle")
+            final File initDir = new File(project.projectDir, "/gradle/init.d/")
             wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")
             wrapper.scriptFile = new File(project.projectDir, "gw")
             wrapper.doFirst {
@@ -58,10 +59,23 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                         "You can only use this task in a sub-project which does not contain its own gw.bat"
                     )
                 }
+
+                if (holyGradleInitScriptFile.exists()) {
+                    throw new RuntimeException(
+                        "You can only use this task in a sub-project which does not contain its own gradle/init.d/holy-gradle-init.gradle"
+                    )
+                }
             }
             wrapper.doLast {
                 gwFile.withOutputStream { os ->
                     os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/gw.bat")
+                }
+
+                // Create Init Dir if it does not exist.
+                FileHelper.ensureMkdirs(initDir, "to hold Holy Gradle init script")
+
+                holyGradleInitScriptFile.withOutputStream { os ->
+                    os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/init.d/holy-gradle-init.gradle")
                 }
 
                 // We move the default ".properties" file to ".properties.in", removing the "distributionUrl=" line.
@@ -78,7 +92,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 Files.delete(wrapper.propertiesFile.toPath())
 
                 File distributionPathFile = new File(project.projectDir, "/gradle/distributionPath.txt")
-                distributionPathFile.text = "plugins-release/holygradle/custom-gradle/${project.holyGradleInitScriptVersion}/custom-gradle-${customGradleVersion}.zip"
+                distributionPathFile.text = "gradle-${project.gradle.gradleVersion}-bin.zip"
             }
         }
     
@@ -118,8 +132,11 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                     println "  ${project.gradle.gradleHomeDir.path}\n"
                     println "Init script location: "
                     println " ${getInitScriptLocation(project)}\n"
+                    def pluginsRepo = project.hasProperty('holyGradlePluginsRepository') ?
+                            project.property('holyGradlePluginsRepository') :
+                            'NOT SET'
                     println "Plugin repository: "
-                    println "  ${project.holyGradlePluginsRepository}\n"
+                    println "  ${pluginsRepo}\n"
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35

@@ -22,10 +22,34 @@ ensureHgHook(
     'hg export tip | ' + findBannedWords
 )
 
-// Force-copy build bootstrap files to independenct sub-projects, so they stay up to date.
-["https-setup-kit", "wrapper-starter-kit", "wrapper-starter-kit/newWrapper"].each {
+// Force-copy GENERAL build bootstrap files to independent sub-projects, so they stay up to date.
+//
+// We don't copy these into "wrapper-starter-kit/newWrapper" because the "wrapper" task itself will write
+// then into that folder when it runs.
+["https-setup-kit", "wrapper-starter-kit"].each {
     File otherProjectDir = new File(projectDir, it)
-    ["gw.bat", "gradle/base-url-lookup.txt", "gradle/certs/**"].each { String copyPattern ->
+    copy {
+        into(otherProjectDir)
+        from(projectDir) {
+            include "gw.bat"
+        }
+    }
+    copy {
+        into("${otherProjectDir}/gradle")
+        from("${projectDir}/custom-gradle-core-plugin/src") {
+            include "init.d/**"
+        }
+    }
+}
+
+// Force-copy LOCAL build bootstrap files to independent sub-projects, so they stay up to date.
+//
+// If you modify this, you probably also need to modify the copy step added to createWrapper in
+// "wrapper-starter-kit/newWrapper/build.gradle".  These files aren't written in by the "wrapper"
+// task because they're not packed into the plugin, because they're site-local and private.
+["https-setup-kit", "wrapper-starter-kit"].each {
+    File otherProjectDir = new File(projectDir, it)
+    ["gradle/base-url-lookup.txt", "gradle/proxy-lookup.txt", "gradle/certs/**"].each { String copyPattern ->
         copy {
             into(otherProjectDir)
             from(projectDir) {

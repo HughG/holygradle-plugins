@@ -68,7 +68,7 @@ class FileHelper {
         try {
             Files.createDirectories(dir.toPath())
         } catch (IOException e) {
-            throw new IOException("Failed to delete ${dir}${formatPurpose(purpose)}", e)
+            throw new IOException("Failed to make ${dir}${formatPurpose(purpose)}", e)
         }
     }
 
