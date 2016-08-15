@@ -184,8 +184,17 @@ goto writeWrapperProperties
 
 :writeWrapperPropertiesForLocalArtifacts
 
-REM If local artifacts contain gradle distribution then use it.
-<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle/gradle-1.4-bin/> "%APP_HOME%gradle\distributionUrlBase.txt"
+REM The local_artifacts folder has a custom-gradle folder, so use the distribution in there.
+set LOCAL_DISTRIBUTIONS_DIR=%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle
+set DISTRIBUTION_LOCAL_DIR_NAME=
+for /d %%D in (%LOCAL_DISTRIBUTIONS_DIR%/gradle-*-bin) do (
+    if not x!DISTRIBUTION_LOCAL_DIR_NAME!x == xx (
+        echo WARNING: Found more than one local Gradle distribution under %LOCAL_DISTRIBUTIONS_DIR%
+        dir /b %LOCAL_DISTRIBUTIONS_DIR%
+    )
+    set DISTRIBUTION_LOCAL_DIR_NAME=%%D
+)
+<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle/%DISTRIBUTION_LOCAL_DIR_NAME%/> "%APP_HOME%gradle\distributionUrlBase.txt"
 
 set DISTRIBUTION_LOCAL_PATH_FILE="%APP_HOME%gradle\distributionLocalPath.txt"
 echo %~nx0 found "%LOCAL_ARTIFACTS_DIR_PATH%"
