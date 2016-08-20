@@ -27,7 +27,7 @@ class HolyGradlePlugins {
         this.buildscript = buildscript
         this.project = project
         // Point the buildscript to the Holy Gradle plugins.
-        if (project.hasProperty("holyGradlePluginsRepository")) {
+        if (project.property("holyGradlePluginsRepository") != null) {
             buildscript.repositories { RepositoryHandler repoHandler ->
                 repoHandler.ivy { IvyArtifactRepository repo ->
                     repo.url = project.property("holyGradlePluginsRepository")
@@ -35,7 +35,7 @@ class HolyGradlePlugins {
             }
         }
         // Point the buildscript to a source of dependencies for the Holy Gradle plugins.
-        if (!project.hasProperty("holyGradleRemoteRepository")) {
+        if (!project.property("holyGradleRemoteRepository") != null) {
             buildscript.repositories {
                 mavenCentral()
             }

@@ -20,6 +20,12 @@ public interface PublishPackagesExtension {
 
     void repositories(Action<RepositoryHandler> configure)
 
+    boolean getCreateDefaultPublication()
+    void setCreateDefaultPublication(boolean create)
+
+    boolean getPublishPrivateConfigurations()
+    void setPublishPrivateConfigurations(boolean publish)
+
     Publication getDefaultPublication()
 
     void republish(Closure closure)

@@ -91,10 +91,10 @@ class ResolvedDependenciesVisitor {
         dependencies.each { resolvedDependency ->
             try {
                 dependencyStack.push(resolvedDependency)
-                println("tRD: ${dependencyStack.join(' <- ')}")
+                // println("tRD: ${dependencyStack.join(' <- ')}")
 
                 VisitChoice visitChoice = getVisitChoice(resolvedDependency)
-                println("  ${visitChoice}")
+                // println("  ${visitChoice}")
 
                 if (visitChoice.visitDependency) {
                     dependencyAction(resolvedDependency)

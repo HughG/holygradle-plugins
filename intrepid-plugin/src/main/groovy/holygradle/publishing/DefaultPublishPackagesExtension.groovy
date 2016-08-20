@@ -21,13 +21,13 @@ import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
 import org.gradle.api.tasks.TaskCollection
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.util.ConfigureUtil
-// TODO 2016-07-10 HughG: Add artifacts!
-// TODO 2016-07-10 HughG: Check other new constraints on ivy-publish.
 
 public class DefaultPublishPackagesExtension implements PublishPackagesExtension {
     private final Project project
     private final PublishingExtension publishingExtension
     private final RepositoryHandler repositories
+    private boolean createDefaultPublication = true
+    private boolean publishPrivateConfigurations = true
     public final IvyPublication ivyPublication
     private final LinkedHashSet<String> originalConfigurationOrder = new LinkedHashSet()
     private RepublishHandler republishHandler
@@ -73,9 +73,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         configurations.all((Closure){ Configuration conf ->
             // Gradle automatically converts Closure to the right Action<> type.
             //noinspection GroovyAssignabilityCheck
-            ivyPublication.configurations { ivyConfs ->
-                IvyConfiguration ivyConf = ivyConfs.maybeCreate(conf.name)
-                conf.extendsFrom.each { ivyConf.extend(it.name) }
+            if (includeConfiguration(conf)) {
+                ivyPublication.configurations { ivyConfs ->
+                    IvyConfiguration ivyConf = ivyConfs.maybeCreate(conf.name)
+                    conf.extendsFrom.each { ivyConf.extend(it.name) }
+                }
             }
         })
         configurations.whenObjectRemoved((Closure){ Configuration conf ->
@@ -89,17 +91,19 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         // Add an artifact to this publication for each handler that has been or is later added, and remove artifacts
         // if and when any are removed.
         packageArtifactHandlers.all { PackageArtifactHandler handler ->
-            AbstractArchiveTask packageTask = project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
-            // Gradle automatically converts Closure to the right Action<> type.
-            //noinspection GroovyAssignabilityCheck
-            ivyPublication.artifact(packageTask) { IvyArtifact artifact ->
-                artifact.name = packageTask.baseName
-                artifact.conf = handler.configuration
+            if (includeConfiguration(project.configurations.getByName(handler.configuration))) {
+                AbstractArchiveTask packageTask = project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
+                // Gradle automatically converts Closure to the right Action<> type.
+                //noinspection GroovyAssignabilityCheck
+                ivyPublication.artifact(packageTask) { IvyArtifact artifact ->
+                    artifact.name = packageTask.baseName
+                    artifact.conf = handler.configuration
+                }
             }
         }
         packageArtifactHandlers.whenObjectRemoved { PackageArtifactHandler handler ->
             AbstractArchiveTask packageTask = project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
-            ivyPublication.artifacts -= ivyPublication.artifacts.find { it.file == packageTask.archivePath }
+            ivyPublication.artifacts.remove(ivyPublication.artifacts.find { it.file == packageTask.archivePath })
         }
 
         Task beforeGenerateDescriptorTask = project.task("beforeGenerateDescriptor") { Task t ->
@@ -170,15 +174,16 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 generateDescriptorTask.ext['publication'] = it.publication
             }
 
-            // Only use our default publication if no other publications have been added.
-            if (publishingExtension.publications.size() > 1) {
+            // Only use our default publication if the user asked for it.
+            if (!createDefaultPublication) {
                 publishingExtension.publications.remove(ivyPublication)
-                this.ivyPublication = null
             }
 
             ivyDescriptorTasks.each { ivyDescriptorTask ->
                 ivyDescriptorTask.doFirst {
                     IvyPublication publication = ivyDescriptorTask.ext['publication'] as IvyPublication
+                    // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
+                    publication.descriptor.status = project.status
                     putConfigurationsInOriginalOrder(publication)
                     freezeDynamicDependencyVersions(project, publication)
                     collapseMultipleConfigurationDependencies(publication)
@@ -209,6 +214,13 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 }
             }
         }
+    }
+
+    // This is public only so that it can be called from within a closure.
+    public boolean includeConfiguration(Configuration conf) {
+        return conf.visible ||
+            this.publishPrivateConfigurations ||
+            project.configurations.any((Closure){ it.extendsFrom conf })
     }
 
     public void defineCheckTask(PackedDependenciesStateSource packedDependenciesStateSource) {
@@ -257,6 +269,26 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     public void repositories(Action<RepositoryHandler> configure) {
         configure.execute(repositories)
+    }
+
+    @Override
+    boolean getCreateDefaultPublication() {
+        this.createDefaultPublication
+    }
+
+    @Override
+    void setCreateDefaultPublication(boolean create) {
+        this.createDefaultPublication = create
+    }
+
+    @Override
+    boolean getPublishPrivateConfigurations() {
+        this.publishPrivateConfigurations
+    }
+
+    @Override
+    void setPublishPrivateConfigurations(boolean publish) {
+        this.publishPrivateConfigurations = publish
     }
 
     Publication getDefaultPublication() {
@@ -515,7 +547,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     public void maybeAddConfigurationDependenciesToDefaultPublication() {
         // Our default ivy publication may have been removed, if others were added.
-        if (this.ivyPublication != null) {
+        if (this.createDefaultPublication) {
             String generateIvyDescriptorTaskName =
                 "generateDescriptorFileFor${this.ivyPublication.name.capitalize()}Publication"
             Task generateIvyDescriptorTask = project.tasks.getByName(generateIvyDescriptorTaskName)

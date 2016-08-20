@@ -83,7 +83,6 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         project.logger.debug("collectUnpackModules for ${originalConf}")
         project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
         project.logger.debug("    and packedDependencies ${packedDependencies*.name.sort().join('\r\n')}")
-        project.logger.info("collectUnpackModules:   origConf hierarchy names: ${originalConf.hierarchy*.name}")
 
         Set<ResolvedDependenciesVisitor.ResolvedDependencyId> dependencyConfigurationsAlreadySeen =
             new HashSet<ResolvedDependenciesVisitor.ResolvedDependencyId>()
@@ -157,8 +156,6 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     // regard this packed dependency as mapping to the given UnpackModuleVersion, i.e., to the
                     // resolved dependency version. We know that there can only be one resolved version per
                     // configuration so by checking the configuration matches we can be sure this is it.
-                    project.logger.info("collectUnpackModules: comparing PD ${it.dependencyId} to ${id}")
-                    project.logger.info("collectUnpackModules:   PD conf map keys: ${it.configurationMappings*.key}")
                     return (it.groupName == id.group) &&
                         (it.dependencyName == id.name) &&
                         (it.configurationMappings.any { entry ->
