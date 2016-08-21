@@ -8,15 +8,18 @@ configurations {
     runtime
 }
 
+group = "happydays"
+version = "3.3.3"
+
 sourceDependencies {
     "src_dep1" {
         hg "http://a_dummy_url_that_we_wont_need"
-        publishing.configuration "compile->runtime"
+        configuration "compile->runtime"
     }
     "src_dep2" {
         hg "http://another_dummy_url_that_we_wont_need"
-        publishing.configuration "compile"
-        publishing.configuration "runtime"
+        configuration "compile"
+        configuration "runtime"
     }
 }
 
@@ -30,8 +33,6 @@ packageArtifacts {
 }
 
 publishPackages {
-    group "happydays"
-    nextVersionNumber "3.3.3"
     repositories.ivy {
         url "http://dummy_repo_url"
     }

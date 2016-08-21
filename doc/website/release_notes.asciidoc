@@ -44,6 +44,21 @@ things for users, and also for plugin developers.
 
 ==== 7.9.x
 
+===== 7.9.1
+(3e6fe3d1f432 at 2016-07-26 13:35:49 UTC)
+
+CustomGradleCorePlugin::
+
+* GR #5985 Extend the auto-detection of the current domain (to set the default Artifactory plugin repo URL) so that it
+checks all network interfaces, not just the default one.
+
+Intrepid::
+
+* GR #6701 Upgrade the version of 7-zip used, to avoid security vulnerability https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-2335.
+
+DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.9.0
 (11be4c326e36 at 2016-06-30 09:58:34 UTC)
 

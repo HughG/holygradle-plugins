@@ -13,7 +13,7 @@ dependencies {
     // These dependencies are assumed to exist in an organisation-specific repository.  They are not
     // currently published to a public location even though all necessary resources are already
     // in the public domain.
-    optional group: 'org', name: 'sevenZip', version:'9.20.1', configuration: 'basic'
+    optional group: 'org', name: 'sevenZip', version:'16.02_1', configuration: 'basic'
 
     // Project dependencies
     compile project(':credential-store')

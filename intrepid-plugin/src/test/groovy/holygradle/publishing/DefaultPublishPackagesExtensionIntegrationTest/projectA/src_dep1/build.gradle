@@ -7,7 +7,8 @@ repositories.ivy {
     url "..\\..\\..\\..\\testUtil\\repository\\"
 }
 
-group "happydays_subsiduary"
+group = "happydays_subsiduary"
+version = "2.2.2"
 
 configurations {
     runtime
@@ -27,7 +28,6 @@ packageArtifacts {
 }
 
 publishPackages {    
-    nextVersionNumber "2.2.2"   
     repositories.ivy {
         url "http://dummy_repo_url"
     }

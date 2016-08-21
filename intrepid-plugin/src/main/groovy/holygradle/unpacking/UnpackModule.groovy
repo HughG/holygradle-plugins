@@ -34,7 +34,7 @@ class UnpackModule {
     @Deprecated
     public static Collection<UnpackModule> getAllUnpackModules(Project project) {
         project.logger.warn(
-            "Method UnpackModule#getAllUnpackModules(Project) is deprecated and will be removed. " +
+            "WARNING: Method UnpackModule#getAllUnpackModules(Project) is deprecated and will be removed. " +
             "Use project.packedDependenciesState.getAllUnpackModules() instead."
         )
         return project.packedDependenciesState.getAllUnpackModules()

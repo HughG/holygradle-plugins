@@ -186,7 +186,7 @@ class DependenciesStateHandler {
             try {
                 pomXml = new XmlSlurper(false, false).parseText(pomFile.text)
             } catch (Exception e) {
-                logger.warn("getParentDependenciesForPomFiles: Ignoring error while parsing XML in ${pomFile}: " + e.toString())
+                logger.warn("WARNING: getParentDependenciesForPomFiles: Ignoring error while parsing XML in ${pomFile}: ${e}")
                 return
             }
 
