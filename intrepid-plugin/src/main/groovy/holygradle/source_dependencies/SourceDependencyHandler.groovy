@@ -75,7 +75,7 @@ class SourceDependencyHandler extends DependencyHandler {
      */
     public SourceDependencyHandler getPublishing() {
         project.logger.warn(
-            "The 'publishing' part of the syntax 'sourceDependencies { \"something\" { publishing ... } }' " +
+            "WARNING: The 'publishing' part of the syntax 'sourceDependencies { \"something\" { publishing ... } }' " +
             "is deprecated and will be removed.  Instead, its contents should be moved up one level, so " +
             "'sourceDependencies { \"something\" { publishing.configuration \"build->default\" ... } }' should be " +
             "'sourceDependencies { \"something\" { configuration \"build->default\" ... } }'."

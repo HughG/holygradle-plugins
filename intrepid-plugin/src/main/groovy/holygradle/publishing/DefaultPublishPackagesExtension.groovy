@@ -135,6 +135,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
     
     public void nextVersionNumber(String versionNo) {
+        project.logger.warn(
+            "WARNING: publishPackages.nextVersionNumber is deprecated and will be removed in future.  " +
+            "Instead use \"project.version = 'string'\" at the top level of the build script.  " +
+            "It is recommended to set the version early in the evaluation of the build script.  "
+        )
         nextVersionNumberStr = versionNo
         applyVersionNumber()
     }
@@ -144,11 +149,24 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
     
     public void nextVersionNumberAutoIncrementFile(String versionNumberFilePath) {
+        project.logger.warn(
+            "WARNING: publishPackages.nextVersionNumberAutoIncrementFile is deprecated and will be removed in future.  " +
+            "There will be no replacement feature in the Holy Gradle.  " +
+            "If you need this behaviour you must implement it yourself.  " +
+            "It is recommended to set the version early in the evaluation of the build script.  "
+        )
         autoIncrementFilePath = versionNumberFilePath
         applyVersionNumber()
     }
     
     public void nextVersionNumberEnvironmentVariable(String versionNumberEnvVar) {
+        project.logger.warn(
+            "WARNING: publishPackages.nextVersionNumberEnvironmentVariable is deprecated and will be removed in future.  " +
+            "Instead use \"project.version = System.getenv('ENV_VAR_NAME') ?: Project.DEFAULT_VERSION\" " +
+            "at the top level of the build script.  " +
+            "It is recommended to set the version early in the evaluation of the build script.  "
+        )
+
         environmentVariableName = versionNumberEnvVar
         applyVersionNumber()
     }
@@ -162,6 +180,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
 
     void setAddDependencyRelativePaths(boolean addRelativePaths) {
+        if (addRelativePaths) {
+            project.logger.warn(
+                "WARNING: publishPackages.addDependencyRelativePaths is deprecated and will be removed in future."
+            )
+        }
         this.addRelativePaths = addRelativePaths
     }
 
@@ -184,11 +207,20 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
     
     public void group(String publishGroup) {
+        project.logger.warn(
+            "WARNING: publishPackages.group is deprecated and will be removed in future.  " +
+            "Instead use \"project.group = 'string'\" at the top level of the build script.  " +
+            "It is recommended to set the group early in the evaluation of the build script.  "
+        )
         this.publishGroup = publishGroup
         applyGroupName()
     }
     
     public void name(String publishName) {
+        project.logger.warn(
+            "WARNING: publishPackages.name is deprecated and will be removed in future.  " +
+            "Instead use \"rootProject.name = 'string'\" in the 'settings.gradle' file for the project.  "
+        )
         this.publishName = publishName
     }
     
@@ -450,7 +482,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                         project.logger.info "Adding relative path to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
                         depNode.@relativePath = sourceDep.getFullTargetPath()
                     } else {
-                        project.logger.warn "Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in source or packed dependencies"
+                        project.logger.warn "WARNING: Did not find dependency ${depNode.@org}:${depNode.@name}:${depNode.@rev} in source or packed dependencies"
                     }
                 }
             }

@@ -41,7 +41,7 @@ class TestHandler {
     public void redirectOutputToFile(String outputFilePath) {
         redirectOutputFilePath = outputFilePath
         project.logger.warn(
-            "redirectOutputFilePath is deprecated. Instead, set the standardOutput property and/or the " +
+            "WARNING: redirectOutputFilePath is deprecated. Instead, set the standardOutput property and/or the " +
             "standardOutputTee property. The standardOutput property overrides any value passed to this method."
         )
     }
@@ -166,7 +166,7 @@ class TestHandler {
                 File tryRootPath = project.rootProject.file(exePathString)
                 if (tryRootPath.exists()) {
                     project.logger.warn(
-                        "For test ${name} in ${project}, " +
+                        "WARNING: For test ${name} in ${project}, " +
                         "the test executable was specified as '${exePathString}' but found relative to " +
                         "project.rootProject.projectDir at '${tryRootPath}'.  This root project path search will be " +
                         "removed in a future version of the Holy Gradle.  Please use the rootProject.file(String) " +
@@ -177,7 +177,7 @@ class TestHandler {
                     // Note that, if the file doesn't exist at configuration time, it may just be that the test EXE hasn't
                     // been built yet.
                     project.logger.debug(
-                        "For test ${name} in ${project}, " +
+                        "WARNING: For test ${name} in ${project}, " +
                         "the test executable was specified as '${exePathString}' but was NOT found relative to " +
                         "that project or the root project, so may not run."
                     )

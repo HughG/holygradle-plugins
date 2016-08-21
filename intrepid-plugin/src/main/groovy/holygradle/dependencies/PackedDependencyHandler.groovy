@@ -80,7 +80,7 @@ class PackedDependencyHandler extends DependencyHandler {
      */
     @Deprecated
     public void unpackToCache(boolean doUnpack) {
-        project.logger.warn("The syntax 'unpackToCache false' is deprecated. Use 'unpackToCache = false' instead.")
+        project.logger.warn("WARNING: The syntax 'unpackToCache false' is deprecated. Use 'unpackToCache = false' instead.")
         this.unpackToCache = doUnpack
     }
 
@@ -100,7 +100,7 @@ class PackedDependencyHandler extends DependencyHandler {
     @Deprecated
     public void noCreateSymlinkToCache() {
         project.logger.warn(
-            "noCreateSymlinkToCache is deprecated and will be removed in future.  " +
+            "WARNING: noCreateSymlinkToCache is deprecated and will be removed in future.  " +
             "Please use noCreateLinkToCache instead"
         )
         noCreateLinkToCache()

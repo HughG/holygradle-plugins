@@ -8,6 +8,9 @@ buildscript {
 }
 gplugins.apply()
 
+group = 'com.example-corp.teamX'
+version = System.getenv('NEXT_VERSION') ?: Project.DEFAULT_VERSION
+
 configurations {
     it."default"
     privateBuild
@@ -66,8 +69,6 @@ packageArtifacts {
 }
 
 publishPackages {
-    group "com.example-corp.teamX"
-    nextVersionNumberEnvironmentVariable "NEXT_VERSION"  
     repositories.ivy {
         credentials {
             username my.username("Artifactory")

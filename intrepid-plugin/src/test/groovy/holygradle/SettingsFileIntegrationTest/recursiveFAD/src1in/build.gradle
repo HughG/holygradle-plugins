@@ -10,6 +10,6 @@ configurations {
 sourceDependencies {
     "src2" {
         hg "${rootProject.projectDir.parent}/src2"
-        publishing.configuration "foo"
+        configuration "foo"
     }
 }

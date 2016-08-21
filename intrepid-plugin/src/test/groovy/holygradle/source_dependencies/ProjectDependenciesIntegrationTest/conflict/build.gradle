@@ -24,6 +24,6 @@ sourceDependencies {
     // of "external-lib".  We want to test that this is detected as a conflict
     "src_dep" {
         hg "http://a_dummy_url_that_we_wont_need"
-        publishing.configuration "foo->someChildConfig"
+        configuration "foo->someChildConfig"
     }
 }    

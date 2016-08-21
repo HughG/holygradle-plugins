@@ -3,6 +3,9 @@ buildscript {
 }
 gplugins.apply()
 
+group = "happydays"
+version = "1.1.1"
+
 configurations {
     compile
     runtime
@@ -15,9 +18,7 @@ packageArtifacts {
     }
 }
 
-publishPackages {
-    group "happydays"
-    nextVersionNumber "1.1.1"   
+publishPackages { 
     repositories.ivy {
         url "http://dummy_repo_url"
     }

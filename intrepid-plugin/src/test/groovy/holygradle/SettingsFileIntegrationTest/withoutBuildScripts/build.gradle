@@ -16,7 +16,7 @@ sourceDependencies {
     // Declare a source dependency which has a build file.
     "B_src_dep" {
         hg "http://a_dummy_url_that_we_wont_need"
-        publishing.configuration "foo->someChildConfig"
+        configuration "foo->someChildConfig"
     }
     // Declare a source dependency which does NOT have a build file.
     "A_no_build_script" {
