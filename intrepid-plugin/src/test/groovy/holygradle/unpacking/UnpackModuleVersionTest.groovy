@@ -20,26 +20,32 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     // |   +---coconut (org:coconut:1.3) [date: ""]
     // |       +---date (org:date:1.4)
     // +---eggfruit (org:eggfruit:1.5)
-    private Map<String, UnpackModuleVersion> getTestModules() {
+    private Map<String, UnpackModuleVersion> getTestModules(Project project) {
         Map<String, UnpackModuleVersion> modules = [:]
-        modules["root"] = getUnpackModuleVersion("root", "1.0")
-        modules["apricot"] = getUnpackModuleVersion("apricot", "1.1", modules["root"])
-        modules["blueberry"] = getUnpackModuleVersion("blueberry", "1.2", modules["root"])
-        modules["coconut"] = getUnpackModuleVersion("coconut", "1.3", modules["root"])
-        modules["date"] = getUnpackModuleVersion("date", "1.4", modules["coconut"])
-        modules["eggfruit"] = getUnpackModuleVersion("eggfruit", "1.5", modules["apricot"])
+        modules["root"] = getUnpackModuleVersion(project, "root", "1.0")
+        modules["apricot"] = getUnpackModuleVersion(project, "apricot", "1.1", modules["root"])
+        modules["blueberry"] = getUnpackModuleVersion(project, "blueberry", "1.2", modules["root"])
+        modules["coconut"] = getUnpackModuleVersion(project, "coconut", "1.3", modules["root"])
+        modules["date"] = getUnpackModuleVersion(project, "date", "1.4", modules["coconut"])
+        modules["eggfruit"] = getUnpackModuleVersion(project, "eggfruit", "1.5", modules["apricot"])
         modules
     }
 
-    private UnpackModuleVersion getUnpackModuleVersion(String moduleName, String moduleVersion, UnpackModuleVersion parent=null) {
+    private UnpackModuleVersion getUnpackModuleVersion(
+        Project project,
+        String moduleName,
+        String moduleVersion,
+        UnpackModuleVersion parent = null
+    ) {
         new UnpackModuleVersion(
+            project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             parent,
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )
     }
     
-    private static Project getProject() {
+    private static Project makeProject() {
         Project project = ProjectBuilder.builder().build()
         PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir =
             new File("theUnpackCache")
@@ -49,8 +55,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     
     @Test
     public void testStandAloneModule() {
-        Project project = getProject()
-        UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
+        Project project = makeProject()
+        UnpackModuleVersion apricot = getUnpackModuleVersion(project, "apricot", "1.1")
 
         assertEquals("org:apricot:1.1", apricot.getFullCoordinate())
         assertNotNull("getPackedDependency not null", apricot.getPackedDependency())
@@ -59,55 +65,57 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals("apricot", apricot.getSelfOrAncestorPackedDependency().name)
         assertNull("getParent is null", apricot.getParent())
 
-        UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
+        UnpackEntry unpackEntry = apricot.getUnpackEntry()
         File unpackCache = PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir
         assertEquals(new File(unpackCache, "org/apricot-1.1"), unpackEntry.unpackDir)
         assertThat("no zip files", unpackEntry.zipFiles, empty())
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
         assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
 
-        assertEquals("apricot", apricot.getTargetDirName())
-        assertEquals(new File(project.projectDir, "apricot"), apricot.getTargetPathInWorkspace(project))
+        assertEquals("apricot", apricot.targetDirName)
+        assertEquals(new File(project.projectDir, "apricot"), apricot.targetPathInWorkspace)
     }
     
     @Test
     public void testSingleModuleApplyUpToDateChecks() {
-        Project project = getProject()
-        UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
+        Project project = makeProject()
+        UnpackModuleVersion apricot = getUnpackModuleVersion(project, "apricot", "1.1")
     
         PackedDependencyHandler packedDep = apricot.getPackedDependency()
         packedDep.applyUpToDateChecks = true
         
-        UnpackEntry unpackEntry = apricot.getUnpackEntry(project)
+        UnpackEntry unpackEntry = apricot.getUnpackEntry()
         assertTrue("UnpackEntry reports correct applyUpToDateChecks value", unpackEntry.applyUpToDateChecks)
 
     }
     
     @Test
     public void testSingleModuleIncludeVersionNumberInPath() {
+        Project project = makeProject()
+
         PackedDependencyHandler eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty")
         UnpackModuleVersion eggfruit = new UnpackModuleVersion(
+            project,
             new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
             null,
             eggfruitPackedDep
         )
         
-        assertEquals("eggfruit-1.5-tasty", eggfruit.getTargetDirName())
+        assertEquals("eggfruit-1.5-tasty", eggfruit.targetDirName)
     }
     
     @Test
     public void testSingleModuleNotUnpackToCache() {
-        Project project = getProject()
-        UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
+        Project project = makeProject()
+        UnpackModuleVersion coconut = getUnpackModuleVersion(project, "coconut", "1.3")
         
         PackedDependencyHandler coconutPackedDep = coconut.getPackedDependency()
         coconutPackedDep.unpackToCache = false
         
         File targetPath = new File(project.projectDir, "coconut")
-        assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))
-        assertEquals(new File("coconut"), coconut.getTargetPathInWorkspace(null))
+        assertEquals(targetPath, coconut.getTargetPathInWorkspace())
 
-        UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
+        UnpackEntry unpackEntry = coconut.getUnpackEntry()
         assertEquals("unpackDir should be as expected", targetPath, unpackEntry.unpackDir)
         assertThat("no zip files", unpackEntry.zipFiles, empty())
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
@@ -116,14 +124,14 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     
     @Test
     public void testOneChild() {
-        Project project = getProject()
-        UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
-        UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
+        Project project = makeProject()
+        UnpackModuleVersion coconut = getUnpackModuleVersion(project, "coconut", "1.3")
+        UnpackModuleVersion date = getUnpackModuleVersion(project, "date", "1.4", coconut)
         
         assertNotNull("getParent not null", date.getParent())
         assertEquals(coconut, date.getParent())
 
-        UnpackEntry unpackEntry = coconut.getUnpackEntry(project)
+        UnpackEntry unpackEntry = coconut.getUnpackEntry()
         File unpackCache =
             PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir
         assertEquals(new File(unpackCache, "org/coconut-1.3"), unpackEntry.unpackDir)
@@ -134,19 +142,18 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependency())
         
         File targetPath = new File(project.projectDir, "coconut")
-        assertEquals(targetPath, coconut.getTargetPathInWorkspace(project))
-        assertEquals(new File("coconut"), coconut.getTargetPathInWorkspace(null))
+        assertEquals(targetPath, coconut.getTargetPathInWorkspace())
     }
     
     @Test
     public void testRelativePaths() {
-        Project project = getProject()
-        Map<String, UnpackModuleVersion> modules = getTestModules()
+        Project project = makeProject()
+        Map<String, UnpackModuleVersion> modules = getTestModules(project)
 
-        assertEquals(new File(project.projectDir, "apricot"), modules["apricot"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "blueberry"), modules["blueberry"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "coconut"), modules["coconut"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "date"), modules["date"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "eggfruit"), modules["eggfruit"].getTargetPathInWorkspace(project))
+        assertEquals(new File(project.projectDir, "apricot"), modules["apricot"].targetPathInWorkspace)
+        assertEquals(new File(project.projectDir, "blueberry"), modules["blueberry"].targetPathInWorkspace)
+        assertEquals(new File(project.projectDir, "coconut"), modules["coconut"].targetPathInWorkspace)
+        assertEquals(new File(project.projectDir, "date"), modules["date"].targetPathInWorkspace)
+        assertEquals(new File(project.projectDir, "eggfruit"), modules["eggfruit"].targetPathInWorkspace)
     }
 }

@@ -189,7 +189,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         unpackModuleVersion.packedDependency = thisPackedDep
                     }
                 } else {
-                    unpackModuleVersion = new UnpackModuleVersion(id, parentUnpackModuleVersion, thisPackedDep)
+                    unpackModuleVersion = new UnpackModuleVersion(project, id, parentUnpackModuleVersion, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
@@ -238,7 +238,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             [:].withDefault { new ArrayList<UnpackModuleVersion>() }
         unpackModulesMap.values().each { UnpackModule module ->
             module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+                File targetPath = versionInfo.targetPathInWorkspace.canonicalFile
                 targetLocations[targetPath].add(versionInfo)
             }
         }

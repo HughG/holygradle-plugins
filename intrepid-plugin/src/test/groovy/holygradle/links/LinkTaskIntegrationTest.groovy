@@ -10,7 +10,7 @@ import static org.hamcrest.number.OrderingComparison.*
 class LinkTaskIntegrationTest extends AbstractHolyGradleIntegrationTest
 {
     /**
-     * Tests that, if one project B has a source dependency on another project A, then the links to the unpack cache
+     * Tests that, if one project A has a source dependency on another project B, then the links to the unpack cache
      * for A will be rebuilt before any explicitly-created links in B.  This is a requirement because project B might
      * want to link to an unpacked dependency in A, but it can't do that if A's links-to-cache don't already exist.
      *
