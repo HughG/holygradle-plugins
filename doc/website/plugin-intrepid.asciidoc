@@ -1197,58 +1197,24 @@ the source for the dependency project may not exist yet.
 [[_publishing]]
 ==== publishing
 
-WARNING: This block is deprecated as of version link:release_notes.html#_7_7_0[], and will be removed in a future
-version of the Holy Gradle.
-
-This is like a struct which groups together a few different configuration options relating to how the source-code dependency will be referenced (in the Ivy module descriptor XML) when the consumer module is published.  The consumer module can be published as depending on the published output of a source-code dependency.
-
-If the +publishing+ configuration is omitted then the source-code dependency will not be mentioned in the module descriptor.
-
-This is an example of a fully-specified +publishing+ element:
-
-[source,groovy]
-----
-sourceDependencies {
-    dependency_module {
-        svn "http://path/to/svn/repo"
-        publishing {
-            group "com.company.team"
-            configuration "import_x64_Debug->compileVc10Debug", "import_x64_Release->compileVc10Release"
-            version "1.0.+"
-        }
-    }
-}
-----
-
-NOTE: In order for dynamic version numbers to be resolved you will need to configure the <<_repositories>> element.
-
+This block was deprecated as of version link:release_notes.html#_7_7_0[] and removed as of version TODO.
 
 ===== group
 
-This method configures the group name for the dependency - see the `dependency->org` attribute in the above module descriptor.
-
-If this method is not called then the group will default to the group specified in <<_publishPackages>>.
-
--> Call this method at most once.
+This method was removed as of version TODO.
 
 [[_publishing_configuration]]
 ===== configuration
 
-This method is the same as the <<_configuration>> method of a source dependency block.
+This method was removed as of version TODO.
 
 ===== version
 
-This method defines the version number that will be used in the +dependency+ elements in the module descriptor.
-
-You can specify an exact version number (e.g. +1.2.3.4+) or a dynamic version number (e.g. +1.2.++). The dynamic version number will be resolved to a concrete version number based on what artifacts exist in the target repository **at the time that the module is published.**
-
-By default, if you do not specify a version, then the version used for publishing the module will also be used for the version number in the +dependency+ element in the module descriptors for source dependencies.
-
--> Call this method at most once.
+This method was removed as of version TODO.
 
 ===== usePublishedVersion
 
-This method was removed in version 7.7.0.  The behaviour it was intended to provide -- switching
+This method was removed as of version 7.7.0.  The behaviour it was intended to provide -- switching
 between binary and source versions of the same module -- will be provided by a better mechanism in
 future.
 
@@ -1874,56 +1840,30 @@ When published, the module descriptor would look something like this:
 </ivy-module>
 ----
 
-WARNING: The group and version methods in this block are not yet deprecated but are likely to be
-removed in a future version of the Holy Gradle.  Instead, you should just set the group and version
-at the top level of the file, near the beginning, as shown in the example build script at the top of
+WARNING: The group and version methods in this block were removed as of version TODO.  Instead, you should just set the
+group and version at the top level of the file, near the beginning, as shown in the example build script at the top of
 this page.  That example shows how to set the version from an environment variable, like
 <<_nextVersionNumberEnvironmentVariable>>; the other methods <<_nextVersionNumber>> and
 <<_nextVersionNumberAutoIncrementFile>> have not been used in practice.
 
 ==== group
 
-WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
-
-This method defines the group name for the published artifacts. It will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->organisation` attribute in the module descriptor above. The group is often based on the name of the organisation, and helps to disambiguate modules with the same name from different organisations.
-
-Calling this method has the same effect as setting the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html#org.gradle.api.Project:group[group] property on the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html[Project].
-
--> Call this method exactly once.
+This method was removed as of version TODO.
 
 [[_nextVersionNumber]]
 ==== nextVersionNumber
 
-WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
-
-This method defines the version number for the published artifacts. This will determine part of the URL to the artifacts once they are published, and also determines what goes in the `info->revision` attribute in the module descriptor above.
-
-There are two variant of this method: one taking a single string parameter, and another taking a closure which should return a string value.
- 
-Calling this method has the same effect as setting the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html#org.gradle.api.Project:version[version] property on the link:http://gradle.org/docs/1.4/dsl/org.gradle.api.Project.html[Project].
-
--> Call one of +nextVersionNumber+, +nextVersionNumberAutoIncrementFile+ and +nextVersionNumberEnvironmentVariable+
+This method was removed as of version TODO.
 
 [[_nextVersionNumberAutoIncrementFile]]
 ==== nextVersionNumberAutoIncrementFile
 
-WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
-
-This method has the same effect as <<_nextVersionNumber>> with a few important differences:
-
-* the single string parameter defines a relative path to a file containing the next version number
-* once the module has been successfully published the last component of the version number in the file will automatically be incremented
-
--> Call one of +nextVersionNumber+, +nextVersionNumberAutoIncrementFile+ and +nextVersionNumberEnvironmentVariable+
+This method was removed as of version TODO.
 
 [[_nextVersionNumberEnvironmentVariable]]
 ==== nextVersionNumberEnvironmentVariable
 
-WARNING: This method is not yet deprecated but is likely to be removed in future--see above. 
-
-This method has the same effect as <<_nextVersionNumber>> except that the single string parameter defines the name of an environment variable which contains the version number. This may be useful if, for example, your autobuild already has a notion of version number and is invoking the +publish+ task.
-
--> Call one of +nextVersionNumber+, +nextVersionNumberAutoIncrementFile+ and +nextVersionNumberEnvironmentVariable+
+This method was removed as of version TODO.
 
 ==== repositories
 
@@ -2139,24 +2079,11 @@ Transitive dependencies of +packedDependencies+ will appear next to those depend
 the source projects directly depends on +RenderingLib+.  However, it will still be unpacked and appear in the +Stuff+
 folder, next to +UtilityLib+, because +UtilityLib+ depends on +RenderingLib+.
 
-WARNING: Previous versions of the gloss:holygradle[] allowed published packed dependencies to specify that their
-transitive dependencies should appear at some other relative location.  This feature is deprecated and will be removed
-in future.  See <<useRelativePathFromIvyXml>>.
+Previous versions of the gloss:holygradle[] allowed published packed dependencies to specify that their transitive
+dependencies should appear at some other relative location.  This feature was removed as of version TODO.
+
 
 === Ivy files
 
-WARNING: This feature is deprecated and will be removed in future.  See <<useRelativePathFromIvyXml>>.
-
-Whenever you publish a module which specifies source dependencies or packed dependencies the Ivy XML will have the
-relative path baked in. So, for example, if you published +MyLib+ you could examine the XML and notice the relative
-path +../../Stuff/+ specified for the +UtilityLib+ dependency, and if you published +SubLib+ you would see the relative
-path +../+ for the +Boost+ dependency.
-
-Relative paths chain together as you would expect. For example +Root+ depends on +MyLib+, which
-depends on +SubLib+ and all the relative paths are empty. This means that the directories are
-nested. After +MyLib+ and +SubLib+ are published and subsequently fetched on someone's machine, the
-directory structure is still nested, even when these modules are unpacked to the central cache. This
-approach does mean that it would be rather difficult to allow versions of transitive dependencies to
-be overridden.  Therefore overriding transitive dependencies using +resolutionStrategy.force+ isn't
-currently supported -- it may work, if your relative paths don't result in nesting, but it's not
-guaranteed.
+Previous versions of the gloss:holygradle[] would include the relative location of source dependencies and packed
+dependencies in the +ivy.xml+ file.  This feature was removed as of version TODO.

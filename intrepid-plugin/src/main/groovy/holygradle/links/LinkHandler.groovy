@@ -19,19 +19,7 @@ class LinkHandler {
     private Collection<LinkHandler> children = []
     
     public static LinkHandler createExtension(Project project) {
-        LinkHandler links = project.extensions.create("links", LinkHandler)
-        final String deprecationMessage =
-            "WARNING: The 'symlinks' DSL is deprecated because the Holy Gradle now defaults to creating directory " +
-            "junctions.  Use 'links' instead."
-        project.ext.symlinks = { Closure closure ->
-            project.logger.warn(deprecationMessage)
-            ConfigureUtil.configure(closure, links)
-        }
-        project.ext.getSymlinks = {
-            project.logger.warn(deprecationMessage)
-            links
-        }
-        return links
+        return project.extensions.create("links", LinkHandler)
     }
 
     LinkHandler() { }

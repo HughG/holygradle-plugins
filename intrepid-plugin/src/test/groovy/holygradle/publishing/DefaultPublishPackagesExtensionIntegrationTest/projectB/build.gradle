@@ -13,7 +13,7 @@ configurations {
 sourceDependencies {
     "../ProjectA" {
         hg "http://a_dummy_url_that_we_wont_need"
-        publishing.configuration "runtime"
+        configuration "runtime"
     }
 }
 

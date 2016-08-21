@@ -34,8 +34,8 @@ class SpeedyUnpackManyTask
     }
 
     public void addUnpackModuleVersions(PackedDependenciesStateSource source) {
-        // This needs to be done in a lazyConfiguration block (just before task execution), because setting a task's
-        // inputs/outputs during task execution is deprecated.
+        // This needs to be done in a lazyConfiguration block (just before task execution), because you can't set a
+        // task's inputs/outputs during task execution.
         ext.lazyConfiguration = { Task it ->
             logger.debug "${it.path} before adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}"
             source.allUnpackModules.each { UnpackModule module ->

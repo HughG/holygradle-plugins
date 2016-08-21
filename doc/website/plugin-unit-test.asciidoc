@@ -109,16 +109,8 @@ tests {
 ----
 ==== redirectOutputToFile
 
-WARNING: This method is deprecated and will be remoted in a future version of the gloss:holygradle[].
-Please use <<_setstandardoutput>> and <<_setstandardoutputtee>> instead.  Note that those methods
-accept a `File`, not `String`, and are not automatically treated as relative to the `projectDir`.
-
-This method allows you to have the output of the unit test process redirected to a file of your
-choice.
-
-As above you can use `<flavour>`, `<f>`, and so on.
-
--> Call this method at most once.
+This method was removed as of version TODO.  Please use <<_setstandardoutput>> and <<_setstandardoutputtee>> instead.
+Note that those methods accept a `File`, not `String`, and are not automatically treated as relative to the `projectDir`.
 
 ==== setStandardOutput
 

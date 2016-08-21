@@ -3,6 +3,9 @@ buildscript {
 }
 gplugins.apply()
 
+group = "holygradle.test"
+version = "1.2.3"
+
 configurations {
     explicitFile
     pinnedSource
@@ -48,11 +51,6 @@ packedDependencies {
         configurations.each { configuration "${it.name}->testRuntime" }
         noCreateLinkToCache()
     }
-}
-
-publishPackages {
-    group "holygradle.test"
-    nextVersionNumber "1.2.3"
 }
 
 packageArtifacts {

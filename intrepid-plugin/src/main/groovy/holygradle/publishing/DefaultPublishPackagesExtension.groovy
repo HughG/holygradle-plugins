@@ -31,11 +31,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public final IvyPublication ivyPublication
     private final LinkedHashSet<String> originalConfigurationOrder = new LinkedHashSet()
     private RepublishHandler republishHandler
-    private String nextVersionNumberStr = null
-    private String autoIncrementFilePath = null
-    private String environmentVariableName = null
-    private String publishGroup = null
-    private String publishName = null
 
     public DefaultPublishPackagesExtension(
         Project project,
@@ -137,20 +132,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
         beforeGenerateDescriptorTask << {
             this.failIfPackedDependenciesNotCreatingLink(packedDependencies)
-            this.verifyGroupName()
-            this.verifyVersionNumber()
-        }
-        afterPublishTask << {
-            this.incrementVersionNumber()
         }
 
         // Configure the publish task to deal with the version number, include source dependencies and convert
         // dynamic dependency versions to fixed version numbers.
         project.gradle.projectsEvaluated {
-            this.applyGroupName()
-            this.applyModuleName()
-            this.applyVersionNumber()
-
             TaskCollection<GenerateIvyDescriptor> ivyDescriptorTasks = project.tasks.withType(GenerateIvyDescriptor)
             TaskCollection<PublishToIvyRepository> ivyPublishTasks = project.tasks.withType(PublishToIvyRepository)
 
@@ -244,43 +230,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
     
-    public void nextVersionNumber(String versionNo) {
-        project.logger.warn(
-            "WARNING: publishPackages.nextVersionNumber is deprecated and will be removed in future.  " +
-            "Instead use \"project.version = 'string'\" at the top level of the build script.  " +
-            "It is recommended to set the version early in the evaluation of the build script.  "
-        )
-        nextVersionNumberStr = versionNo
-        applyVersionNumber()
-    }
-    
-    public void nextVersionNumber(Closure versionNumClosure) {
-        nextVersionNumber(versionNumClosure() as String)
-    }
-    
-    public void nextVersionNumberAutoIncrementFile(String versionNumberFilePath) {
-        project.logger.warn(
-            "WARNING: publishPackages.nextVersionNumberAutoIncrementFile is deprecated and will be removed in future.  " +
-            "There will be no replacement feature in the Holy Gradle.  " +
-            "If you need this behaviour you must implement it yourself.  " +
-            "It is recommended to set the version early in the evaluation of the build script.  "
-        )
-        autoIncrementFilePath = versionNumberFilePath
-        applyVersionNumber()
-    }
-    
-    public void nextVersionNumberEnvironmentVariable(String versionNumberEnvVar) {
-        project.logger.warn(
-            "WARNING: publishPackages.nextVersionNumberEnvironmentVariable is deprecated and will be removed in future.  " +
-            "Instead use \"project.version = System.getenv('ENV_VAR_NAME') ?: Project.DEFAULT_VERSION\" " +
-            "at the top level of the build script.  " +
-            "It is recommended to set the version early in the evaluation of the build script.  "
-        )
-
-        environmentVariableName = versionNumberEnvVar
-        applyVersionNumber()
-    }
-    
     public RepositoryHandler getRepositories() {
         return repositories
     }
@@ -327,145 +276,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return republishHandler
     }
     
-    public void group(String publishGroup) {
-        project.logger.warn(
-            "WARNING: publishPackages.group is deprecated and will be removed in future.  " +
-            "Instead use \"project.group = 'string'\" at the top level of the build script.  " +
-            "It is recommended to set the group early in the evaluation of the build script.  "
-        )
-        this.publishGroup = publishGroup
-        applyGroupName()
-    }
-    
-    public void name(String publishName) {
-        project.logger.warn(
-            "WARNING: publishPackages.name is deprecated and will be removed in future.  " +
-            "Instead use \"rootProject.name = 'string'\" in the 'settings.gradle' file for the project.  "
-        )
-        this.publishName = publishName
-    }
-    
-    private File getVersionFile() {
-        return new File(project.projectDir, autoIncrementFilePath)
-    }
-    
-    private static String getVersionFromFile(File file)  {
-        return file.text
-    }
-    
-    private String getVersionFromFile()  {
-        return getVersionFromFile(getVersionFile());
-    }
-    
-    private static String doIncrementVersionNumber(File versionFile) {
-        String versionStr = versionFile.text
-        int lastDot = versionStr.lastIndexOf('.')
-        int nextVersion = versionStr[lastDot+1..-1].toInteger() + 1
-        String firstChunk = versionStr[0..lastDot]
-        String newVersionStr = firstChunk + nextVersion.toString()
-        versionFile.write(newVersionStr)
-        newVersionStr
-    }
-    
-    public void applyGroupName() {
-        if (publishGroup != null) {
-            project.group = publishGroup
-        }
-    }
-    
-    public void applyModuleName() {
-        if (publishName != null) {
-            // We'll implement this once the Gradle issue is fixed, and we can upgrade.
-            throw new RuntimeException("Cannot apply module name because of http://issues.gradle.org/browse/GRADLE-2412")
-        }
-    }
-    
-    public void verifyGroupName() {
-        if (project.group == null) {
-            throw new RuntimeException("Please specify the group name for the published artifacts. Under 'publishPackages' something like 'group \"blah\"'.")
-        }
-    }
-    
-    public String applyVersionNumber() {
-        if (nextVersionNumberStr != null) {
-            project.version = nextVersionNumberStr
-        } else if (autoIncrementFilePath != null) {
-            File versionFile = getVersionFile();
-            if (versionFile.exists()) {
-                project.version = getVersionFromFile()
-            }
-        } else if (environmentVariableName != null) {
-            String nextVersionNumber = System.getenv(environmentVariableName)
-            if (nextVersionNumber != null) {
-                project.version = nextVersionNumber
-            }
-        }
-        project.version
-    }
-    
-    public void verifyVersionNumber() {
-        if (autoIncrementFilePath != null) {
-            if (!getVersionFile().exists()) {
-                throw new RuntimeException(
-                    "'publishPackages' specifies nextVersionNumberAutoIncrementFile " + 
-                    "\"${autoIncrementFilePath}\", but that file does not " +
-                    "exist in the project directory: " + project.projectDir.absolutePath
-                )
-            }
-        } else if (environmentVariableName != null) {
-            String nextVersionNumber = System.getenv(environmentVariableName)
-            if (nextVersionNumber == null) {
-                throw new RuntimeException(
-                    "Environment variable '${environmentVariableName}' " +
-                    "is not set. This is necessary for 'publishPackages'."
-                )
-            }
-        }
-        
-        int nonNullCount = 0
-        if (nextVersionNumberStr != null) {
-            nonNullCount++;
-        }
-        if (autoIncrementFilePath != null) {
-            nonNullCount++;
-        }
-        if (environmentVariableName != null) {
-            nonNullCount++;
-        }
-        if (nonNullCount == 0) {
-            if (project.version.toString() == "unspecified") {
-                throw new RuntimeException(
-                    "One of 'nextVersionNumber', 'nextVersionNumberAutoIncrementFile' and 'nextVersionNumberEnvironmentVariable' must be " +
-                    "set on 'publishPackages' unless you set the 'version' property on the project yourself."
-                )
-            }
-        } else if (nonNullCount > 1) {
-            throw new RuntimeException(
-                "Only one of 'nextVersionNumber', 'nextVersionNumberAutoIncrementFile' and 'nextVersionNumberEnvironmentVariable' should " +
-                "be set on 'publishPackages'."
-            )
-        }
-    }
-    
-    public String incrementVersionNumber() {
-        if (autoIncrementFilePath != null) {
-            doIncrementVersionNumber(getVersionFile());
-        }
-        return getCurrentVersionNumber();
-    }
-    
-    private String getCurrentVersionNumber()  {
-        String currentVersionNumber = null
-        if (nextVersionNumberStr != null) {
-            currentVersionNumber = nextVersionNumberStr
-        } else if (autoIncrementFilePath != null) {
-            currentVersionNumber = getVersionFromFile();
-        } else if (environmentVariableName != null) {
-            currentVersionNumber = System.getenv(environmentVariableName)
-        }
-        return currentVersionNumber
-    }
-
     // Throw an exception if any packed dependencies are marked with noCreateLinkToCache()
     public void failIfPackedDependenciesNotCreatingLink(Collection<PackedDependencyHandler> packedDependencies) {
         Collection<PackedDependencyHandler> nonLinkedPackedDependencies =
