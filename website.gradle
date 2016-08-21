@@ -10,7 +10,7 @@ project.ext.WEBSITE_DIR = "${projectDir}/doc/website"
 project.ext.LOCAL_WEBSITE_DIR = "${WEBSITE_DIR}/local"
 
 if (!new File(LOCAL_WEBSITE_DIR).exists()) {
-    "mklink /j \"${LOCAL_WEBSITE_DIR}\" \"${projectDir}\\local\\doc\\local-holy-gradle\"".execute().waitFor()
+    "cmd /c mklink /j \"${LOCAL_WEBSITE_DIR}\" \"${projectDir}\\local\\doc\\local-holy-gradle\"".execute().waitFor()
 }
 
 void initializeBuildWebsiteTask(
