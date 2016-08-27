@@ -1,11 +1,12 @@
 package holygradle.io
 
-import com.google.common.io.Files
 import holygradle.test.AbstractHolyGradleTest
-import org.junit.Assert
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
+import org.junit.Assert
 import org.junit.Test
+
+import java.nio.file.Files
 
 /*
     NOTE: On Windows 8 and above, the SymlinkTest subclass needs to be run with Administrator privileges if the current
@@ -26,7 +27,7 @@ class LinkTest extends AbstractHolyGradleTest {
         "net share ${SHARE_NAME} /DELETE".execute().waitForProcessOutput()
 
         // Create a temporary directory and share
-        File tempDir = Files.createTempDir()
+        File tempDir = Files.createTempDirectory("holygradle_io_LinkTest").toFile()
         "net share ${SHARE_NAME}=${tempDir.canonicalPath}".execute().waitForProcessOutput()
 
         File target = new File("\\\\localhost\\${SHARE_NAME}")

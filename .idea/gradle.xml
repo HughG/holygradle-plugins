@@ -3,30 +3,14 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
-        <option name="distributionType" value="LOCAL" />
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="gradleHome" value="$GRADLE_USER_HOME$/wrapper/dists/gradle-1.12-bin/64p5p2nte80b6rt6bb068pabi6/gradle-1.12" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/artifactory-manager-plugin" />
+            <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/credential-store" />
-            <option value="$PROJECT_DIR$/custom-gradle" />
-            <option value="$PROJECT_DIR$/custom-gradle-core-plugin" />
-            <option value="$PROJECT_DIR$/devenv-plugin" />
-            <option value="$PROJECT_DIR$/integration" />
-            <option value="$PROJECT_DIR$/intrepid-plugin" />
-            <option value="$PROJECT_DIR$/my-credentials-plugin" />
-            <option value="$PROJECT_DIR$/stamper-plugin" />
-            <option value="$PROJECT_DIR$/unit-test-plugin" />
-          </set>
-        </option>
-        <option name="myModules">
-          <set>
-            <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/artifactory-manager-plugin" />
-            <option value="$PROJECT_DIR$/credential-store" />
-            <option value="$PROJECT_DIR$/custom-gradle" />
             <option value="$PROJECT_DIR$/custom-gradle-core-plugin" />
             <option value="$PROJECT_DIR$/devenv-plugin" />
             <option value="$PROJECT_DIR$/integration" />

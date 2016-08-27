@@ -6,9 +6,11 @@ configurations {
 
 dependencies {
     compile localGroovy()
-    compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.6'
-    compile group: 'com.google.guava', name: 'guava', version: 'r08'
-    testCompile group: 'net.lingala.zip4j', name: 'zip4j', version: '1.3.1'
+    compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
+    compile group: 'com.google.guava', name: 'guava', version: '19.0'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'net.lingala.zip4j', name: 'zip4j', version: '1.3.2'
+    testCompile group: 'commons-io', name: 'commons-io', version: '2.5'
     
     // These dependencies are assumed to exist in an organisation-specific repository.  They are not
     // currently published to a public location even though all necessary resources are already

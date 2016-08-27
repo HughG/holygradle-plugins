@@ -1,6 +1,8 @@
 package holygradle.test;
 
 import org.gradle.tooling.*;
+import org.gradle.tooling.ProgressListener;
+import org.gradle.tooling.events.*;
 import org.gradle.tooling.model.*;
 
 import java.io.*;
@@ -15,6 +17,7 @@ public class WrapperBuildLauncher implements BuildLauncher {
     private final BuildLauncher launcher;
     private final List<String> expectedFailures = new LinkedList<String>();
     private final List<String> arguments = new LinkedList<String>();
+    private boolean hasCalledWithArguments = false;
 
     public WrapperBuildLauncher(BuildLauncher launcher) {
         this.launcher = launcher;
@@ -23,6 +26,36 @@ public class WrapperBuildLauncher implements BuildLauncher {
     @Override
     public BuildLauncher addProgressListener(ProgressListener listener) {
         launcher.addProgressListener(listener);
+        return this;
+    }
+
+    @Override
+    public BuildLauncher addProgressListener(org.gradle.tooling.events.ProgressListener progressListener) {
+        launcher.addProgressListener(progressListener);
+        return this;
+    }
+
+    @Override
+    public BuildLauncher addProgressListener(
+        org.gradle.tooling.events.ProgressListener progressListener,
+        Set<OperationType> set
+    ) {
+        launcher.addProgressListener(progressListener, set);
+        return this;
+    }
+
+    @Override
+    public BuildLauncher addProgressListener(
+        org.gradle.tooling.events.ProgressListener progressListener,
+        OperationType... operationTypes
+    ) {
+        launcher.addProgressListener(progressListener, operationTypes);
+        return this;
+    }
+
+    @Override
+    public BuildLauncher withCancellationToken(CancellationToken cancellationToken) {
+        launcher.withCancellationToken(cancellationToken);
         return this;
     }
 
@@ -81,8 +114,20 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     @Override
+    public BuildLauncher setJvmArguments(Iterable<String> iterable) {
+        launcher.setJvmArguments(iterable);
+        return this;
+    }
+
+    @Override
     public BuildLauncher setStandardError(OutputStream outputStream) {
         launcher.setStandardError(outputStream);
+        return this;
+    }
+
+    @Override
+    public BuildLauncher setColorOutput(boolean b) {
+        launcher.setColorOutput(b);
         return this;
     }
 
@@ -99,13 +144,38 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     /**
-     * Always throws {@link java.lang.UnsupportedOperationException}; use {@link #addArguments(String...)} instead.
+     * If {@link #addArguments(String...)} has been called, throws {@link java.lang.IllegalStateException}; use either
+     * this method or {@link #addArguments(String...)}, not both.
      * @param arguments Gradle command line arguments
      * @return this
      */
     @Override
     public BuildLauncher withArguments(String... arguments) {
+        if (!this.arguments.isEmpty()) {
+            throw new IllegalStateException(
+                "WrapperBuildLauncher#withArguments cannot be called if #addArguments has already been called"
+            );
+        }
         launcher.withArguments(arguments);
+        hasCalledWithArguments = true;
+        return this;
+    }
+
+    /**
+     * If {@link #addArguments(String...)} has been called, throws {@link java.lang.IllegalStateException}; use either
+     * this method or {@link #addArguments(String...)}, not both.
+     * @param iterable Gradle command line arguments
+     * @return this
+     */
+    @Override
+    public BuildLauncher withArguments(Iterable<String> iterable) {
+        if (!this.arguments.isEmpty()) {
+            throw new IllegalStateException(
+                "WrapperBuildLauncher#withArguments cannot be called if #addArguments has already been called"
+            );
+        }
+        launcher.withArguments(iterable);
+        hasCalledWithArguments = true;
         return this;
     }
 
@@ -132,11 +202,17 @@ public class WrapperBuildLauncher implements BuildLauncher {
     /**
      * Adds to the list of command build line arguments.  All arguments passed to all calls of this method on an
      * instance will be concatenated and passed to the wrapped launcher's {@link #withArguments(String...)} method when
-     * {@link #run()} (or {@link #run(org.gradle.tooling.ResultHandler)}) is called.
+     * {@link #run()} (or {@link #run(org.gradle.tooling.ResultHandler)}) is called.  If
+     * {@link #withArguments(String...)} has already been called, this throws {@link IllegalStateException}.
      * @param arguments Gradle command line arguments
      * @return this
      */
     public BuildLauncher addArguments(String... arguments) {
+        if (hasCalledWithArguments) {
+            throw new IllegalStateException(
+                "WrapperBuildLauncher#addArguments cannot be called if #withArguments has already been called"
+            );
+        }
         Collections.addAll(this.arguments, arguments);
         return this;
     }

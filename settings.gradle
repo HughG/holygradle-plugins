@@ -1,3 +1,3 @@
 include 'intrepid-plugin', 'devenv-plugin', 'custom-gradle-core-plugin', 'my-credentials-plugin', 'unit-test-plugin', 'artifactory-manager-plugin', 'stamper-plugin'
-include 'credential-store', 'custom-gradle'
+include 'credential-store'
 include 'integration'

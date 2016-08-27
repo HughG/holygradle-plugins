@@ -28,6 +28,7 @@ proxy-lookup.txt
 gradle/cacerts
 gradle/cacerts.import.log
 gradle/certs/openssl_OctCosVis05_IP_SAN.crt
+devenv-plugin/src/test/test_input/single_solution_file/userHome/
 syntax: regexp
 # Gradle / Java
 (^|/).gradle/

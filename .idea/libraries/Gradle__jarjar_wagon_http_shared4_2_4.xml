@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Gradle: jarjar-wagon-http-shared4-2.4">
-    <CLASSES>
-      <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-1.12-bin/64p5p2nte80b6rt6bb068pabi6/gradle-1.12/lib/plugins/jarjar-wagon-http-shared4-2.4.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
