@@ -1,6 +1,7 @@
 package holygradle.publishing
 
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.*
@@ -67,6 +68,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 this.collapseMultipleConfigurationDependencies()
                 if (this.addDependencyRelativePaths) {
                     this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
+                }
+                if (project.hasProperty("recordAbsolutePaths")) {
+                    this.addDependencySourceTags(project, sourceDependencies)
                 }
 
                 ivyPublishTask.doFirst {
@@ -446,6 +450,30 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                         "rev": c[2],
                         "conf": sortedConfigs.join(";")
                     ])
+                }
+            }
+        }
+    }
+
+    public void addDependencySourceTags(Project project, Collection<SourceDependencyHandler> sourceDependencies) {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
+        mainIvyDescriptor.withXml { xml ->
+            xml.asNode()."@xmlns:${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}" = SourceOverrideHandler.HOLY_GRADLE_NAMESPACE
+            xml.asNode().dependencies.dependency.each { depNode ->
+                // If the dependency is a source dependency, get its relative path from the
+                // gradle script's sourceDependencyHandler
+                SourceDependencyHandler sourceDep = sourceDependencies.find {
+                    ModuleVersionIdentifier latestPublishedModule = it.getDependencyId()
+                    latestPublishedModule.getGroup() == depNode.@org &&
+                        latestPublishedModule.getName() == depNode.@name &&
+                        latestPublishedModule.getVersion() == depNode.@rev
+                }
+
+                if (sourceDep != null) {
+                    project.logger.info "Adding isSource tag to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
+                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:isSource" = true
+                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:absolutePath" = sourceDep.getAbsolutePath().getCanonicalPath().toString()
                 }
             }
         }

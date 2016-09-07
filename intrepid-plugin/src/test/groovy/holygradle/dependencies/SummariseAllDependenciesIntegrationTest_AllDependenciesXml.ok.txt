@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?><Configurations>
+  <Configuration name="bar">
+    <Dependency name="example-application" group="holygradle.test" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="example-application" group="holygradle.test" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+    <Dependency name="example-framework" group="holygradle.test" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="example-framework" group="holygradle.test" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+    <Dependency name="external-lib" group="holygradle.test" version="1.0" configuration="compile" isSource="false" absolutePath=""/>
+  </Configuration>
+  <Configuration name="buildScript"/>
+  <Configuration name="foo"/>
+</Configurations>

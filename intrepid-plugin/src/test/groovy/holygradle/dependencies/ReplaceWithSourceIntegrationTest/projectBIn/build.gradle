@@ -1,0 +1,31 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+    project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
+}
+gplugins.apply()
+
+configurations {
+    foo
+    bar
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+sourceOverrides {
+    "framework" {
+        dependency "holygradle.test:example-framework:1.1"
+        from "../source/framework-1.1-altlib-1.0"
+    }
+}
+
+// This is testing one level of source override where the overridden module has it's own 
+// dependencies. We should see the binary dependencies of the replaced source, not the binary
+// dependencies of this binary module.
+packedDependencies {
+    "framework" {
+        dependency "holygradle.test:example-framework:1.1"
+        configuration "bar->compileVc10Debug,compileVc10Release"
+    }
+}

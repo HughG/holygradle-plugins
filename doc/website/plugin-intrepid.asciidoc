@@ -1455,6 +1455,133 @@ This property determine whether +fetchAllDependencies+ should perform full up-to
 
 -> Default value: **false**
 
+=== sourceOverrides
+
+This container allows you to override the handling of packed dependencies to instead point to 
+existing source on a local disk. This is intended for use by developers in order to test local 
+changes to dependencies and projects with source overrides defined can not be published.
+
+[source,groovy]
+----
+sourceOverrides {
+    "framework" {
+        dependency "com.company:framework:1.1"
+        from "../source/framework-1.1"
+    }
+    "ext_lib" {
+        dependency "com.company.rendering:RenderingLib:2012a2"
+        from "C:/projects/renderingLib"
+    }
+}
+
+packedDependencies {
+    "framework" {
+        dependency "com.company:framework:1.1"
+        configuration "privateBuild->compileVc10Debug,compileVc10Release"
+    }
+}
+----
+
+This declares one dependency +framework+ and instead of using the packed binaries, will create 
+symlinks to +../source/framework-1.1+. In addition, any transitive dependencies on +RenderingLib+ 
+will be symlinked to +C:/projects/renderingLib+ instead of the packed binaries.
+
+==== Transitive Dependencies
+
+The transitive dependencies of a source override may differ from those of the binary package it is 
+replacing. The +sourceOverride+ handler expects to find a valid Ivy file with the list of immediate
+dependencies at +<sourceOverride>/build/publications/ivy/ivy.xml+ and optionally an XML file at 
++<sourceOverride>/all-dependencies.xml+ containing a full list of immediate and transitive
+dependencies for the project in the format created by the summariseAllDependencies task e.g.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<Configurations>
+  <Configuration name="compileVc10Debug">
+    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+  </Configuration>
+  <Configuration name="compileVc10Release">
+    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+  </Configuration>
+  <Configuration name="source"/>
+</Configurations>
+----
+
+To make sure these files are up-to-date, when trying to resolve dependencies the plugin will first
+check for a custom generator function declared in +build.gradle+. If none exists it will then 
+attempt to run +<sourceOverride>/generateSourceOverrideDetails.bat+. If this is also not available
+it will fall back to +<sourceOverride>/gw.bat generateIvyModuleDescriptor summariseAllDependencies".
+If you want to skip the generation of fresh dependency files you can pass the option 
++useCachedIvyFiles+ to +gw.bat+.
+
+==== dependency
+
+This method specifies the coordinates of the dependency to override. It should follow the same 
+pattern as the +packedDependency+ definition. Transitive dependencies of this and any source
+dependencies will also be overriden but dependencies of a source override will not. This will be 
+reported as a version conflict at dependency resolution time.
+
+==== from
+
+This method defines a path, either absolute or relative to the root project, where the source 
+replacement is located.
+
+==== ivyFileGenerator
+
+This method defines a closure to run to generate the dependency files for this source override. It 
+should return two +File+ objects, one for the direct dependency Ivy file and the other for the 
+transitive dependency XML file. The +SourceOverrideHandler+ is passed into the closure giving access
+to (among other things) the project object.
+
+This is useful in cases where the source is not a Gradle project or requires passing non-standard 
+commands. This example will generate the dependency files for a sub-project of framework.
+
+[source,groovy]
+----
+sourceOverrides {
+    "subproject" {
+        dependency "com.company:subproject:1.1"
+        from "C:/projects/framework/subproject"
+        ivyFileGenerator { SourceOverrideHandler handler ->
+            project.exec {
+                workingDir "C:/projects/framework"
+                executable "gw.bat"
+                args "subproject:summariseAllDependencies", "subproject:generateIvyModuleDescriptor"
+            }
+            return [
+                new File("C:/projects/framework", "subproject/build/publications/ivy/ivy.xml"),
+                new File("C:/projects/framework", "subproject/all-dependencies.xml")
+            ]
+        }
+    }
+}
+----
+
+This example just returns static files.
+
+[source,groovy]
+----
+sourceOverrides {
+    "framework" {
+        dependency "com.company:framework:1.1"
+        from "C:/projects/framework/"
+        ivyFileGenerator {
+            return [
+                new File("C:/projects/framework", "ivy.xml"),
+                new File("C:/projects/framework", "all-dependencies.xml")
+            ]
+        }
+    }
+}
+----
+
+==== unpackToCache
+
+Dependencies that use +unpackToCache = false+ can not be overriden.
+
 === packedDependenciesSettings
 
 This DSL block contains settings which control how packed dependencies are unpacked.
@@ -2109,6 +2236,26 @@ This task publishes the artifacts of your module:
 * increments the version number in the text file (if using <<_nextVersionNumberAutoIncrementFile>>)
 
 You may notice a task called +publishIvyPublicationToIvyRepository+ or similar. This exists because the +intrepid+ plugin uses the +ivy-publish+ plugin.
+
+=== summariseAllDependencies
+
+This task resolves all dependencies and saves them as a flat list grouped by configuration to +all-dependencies.xml+ in the project directory. For example.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<Configurations>
+    <Configuration name="compileVc10Debug">
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
+    </Configuration>
+    <Configuration name="compileVc10Release">
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
+    </Configuration>
+    <Configuration name="source"/>
+</Configurations>
+----
 
 [[_relative_paths_2]]
 == Relative paths
