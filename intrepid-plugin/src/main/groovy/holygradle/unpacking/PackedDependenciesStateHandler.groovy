@@ -177,13 +177,27 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 UnpackModuleVersion unpackModuleVersion
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
-                    // We want packed dependency paths to override the paths of transitive dependencies. Because
-                    // UnpackModuleVersion prioritises the properties of a packed dependency if one is set we can
-                    // achieve this by setting the packed dependency property here even if a transitive dependency has
-                    // created the module first.
-                    // Todo: Figure out if this has already been set and throw an error. We can't do this naively because
-                    // a dependency might map to multiple configurations.
-                    unpackModuleVersion.packedDependency = thisPackedDep
+                    // If the same module appears as both a direct packed dependency (for which the path is explicitly
+                    // specified by the user) and a transitive packed dependency (for which the path is inferred from
+                    // its ancestors), we want to use the explicitly specified path.  Because UnpackModuleVersion
+                    // prioritises the properties of a packed dependency if one is set we can achieve this by setting
+                    // the packed dependency property here even if a transitive dependency has created the module first.
+                    if (thisPackedDep != null) {
+                        // It's possible for someone to specify the same version of the same module at two different
+                        // paths, using two different packed dependencies.  However, we regard that as too complicated
+                        // and confusing, and don't allow it.  If they really need it to appear to be in two places they
+                        // can create explicit links.
+                        final PackedDependencyHandler existingPackedDep = unpackModuleVersion.packedDependency
+                        if (existingPackedDep != null && existingPackedDep != thisPackedDep) {
+                            throw new RuntimeException(
+                                    "Module version ${id} is specified by packed dependencies at both path " +
+                                            "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
+                                            "A single version can only be specified at one path.  If you need it to appear at " +
+                                            "more than one location you can explicitly create links."
+                            )
+                        }
+                        unpackModuleVersion.packedDependency = thisPackedDep
+                    }
                 } else {
                     File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
@@ -244,7 +258,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 targetLocations[targetPath].add(versionInfo)
             }
         }
-        
+
         // Check if any target locations are used by more than one module/version.  (We use "inject", instead of "any",
         // because we want to keep checking even after we find a problem, so we can log them all.)
         boolean foundTargetClash = targetLocations.inject(false) {

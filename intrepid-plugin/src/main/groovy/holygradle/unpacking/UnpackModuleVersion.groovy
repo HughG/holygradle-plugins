@@ -190,7 +190,13 @@ class UnpackModuleVersion {
             it.moduleVersion
         }.toString()
     }
-    
+
+    private String getParentModuleVersions() {
+        parents.collect {
+            it.moduleVersion
+        }.join(", ")
+    }
+
     // Return the name of the directory that should be constructed in the workspace for the unpacked artifacts. 
     // Depending on some other configuration, this directory name could be used for a link or a real directory.
     public String getTargetDirName() {
@@ -244,7 +250,9 @@ class UnpackModuleVersion {
                 }
             } else {
                 // Recursively navigate up the parent hierarchy, appending relative paths.
-                return new File(getParentTargetPath(project), relativePathForDependency)
+                return getUniqueValue("getTargetPathInWorkspace", parents) { UnpackModuleVersion it ->
+                    new File(it.getTargetPathInWorkspace(project), relativePathForDependency).canonicalFile
+                }
             }
         }
     }
@@ -312,7 +320,7 @@ class UnpackModuleVersion {
                 (parents.size() > 0 ? getParentRelativePath(this) : "") :
                 "n/a"
             ) +
-            "', parentUnpackModuleVersion={" + (parents.size() > 0 ? getParentModuleVersion() : "") +
+            "', parentUnpackModuleVersion={" + getParentModuleVersions() +
             '}';
     }
 }
