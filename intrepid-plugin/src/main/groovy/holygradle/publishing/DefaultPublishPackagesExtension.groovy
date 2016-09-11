@@ -386,21 +386,29 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         // Our default ivy publication may have been removed, if others were added.
         if (this.createDefaultPublication) {
             String generateIvyDescriptorTaskName =
-                "generateDescriptorFileFor${this.ivyPublication.name.capitalize()}Publication"
-            Task generateIvyDescriptorTask = project.tasks.getByName(generateIvyDescriptorTaskName)
-            generateIvyDescriptorTask.doFirst {
-                ivyPublication.descriptor.withXml { xml ->
-                    Node depsNode = xml.asNode().dependencies.find() as Node
-                    project.configurations.each((Closure) { Configuration conf ->
-                        conf.dependencies.withType(ModuleDependency).each { ModuleDependency dep ->
-                            depsNode.appendNode("dependency", [
-                                "org" : dep.group,
-                                "name": dep.name,
-                                "rev" : dep.version,
-                                "conf": "${conf.name}->${dep.configuration}"
-                            ])
-                        }
-                    })
+                "generateDescriptorFileFor${this.ivyPublication.name.capitalize()}Publication".toString()
+            project.logger.debug "Descriptor tasks for ${project}: ${project.tasks.withType(GenerateIvyDescriptor)*.name}"
+            project.logger.debug "All tasks for ${project}: ${project.tasks*.name}"
+            final Project p = project
+            project.gradle.taskGraph.whenReady {
+                p.logger.debug "Descriptor tasks for ${p} whenReady: ${p.tasks.withType(GenerateIvyDescriptor)*.name}"
+                p.logger.debug "All tasks for ${p} whenReady: ${p.tasks*.name}"
+                Task generateIvyDescriptorTask = p.tasks.findByName(generateIvyDescriptorTaskName)
+                // There may not be a "generate descriptor" task, if the project doesn't package anything.
+                generateIvyDescriptorTask?.doFirst {
+                    ivyPublication.descriptor.withXml { xml ->
+                        Node depsNode = xml.asNode().dependencies.find() as Node
+                        p.configurations.each((Closure) { Configuration conf ->
+                            conf.dependencies.withType(ModuleDependency).each { ModuleDependency dep ->
+                                depsNode.appendNode("dependency", [
+                                    "org" : dep.group,
+                                    "name": dep.name,
+                                    "rev" : dep.version,
+                                    "conf": "${conf.name}->${dep.configuration}"
+                                ])
+                            }
+                        })
+                    }
                 }
             }
         }
