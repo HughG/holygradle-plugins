@@ -12,19 +12,12 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="artifactory-manager-plugin_test" production-on-test="" />
     <orderEntry type="module" module-name="custom-gradle-core-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="intrepid-plugin_test" production-on-test="" />
     <orderEntry type="module" module-name="stamper-plugin_test" production-on-test="" />
+    <orderEntry type="module" module-name="unit-test-plugin_test" production-on-test="" />
+    <orderEntry type="module" module-name="my-credentials-plugin_test" production-on-test="" />
     <orderEntry type="module" module-name="integration_main" />
+    <orderEntry type="module" module-name="intrepid-plugin_test" production-on-test="" />
     <orderEntry type="module" module-name="devenv-plugin_test" production-on-test="" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-bin/2r579t5wehc7ew5kc8vfqezww/gradle-2.14.1/lib/groovy-all-2.4.4.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -34,12 +27,10 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module" module-name="unit-test-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="my-credentials-plugin_test" production-on-test="" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-bin/2r579t5wehc7ew5kc8vfqezww/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
+          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/groovy-all-2.4.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -71,6 +62,15 @@
     <orderEntry type="library" name="Gradle: commons-codec:commons-codec:1.6" level="project" />
     <orderEntry type="library" name="Gradle: commons-beanutils:commons-beanutils:1.8.0" level="project" />
     <orderEntry type="library" name="Gradle: commons-collections:commons-collections:3.2.1" level="project" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
   <component name="TestModuleProperties" production-module="integration_main" />
 </module>
