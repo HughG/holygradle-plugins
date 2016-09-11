@@ -1,5 +1,6 @@
 package holygradle.test;
 
+import org.gradle.internal.impldep.com.amazonaws.services.kms.model.UnsupportedOperationException;
 import org.gradle.tooling.*;
 import org.gradle.tooling.ProgressListener;
 import org.gradle.tooling.events.*;
@@ -17,26 +18,25 @@ public class WrapperBuildLauncher implements BuildLauncher {
     private final BuildLauncher launcher;
     private final List<String> expectedFailures = new LinkedList<String>();
     private final List<String> arguments = new LinkedList<String>();
-    private boolean hasCalledWithArguments = false;
 
     public WrapperBuildLauncher(BuildLauncher launcher) {
         this.launcher = launcher;
     }
 
     @Override
-    public BuildLauncher addProgressListener(ProgressListener listener) {
+    public WrapperBuildLauncher addProgressListener(ProgressListener listener) {
         launcher.addProgressListener(listener);
         return this;
     }
 
     @Override
-    public BuildLauncher addProgressListener(org.gradle.tooling.events.ProgressListener progressListener) {
+    public WrapperBuildLauncher addProgressListener(org.gradle.tooling.events.ProgressListener progressListener) {
         launcher.addProgressListener(progressListener);
         return this;
     }
 
     @Override
-    public BuildLauncher addProgressListener(
+    public WrapperBuildLauncher addProgressListener(
         org.gradle.tooling.events.ProgressListener progressListener,
         Set<OperationType> set
     ) {
@@ -45,7 +45,7 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     @Override
-    public BuildLauncher addProgressListener(
+    public WrapperBuildLauncher addProgressListener(
         org.gradle.tooling.events.ProgressListener progressListener,
         OperationType... operationTypes
     ) {
@@ -54,37 +54,37 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     @Override
-    public BuildLauncher withCancellationToken(CancellationToken cancellationToken) {
+    public WrapperBuildLauncher withCancellationToken(CancellationToken cancellationToken) {
         launcher.withCancellationToken(cancellationToken);
         return this;
     }
 
     @Override
-    public BuildLauncher forTasks(Iterable<? extends Task> tasks) {
+    public WrapperBuildLauncher forTasks(Iterable<? extends Task> tasks) {
         launcher.forTasks(tasks);
         return this;
     }
 
     @Override
-    public BuildLauncher forLaunchables(Launchable... launchables) {
+    public WrapperBuildLauncher forLaunchables(Launchable... launchables) {
         launcher.forLaunchables(launchables);
         return this;
     }
 
     @Override
-    public BuildLauncher forLaunchables(Iterable<? extends Launchable> iterable) {
+    public WrapperBuildLauncher forLaunchables(Iterable<? extends Launchable> iterable) {
         launcher.forLaunchables(iterable);
         return this;
     }
 
     @Override
-    public BuildLauncher forTasks(String... tasks) {
+    public WrapperBuildLauncher forTasks(String... tasks) {
         launcher.forTasks(tasks);
         return this;
     }
 
     @Override
-    public BuildLauncher forTasks(Task... tasks) {
+    public WrapperBuildLauncher forTasks(Task... tasks) {
         launcher.forTasks(tasks);
         return this;
     }
@@ -102,81 +102,69 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     @Override
-    public BuildLauncher setJavaHome(File javaHome) {
+    public WrapperBuildLauncher setJavaHome(File javaHome) {
         launcher.setJavaHome(javaHome);
         return this;
     }
 
     @Override
-    public BuildLauncher setJvmArguments(String... jvmArguments) {
+    public WrapperBuildLauncher setJvmArguments(String... jvmArguments) {
         launcher.setJvmArguments(jvmArguments);
         return this;
     }
 
     @Override
-    public BuildLauncher setJvmArguments(Iterable<String> iterable) {
+    public WrapperBuildLauncher setJvmArguments(Iterable<String> iterable) {
         launcher.setJvmArguments(iterable);
         return this;
     }
 
     @Override
-    public BuildLauncher setStandardError(OutputStream outputStream) {
+    public WrapperBuildLauncher setStandardError(OutputStream outputStream) {
         launcher.setStandardError(outputStream);
         return this;
     }
 
     @Override
-    public BuildLauncher setColorOutput(boolean b) {
+    public WrapperBuildLauncher setColorOutput(boolean b) {
         launcher.setColorOutput(b);
         return this;
     }
 
     @Override
-    public BuildLauncher setStandardInput(InputStream inputStream) {
+    public WrapperBuildLauncher setStandardInput(InputStream inputStream) {
         launcher.setStandardInput(inputStream);
         return this;
     }
 
     @Override
-    public BuildLauncher setStandardOutput(OutputStream outputStream) {
+    public WrapperBuildLauncher setStandardOutput(OutputStream outputStream) {
         launcher.setStandardOutput(outputStream);
         return this;
     }
 
     /**
-     * If {@link #addArguments(String...)} has been called, throws {@link java.lang.IllegalStateException}; use either
-     * this method or {@link #addArguments(String...)}, not both.
+     * Always throws {@link java.lang.UnsupportedOperationException}; use {@link #addArguments(String...)} instead.
      * @param arguments Gradle command line arguments
      * @return this
      */
     @Override
-    public BuildLauncher withArguments(String... arguments) {
-        if (!this.arguments.isEmpty()) {
-            throw new IllegalStateException(
-                "WrapperBuildLauncher#withArguments cannot be called if #addArguments has already been called"
-            );
-        }
-        launcher.withArguments(arguments);
-        hasCalledWithArguments = true;
-        return this;
+    public WrapperBuildLauncher withArguments(String... arguments) {
+        throw new UnsupportedOperationException(
+            "Call WrapperBuildLauncher#addArguments instead of BuildLauncher#withArguments"
+        );
     }
 
     /**
-     * If {@link #addArguments(String...)} has been called, throws {@link java.lang.IllegalStateException}; use either
-     * this method or {@link #addArguments(String...)}, not both.
+     * Always throws {@link java.lang.UnsupportedOperationException}; use {@link #addArguments(String...)} instead.
      * @param iterable Gradle command line arguments
      * @return this
      */
     @Override
-    public BuildLauncher withArguments(Iterable<String> iterable) {
-        if (!this.arguments.isEmpty()) {
-            throw new IllegalStateException(
-                "WrapperBuildLauncher#withArguments cannot be called if #addArguments has already been called"
-            );
-        }
-        launcher.withArguments(iterable);
-        hasCalledWithArguments = true;
-        return this;
+    public WrapperBuildLauncher withArguments(Iterable<String> iterable) {
+        throw new UnsupportedOperationException(
+                "Call WrapperBuildLauncher#addArguments instead of BuildLauncher#withArguments"
+        );
     }
 
     /**
@@ -186,7 +174,7 @@ public class WrapperBuildLauncher implements BuildLauncher {
      * @param messages The messages to add.
      * @return this
      */
-    public BuildLauncher expectFailure(String... messages) {
+    public WrapperBuildLauncher expectFailure(String... messages) {
         this.expectedFailures.addAll(Arrays.asList(messages));
         return this;
     }
@@ -202,17 +190,11 @@ public class WrapperBuildLauncher implements BuildLauncher {
     /**
      * Adds to the list of command build line arguments.  All arguments passed to all calls of this method on an
      * instance will be concatenated and passed to the wrapped launcher's {@link #withArguments(String...)} method when
-     * {@link #run()} (or {@link #run(org.gradle.tooling.ResultHandler)}) is called.  If
-     * {@link #withArguments(String...)} has already been called, this throws {@link IllegalStateException}.
+     * {@link #run()} (or {@link #run(org.gradle.tooling.ResultHandler)}) is called.
      * @param arguments Gradle command line arguments
      * @return this
      */
-    public BuildLauncher addArguments(String... arguments) {
-        if (hasCalledWithArguments) {
-            throw new IllegalStateException(
-                "WrapperBuildLauncher#addArguments cannot be called if #withArguments has already been called"
-            );
-        }
+    public WrapperBuildLauncher addArguments(String... arguments) {
         Collections.addAll(this.arguments, arguments);
         return this;
     }

@@ -50,7 +50,7 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
     public void testAllPluginsInitialiseTogether() {
         compareBuildOutput("tAPIT") { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks")
-                .withArguments("--all")
+                .addArguments("--all")
         }
     }
 
@@ -61,7 +61,7 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
     public void testBasicPluginConfig() {
         compareBuildOutput("tBPC") { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks")
-                .withArguments("--all")
+                .addArguments("--all")
         }
     }
 }

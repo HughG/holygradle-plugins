@@ -85,6 +85,8 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
         ProjectConnection connection = connector.connect()
         try {
             WrapperBuildLauncher launcher = new WrapperBuildLauncher(connection.newBuild())
+            launcher.standardOutput = System.out
+            launcher.standardError = System.err
             maybeAddHttpProxyArguments(launcher)
             // Use custom init script.
             launcher.addArguments("-I", customInitScript.toString())
