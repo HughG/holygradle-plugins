@@ -26,4 +26,23 @@ publishPackages {
     repositories.ivy {
         url "http://dummy_repo_url"
     }
+    
+    defaultPublication {
+        descriptor.withXml {
+                Node infoNode = asNode().info[0]
+                infoNode.appendNode('license', [name: 'GPL 2.0', url: 'https://www.gnu.org/licenses/gpl-2.0.html'])
+                infoNode.appendNode('license', [name: 'MIT', url: 'https://opensource.org/licenses/MIT'])
+        }
+    }
+}
+
+publishing {
+    publications {
+        ivy.descriptor.withXml {
+            Node infoNode = asNode().info[0]
+            infoNode.appendNode('description', [homepage: 'https://no_such_url'], """This is an example description,
+which runs across multiple lines.
+""")
+        }
+    }
 }

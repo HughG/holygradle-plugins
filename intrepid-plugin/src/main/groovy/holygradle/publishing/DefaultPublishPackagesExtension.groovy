@@ -44,29 +44,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         // Keep track of the order in which configurations are added, so that we can put them in the ivy.xml file in
         // the same order, for human-readability.
         final ConfigurationContainer configurations = project.configurations
-        final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
-        configurations.whenObjectAdded((Closure){ Configuration c ->
-            localOriginalConfigurationOrder.add(c.name)
-        })
-        configurations.whenObjectRemoved((Closure){ Configuration c ->
-            localOriginalConfigurationOrder.remove(c.name)
-        })
+        setupRecordingOfOriginalConfigurationOrder(configurations)
 
         Task beforeGenerateDescriptorTask = project.task("beforeGenerateDescriptor") { Task t ->
             t.group = "Publishing"
             t.description = "Actions to run before any Ivy descriptor generation tasks"
-        }
-        Task afterGenerateDescriptorTask = project.task("afterGenerateDescriptor") { Task t ->
-            t.group = "Publishing"
-            t.description = "Actions to run after all Ivy descriptor generation tasks"
-        }
-        Task beforePublishTask = project.task("beforePublish") { Task t ->
-            t.group = "Publishing"
-            t.description = "Actions to run before any publish tasks"
-        }
-        Task afterPublishTask = project.task("afterPublish") { Task t ->
-            t.group = "Publishing"
-            t.description = "Actions to run after all publish tasks"
         }
         Task generateIvyModuleDescriptorTask = project.task("generateIvyModuleDescriptor") { Task t ->
             t.group = "Publishing"
@@ -100,94 +82,109 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         project.gradle.projectsEvaluated { Gradle gradle ->
             project.publishing { PublishingExtension it ->
                 if (createDefaultPublication) {
-                    it.publications { pubs ->
-                        pubs.create(DEFAULT_PUBLICATION_NAME, IvyPublication) { pub ->
-                            // NOTE: We use .each instead of .all here because we have to fix the state of the
-                            // publication within this closure.  If some other callback adds more configurations
-                            // or packaged artifacts on the fly later, they won't be included in the publication.
+                    createDefaultPublication(it, packageArtifactHandlers)
+                    configureGenerateDescriptorTasks(
+                        beforeGenerateDescriptorTask,
+                        generateIvyModuleDescriptorTask,
+                        project
+                    )
+                    configureRepublishTaskDependencies(republishTask)
+                }
+            }
+        }
+    }
 
-                            // Note that the default ivy-publish behaviour in Gradle 1.4 was to add only visible
-                            // configurations and the ones they extended from (even if those super-configurations were
-                            // not themselves public).
-                            configurations.each((Closure) { Configuration conf ->
-                                if (includeConfiguration(conf)) {
-                                    pub.configurations { ivyConfs ->
-                                        IvyConfiguration ivyConf = ivyConfs.maybeCreate(conf.name)
-                                        conf.extendsFrom.each { ivyConf.extend(it.name) }
-                                    }
-                                }
-                            })
+    private void setupRecordingOfOriginalConfigurationOrder(ConfigurationContainer configurations) {
+        final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder
+        // capture private for closure
+        configurations.whenObjectAdded((Closure) { Configuration c ->
+            localOriginalConfigurationOrder.add(c.name)
+        })
+        configurations.whenObjectRemoved((Closure) { Configuration c ->
+            localOriginalConfigurationOrder.remove(c.name)
+        })
+    }
 
-                            // Add an artifact to this publication for each handler that has been or is later added.
-                            packageArtifactHandlers.each { PackageArtifactHandler handler ->
-                                if (includeConfiguration(project.configurations.getByName(handler.configuration))) {
-                                    AbstractArchiveTask packageTask =
-                                        project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
-                                    // Gradle automatically converts Closure to the right Action<> type.
-                                    //noinspection GroovyAssignabilityCheck
-                                    pub.artifact(packageTask) { IvyArtifact artifact ->
-                                        artifact.name = packageTask.baseName
-                                        artifact.conf = handler.configuration
-                                    }
-                                }
-                            }
-                        }
+    // Public for use from closure.
+    public createDefaultPublication(
+        PublishingExtension publishing,
+        NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers
+    ) {
+        final Project localProject = project
+        publishing.publications { pubs ->
+            IvyPublication defaultPublication = pubs.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication)
+            final Action<IvyPublication> configureAction = ConfigureUtil.configureUsing { pub ->
+                // NOTE: We use .each instead of .all here because we have to fix the state of the publication within
+                // this closure.  If some other callback adds more configurations or packaged artifacts on the fly
+                // later, they won't be included in the publication.
 
-                    }
-
-
-                    project.tasks.withType(GenerateIvyDescriptor).whenTaskAdded { GenerateIvyDescriptor descriptorTask ->
-                        generateIvyModuleDescriptorTask.dependsOn descriptorTask
-
-                        descriptorTask.dependsOn beforeGenerateDescriptorTask
-                        descriptorTask.finalizedBy afterGenerateDescriptorTask
-                        // Add a mustRunAfter to make sure the the after task doesn't run until all publish tasks are done.
-                        afterGenerateDescriptorTask.mustRunAfter descriptorTask
-
-                        descriptorTask.doFirst {
-                            // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
-                            descriptorTask.descriptor.status = project.status
-                            putConfigurationsInOriginalOrder(descriptorTask.descriptor)
-                            freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
-                            collapseMultipleConfigurationDependencies(descriptorTask.descriptor)
-                        }
-
-                        // We call this here because it uses doFirst, and we need this to happen after
-                        // putConfigurationsInOriginalOrder and collapseMultipleConfigurationDependencies.  We do
-                        // the adding and the re-ordering separately so that we can also do re-ordering for
-                        // publications other than our default one.
-                        if (descriptorTask.name == DEFAULT_DESCRIPTOR_TASK_NAME) {
-                            descriptorTask.doFirst {
-                                addConfigurationDependenciesToDefaultPublication(descriptorTask)
-                            }
-                        }
-
-                        descriptorTask.doLast {
-                            fixArrowsInXml(descriptorTask)
+                // Note that the default ivy-publish behaviour in Gradle 1.4 was to add only visible configurations and
+                // the ones they extended from (even if those super-configurations were not themselves public).
+                localProject.configurations.each((Closure) { Configuration conf ->
+                    if (includeConfiguration(conf)) {
+                        pub.configurations { ivyConfs ->
+                            IvyConfiguration ivyConf = ivyConfs.maybeCreate(conf.name)
+                            conf.extendsFrom.each { ivyConf.extend(it.name) }
                         }
                     }
+                })
 
-
-                    project.tasks.withType(PublishToIvyRepository).whenTaskAdded { PublishToIvyRepository publishTask ->
-                        publishTask.dependsOn beforePublishTask
-                        publishTask.finalizedBy afterPublishTask
-                        // Add a mustRunAfter to make sure the afterPublish doesn't run until all publish tasks are done.
-                        afterPublishTask.mustRunAfter publishTask
-
-                        if (republishTask != null) {
-                            republishTask.dependsOn publishTask
+                // Add an artifact to this publication for each handler that has been or is later added.
+                packageArtifactHandlers.each { PackageArtifactHandler handler ->
+                    if (includeConfiguration(localProject.configurations.getByName(handler.configuration))) {
+                        AbstractArchiveTask packageTask =
+                                localProject.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
+                        // Gradle automatically converts Closure to the right Action<> type.
+                        //noinspection GroovyAssignabilityCheck
+                        pub.artifact(packageTask) { IvyArtifact artifact ->
+                            artifact.name = packageTask.baseName
+                            artifact.conf = handler.configuration
                         }
                     }
+                }
+            }
+            configureAction.execute(defaultPublication)
+        }
+    }
 
+    // Public for use from closure.
+    public configureGenerateDescriptorTasks(
+        Task beforeGenerateDescriptorTask,
+        Task generateIvyModuleDescriptorTask,
+        Project project
+    ) {
+        project.tasks.withType(GenerateIvyDescriptor).whenTaskAdded { GenerateIvyDescriptor descriptorTask ->
+            generateIvyModuleDescriptorTask.dependsOn descriptorTask
+            descriptorTask.dependsOn beforeGenerateDescriptorTask
 
+            descriptorTask.doFirst {
+                // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
+                descriptorTask.descriptor.status = project.status
+                putConfigurationsInOriginalOrder(descriptorTask.descriptor)
+                freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
+                collapseMultipleConfigurationDependencies(descriptorTask.descriptor)
+            }
+
+            // We call this here because it uses doFirst, and we need this to happen after
+            // putConfigurationsInOriginalOrder and collapseMultipleConfigurationDependencies.  We do the adding and
+            // the re-ordering separately so that we can also do re-ordering for publications other than our default one.
+            if (descriptorTask.name == DEFAULT_DESCRIPTOR_TASK_NAME) {
+                descriptorTask.doFirst {
+                    addConfigurationDependenciesToDefaultPublication(descriptorTask)
                 }
             }
 
-            // Override the group and description for the ivy-publish plugin's 'publish' task.
-            Task publishTask = project.tasks.findByName("publish")
-            if (publishTask != null) {
-                publishTask.group = "Publishing"
-                publishTask.description = "Publishes all publications for this module."
+            descriptorTask.doLast {
+                fixArrowsInXml(descriptorTask)
+            }
+        }
+    }
+
+    // Public for use from closure.
+    public configureRepublishTaskDependencies(Task republishTask) {
+        project.tasks.withType(PublishToIvyRepository).whenTaskAdded { PublishToIvyRepository publishTask ->
+            if (republishTask != null) {
+                republishTask.dependsOn publishTask
             }
         }
     }
@@ -251,7 +248,13 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     @Override
     void defaultPublication(Action<Publication> configure) {
         project.publishing { PublishingExtension publishing ->
-            configure.execute(publishing.publications.maybeCreate(DEFAULT_PUBLICATION_NAME))
+            if (!createDefaultPublication) {
+                throw new RuntimeException(
+                    "Cannot configure the default publication because it will not be created, " +
+                    "because createDefaultPublication is false."
+                )
+            }
+            configure.execute(publishing.publications.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication))
         }
     }
 

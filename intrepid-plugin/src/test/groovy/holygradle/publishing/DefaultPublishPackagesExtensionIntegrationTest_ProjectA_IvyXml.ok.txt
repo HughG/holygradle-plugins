@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0">
+  <info organisation="happydays" module="projectA" revision="3.3.3" status="release" publication="[timestamp]"/>
   <configurations>
     <conf name="buildScript" visibility="public"/>
     <conf name="compile" visibility="public"/>
