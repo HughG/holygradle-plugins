@@ -32,6 +32,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         boolean addDummyArtifact = true
     ) {
         UnpackModuleVersion version = new UnpackModuleVersion(
+            project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             parent,
             (parent == null) ? new PackedDependencyHandler(moduleName) : null

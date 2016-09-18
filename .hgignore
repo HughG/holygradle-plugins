@@ -28,6 +28,7 @@ proxy-lookup.txt
 gradle/cacerts
 gradle/cacerts.import.log
 gradle/certs/openssl_OctCosVis05_IP_SAN.crt
+devenv-plugin/src/test/test_input/single_solution_file/userHome/
 syntax: regexp
 # Gradle / Java
 (^|/).gradle/
@@ -58,6 +59,7 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/[^/]+/build_info/.*
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesIntegrationTest/conflicting_modules2/extlib.*/.*
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/CollectDependenciesIntegrationTest/[^/]+/userHome/.*
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/(Collect|Zip)DependenciesIntegrationTest/[^/]+/((gradle|build_info)/|local_artifacts|.*build\.gradle)
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
 ^intrepid-plugin/src/test/groovy/holygradle/unpacking/PackedDependenciesStateHandlerIntegrationTest/[^/]+/[^/]+-?(lib|framework)/

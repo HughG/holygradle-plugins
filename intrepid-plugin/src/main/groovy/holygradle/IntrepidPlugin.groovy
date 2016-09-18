@@ -23,14 +23,9 @@ import holygradle.unpacking.GradleZipHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
-import org.gradle.api.DefaultTask
-import org.gradle.api.NamedDomainObjectContainer
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
-import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
     public static final String EVERYTHING_CONFIGURATION_NAME = "everything"
@@ -140,20 +135,18 @@ public class IntrepidPlugin implements Plugin<Project> {
         NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers = PackageArtifactHandler.createContainer(project)
 
         // Define 'publishPackages' DSL block.
-        PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         project.extensions.create(
             "publishPackages",
             DefaultPublishPackagesExtension,
             project,
             packageArtifactHandlers,
-            publishingExtension,
             packedDependencies
         )
         
         // Define 'sourceControl' DSL.
         SourceControlRepositories.createExtension(project)
         
-        // Define 'links' DSL block (and deprecated 'symlinks' one).
+        // Define 'links' DSL block.
         LinkHandler links = LinkHandler.createExtension(project)
         
         // Define 'sourceDependencyTasks' DSL
@@ -182,11 +175,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.description = "Delete all links to the unpack cache"
         }
         deleteLinksToCacheTask.initialize(LinksToCacheTask.Mode.CLEAN)
-        project.task("deleteSymlinksToCache") { Task t ->
-            t.dependsOn deleteLinksToCacheTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use deleteLinksToCache instead"
-            t.doFirst { logger.warn(t.description) }
-        }
         LinksToCacheTask rebuildLinksToCacheTask = (LinksToCacheTask)project.task(
             "rebuildLinksToCache", type: LinksToCacheTask
         ) { Task it ->
@@ -197,11 +185,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.dependsOn unpackDependenciesTask
         }
         rebuildLinksToCacheTask.initialize(LinksToCacheTask.Mode.BUILD)
-        project.task("rebuildSymlinksToCache") { Task t ->
-            t.dependsOn rebuildLinksToCacheTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use rebuildLinksToCache instead"
-            t.doFirst { logger.warn(t.description) }
-        }
 
         final FETCH_ALL_DEPENDENCIES_TASK_NAME = "fetchAllDependencies"
         RecursivelyFetchSourceTask fetchAllSourceDependenciesTask = (RecursivelyFetchSourceTask)project.task(
@@ -218,11 +201,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.description = "Remove all links."
             it.dependsOn deleteLinksToCacheTask
         }
-        project.task("deleteSymlinks") { Task t ->
-            t.dependsOn deleteLinksTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use deleteLinks instead"
-            t.doFirst { logger.warn(t.description) }
-        }
         LinkTask rebuildLinksTask = (LinkTask)project.task("rebuildLinks", type: LinkTask) { Task it ->
             it.group = "Dependencies"
             it.description = "Rebuild all links."
@@ -231,11 +209,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.dependsOn fetchAllSourceDependenciesTask
         }
         rebuildLinksTask.initialize()
-        project.task("rebuildSymlinks") { Task t ->
-            t.dependsOn rebuildLinksTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use rebuildLinks instead"
-            t.doFirst { logger.warn(t.description) }
-        }
 
         Task fetchAllDependenciesTask = project.task(
             FETCH_ALL_DEPENDENCIES_TASK_NAME,

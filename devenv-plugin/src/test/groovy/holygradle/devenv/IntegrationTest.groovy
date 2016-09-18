@@ -2,7 +2,7 @@ package holygradle.devenv
 
 import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
-import org.gradle.tooling.BuildLauncher
+import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
 
 import static org.junit.Assert.assertTrue
@@ -13,7 +13,7 @@ class IntegrationTest extends AbstractHolyGradleIntegrationTest {
         File projectDir = new File(getTestDir(), "vs120_multi_platform")
         File libDir = new File(projectDir, "build/lib")
         FileHelper.ensureDeleteDirRecursive(libDir)
-        invokeGradle(projectDir) { BuildLauncher launcher ->
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("buildRelease", "buildDebug")
         }
         ["Release", "Debug"].each { String conf ->

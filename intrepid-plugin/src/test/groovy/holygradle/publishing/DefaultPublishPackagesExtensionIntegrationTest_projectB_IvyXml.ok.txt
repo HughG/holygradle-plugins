@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ivy-module version="2.0">
+  <info organisation="happydays" module="projectB" revision="1.1.1" status="release" publication="[timestamp]">
+    <license name="GPL 2.0" url="https://www.gnu.org/licenses/gpl-2.0.html"/>
+    <license name="MIT" url="https://opensource.org/licenses/MIT"/>
+    <description homepage="https://no_such_url">This is an example description,
+which runs across multiple lines.
+</description>
+  </info>
   <configurations>
     <conf name="buildScript" visibility="public"/>
     <conf name="runtime" visibility="public"/>

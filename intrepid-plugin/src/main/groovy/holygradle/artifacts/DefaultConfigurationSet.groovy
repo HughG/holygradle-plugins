@@ -272,12 +272,12 @@ class DefaultConfigurationSet implements ConfigurationSet {
         def nameMap = getConfigurationNamesMap()
         // Create all the configurations for the axis bindings.
         nameMap.each { binding, name ->
-            Configuration conf = configurations.findByName(name) ?: configurations.add(name)
+            Configuration conf = configurations.findByName(name) ?: configurations.create(name)
             conf.description = getDescriptionForBinding(binding)
         }
         // Also "secretly" create the non-visible configurations, if they don't already exist -- but don't return them.
         type.nonVisibleConfigurations.each { name ->
-            Configuration conf = configurations.findByName(name) ?: configurations.add(name)
+            Configuration conf = configurations.findByName(name) ?: configurations.create(name)
             conf.visible = false
             if (conf.description == null) {
                 conf.description = type.getDescriptionForNonVisibleConfiguration(name)

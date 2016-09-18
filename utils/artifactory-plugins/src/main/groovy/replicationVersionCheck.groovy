@@ -2,20 +2,18 @@ import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.ParserRegistry
 import groovyx.net.http.RESTClient
 import groovyx.net.http.URIBuilder
+import org.artifactory.exception.CancelException
+import org.artifactory.repo.HttpRepositoryConfiguration
+import org.artifactory.repo.RepoPath
+import org.artifactory.repo.Repositories
+import org.artifactory.security.Security
 import org.slf4j.Logger
 
 import javax.mail.Message
-import javax.mail.PasswordAuthentication
 import javax.mail.Session
 import javax.mail.Transport
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
-import org.artifactory.exception.CancelException
-import org.artifactory.repo.HttpRepositoryConfiguration
-import org.artifactory.repo.Repositories
-import org.artifactory.repo.RepoPath
-import org.artifactory.security.Security
-
 /**
  * This plugin is a guard against the possibility that replication will behave incorrectly if the source and destination
  * servers are running different versions of Artifactory.
@@ -257,7 +255,7 @@ class VersionMatchChecker {
         this.repositories = repositories
     }
 
-    private boolean versionIsGreaterThan(List left, List right) {
+    private static boolean versionIsGreaterThan(List left, List right) {
         def (List<Integer> leftVersion, Integer leftRevision) = left
         def (List<Integer> rightVersion, Integer rightRevision) = right
 

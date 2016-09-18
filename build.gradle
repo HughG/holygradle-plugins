@@ -77,11 +77,6 @@ subprojects {
     }
 }
 
-// The custom-gradle project also needs the groovy plugin, even though it's not a "-plugin" itself.
-project(":custom-gradle") {
-    apply plugin: "groovy"
-}
-
 subprojects {
     // Add a default configuration for any subprojects which don't have one.
     if (configurations.findByName("default") == null) {

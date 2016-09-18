@@ -4,6 +4,7 @@ import com.google.common.collect.Sets
 import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.gradle.internal.impldep.org.codehaus.plexus.util.FileUtils
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -40,12 +41,11 @@ class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleI
         File ivyXml = new File(publicationsDir, "ivy/ivy.xml")
         assertTrue(ivyXml.exists())
         File regTestFile = regression.getTestFile(regressionFileNameBase)
-        // Filter out the <info> tag which has a timestamp, therefore breaks the test
-        regTestFile.withPrintWriter { w ->
-            ivyXml.eachLine { l ->
-                if (!l.contains("publication=")) w.println(l)
-            }
-        }
+        FileUtils.copyFile(ivyXml, regTestFile)
+        // Filter out the timestamp in the <info> tag, which would be different for every run.
+        regression.replacePatterns(regressionFileNameBase, [
+            (~/publication="[0-9]+"/) : 'publication="[timestamp]"',
+        ])
         regression.checkForRegression(regressionFileNameBase)
     }
 

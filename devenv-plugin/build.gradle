@@ -11,4 +11,5 @@ dependencies {
         optional project(path: ":${pluginProjectName}-plugin", configuration: 'optional')
         testCompile project(":${pluginProjectName}-plugin").sourceSets.test.output
     }
+    testCompile group: 'junit', name: 'junit', version: '4.12'
 }

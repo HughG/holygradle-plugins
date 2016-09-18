@@ -7,6 +7,7 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 
 class UnpackModuleVersion {
+    public final Project project
     public final ModuleVersionIdentifier moduleVersion
     public boolean includeVersionNumberInPath
     // A map from artifacts to sets of configurations that include the artifacts.
@@ -17,10 +18,12 @@ class UnpackModuleVersion {
     private PackedDependencyHandler packedDependency00 = null
 
     UnpackModuleVersion(
+        Project project,
         ModuleVersionIdentifier moduleVersion,
         UnpackModuleVersion parentUnpackModuleVersion,
         PackedDependencyHandler packedDependency00
     ) {
+        this.project = project
         this.moduleVersion = moduleVersion
         this.parentUnpackModuleVersion = parentUnpackModuleVersion
         this.packedDependency00 = packedDependency00
@@ -35,7 +38,7 @@ class UnpackModuleVersion {
             throw new RuntimeException("Module '${moduleVersion}' has no parent module.")
         }
     }
-    
+
     public String getIncludeInfo() {
         if (includeVersionNumberInPath) {
             "(includes version number)"
@@ -58,6 +61,7 @@ class UnpackModuleVersion {
     public String getFullCoordinate() {
         "${moduleVersion.getGroup()}:${moduleVersion.getName()}:${moduleVersion.getVersion()}"
     }
+
 
     // This returns the packedDependencies entry corresponding to this dependency. This will
     // return null if no such entry exists, which would be the case if this is a transitive
@@ -83,10 +87,10 @@ class UnpackModuleVersion {
      * @param project
      * @return An {@link UnpackEntry} object which describes how to unpack this module version
      */
-    public UnpackEntry getUnpackEntry(Project project) {
+    public UnpackEntry getUnpackEntry() {
         return new UnpackEntry(
             artifacts.keySet()*.file,
-            getUnpackDir(project),
+            getUnpackDir(),
             (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
             (boolean)getPackedDependency()?.shouldMakeReadonly()
         )
@@ -123,7 +127,7 @@ class UnpackModuleVersion {
     
     // Return the full path of the directory that should be constructed in the workspace for the unpacked artifacts. 
     // Depending on some other configuration, this path could be used for a link or a real directory.
-    public File getTargetPathInWorkspace(Project project) {
+    public File getTargetPathInWorkspace() {
         if (packedDependency00 != null) {
             // If we have a packed dependency then we can directly construct the target path.
             // We don't need to go looking through transitive dependencies.
@@ -137,12 +141,12 @@ class UnpackModuleVersion {
             // If we don't return above then this must be a transitive dependency.
             // Recursively navigate up the parent hierarchy, appending relative paths.
             return new File(
-                parentUnpackModuleVersion.getTargetPathInWorkspace(project).parentFile,
+                parentUnpackModuleVersion.targetPathInWorkspace.parentFile,
                 targetDirName
             )
         }
     }
-    
+
     // If true this module should be unpacked to the central cache, otherwise it should be unpacked
     // directly to the workspace.
     private boolean shouldUnpackToCache() {
@@ -166,14 +170,14 @@ class UnpackModuleVersion {
 
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
     // cache or it could be to somewhere in the workspace.
-    public File getUnpackDir(Project project) {
+    public File getUnpackDir() {
         if (shouldUnpackToCache()) {
             // Our closest packed-dependency entry (which could be for 'this' module, or any parent module)
             // dictated that we should unpack to the global cache.
             Helper.getGlobalUnpackCacheLocation(project, moduleVersion)
         } else {
             // We're unpacking directly into the workspace.
-            getTargetPathInWorkspace(project)
+            targetPathInWorkspace
         }
     }
 

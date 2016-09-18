@@ -17,6 +17,9 @@ cacheCredentials - Refreshes and caches all credentials.
 Custom Gradle tasks
 -------------------
 checkPrerequisites - Runs all prerequisite checks.
+    checkPrerequisiteHgAuth
+    checkPrerequisiteJava1.7
+    checkPrerequisitePrintln
 createWrapper - Creates a Gradle wrapper in the current directory using this instance of Gradle.
 doskey - Helps you configure doskey to allow 'gw' to be used from any directory.
 openAllBuildscripts - Opens all build-scripts in this workspace using the default program for '.gradle' files.
@@ -28,68 +31,59 @@ versionInfo - Outputs version information about this instance of Gradle.
 Dependencies tasks
 ------------------
 beforeFetchSourceDependencies - Runs before source dependencies are fetched, to check authorisation setup. Extend it with doLast if needed.
-collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder.
-deleteLinks - Remove all links.
+collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder. [createPublishNotes]
+deleteLinks - Remove all links. [deleteLinksToCache]
 deleteLinksToCache - Delete all links to the unpack cache
 extractPackedDependencies - Extract all packed dependencies, to the unpack cache or to the workspace
-fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links.
-fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
-fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
-rebuildLinks - Rebuild all links.
-rebuildLinksToCache - Rebuild all links to the unpack cache
-zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
+fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links. [rebuildLinks]
+fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively. [beforeFetchSourceDependencies]
+    fetchOther - Retrieves an Hg Clone for 'other' into your workspace.
+fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'. [beforeFetchSourceDependencies]
+    fetchOther - Retrieves an Hg Clone for 'other' into your workspace.
+rebuildLinks - Rebuild all links. [fetchAllSourceDependencies, rebuildLinksToCache]
+rebuildLinksToCache - Rebuild all links to the unpack cache [extractPackedDependencies]
+zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP. [createPublishNotes]
 
 DevEnv tasks
 ------------
 beforeBuild - This task is a dependency of all build tasks, so will run before any of them
 beforeClean - This task is a dependency of all clean tasks, so will run before any of them
-buildDebug - Builds all dependent projects in Debug mode.
-buildDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:bDI. Deprecated; use 'gw -a buildDebug' instead.
-buildRelease - Builds all dependent projects in Release mode.
-buildReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:bRI. Deprecated; use 'gw -a buildRelease' instead.
-buildWin32Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-buildWin32DebugIndependently - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Deprecated; use 'gw -a buildWin32Debug' instead.
-buildWin32Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-buildWin32ReleaseIndependently - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Deprecated; use 'gw -a buildWin32Release' instead.
-buildX64Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-buildX64DebugIndependently - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Deprecated; use 'gw -a buildX64Debug' instead.
-buildX64Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-buildX64ReleaseIndependently - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Deprecated; use 'gw -a buildX64Release' instead.
-cleanDebug - Cleans all dependent projects in Debug mode.
-cleanDebugIndependently - This task only makes sense for individual projects e.g. gw subproj:cDI. Deprecated; use 'gw -a cleanDebug' instead.
-cleanRelease - Cleans all dependent projects in Release mode.
-cleanReleaseIndependently - This task only makes sense for individual projects e.g. gw subproj:cRI. Deprecated; use 'gw -a cleanRelease' instead.
-cleanWin32Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanWin32DebugIndependently - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Deprecated; use 'gw -a cleanWin32Debug' instead.
-cleanWin32Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanWin32ReleaseIndependently - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Deprecated; use 'gw -a cleanWin32Release' instead.
-cleanX64Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanX64DebugIndependently - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Deprecated; use 'gw -a cleanX64Debug' instead.
-cleanX64Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanX64ReleaseIndependently - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Deprecated; use 'gw -a cleanX64Release' instead.
+buildDebug - Builds all dependent projects in Debug mode. [beforeBuild, buildWin32Debug, buildX64Debug]
+buildRelease - Builds all dependent projects in Release mode. [beforeBuild, buildWin32Release, buildX64Release]
+buildWin32Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+buildWin32Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+buildX64Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+buildX64Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+cleanDebug - Cleans all dependent projects in Debug mode. [beforeClean, cleanWin32Debug, cleanX64Debug]
+cleanRelease - Cleans all dependent projects in Release mode. [beforeClean, cleanWin32Release, cleanX64Release]
+cleanWin32Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
+cleanWin32Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
+cleanX64Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
+cleanX64Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
 
 Help tasks
 ----------
+buildEnvironment - Displays all buildscript dependencies declared in root project 'tBPC'.
+components - Displays the components produced by root project 'tBPC'. [incubating]
 dependencies - Displays all dependencies declared in root project 'tBPC'.
 dependencyInsight - Displays the insight into a specific dependency in root project 'tBPC'.
-help - Displays a help message
+help - Displays a help message.
+model - Displays the configuration model of root project 'tBPC'. [incubating]
 projects - Displays the sub-projects of root project 'tBPC'.
 properties - Displays the properties of root project 'tBPC'.
 tasks - Displays the tasks runnable from root project 'tBPC'.
 
 Publishing tasks
 ----------------
-afterGenerateDescriptor - Actions to run after all Ivy descriptor generation tasks
-afterPublish - Actions to run after all publish tasks
 beforeGenerateDescriptor - Actions to run before any Ivy descriptor generation tasks
-beforePublish - Actions to run before any publish tasks
 createPublishNotes - Creates 'build_info' directory which will be included in published packages.
-generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'.
-generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication.
-packageEverything - Creates all zip packages for project 'tBPC'.
-publish - Publishes all publications for this module.
-publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'.
-repackageEverything - As 'packageEverything' but doesn't auto-generate any files.
+generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'. [beforeGenerateDescriptor]
+generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication. [generateDescriptorFileForIvyPublication]
+packageEverything - Creates all zip packages for project 'tBPC'. [createPublishNotes]
+    packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tBPC'.
+    packageDefault - Creates a zip file for 'default' in preparation for publishing project 'tBPC'.
+publish - Publishes all publications produced by this project.
+repackageEverything - As 'packageEverything' but doesn't auto-generate any files. [packageEverything]
 
 Source Dependencies tasks
 -------------------------
@@ -102,20 +96,14 @@ stampFiles - Stamp things
 Unit Test tasks
 ---------------
 unitTestDebug - Runs the Debug unit tests for 'tBPC' and all dependent projects. Run 'gw -a ...' to run tests for this project only.
-unitTestDebugIndependently - Runs the Debug unit tests for 'tBPC'. Deprecated; use 'gw -a unitTestDebug' instead.
+    unitTestMain_testDebug
 unitTestRelease - Runs the Release unit tests for 'tBPC' and all dependent projects. Run 'gw -a ...' to run tests for this project only.
-unitTestReleaseIndependently - Runs the Release unit tests for 'tBPC'. Deprecated; use 'gw -a unitTestRelease' instead.
+    unitTestMain_testRelease
 
 Other tasks
 -----------
-buildAndTestAll - Build 'tBPC' and all dependent projects in Debug and Release, and run unit tests.
-deleteSymlinks - deleteSymlinks is deprecated and will be removed in future.  Use deleteLinks instead
-deleteSymlinksToCache - deleteSymlinksToCache is deprecated and will be removed in future.  Use deleteLinksToCache instead
+buildAndTestAll - Build 'tBPC' and all dependent projects in Debug and Release, and run unit tests. [buildDebug, buildRelease, unitTestDebug, unitTestRelease]
 extractSevenZip - Unpack build dependency 'sevenZip'
-rebuildSymlinks - rebuildSymlinks is deprecated and will be removed in future.  Use rebuildLinks instead
-rebuildSymlinksToCache - rebuildSymlinksToCache is deprecated and will be removed in future.  Use rebuildLinksToCache instead
-
-To see all tasks and more detail, run with --all.
 
 BUILD SUCCESSFUL
 

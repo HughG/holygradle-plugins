@@ -1,6 +1,5 @@
 package holygradle.unpacking
 
-import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 
 class UnpackModule {
@@ -22,22 +21,6 @@ class UnpackModule {
             return versions[moduleVersion.getVersion()]
         }
         return null
-    }
-
-    /**
-     * Returns a collection of objects representing the transitive set of unpacked modules used by a project.
-     *
-     * @param project The project for which to retrieve the collection of {@link UnpackModule}s.
-     * @return The transitive set of unpacked modules used by a project.
-     * @deprecated Use {@code project.packedDependenciesState.getAllUnpackModules()} instead.
-     */
-    @Deprecated
-    public static Collection<UnpackModule> getAllUnpackModules(Project project) {
-        project.logger.warn(
-            "WARNING: Method UnpackModule#getAllUnpackModules(Project) is deprecated and will be removed. " +
-            "Use project.packedDependenciesState.getAllUnpackModules() instead."
-        )
-        return project.packedDependenciesState.getAllUnpackModules()
     }
 
     @Override

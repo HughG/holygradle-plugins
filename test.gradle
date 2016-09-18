@@ -1,6 +1,6 @@
-import java.nio.file.Files
+import groovy.io.FileType
 
-import org.gradle.process.JavaForkOptions
+import java.nio.file.Files
 
 void maybeForward(JavaForkOptions forkOptions, String propertyName) {
     String extraArgs = System.getProperty(propertyName)
@@ -152,7 +152,7 @@ project.ext.setUpTests = { Project project ->
             return
         }
 
-        dir.eachFileRecurse(groovy.io.FileType.FILES) { File f ->
+        dir.eachFileRecurse(FileType.FILES) { File f ->
             java.nio.file.Path p = f.toPath()
             if (Files.isSymbolicLink(p) && !Files.exists(p)) {
                 if (f.delete()) {

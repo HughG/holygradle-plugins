@@ -11,36 +11,32 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.ArtifactRepository
 import org.gradle.api.artifacts.repositories.AuthenticationSupported
+import org.gradle.api.invocation.Gradle
 import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.ivy.IvyArtifact
 import org.gradle.api.publish.ivy.IvyConfiguration
+import org.gradle.api.publish.ivy.IvyModuleDescriptorSpec
 import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
-import org.gradle.api.tasks.TaskCollection
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.util.ConfigureUtil
 
 public class DefaultPublishPackagesExtension implements PublishPackagesExtension {
     private final Project project
-    private final PublishingExtension publishingExtension
-    private final RepositoryHandler repositories
     private boolean createDefaultPublication = true
     private boolean publishPrivateConfigurations = true
-    public final IvyPublication ivyPublication
     private final LinkedHashSet<String> originalConfigurationOrder = new LinkedHashSet()
     private RepublishHandler republishHandler
-    private String nextVersionNumberStr = null
-    private String autoIncrementFilePath = null
-    private String environmentVariableName = null
-    private String publishGroup = null
-    private String publishName = null
+
+    public static final String DEFAULT_PUBLICATION_NAME = "ivy"
+    public static final String DEFAULT_DESCRIPTOR_TASK_NAME =
+        "generateDescriptorFileFor${DEFAULT_PUBLICATION_NAME.capitalize()}Publication"
 
     public DefaultPublishPackagesExtension(
         Project project,
         NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers,
-        PublishingExtension publishingExtension,
         Collection<PackedDependencyHandler> packedDependencies
     ) {
         this.project = project
@@ -48,79 +44,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         // Keep track of the order in which configurations are added, so that we can put them in the ivy.xml file in
         // the same order, for human-readability.
         final ConfigurationContainer configurations = project.configurations
-        final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
-        configurations.whenObjectAdded((Closure){ Configuration c ->
-            localOriginalConfigurationOrder.add(c.name)
-        })
-        configurations.whenObjectRemoved((Closure){ Configuration c ->
-            localOriginalConfigurationOrder.remove(c.name)
-        })
-
-        this.publishingExtension = publishingExtension
-        this.repositories = publishingExtension.repositories
-        IvyPublication ivyPublication = null
-        // Gradle automatically converts Closure to the right Action<> type.
-        //noinspection GroovyAssignabilityCheck
-        publishingExtension.publications { pubs ->
-            ivyPublication = pubs.maybeCreate("ivy", IvyPublication)
-        }
-        this.ivyPublication = ivyPublication
-
-        // Add a configuration to this publication for each one that has been or is later added to the project, and
-        // remove them if and when any are removed.  Note that the default ivy-publish behaviour in Gradle 1.4 was to
-        // add only visible configurations and the ones they extended from (even if those super-configurations were not
-        // themselves public.
-        configurations.all((Closure){ Configuration conf ->
-            // Gradle automatically converts Closure to the right Action<> type.
-            //noinspection GroovyAssignabilityCheck
-            if (includeConfiguration(conf)) {
-                ivyPublication.configurations { ivyConfs ->
-                    IvyConfiguration ivyConf = ivyConfs.maybeCreate(conf.name)
-                    conf.extendsFrom.each { ivyConf.extend(it.name) }
-                }
-            }
-        })
-        configurations.whenObjectRemoved((Closure){ Configuration conf ->
-            ivyPublication.configurations.each { IvyConfiguration ivyConf ->
-                ivyConf.extends.remove(conf.name)
-            }
-            IvyConfiguration ivyConf = ivyPublication.configurations.findByName(conf.name)
-            ivyPublication.configurations.remove(ivyConf)
-        })
-
-        // Add an artifact to this publication for each handler that has been or is later added, and remove artifacts
-        // if and when any are removed.
-        packageArtifactHandlers.all { PackageArtifactHandler handler ->
-            if (includeConfiguration(project.configurations.getByName(handler.configuration))) {
-                AbstractArchiveTask packageTask = project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
-                // Gradle automatically converts Closure to the right Action<> type.
-                //noinspection GroovyAssignabilityCheck
-                ivyPublication.artifact(packageTask) { IvyArtifact artifact ->
-                    artifact.name = packageTask.baseName
-                    artifact.conf = handler.configuration
-                }
-            }
-        }
-        packageArtifactHandlers.whenObjectRemoved { PackageArtifactHandler handler ->
-            AbstractArchiveTask packageTask = project.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
-            ivyPublication.artifacts.remove(ivyPublication.artifacts.find { it.file == packageTask.archivePath })
-        }
+        setupRecordingOfOriginalConfigurationOrder(configurations)
 
         Task beforeGenerateDescriptorTask = project.task("beforeGenerateDescriptor") { Task t ->
             t.group = "Publishing"
             t.description = "Actions to run before any Ivy descriptor generation tasks"
-        }
-        Task afterGenerateDescriptorTask = project.task("afterGenerateDescriptor") { Task t ->
-            t.group = "Publishing"
-            t.description = "Actions to run after all Ivy descriptor generation tasks"
-        }
-        Task beforePublishTask = project.task("beforePublish") { Task t ->
-            t.group = "Publishing"
-            t.description = "Actions to run before any publish tasks"
-        }
-        Task afterPublishTask = project.task("afterPublish") { Task t ->
-            t.group = "Publishing"
-            t.description = "Actions to run after all publish tasks"
         }
         Task generateIvyModuleDescriptorTask = project.task("generateIvyModuleDescriptor") { Task t ->
             t.group = "Publishing"
@@ -137,81 +65,126 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
         beforeGenerateDescriptorTask << {
             this.failIfPackedDependenciesNotCreatingLink(packedDependencies)
-            this.verifyGroupName()
-            this.verifyVersionNumber()
         }
-        afterPublishTask << {
-            this.incrementVersionNumber()
+
+        // Define a 'republish' task.
+        Task republishTask = null
+        if (getRepublishHandler() != null) {
+            republishTask = project.task("republish", type: DefaultTask) { Task task ->
+                task.group = "Publishing"
+                task.description = "'Republishes' the artifacts for the module."
+            }
         }
 
         // Configure the publish task to deal with the version number, include source dependencies and convert
-        // dynamic dependency versions to fixed version numbers.
-        project.gradle.projectsEvaluated {
-            this.applyGroupName()
-            this.applyModuleName()
-            this.applyVersionNumber()
-
-            TaskCollection<GenerateIvyDescriptor> ivyDescriptorTasks = project.tasks.withType(GenerateIvyDescriptor)
-            TaskCollection<PublishToIvyRepository> ivyPublishTasks = project.tasks.withType(PublishToIvyRepository)
-
-            ivyDescriptorTasks.each {
-                generateIvyModuleDescriptorTask.dependsOn it
-
-                it.dependsOn beforeGenerateDescriptorTask
-                it.finalizedBy afterGenerateDescriptorTask
-                // Add a mustRunAfter to make sure the the after task doesn't run until all publish tasks are done.
-                afterGenerateDescriptorTask.mustRunAfter it
-            }
-
-            ivyPublishTasks.each {
-                it.dependsOn beforePublishTask
-                it.finalizedBy afterPublishTask
-                // Add a mustRunAfter to make sure the afterPublish doesn't run until all publish tasks are done.
-                afterPublishTask.mustRunAfter it
-
-                Task generateDescriptorTask =
-                    project.tasks.getByName("generateDescriptorFileFor${it.publication.name.capitalize()}Publication")
-                generateDescriptorTask.ext['publication'] = it.publication
-            }
-
-            // Only use our default publication if the user asked for it.
-            if (!createDefaultPublication) {
-                publishingExtension.publications.remove(ivyPublication)
-            }
-
-            ivyDescriptorTasks.each { ivyDescriptorTask ->
-                ivyDescriptorTask.doFirst {
-                    IvyPublication publication = ivyDescriptorTask.ext['publication'] as IvyPublication
-                    // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
-                    publication.descriptor.status = project.status
-                    putConfigurationsInOriginalOrder(publication)
-                    freezeDynamicDependencyVersions(project, publication)
-                    collapseMultipleConfigurationDependencies(publication)
-                }
-                ivyDescriptorTask.doLast {
-                    fixArrowsInXml(ivyDescriptorTask)
+        // dynamic dependency versions to fixed version numbers.  We do this in a projectsEvaluated block so that
+        // source dependency projects have been evaluated, so we can be sure their information is available.
+        project.gradle.projectsEvaluated { Gradle gradle ->
+            project.publishing { PublishingExtension it ->
+                if (createDefaultPublication) {
+                    createDefaultPublication(it, packageArtifactHandlers)
+                    configureGenerateDescriptorTasks(
+                        beforeGenerateDescriptorTask,
+                        generateIvyModuleDescriptorTask,
+                        project
+                    )
+                    configureRepublishTaskDependencies(republishTask)
                 }
             }
+        }
+    }
 
-            // We do this after calling collapseMultipleConfigurationDependencies because they both use doFirst, and we
-            // need the setup of configuration dependencies to happen before we re-order them.  We do the adding and the
-            // re-ordering separately so that we can also do re-ordering for publications other than our default one.
-            maybeAddConfigurationDependenciesToDefaultPublication()
+    private void setupRecordingOfOriginalConfigurationOrder(ConfigurationContainer configurations) {
+        final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder
+        // capture private for closure
+        configurations.whenObjectAdded((Closure) { Configuration c ->
+            localOriginalConfigurationOrder.add(c.name)
+        })
+        configurations.whenObjectRemoved((Closure) { Configuration c ->
+            localOriginalConfigurationOrder.remove(c.name)
+        })
+    }
 
-            // Override the group and description for the ivy-publish plugin's 'publish' task.
-            Task publishTask = project.tasks.findByName("publish")
-            if (publishTask != null) {
-                publishTask.group = "Publishing"
-                publishTask.description = "Publishes all publications for this module."
-            }
-            
-            // Define a 'republish' task.
-            if (getRepublishHandler() != null) {
-                project.task("republish", type: DefaultTask) { Task task ->
-                    task.group = "Publishing"
-                    task.description = "'Republishes' the artifacts for the module."
-                    ivyPublishTasks.each { task.dependsOn it }
+    // Public for use from closure.
+    public createDefaultPublication(
+        PublishingExtension publishing,
+        NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers
+    ) {
+        final Project localProject = project
+        publishing.publications { pubs ->
+            IvyPublication defaultPublication = pubs.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication)
+            final Action<IvyPublication> configureAction = ConfigureUtil.configureUsing { pub ->
+                // NOTE: We use .each instead of .all here because we have to fix the state of the publication within
+                // this closure.  If some other callback adds more configurations or packaged artifacts on the fly
+                // later, they won't be included in the publication.
+
+                // Note that the default ivy-publish behaviour in Gradle 1.4 was to add only visible configurations and
+                // the ones they extended from (even if those super-configurations were not themselves public).
+                localProject.configurations.each((Closure) { Configuration conf ->
+                    if (includeConfiguration(conf)) {
+                        pub.configurations { ivyConfs ->
+                            IvyConfiguration ivyConf = ivyConfs.maybeCreate(conf.name)
+                            conf.extendsFrom.each { ivyConf.extend(it.name) }
+                        }
+                    }
+                })
+
+                // Add an artifact to this publication for each handler that has been or is later added.
+                packageArtifactHandlers.each { PackageArtifactHandler handler ->
+                    if (includeConfiguration(localProject.configurations.getByName(handler.configuration))) {
+                        AbstractArchiveTask packageTask =
+                                localProject.tasks.getByName(handler.packageTaskName) as AbstractArchiveTask
+                        // Gradle automatically converts Closure to the right Action<> type.
+                        //noinspection GroovyAssignabilityCheck
+                        pub.artifact(packageTask) { IvyArtifact artifact ->
+                            artifact.name = packageTask.baseName
+                            artifact.conf = handler.configuration
+                        }
+                    }
                 }
+            }
+            configureAction.execute(defaultPublication)
+        }
+    }
+
+    // Public for use from closure.
+    public configureGenerateDescriptorTasks(
+        Task beforeGenerateDescriptorTask,
+        Task generateIvyModuleDescriptorTask,
+        Project project
+    ) {
+        project.tasks.withType(GenerateIvyDescriptor).whenTaskAdded { GenerateIvyDescriptor descriptorTask ->
+            generateIvyModuleDescriptorTask.dependsOn descriptorTask
+            descriptorTask.dependsOn beforeGenerateDescriptorTask
+
+            descriptorTask.doFirst {
+                // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
+                descriptorTask.descriptor.status = project.status
+                putConfigurationsInOriginalOrder(descriptorTask.descriptor)
+                freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
+                collapseMultipleConfigurationDependencies(descriptorTask.descriptor)
+            }
+
+            // We call this here because it uses doFirst, and we need this to happen after
+            // putConfigurationsInOriginalOrder and collapseMultipleConfigurationDependencies.  We do the adding and
+            // the re-ordering separately so that we can also do re-ordering for publications other than our default one.
+            if (descriptorTask.name == DEFAULT_DESCRIPTOR_TASK_NAME) {
+                descriptorTask.doFirst {
+                    addConfigurationDependenciesToDefaultPublication(descriptorTask)
+                }
+            }
+
+            descriptorTask.doLast {
+                fixArrowsInXml(descriptorTask)
+            }
+        }
+    }
+
+    // Public for use from closure.
+    public configureRepublishTaskDependencies(Task republishTask) {
+        project.tasks.withType(PublishToIvyRepository).whenTaskAdded { PublishToIvyRepository publishTask ->
+            if (republishTask != null) {
+                republishTask.dependsOn publishTask
             }
         }
     }
@@ -243,50 +216,13 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
         }
     }
-    
-    public void nextVersionNumber(String versionNo) {
-        project.logger.warn(
-            "WARNING: publishPackages.nextVersionNumber is deprecated and will be removed in future.  " +
-            "Instead use \"project.version = 'string'\" at the top level of the build script.  " +
-            "It is recommended to set the version early in the evaluation of the build script.  "
-        )
-        nextVersionNumberStr = versionNo
-        applyVersionNumber()
-    }
-    
-    public void nextVersionNumber(Closure versionNumClosure) {
-        nextVersionNumber(versionNumClosure() as String)
-    }
-    
-    public void nextVersionNumberAutoIncrementFile(String versionNumberFilePath) {
-        project.logger.warn(
-            "WARNING: publishPackages.nextVersionNumberAutoIncrementFile is deprecated and will be removed in future.  " +
-            "There will be no replacement feature in the Holy Gradle.  " +
-            "If you need this behaviour you must implement it yourself.  " +
-            "It is recommended to set the version early in the evaluation of the build script.  "
-        )
-        autoIncrementFilePath = versionNumberFilePath
-        applyVersionNumber()
-    }
-    
-    public void nextVersionNumberEnvironmentVariable(String versionNumberEnvVar) {
-        project.logger.warn(
-            "WARNING: publishPackages.nextVersionNumberEnvironmentVariable is deprecated and will be removed in future.  " +
-            "Instead use \"project.version = System.getenv('ENV_VAR_NAME') ?: Project.DEFAULT_VERSION\" " +
-            "at the top level of the build script.  " +
-            "It is recommended to set the version early in the evaluation of the build script.  "
-        )
-
-        environmentVariableName = versionNumberEnvVar
-        applyVersionNumber()
-    }
-    
-    public RepositoryHandler getRepositories() {
-        return repositories
-    }
 
     public void repositories(Action<RepositoryHandler> configure) {
-        configure.execute(repositories)
+        project.publishing {
+            repositories { RepositoryHandler handler ->
+                configure.execute(handler)
+            }
+        }
     }
 
     @Override
@@ -309,8 +245,17 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         this.publishPrivateConfigurations = publish
     }
 
-    Publication getDefaultPublication() {
-        return ivyPublication
+    @Override
+    void defaultPublication(Action<Publication> configure) {
+        project.publishing { PublishingExtension publishing ->
+            if (!createDefaultPublication) {
+                throw new RuntimeException(
+                    "Cannot configure the default publication because it will not be created, " +
+                    "because createDefaultPublication is false."
+                )
+            }
+            configure.execute(publishing.publications.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication))
+        }
     }
 
     public void republish(Closure closure) {
@@ -327,145 +272,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         return republishHandler
     }
     
-    public void group(String publishGroup) {
-        project.logger.warn(
-            "WARNING: publishPackages.group is deprecated and will be removed in future.  " +
-            "Instead use \"project.group = 'string'\" at the top level of the build script.  " +
-            "It is recommended to set the group early in the evaluation of the build script.  "
-        )
-        this.publishGroup = publishGroup
-        applyGroupName()
-    }
-    
-    public void name(String publishName) {
-        project.logger.warn(
-            "WARNING: publishPackages.name is deprecated and will be removed in future.  " +
-            "Instead use \"rootProject.name = 'string'\" in the 'settings.gradle' file for the project.  "
-        )
-        this.publishName = publishName
-    }
-    
-    private File getVersionFile() {
-        return new File(project.projectDir, autoIncrementFilePath)
-    }
-    
-    private static String getVersionFromFile(File file)  {
-        return file.text
-    }
-    
-    private String getVersionFromFile()  {
-        return getVersionFromFile(getVersionFile());
-    }
-    
-    private static String doIncrementVersionNumber(File versionFile) {
-        String versionStr = versionFile.text
-        int lastDot = versionStr.lastIndexOf('.')
-        int nextVersion = versionStr[lastDot+1..-1].toInteger() + 1
-        String firstChunk = versionStr[0..lastDot]
-        String newVersionStr = firstChunk + nextVersion.toString()
-        versionFile.write(newVersionStr)
-        newVersionStr
-    }
-    
-    public void applyGroupName() {
-        if (publishGroup != null) {
-            project.group = publishGroup
-        }
-    }
-    
-    public void applyModuleName() {
-        if (publishName != null) {
-            // We'll implement this once the Gradle issue is fixed, and we can upgrade.
-            throw new RuntimeException("Cannot apply module name because of http://issues.gradle.org/browse/GRADLE-2412")
-        }
-    }
-    
-    public void verifyGroupName() {
-        if (project.group == null) {
-            throw new RuntimeException("Please specify the group name for the published artifacts. Under 'publishPackages' something like 'group \"blah\"'.")
-        }
-    }
-    
-    public String applyVersionNumber() {
-        if (nextVersionNumberStr != null) {
-            project.version = nextVersionNumberStr
-        } else if (autoIncrementFilePath != null) {
-            File versionFile = getVersionFile();
-            if (versionFile.exists()) {
-                project.version = getVersionFromFile()
-            }
-        } else if (environmentVariableName != null) {
-            String nextVersionNumber = System.getenv(environmentVariableName)
-            if (nextVersionNumber != null) {
-                project.version = nextVersionNumber
-            }
-        }
-        project.version
-    }
-    
-    public void verifyVersionNumber() {
-        if (autoIncrementFilePath != null) {
-            if (!getVersionFile().exists()) {
-                throw new RuntimeException(
-                    "'publishPackages' specifies nextVersionNumberAutoIncrementFile " + 
-                    "\"${autoIncrementFilePath}\", but that file does not " +
-                    "exist in the project directory: " + project.projectDir.absolutePath
-                )
-            }
-        } else if (environmentVariableName != null) {
-            String nextVersionNumber = System.getenv(environmentVariableName)
-            if (nextVersionNumber == null) {
-                throw new RuntimeException(
-                    "Environment variable '${environmentVariableName}' " +
-                    "is not set. This is necessary for 'publishPackages'."
-                )
-            }
-        }
-        
-        int nonNullCount = 0
-        if (nextVersionNumberStr != null) {
-            nonNullCount++;
-        }
-        if (autoIncrementFilePath != null) {
-            nonNullCount++;
-        }
-        if (environmentVariableName != null) {
-            nonNullCount++;
-        }
-        if (nonNullCount == 0) {
-            if (project.version.toString() == "unspecified") {
-                throw new RuntimeException(
-                    "One of 'nextVersionNumber', 'nextVersionNumberAutoIncrementFile' and 'nextVersionNumberEnvironmentVariable' must be " +
-                    "set on 'publishPackages' unless you set the 'version' property on the project yourself."
-                )
-            }
-        } else if (nonNullCount > 1) {
-            throw new RuntimeException(
-                "Only one of 'nextVersionNumber', 'nextVersionNumberAutoIncrementFile' and 'nextVersionNumberEnvironmentVariable' should " +
-                "be set on 'publishPackages'."
-            )
-        }
-    }
-    
-    public String incrementVersionNumber() {
-        if (autoIncrementFilePath != null) {
-            doIncrementVersionNumber(getVersionFile());
-        }
-        return getCurrentVersionNumber();
-    }
-    
-    private String getCurrentVersionNumber()  {
-        String currentVersionNumber = null
-        if (nextVersionNumberStr != null) {
-            currentVersionNumber = nextVersionNumberStr
-        } else if (autoIncrementFilePath != null) {
-            currentVersionNumber = getVersionFromFile();
-        } else if (environmentVariableName != null) {
-            currentVersionNumber = System.getenv(environmentVariableName)
-        }
-        return currentVersionNumber
-    }
-
     // Throw an exception if any packed dependencies are marked with noCreateLinkToCache()
     public void failIfPackedDependenciesNotCreatingLink(Collection<PackedDependencyHandler> packedDependencies) {
         Collection<PackedDependencyHandler> nonLinkedPackedDependencies =
@@ -481,11 +287,11 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     // Re-writes the "configurations" element so that its children appear in the same order that the configurations were
     // defined in the project.
-    public void putConfigurationsInOriginalOrder(IvyPublication publication) {
+    public void putConfigurationsInOriginalOrder(IvyModuleDescriptorSpec descriptor) {
         final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        publication.descriptor.withXml { xml ->
+        descriptor.withXml { xml ->
             xml.asNode().configurations.each { Node confsNode ->
                 LinkedHashMap<String, Node> confNodes = new LinkedHashMap()
                 localOriginalConfigurationOrder.each { String confName ->
@@ -521,10 +327,10 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
     // Replace the version of any dependencies which were specified with dynamic version numbers, so they have fixed
     // version numbers as resolved for the build which is to be published.
-    public static void freezeDynamicDependencyVersions(Project project, IvyPublication publication) {
+    public static void freezeDynamicDependencyVersions(Project project, IvyModuleDescriptorSpec descriptor) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        publication.descriptor.withXml { xml ->
+        descriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
                 if (depNode.@rev.endsWith("+")) {
                     depNode.@rev = getDependencyVersion(project, depNode.@org as String, depNode.@name as String)
@@ -536,7 +342,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     // This method goes through the "dependencies" node and converts each set of "dependency" children with the same
     // "org"/"name"/"rev" (but different "conf") attribute values into a single "dependency" node with a list-style
     // configuration mapping in the "conf" attribute ("a1->b1;a2->b2").  This is for human-readability.
-    public void collapseMultipleConfigurationDependencies(IvyPublication publication) {
+    public void collapseMultipleConfigurationDependencies(IvyModuleDescriptorSpec descriptor) {
         // WARNING: This method loses any sub-nodes of each dependency node.  These can be "conf" (not needed, as we use
         // the "@conf" attribute) and "artifact", "exclude", "include" (only needed to override the target's ivy file,
         // which I don't think we care about for now).
@@ -548,7 +354,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        publication.descriptor.withXml { xml ->
+        descriptor.withXml { xml ->
             Map<String, List<String>> configsByCoord = new LinkedHashMap().withDefault { new ArrayList() }
             xml.asNode().dependencies.each { depsNode ->
                 depsNode.dependency.each { depNode ->
@@ -572,27 +378,19 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
-    public void maybeAddConfigurationDependenciesToDefaultPublication() {
-        // Our default ivy publication may have been removed, if others were added.
-        if (this.createDefaultPublication) {
-            String generateIvyDescriptorTaskName =
-                "generateDescriptorFileFor${this.ivyPublication.name.capitalize()}Publication"
-            Task generateIvyDescriptorTask = project.tasks.getByName(generateIvyDescriptorTaskName)
-            generateIvyDescriptorTask.doFirst {
-                ivyPublication.descriptor.withXml { xml ->
-                    Node depsNode = xml.asNode().dependencies.find() as Node
-                    project.configurations.each((Closure) { Configuration conf ->
-                        conf.dependencies.withType(ModuleDependency).each { ModuleDependency dep ->
-                            depsNode.appendNode("dependency", [
-                                "org" : dep.group,
-                                "name": dep.name,
-                                "rev" : dep.version,
-                                "conf": "${conf.name}->${dep.configuration}"
-                            ])
-                        }
-                    })
+    public void addConfigurationDependenciesToDefaultPublication(GenerateIvyDescriptor descriptorTask) {
+        descriptorTask.descriptor.withXml { xml ->
+            Node depsNode = xml.asNode().dependencies.find() as Node
+            descriptorTask.project.configurations.each((Closure) { Configuration conf ->
+                conf.dependencies.withType(ModuleDependency).each { ModuleDependency dep ->
+                    depsNode.appendNode("dependency", [
+                        "org" : dep.group,
+                        "name": dep.name,
+                        "rev" : dep.version,
+                        "conf": "${conf.name}->${dep.configuration}"
+                    ])
                 }
-            }
+            })
         }
     }
 

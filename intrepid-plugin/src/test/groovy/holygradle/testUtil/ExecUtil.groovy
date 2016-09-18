@@ -21,9 +21,9 @@ class ExecUtil {
         Object[] actualArgs = null
         File actualWorkingDir = null
         dummySpec = [
-            // Note: for some reason, the args method gets its varargs as an array of one element, containing the actual
-            // varargs array; maybe because it's overloaded for (Object...) and (Iterable)?
-            args: { Object... theArgs -> actualArgs = theArgs[0]; return dummySpec },
+            // Note: For some reason, if there's only one argument, the args method gets its varargs as an array of one
+            // element, containing the actual varargs array.
+            args: { Object... theArgs -> actualArgs = (theArgs.length == 1 ? theArgs[0] : theArgs); return dummySpec },
             getArgs : { actualArgs.toList() },
             setWorkingDir: { File dir -> actualWorkingDir = dir },
             getWorkingDir: { actualWorkingDir }

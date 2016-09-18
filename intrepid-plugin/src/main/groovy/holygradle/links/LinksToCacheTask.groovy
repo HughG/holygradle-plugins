@@ -40,8 +40,8 @@ class LinksToCacheTask extends DefaultTask {
         LinkedList<UnpackModuleVersion> localVersionList = versionList // capture private for closure
         doLast {
             localVersionList.each { UnpackModuleVersion version ->
-                File linkDir = version.getTargetPathInWorkspace(project)
-                File targetDir = version.getUnpackDir(project)
+                File linkDir = version.targetPathInWorkspace
+                File targetDir = version.unpackDir
 
                 switch (mode) {
                     case Mode.BUILD:
