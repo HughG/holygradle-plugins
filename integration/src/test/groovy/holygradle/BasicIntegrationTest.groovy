@@ -3,7 +3,6 @@ package holygradle
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
 import org.junit.Test
-
 /**
  * Very basic integration "smoke test".
  */
@@ -49,8 +48,7 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testAllPluginsInitialiseTogether() {
         compareBuildOutput("tAPIT") { WrapperBuildLauncher launcher ->
-            launcher.forTasks("tasks")
-                .addArguments("--all")
+            launcher.forTasks("tasks", "--all")
         }
     }
 
@@ -60,8 +58,7 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testBasicPluginConfig() {
         compareBuildOutput("tBPC") { WrapperBuildLauncher launcher ->
-            launcher.forTasks("tasks")
-                .addArguments("--all")
+            launcher.forTasks("tasks", "--all")
         }
     }
 }

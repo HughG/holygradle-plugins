@@ -17,6 +17,9 @@ cacheCredentials - Refreshes and caches all credentials.
 Custom Gradle tasks
 -------------------
 checkPrerequisites - Runs all prerequisite checks.
+    checkPrerequisiteHgAuth
+    checkPrerequisiteJava1.7
+    checkPrerequisitePrintln
 createWrapper - Creates a Gradle wrapper in the current directory using this instance of Gradle.
 doskey - Helps you configure doskey to allow 'gw' to be used from any directory.
 openAllBuildscripts - Opens all build-scripts in this workspace using the default program for '.gradle' files.
@@ -28,56 +31,59 @@ versionInfo - Outputs version information about this instance of Gradle.
 Dependencies tasks
 ------------------
 beforeFetchSourceDependencies - Runs before source dependencies are fetched, to check authorisation setup. Extend it with doLast if needed.
-collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder.
-deleteLinks - Remove all links.
+collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder. [createPublishNotes]
+deleteLinks - Remove all links. [deleteLinksToCache]
 deleteLinksToCache - Delete all links to the unpack cache
 extractPackedDependencies - Extract all packed dependencies, to the unpack cache or to the workspace
-fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links.
-fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
-fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
-rebuildLinks - Rebuild all links.
-rebuildLinksToCache - Rebuild all links to the unpack cache
-zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
+fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links. [rebuildLinks]
+fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively. [beforeFetchSourceDependencies]
+    fetchOther - Retrieves an Hg Clone for 'other' into your workspace.
+fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'. [beforeFetchSourceDependencies]
+    fetchOther - Retrieves an Hg Clone for 'other' into your workspace.
+rebuildLinks - Rebuild all links. [fetchAllSourceDependencies, rebuildLinksToCache]
+rebuildLinksToCache - Rebuild all links to the unpack cache [extractPackedDependencies]
+zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP. [createPublishNotes]
 
 DevEnv tasks
 ------------
 beforeBuild - This task is a dependency of all build tasks, so will run before any of them
 beforeClean - This task is a dependency of all clean tasks, so will run before any of them
-buildDebug - Builds all dependent projects in Debug mode.
-buildRelease - Builds all dependent projects in Release mode.
-buildWin32Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-buildWin32Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-buildX64Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-buildX64Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanDebug - Cleans all dependent projects in Debug mode.
-cleanRelease - Cleans all dependent projects in Release mode.
-cleanWin32Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanWin32Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanX64Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
-cleanX64Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only.
+buildDebug - Builds all dependent projects in Debug mode. [beforeBuild, buildWin32Debug, buildX64Debug]
+buildRelease - Builds all dependent projects in Release mode. [beforeBuild, buildWin32Release, buildX64Release]
+buildWin32Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+buildWin32Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+buildX64Debug - Builds the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+buildX64Release - Builds the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeBuild]
+cleanDebug - Cleans all dependent projects in Debug mode. [beforeClean, cleanWin32Debug, cleanX64Debug]
+cleanRelease - Cleans all dependent projects in Release mode. [beforeClean, cleanWin32Release, cleanX64Release]
+cleanWin32Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
+cleanWin32Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
+cleanX64Debug - Cleans the solution 'no_such.sln' with DevEnv in Debug mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
+cleanX64Release - Cleans the solution 'no_such.sln' with DevEnv in Release mode, first building all dependent projects. Run 'gw -a ...' to build for this project only. [beforeClean]
 
 Help tasks
 ----------
+buildEnvironment - Displays all buildscript dependencies declared in root project 'tBPC'.
+components - Displays the components produced by root project 'tBPC'. [incubating]
 dependencies - Displays all dependencies declared in root project 'tBPC'.
 dependencyInsight - Displays the insight into a specific dependency in root project 'tBPC'.
-help - Displays a help message
+help - Displays a help message.
+model - Displays the configuration model of root project 'tBPC'. [incubating]
 projects - Displays the sub-projects of root project 'tBPC'.
 properties - Displays the properties of root project 'tBPC'.
 tasks - Displays the tasks runnable from root project 'tBPC'.
 
 Publishing tasks
 ----------------
-afterGenerateDescriptor - Actions to run after all Ivy descriptor generation tasks
-afterPublish - Actions to run after all publish tasks
 beforeGenerateDescriptor - Actions to run before any Ivy descriptor generation tasks
-beforePublish - Actions to run before any publish tasks
 createPublishNotes - Creates 'build_info' directory which will be included in published packages.
-generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'.
-generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication.
-packageEverything - Creates all zip packages for project 'tBPC'.
-publish - Publishes all publications for this module.
-publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'.
-repackageEverything - As 'packageEverything' but doesn't auto-generate any files.
+generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'. [beforeGenerateDescriptor]
+generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication. [generateDescriptorFileForIvyPublication]
+packageEverything - Creates all zip packages for project 'tBPC'. [createPublishNotes]
+    packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tBPC'.
+    packageDefault - Creates a zip file for 'default' in preparation for publishing project 'tBPC'.
+publish - Publishes all publications produced by this project.
+repackageEverything - As 'packageEverything' but doesn't auto-generate any files. [packageEverything]
 
 Source Dependencies tasks
 -------------------------
@@ -90,14 +96,14 @@ stampFiles - Stamp things
 Unit Test tasks
 ---------------
 unitTestDebug - Runs the Debug unit tests for 'tBPC' and all dependent projects. Run 'gw -a ...' to run tests for this project only.
+    unitTestMain_testDebug
 unitTestRelease - Runs the Release unit tests for 'tBPC' and all dependent projects. Run 'gw -a ...' to run tests for this project only.
+    unitTestMain_testRelease
 
 Other tasks
 -----------
-buildAndTestAll - Build 'tBPC' and all dependent projects in Debug and Release, and run unit tests.
+buildAndTestAll - Build 'tBPC' and all dependent projects in Debug and Release, and run unit tests. [buildDebug, buildRelease, unitTestDebug, unitTestRelease]
 extractSevenZip - Unpack build dependency 'sevenZip'
-
-To see all tasks and more detail, run with --all.
 
 BUILD SUCCESSFUL
 
