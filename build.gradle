@@ -31,6 +31,7 @@ ensureHgHook(
     copy {
         into(otherProjectDir)
         from(projectDir) {
+            include "gradlew.bat"
             include "gw.bat"
         }
     }

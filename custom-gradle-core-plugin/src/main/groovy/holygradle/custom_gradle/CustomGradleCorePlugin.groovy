@@ -45,18 +45,19 @@ class CustomGradleCorePlugin implements Plugin<Project> {
         project.task("createWrapper", type: Wrapper) { Wrapper wrapper ->
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
-            final File gwFile = new File(project.projectDir, "gw.bat")
+            final File scriptFile = new File(project.projectDir, "gradlew.bat")
+            final File gwFile = new File(project.projectDir, "gradew.bat")
             final File holyGradleInitScriptFile = new File(project.projectDir, "/gradle/init.d/holy-gradle-init.gradle")
             final File initDir = new File(project.projectDir, "/gradle/init.d/")
             wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")
-            wrapper.scriptFile = new File(project.projectDir, "gw")
+            wrapper.scriptFile = new File(project.projectDir, "gradlew")
             wrapper.doFirst {
-                // If the user is running this task in a folder which already has a gw.bat, we don't want to overwrite
-                // it, or Windows will do probably-unwanted/undefined things when Gradle exits and the rest of the batch
-                // file is to be executed.
-                if (gwFile.exists()) {
+                // If the user is running this task in a folder which already has a gradlew.bat, we don't want to
+                // overwrite it, or Windows will do probably-unwanted/undefined things when Gradle exits and the rest
+                // of the batch  file is to be executed.
+                if (scriptFile.exists()) {
                     throw new RuntimeException(
-                        "You can only use this task in a sub-project which does not contain its own gw.bat"
+                        "You can only use this task in a sub-project which does not contain its own gradlew.bat"
                     )
                 }
 
@@ -67,6 +68,9 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 }
             }
             wrapper.doLast {
+                scriptFile.withOutputStream { os ->
+                    os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/gradlew.bat")
+                }
                 gwFile.withOutputStream { os ->
                     os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/gw.bat")
                 }
@@ -79,7 +83,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 }
 
                 // We move the default ".properties" file to ".properties.in", removing the "distributionUrl=" line.
-                // The "gw.bat" script will concatenate it with the distribution server URL (from the
+                // The "gradlew.bat" script will concatenate it with the distribution server URL (from the
                 // HOLY_GRADLE_REPOSITORY_BASE_URL environment variable) and the rest of the distribution path (which
                 // we write to a text file below).  This allows the same custom wrapper to be used from multiple sites
                 // which don't share a single server for the distribution.
@@ -113,7 +117,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                     File doskeyFile = new File("gwdoskey.bat")
                     doskeyFile.write(
                         "@echo off\r\n" +
-                        "doskey gw=${project.gradle.gradleHomeDir.path}/bin/gradle.bat \$*\r\n" +
+                        "doskey gw=${project.gradle.gradleHomeDir.path}/bin/gradlew.bat \$*\r\n" +
                         "echo You can now use the command 'gw' from any directory for the lifetime of this command prompt."
                     )
                     println "-"*80
