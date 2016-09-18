@@ -14,7 +14,7 @@ public interface PublishPackagesExtension {
     boolean getPublishPrivateConfigurations()
     void setPublishPrivateConfigurations(boolean publish)
 
-    Publication getDefaultPublication()
+    void defaultPublication(Action<Publication> configure)
 
     void republish(Closure closure)
 

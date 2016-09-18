@@ -23,14 +23,9 @@ import holygradle.unpacking.GradleZipHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
-import org.gradle.api.DefaultTask
-import org.gradle.api.NamedDomainObjectContainer
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
-import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
     public static final String EVERYTHING_CONFIGURATION_NAME = "everything"
@@ -140,13 +135,11 @@ public class IntrepidPlugin implements Plugin<Project> {
         NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers = PackageArtifactHandler.createContainer(project)
 
         // Define 'publishPackages' DSL block.
-        PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         project.extensions.create(
             "publishPackages",
             DefaultPublishPackagesExtension,
             project,
             packageArtifactHandlers,
-            publishingExtension,
             packedDependencies
         )
         
