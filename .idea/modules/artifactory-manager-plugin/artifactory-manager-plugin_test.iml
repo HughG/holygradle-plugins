@@ -32,7 +32,27 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/src/installation-beacon" />
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="file://$MODULE_DIR$/../../../buildSrc/build/classes/main" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -56,15 +76,6 @@
     <orderEntry type="library" name="Gradle: net.sf.ezmorph:ezmorph:1.0.6" level="project" />
     <orderEntry type="library" name="Gradle: xerces:xercesImpl:2.9.1" level="project" />
     <orderEntry type="library" name="Gradle: xml-apis:xml-apis:1.3.04" level="project" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
   </component>
   <component name="TestModuleProperties" production-module="artifactory-manager-plugin_main" />
 </module>
