@@ -14,7 +14,7 @@ import static org.junit.Assert.*
 class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
     protected final File customInitScript;
     protected final File gradleUserHome;
-    protected final File pluginsRepoOverride;
+    protected final URI pluginsRepoOverride;
 
     /**
      * This Java system property key must match the one in test.gradle, in the root project.  It must be supplied, and
@@ -62,7 +62,7 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
     AbstractHolyGradleIntegrationTest() {
         customInitScript = new File(getRequiredSystemProperty(CUSTOM_INIT_SCRIPT_SYSTEM_PROPERTY_KEY))
         gradleUserHome = new File(getRequiredSystemProperty(GRADLE_USER_HOME_SYSTEM_PROPERTY_KEY))
-        pluginsRepoOverride = new File(getRequiredSystemProperty(PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY))
+        pluginsRepoOverride = new URI(getRequiredSystemProperty(PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY))
     }
 
     /**

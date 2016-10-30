@@ -1,8 +1,15 @@
 package holygradle
 
+import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
+import org.gradle.api.Project
+import org.gradle.api.file.CopySpec
+import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
+
+import static org.junit.Assert.*
+
 /**
  * Very basic integration "smoke test".
  */
@@ -60,5 +67,52 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
         compareBuildOutput("tBPC") { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks", "--all")
         }
+    }
+
+    /**
+     * This tests that a warning is logged if the requested version of a plugin is not selected.
+     */
+    @Test
+    public void testVersionOverrideDetection() {
+        // Fake up a version "0" of devenv-plugin.
+        File pluginsRepoOverrideDir = new File(pluginsRepoOverride.toString() - (pluginsRepoOverride.scheme + ':'))
+        File pluginDir = new File(pluginsRepoOverrideDir, "holygradle/custom-gradle-core-plugin")
+        String originalVersion = "0.0-hughgSNAPSHOT-0"
+        File pluginOriginalVersionDir = new File(pluginDir, originalVersion)
+        String overrideVersion = "0"
+        File pluginOverrideVersionDir = new File(pluginDir, overrideVersion)
+        FileHelper.ensureDeleteDirRecursive(pluginOverrideVersionDir)
+        Project project = ProjectBuilder.builder().withProjectDir(new File(getTestDir(), "tVOD")).build()
+        project.copy { CopySpec it ->
+            it.from pluginOriginalVersionDir
+            it.into pluginOverrideVersionDir
+            it.rename "(.*)${originalVersion}(.*)", "\$1${overrideVersion}\$2"
+            it.exclude "*.xml"
+        }
+        project.copy { CopySpec it ->
+            it.from pluginOriginalVersionDir
+            it.into pluginOverrideVersionDir
+            it.rename "(.*)${originalVersion}(.*)", "\$1${overrideVersion}\$2"
+            it.include "*.xml"
+            it.filter { String line ->
+                line.replaceAll(originalVersion, overrideVersion)
+            }
+        }
+
+        // Now run the build.
+        File projectDir = new File(getTestDir(), "tVOD")
+        OutputStream outputStream = new ByteArrayOutputStream()
+        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
+            launcher.forTasks("tasks")
+            launcher.setStandardOutput(outputStream)
+        }
+        List<String> outputLines = outputStream.toString().readLines()
+        int messageIndex = outputLines.indexOf(
+            "Buildscript for project ':other' requested holygradle:custom-gradle-core-plugin:0 but selected " +
+            "holygradle:custom-gradle-core-plugin:0.0-hughgSNAPSHOT-0.  If this is not expected please check " +
+            "plugin versions are consistent in all projects, including checking any resolutionStrategy.  " +
+            "The reason for this selecton is: conflict resolution."
+        )
+        assertNotEquals("Override warning should appear in output", -1, messageIndex)
     }
 }

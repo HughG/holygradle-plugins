@@ -11,6 +11,7 @@ dependencies {
     pluginProjectNames.each { pluginProjectName ->
         testCompile project(pluginProjectName).sourceSets.test.output
     }
+    testCompile project(':custom-gradle-core-plugin')
 }
 
 /*

@@ -1,10 +1,5 @@
 // NOTE: IntelliJ claims that these are unused imports but, for some reason, Gradle (1.4) needs them when this init
 // script is actually run.
-import org.gradle.api.artifacts.repositories.ArtifactRepository
-import org.gradle.api.artifacts.repositories.IvyArtifactRepository
-import org.gradle.api.artifacts.repositories.MavenArtifactRepository
-import org.gradle.api.initialization.dsl.ScriptHandler
-
 /**
  * This Java system property can optionally be supplied with a (file) URL value which will be added as the first repo
  * used by the build script to find plugins, so that integration tests can force locally-published versions of the
@@ -36,8 +31,8 @@ class HolyGradlePlugins {
         }
         // Point the buildscript to a source of dependencies for the Holy Gradle plugins.
         if (!project.property("holyGradleRemoteRepository") != null) {
-            buildscript.repositories {
-                mavenCentral()
+            buildscript.repositories { RepositoryHandler repoHandler ->
+                repoHandler.mavenCentral()
             }
         } else {
             buildscript.repositories { RepositoryHandler repoHandler ->
@@ -54,6 +49,40 @@ class HolyGradlePlugins {
                 res.cacheChangingModulesFor 1, 'seconds'
                 res.cacheDynamicVersionsFor 1, 'hours'
             }
+        })
+
+        warnIfRequestedVersionsNotSelected(buildscript, project)
+    }
+
+    // Warn if the requested version of any module is not the version which ends up getting used.  This is typically
+    // because a plugin version is changed in a sub-project of the root project, and the root depends on the
+    // sub-project, but the root uses a different version.  In that case the version from the root may be selected.
+    // This is probably not what the user wanted and may lead to unpleasant surprises.
+    //
+    // (There used to be code in useInternal which tried to force SNAPSHOT-0 versions to be selected in all
+    // projects, if they were selected in any.  However, that doesn't work because the root project's buildscript
+    // configuration will already have been resolved before the sub-project buildscripts get a chance to change
+    // their resolution strategy.)
+    private static warnIfRequestedVersionsNotSelected(ScriptHandler buildscript, Project project) {
+        buildscript.configurations.all((Closure) { Configuration conf ->
+            conf.incoming.afterResolve((Closure) { ResolvableDependencies deps ->
+                // The resolutionResult.root gives us just those modules which were explicitly specified in the
+                // configuration, excluding their dependencies.
+                deps.resolutionResult.root.dependencies.each { /* ? extends DependencyResult */ result ->
+                    if (result instanceof ResolvedDependencyResult) {
+                        def requested = result.requested
+                        def selected = result.selected
+                        if (requested.displayName != selected.id.displayName) {
+                            project.logger.warn(
+                                "Buildscript for ${project} requested ${requested.displayName} but selected " +
+                                "${selected.id.displayName}.  If this is not expected please check plugin versions " +
+                                "are consistent in all projects, including checking any resolutionStrategy.  " +
+                                "The reason for this selecton is: ${selected.selectionReason.description}."
+                            )
+                        }
+                    }
+                }
+            })
         })
     }
 
@@ -109,27 +138,6 @@ class HolyGradlePlugins {
         if (pluginsSnapshotsUser != null) {
             version = "${pluginsSnapshotsUser}SNAPSHOT-0"
             usingSnapshots = true
-        }
-        if (usingSnapshots) {
-            // If any projects being built, or any of their dependencies, use some version of the holygradle plugins,
-            // force dependency resolution to pick the SNAPSHOT version.  Note that we can't just use the
-            // ReoslutionStrategy#failOnVersionConflict method because (a) some transitive dependencies of the plugins
-            // themselves have version conflicts; and (b) that might also be intentionally true for other JARs added
-            // to the buildcript classpath by a specific project.  (Perhaps we could warn if we find a conflict not
-            // on an expected list?)
-            //noinspection GroovyAssignabilityCheck
-            project.gradle.allprojects { Project p ->
-                p.buildscript.configurations.all { Configuration conf ->
-                    // Gradle magically converts Closures to Action<>, so ignore the IntelliJ warning.
-                    //noinspection GroovyAssignabilityCheck
-                    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                        ModuleVersionSelector requestedVer = details.requested
-                        if (requestedVer.group == group && requestedVer.name == pluginFullName) {
-                            details.useVersion version
-                        }
-                    }
-                }
-            }
         }
 
         // Actually add the plugins to the buildscript, and record the version.
@@ -257,7 +265,7 @@ gradle.allprojects { Project project ->
         }
     } else {
         usingLocalArtifacts = project.rootProject.property("usingLocalArtifacts")
-        localArtifactsFile = project.rootProject.property("localArtifactsFile")
+        localArtifactsFile = project.rootProject.property("localArtifactsFile") as File
     }
     project.ext["usingLocalArtifacts"] = usingLocalArtifacts
     project.ext["localArtifactsFile"] = localArtifactsFile
