@@ -126,20 +126,30 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
     }
 
     /**
+     * If this process has the system property named {@code property}, this method adds it to the JVM properties of the
+     * {@link BuildLauncher}.
+     *
+     * @param launcher The launcher to be configured.
+     */
+    private static void maybeAddSystemProperty(WrapperBuildLauncher launcher, String property) {
+        String value = System.getProperty(property)
+        if (value != null) {
+            launcher.addArguments("-D${property}=${value}")
+        }
+    }
+
+
+    /**
      * If this process has the system properties {@code http.proxyHost} and/or {@code http.proxyPort} set, this method
      * adds them to the JVM properties of the {@link BuildLauncher}.
      *
      * @param launcher The launcher to be configured.
      */
     private static void maybeAddHttpProxyArguments(WrapperBuildLauncher launcher) {
-        String proxyHost = System.getProperty("http.proxyHost")
-        String proxyPort = System.getProperty("http.proxyPort")
-        if (proxyHost != null) {
-            launcher.addArguments("-Dhttp.proxyHost=${proxyHost}")
-        }
-        if (proxyPort != null) {
-            launcher.addArguments("-Dhttp.proxyPort=${proxyPort}")
-        }
+        maybeAddSystemProperty(launcher, "http.proxyHost")
+        maybeAddSystemProperty(launcher, "http.proxyPort")
+        maybeAddSystemProperty(launcher, "https.proxyHost")
+        maybeAddSystemProperty(launcher, "https.proxyPort")
     }
 
     /**
