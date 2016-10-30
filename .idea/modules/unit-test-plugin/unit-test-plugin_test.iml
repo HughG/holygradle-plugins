@@ -12,7 +12,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="custom-gradle-core-plugin_test" production-on-test="" />
     <orderEntry type="module" module-name="intrepid-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="unit-test-plugin_main" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -31,6 +30,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="module" module-name="unit-test-plugin_main" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
@@ -46,15 +46,6 @@
       <library>
         <CLASSES>
           <root url="file://$MODULE_DIR$/../../../buildSrc/build/classes/main" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
