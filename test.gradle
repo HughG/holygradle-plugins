@@ -12,6 +12,8 @@ void maybeForward(JavaForkOptions forkOptions, String propertyName) {
 void maybeForwardHttpProxyProperties(JavaForkOptions forkOptions) {
     maybeForward(forkOptions, "http.proxyHost")
     maybeForward(forkOptions, "http.proxyPort")
+    maybeForward(forkOptions, "https.proxyHost")
+    maybeForward(forkOptions, "https.proxyPort")
 }
 
 void maybeForwardExtraArguments(JavaForkOptions forkOptions) {
