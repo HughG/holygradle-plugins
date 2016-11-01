@@ -74,10 +74,10 @@ class HolyGradlePlugins {
                         def selected = result.selected
                         if (requested.displayName != selected.id.displayName) {
                             project.logger.warn(
-                                "Buildscript for ${project} requested ${requested.displayName} but selected " +
+                                "WARNING: Buildscript for ${project} requested ${requested.displayName} but selected " +
                                 "${selected.id.displayName}.  If this is not expected please check plugin versions " +
                                 "are consistent in all projects, including checking any resolutionStrategy.  " +
-                                "The reason for this selecton is: ${selected.selectionReason.description}."
+                                "The reason for this selection is: ${selected.selectionReason.description}."
                             )
                         }
                     }
