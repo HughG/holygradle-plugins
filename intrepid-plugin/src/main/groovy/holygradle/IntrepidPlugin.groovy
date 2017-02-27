@@ -455,8 +455,6 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         setupSourceReplacementListener(project)
 
-
-
         timer.endBlock()
     }
 

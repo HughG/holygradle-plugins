@@ -5,8 +5,6 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.ResolvedDependenciesVisitor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
-import org.gradle.api.internal.artifacts.DefaultModuleIdentifier
-
 /**
  * This project extension provides information about the state of packed dependencies when they are resolved.
  *
@@ -89,18 +87,20 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         ResolvedDependenciesVisitor.traverseResolvedDependencies(
             dependencies,
             { ResolvedDependency resolvedDependency ->
-                // Visit this dependency only if: we've haven't seen it already for the configuration we're
-                // processing, it's not a module we're building from source (because we don't want to include those
-                // as UnpackModules), and we can find its ivy.xml file (because we need that for relativePath to
-                // other modules).
+                // Visit this dependency only if: it's not a module we're building from source (because we don't want to
+                // include those as UnpackModules), and we can find its ivy.xml file (because we need that for
+                // relativePath to other modules).
                 //
-                // Visit this dependency's children only if: we've haven't seen it already for the configuration
-                // we're processing, and we can find its ivy.xml file (because we need that for relativePath to
-                // other modules).
+                // Visit this dependency's children only if: we can find its ivy.xml file (because we need that for
+                // relativePath to other modules).
+                //
+                // (Previously we wouldn't re-visit the module or its children if we'd already seen this
+                // resolvedDependency.configuration of this module.  However, this check was removed in 45f38934dea9
+                // for ticket GR #6279 (mis-labelled in the commit) because ...TODO )
 
                 ModuleVersionIdentifier id = resolvedDependency.module.id
-                final boolean isNonBuildModuleConfiguration = !dependenciesStateHandler.isModuleInBuild(id)
-                if (!isNonBuildModuleConfiguration) {
+                final boolean isNonBuildModule = !dependenciesStateHandler.isModuleInBuild(id)
+                if (!isNonBuildModule) {
                     project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
                 }
 
@@ -109,7 +109,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 final boolean ivyFileExists = ivyFile?.exists()
                 // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
                 // we can throw an exception later (after we've checked all dependencies).
-                if (isNonBuildModuleConfiguration && !ivyFileExists) {
+                if (isNonBuildModule && !ivyFileExists) {
                     if (ivyFile == null) {
                         project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
                     } else {
@@ -122,7 +122,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
                 }
                 return new ResolvedDependenciesVisitor.VisitChoice(
-                    isNonBuildModuleConfiguration && ivyFileExists,
+                    isNonBuildModule && ivyFileExists,
                     ivyFileExists
                 )
             },
@@ -145,9 +145,6 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 // Find all parent UnpackModuleVersion instances, i.e., ones which have a dependency on 'this'
                 // UnpackModuleVersion. There will only be parents if this is a transitive dependency, and not if it
                 // is only a direct dependency of the project.
-                //
-                // IntelliJ insists that findResults is returning a HashSet<ResolvedDependency>, which is nonsense.
-                //noinspection GroovyAssignabilityCheck
                 Set<UnpackModuleVersion> parents = new HashSet<>()
                 for (parentDependency in resolvedDependency.parents) {
                     ModuleVersionIdentifier parentDependencyVersion = parentDependency.module.id
@@ -177,6 +174,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 UnpackModuleVersion unpackModuleVersion
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
+                    unpackModuleVersion.addParents(parents)
                     // If the same module appears as both a direct packed dependency (for which the path is explicitly
                     // specified by the user) and a transitive packed dependency (for which the path is inferred from
                     // its ancestors), we want to use the explicitly specified path.  Because UnpackModuleVersion
@@ -188,15 +186,22 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         // and confusing, and don't allow it.  If they really need it to appear to be in two places they
                         // can create explicit links.
                         final PackedDependencyHandler existingPackedDep = unpackModuleVersion.packedDependency
-                        if (existingPackedDep != null && existingPackedDep != thisPackedDep) {
-                            throw new RuntimeException(
+                        if (existingPackedDep != null) {
+                            // If the existing packed dep is the same as the one we found, we don't need to change it.
+                            // If it's different, fail.
+                            if (existingPackedDep != thisPackedDep) {
+                                throw new RuntimeException(
                                     "Module version ${id} is specified by packed dependencies at both path " +
-                                            "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
-                                            "A single version can only be specified at one path.  If you need it to appear at " +
-                                            "more than one location you can explicitly create links."
-                            )
+                                        "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
+                                        "A single version can only be specified at one path.  If you need it to " +
+                                        "appear at " +
+                                        "more than one location you can explicitly create links."
+                                )
+                            }
+                        } else {
+                            // There was no existing packed dep, so we fill it in.
+                            unpackModuleVersion.packedDependency = thisPackedDep
                         }
-                        unpackModuleVersion.packedDependency = thisPackedDep
                     }
                 } else {
                     File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
