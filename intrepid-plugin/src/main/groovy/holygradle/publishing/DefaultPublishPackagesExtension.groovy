@@ -217,6 +217,17 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
+    @Override
+    public RepositoryHandler getRepositories() {
+        throw new UnsupportedOperationException(
+            "Repositories for publishing can only be configured using a closure, not by accessing the repositories " +
+            "collection as a property.  That means, if you have a build script from an older verson of the Holy " +
+            "Gradle which has 'publishPackages { repositories.ivy { ... } }' you must change it to " +
+            "'publishPackages { repositories { ivy { ... } } }'"
+        )
+    }
+
+    @Override
     public void repositories(Action<RepositoryHandler> configure) {
         project.publishing {
             repositories { RepositoryHandler handler ->
