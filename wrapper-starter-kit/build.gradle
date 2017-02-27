@@ -34,8 +34,8 @@ task makeZip(type: Zip) {
     baseName = project.name
     from("${targetDir}/gradle") {
         into("gradle")
-        exclude("gradle-wrapper.properties")
     }
+    from("${targetDir}/gradlew.bat")
     from("${targetDir}/gw.bat")
 }
 
@@ -54,6 +54,11 @@ publishing {
             password artifactoryPassword
         }
         url PUBLISH_TARGET_URI
+    }
+    publications {
+        ivy(IvyPublication) {
+            artifact(makeZip)
+        }
     }
 }
 

@@ -26,12 +26,12 @@ credential-store.exe
 gradle*.properties
 base-url-lookup.txt
 proxy-lookup.txt
-gradle/cacerts
-gradle/cacerts.import.log
-gradle/certs/openssl_OctCosVis05_IP_SAN.crt
 devenv-plugin/src/test/test_input/single_solution_file/userHome/
 syntax: regexp
 # Gradle / Java
+(^|/)gradle/wrapper/cacerts
+(^|/)gradle/wrapper/cacerts.import.log
+(^|/)gradle/wrapper/certs/
 (^|/).gradle/
 (^|/)build/
 ^classes/
@@ -47,13 +47,12 @@ syntax: regexp
 ^credential-store/_ReSharper.credential-store/
 ^credential-store/(Debug|Release)
 ^ivy\.xml
-^wrapper-starter-kit/gradle/distributionPath\.txt
-^wrapper-starter-kit/gradle/init.d
-^wrapper-starter-kit/newWrapper/gw(\.bat)?
+^(wrapper-starter|https-setup)-kit/gradle/init.d
+^(wrapper-starter|https-setup)-kit/gradle/init.d
+^wrapper-starter-kit/newWrapper/(gw|gradlew)(\.bat)?
 ^wrapper-starter-kit/newWrapper/gradle
 ^https-setup-kit/plainWrapper/(gw|gradlew)(\.bat)?
 ^https-setup-kit/plainWrapper/gradle
-^https-setup-kit/gradle/init.d/
 ^intrepid-plugin/src/test/groovy/holygradle/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositoriesTest
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/(build_info|packages)/

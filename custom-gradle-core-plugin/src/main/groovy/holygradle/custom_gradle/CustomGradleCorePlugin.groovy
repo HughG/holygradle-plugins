@@ -46,10 +46,10 @@ class CustomGradleCorePlugin implements Plugin<Project> {
             group = "Custom Gradle"
             description = "Creates a Gradle wrapper in the current directory using this instance of Gradle."
             final File scriptFile = new File(project.projectDir, "gradlew.bat")
-            final File gwFile = new File(project.projectDir, "gradew.bat")
+            final File gwFile = new File(project.projectDir, "gw.bat")
             final File holyGradleInitScriptFile = new File(project.projectDir, "/gradle/init.d/holy-gradle-init.gradle")
             final File initDir = new File(project.projectDir, "/gradle/init.d/")
-            wrapper.jarFile = new File(project.projectDir, "/gradle/gradle-wrapper.jar")
+            wrapper.jarFile = new File(project.projectDir, "/gradle/wrapper/gradle-wrapper.jar")
             wrapper.scriptFile = new File(project.projectDir, "gradlew")
             wrapper.doFirst {
                 // If the user is running this task in a folder which already has a gradlew.bat, we don't want to
@@ -95,7 +95,7 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 }
                 Files.delete(wrapper.propertiesFile.toPath())
 
-                File distributionPathFile = new File(project.projectDir, "/gradle/distributionPath.txt")
+                File distributionPathFile = new File(project.projectDir, "/gradle/wrapper/distributionPath.txt")
                 distributionPathFile.text = "gradle-${project.gradle.gradleVersion}-bin.zip"
             }
         }

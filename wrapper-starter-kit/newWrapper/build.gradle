@@ -30,7 +30,7 @@ if (wrapperVersion != customGradleCoreVersion) {
 }
 
 task clean << {
-    delete "gw", "gw.bat", "gradle"
+    delete "gradlew", "gradlew.bat", "gw.bat", "gradle"
 }
 
 createWrapper.dependsOn clean
@@ -43,8 +43,8 @@ createWrapper.dependsOn clean
 */
 createWrapper << {
     copy {
-        into(new File(projectDir, "gradle"))
-        from(new File(rootProject.projectDir, "gradle")) {
+        into(new File(projectDir, "gradle/wrapper"))
+        from(new File(rootProject.projectDir, "gradle/wrapper")) {
             include "base-url-lookup.txt"
             include "proxy-lookup.txt"
             include "certs/**"

@@ -25,7 +25,7 @@ set APP_HOME=%DIRNAME%
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS=
 
-SET GRADLE_DISTRIBUTION_URL=http\://services.gradle.org/distributions/
+SET GRADLE_DISTRIBUTION_URL=https\://services.gradle.org/distributions/
 
 @rem Allow use of Holy Gradle specific options to override system Java settings
 if defined HOLY_GRADLE_JAVA_HOME set JAVA_HOME=%HOLY_GRADLE_JAVA_HOME%
@@ -74,6 +74,13 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
 )
 
 @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+@rem We need this file copied, even though the Holy Gradle build itself doesn't use it,
+@rem because the wrapper-starter-kit subproject needs to copy it from here.
+if exist "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" (
+  copy "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" "%~dp0gradle\wrapper\base-url-lookup.txt"
+)
+
+@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
 if exist "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" (
   copy "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" "%~dp0gradle\wrapper\proxy-lookup.txt"
 )
@@ -101,7 +108,7 @@ if "%APP_HOME:~-21%"=="\holy-gradle-plugins\" (
 )
 
 set INIT_SCRIPT_OPTS=
-FOR %%f IN ("%APP_HOME%\gradle\wrapper\init.d\*.gradle") DO (
+FOR %%f IN ("%APP_HOME%gradle\init.d\*.gradle") DO (
     SET "INIT_SCRIPT_OPTS=!INIT_SCRIPT_OPTS! -I "%%f""
 )
 set DISTRIBUTION_ORIGINAL_PATH_FILE="%APP_HOME%gradle\wrapper\distributionPath.txt"
@@ -142,10 +149,6 @@ if not "x%LOCAL_ARTIFACTS_DIR_PATH%"=="x" (
   )
 )
 
-@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" (
-  copy "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" "%~dp0gradle\wrapper\base-url-lookup.txt"
-)
 if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
 
   @rem Try to find a server URL based on the DNS suffix values on the local machine.
