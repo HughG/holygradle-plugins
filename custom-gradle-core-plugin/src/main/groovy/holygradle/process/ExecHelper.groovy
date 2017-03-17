@@ -10,7 +10,7 @@ class ExecHelper {
     public static executeAndReturnResultAsString(
         Closure<ExecResult> execMethod,
         Closure configureSpec,
-        Closure throwOnError
+        Closure throwForExitValue
     ) {
         OutputStream stdout = new ByteArrayOutputStream()
         OutputStream stderr = new ByteArrayOutputStream()
@@ -20,10 +20,10 @@ class ExecHelper {
             spec.setErrorOutput stderr
             spec.setIgnoreExitValue true
         }
-        int exit_value = execResult.getExitValue()
-        if ((exit_value != 0) && throwOnError(exit_value)) {
-            execResult.rethrowFailure()
+        int exitValue = execResult.getExitValue()
+        if ((exitValue != 0) && throwForExitValue(exitValue)) {
+            execResult.assertNormalExitValue()
         }
-        stdout.toString().trim();
+        stdout.toString().trim()
     }
 }

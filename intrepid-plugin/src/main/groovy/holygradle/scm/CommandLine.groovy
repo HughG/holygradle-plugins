@@ -1,8 +1,6 @@
 package holygradle.scm
 
 import holygradle.process.ExecHelper
-import org.gradle.api.Task
-import org.gradle.api.tasks.TaskState
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
@@ -19,7 +17,7 @@ class CommandLine implements Command {
     }
 
     @Override
-    String execute(Closure configureExecSpec, Closure throwOnError) {
+    String execute(Closure configureExecSpec, Closure throwForExitValue) {
         String localHgPath = hgPath
         ExecHelper.executeAndReturnResultAsString(
             exec,
@@ -27,7 +25,7 @@ class CommandLine implements Command {
                 spec.executable localHgPath
                 configureExecSpec(spec)
             },
-            throwOnError
+            throwForExitValue
         )
     }
 

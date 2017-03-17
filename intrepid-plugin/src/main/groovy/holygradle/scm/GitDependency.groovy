@@ -38,7 +38,6 @@ class GitDependency extends SourceDependency {
             execResult.assertNormalExitValue()
         }
 
-
         URL parsedUrl = new URL(repoUrl)
         String repoScheme = parsedUrl.getProtocol()
         String repoHost = parsedUrl.getHost()
@@ -74,7 +73,7 @@ class GitDependency extends SourceDependency {
                 spec.workingDir = project.projectDir
                 spec.args args
             }
-        } catch ( RuntimeException ex ) {
+        } catch (RuntimeException ex) {
             println(ex.message)
             return false
         }
@@ -97,30 +96,30 @@ class GitDependency extends SourceDependency {
             if (myCredentialsExtension != null) {
                 println "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
                 cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
-                println "  Cached Mercurial credentials. Trying again..."
+                println "  Cached Git credentials. Trying again..."
                 result = TryCheckout(repoUrl, destinationDir, repoBranch)
                 if (!result) {
                     deleteEmptyDir(destinationDir)
 
                     if (credentialHelperIsConfigured()) {
                         throw new RuntimeException(
-                                "Failed to clone ${repoUrl} even after pre-caching credentials. " +
-                                        "The mercurial_keyring IS configured. If your password changed recently, " +
-                                        "try running 'credential-store.exe' which should be in the root of your workspace, " +
-                                        "then try again."
+                            "Failed to clone ${repoUrl} even after pre-caching credentials. " +
+                            "The credential.helper IS configured. If your password changed recently, " +
+                            "try running 'credential-store.exe' which should be in the root of your workspace, " +
+                            "then try again."
                         )
                     } else {
                         throw new RuntimeException(
-                                "Failed to clone ${repoUrl}. The mercurial_keyring is NOT configured. " +
-                                        "Please configure it and try again."
+                            "Failed to clone ${repoUrl}. The credential.helper is NOT configured. " +
+                            "Please configure it and try again."
                         )
                     }
                 }
             } else {
                 throw new RuntimeException(
-                        "Failed to clone ${repoUrl}.  Cannot re-try with authentication " +
-                                "because the 'my-credentials' plugin is not applied. " +
-                                "Please apply the 'my-credentials' plugin and try again."
+                    "Failed to clone ${repoUrl}.  Cannot re-try with authentication " +
+                    "because the 'my-credentials' plugin is not applied. " +
+                    "Please apply the 'my-credentials' plugin and try again."
                 )
             }
         }

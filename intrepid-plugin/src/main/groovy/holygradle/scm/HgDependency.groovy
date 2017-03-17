@@ -62,7 +62,7 @@ class HgDependency extends SourceDependency {
                 spec.workingDir = project.projectDir
                 spec.args args
             }
-        } catch ( RuntimeException ex ) {
+        } catch (RuntimeException ex) {
             println(ex.message)
             return false
         }
