@@ -44,7 +44,7 @@ class FetchSourceDependencyTask extends DefaultTask {
         
     @TaskAction
     public void Checkout() {
-        sourceDependency.Checkout()
+        sourceDependency.checkout()
     }
     
     public String getSourceDirName() {

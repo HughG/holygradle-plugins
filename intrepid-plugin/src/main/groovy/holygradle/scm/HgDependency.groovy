@@ -75,7 +75,7 @@ class HgDependency extends SourceDependency {
     }
     
     @Override
-    protected boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
+    protected boolean doCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
 
         boolean result = TryCheckout(repoUrl, destinationDir, repoBranch)
         

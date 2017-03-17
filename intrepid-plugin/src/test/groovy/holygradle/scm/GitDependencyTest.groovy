@@ -46,7 +46,7 @@ class GitDependencyTest extends AbstractHolyGradleTest {
             buildScriptDependencies,
             gitCommand
         )
-        dependency.Checkout()
+        dependency.checkout()
 
         ExecSpec cloneSpec = stubSpecs[0]
         List<String> expectedCloneArgs = ["clone", "--branch", "some_branch", "--", "dummy_url", depDir.absolutePath]

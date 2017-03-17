@@ -58,7 +58,7 @@ class GitDependency extends SourceDependency {
         execResult.assertNormalExitValue()
     }
 
-    private boolean TryCheckout(String repoUrl, File destinationDir, String repoBranch) {
+    private boolean tryCheckout(String repoUrl, File destinationDir, String repoBranch) {
         Collection<String> args = ["clone"]
         if (repoBranch != null) {
             args.add("--branch")
@@ -86,9 +86,9 @@ class GitDependency extends SourceDependency {
     }
 
     @Override
-    protected boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
+    protected boolean doCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
 
-        boolean result = TryCheckout(repoUrl, destinationDir, repoBranch)
+        boolean result = tryCheckout(repoUrl, destinationDir, repoBranch)
 
         if (!result) {
             deleteEmptyDir(destinationDir)
@@ -97,7 +97,7 @@ class GitDependency extends SourceDependency {
                 println "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
                 cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
                 println "  Cached Git credentials. Trying again..."
-                result = TryCheckout(repoUrl, destinationDir, repoBranch)
+                result = tryCheckout(repoUrl, destinationDir, repoBranch)
                 if (!result) {
                     deleteEmptyDir(destinationDir)
 

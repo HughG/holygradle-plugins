@@ -19,7 +19,7 @@ class SvnDependency extends SourceDependency {
     
     @Override
     public String getFetchTaskDescription() {
-        "Retrieves an SVN Checkout for '${sourceDependency.name}' into your workspace."
+        "Retrieves an SVN checkout for '${sourceDependency.name}' into your workspace."
     }
     
     private boolean TryCheckout(
@@ -80,7 +80,7 @@ class SvnDependency extends SourceDependency {
     }
     
     @Override
-    protected boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
+    protected boolean doCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
         File svnConfigDir = getSvnConfigDir()
         
         boolean result = TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir)
