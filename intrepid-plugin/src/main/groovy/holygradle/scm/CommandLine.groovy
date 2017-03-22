@@ -1,17 +1,17 @@
 package holygradle.scm
 
 import holygradle.process.ExecHelper
+import org.gradle.api.logging.Logger
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
 class CommandLine implements Command {
     private final String hgPath
     private final Closure<ExecResult> exec
+    private final Logger logger
 
-    CommandLine(
-        String hgPath,
-        Closure<ExecResult> exec
-    ) {
+    CommandLine(Logger logger, String hgPath, Closure<ExecResult> exec) {
+        this.logger = logger
         this.hgPath = hgPath
         this.exec = exec
     }
@@ -20,6 +20,7 @@ class CommandLine implements Command {
     String execute(Closure configureExecSpec, Closure throwForExitValue) {
         String localHgPath = hgPath
         ExecHelper.executeAndReturnResultAsString(
+            logger,
             exec,
             { ExecSpec spec ->
                 spec.executable localHgPath

@@ -132,20 +132,14 @@ class SourceDependencyHandler extends DependencyHandler {
     public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {
         SourceDependency sourceDependency
         if (protocol == "svn") {
-            def hgCommand = new CommandLine(
-                "svn.exe",
-                project.&exec
-            )
+            def hgCommand = new CommandLine(project.logger, "svn.exe", project.&exec)
             sourceDependency = new SvnDependency(
                 project,
                 this,
                 hgCommand
             )
         } else if (protocol == "hg") {
-            def hgCommand = new CommandLine(
-                "hg.exe",
-                project.&exec
-            )
+            def hgCommand = new CommandLine(project.logger, "hg.exe", project.&exec)
             sourceDependency = new HgDependency(
                 project,
                 this,
@@ -153,10 +147,7 @@ class SourceDependencyHandler extends DependencyHandler {
                 hgCommand
             )
         } else if (protocol == "git") {
-            def gitCommand = new CommandLine(
-                "git.exe",
-                project.&exec
-            )
+            def gitCommand = new CommandLine(project.logger, "git.exe", project.&exec)
             sourceDependency = new GitDependency(
                 project,
                 this,

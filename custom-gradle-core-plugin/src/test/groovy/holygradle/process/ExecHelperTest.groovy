@@ -32,6 +32,7 @@ class ExecHelperTest {
         thrown.expect(ExecException.class)
         final Project project = ProjectBuilder.builder().build()
         ExecHelper.executeAndReturnResultAsString(
+            project.logger,
             project.&exec,
             { it.commandLine "non_existent_executable" },
             { false }
@@ -41,6 +42,7 @@ class ExecHelperTest {
     private void doTestThrowForExitValue(int actual, int expected) {
         final Project project = ProjectBuilder.builder().build()
         ExecHelper.executeAndReturnResultAsString(
+            project.logger,
             project.&exec,
             { it.commandLine "cmd", "/c", "exit /b ${actual}" },
             { expected == it }
