@@ -1,25 +1,23 @@
 package holygradle.scm
 
-import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.source_dependencies.SourceDependency
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Project
-import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
 class GitDependency extends SourceDependency {
-    private final BuildScriptDependencies buildScriptDependencies
+    private final Command credentialStoreCommand
     private final Command gitCommand
 
     public GitDependency(
         Project project,
         SourceDependencyHandler sourceDependency,
-        BuildScriptDependencies buildScriptDependencies,
+        Command credentialStoreCommand,
         Command gitCommand
     ) {
         super(project, sourceDependency)
-        this.buildScriptDependencies = buildScriptDependencies
+        this.credentialStoreCommand = credentialStoreCommand
         this.gitCommand = gitCommand
     }
 
@@ -32,23 +30,8 @@ class GitDependency extends SourceDependency {
         final URL parsedUrl = new URL(repoUrl)
         final String repoScheme = parsedUrl.getProtocol()
         final String repoHost = parsedUrl.getHost()
-        final String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
         final String credentialName = "git:${repoScheme}://${repoHost}"
-        ExecResult execResult = project.exec { ExecSpec spec ->
-            spec.setIgnoreExitValue true
-            spec.commandLine credentialStorePath, credentialName, username, password
-        }
-        project.logger.debug "cacheCredentials: cache credential exit value: ${execResult.exitValue}."
-        if (execResult.getExitValue() == -1073741515) {
-            project.logger.info "-"*80
-            project.logger.info "Failed to cache Git credentials. This is probably because you don't have the " +
-                    "Visual C++ 2010 Redistributable installed on your machine. Please download and " +
-                    "install the x86 version before continuing. Here's the link: "
-            project.logger.info "    http://www.microsoft.com/download/en/details.aspx?id=5555"
-            project.logger.info "-"*80
-        }
-        execResult.assertNormalExitValue()
-        project.logger.info "Cached credential '${credentialName}'."
+        ScmHelper.storeCredential(project.logger, credentialStoreCommand, credentialName, username, password)
     }
 
     private boolean tryCheckout(String repoUrl, File destinationDir, String repoBranch) {
@@ -154,7 +137,7 @@ class GitDependency extends SourceDependency {
     }
 
     private boolean getCredentialHelperIsConfigured() {
-        GitHelper.getConfigValue(gitCommand, project.projectDir, "credential.helper")
+        ScmHelper.getGitConfigValue(gitCommand, project.projectDir, "credential.helper")
             .readLines().collect { it.trim() }.any { !it.isEmpty() }
     }
 

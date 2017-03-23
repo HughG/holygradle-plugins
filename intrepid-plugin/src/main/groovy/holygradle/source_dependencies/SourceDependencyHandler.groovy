@@ -131,29 +131,17 @@ class SourceDependencyHandler extends DependencyHandler {
 
     public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {
         SourceDependency sourceDependency
+        final String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
+        def csCommand = new CommandLine(project.logger, credentialStorePath, project.&exec)
         if (protocol == "svn") {
-            def hgCommand = new CommandLine(project.logger, "svn.exe", project.&exec)
-            sourceDependency = new SvnDependency(
-                project,
-                this,
-                hgCommand
-            )
+            def svnCommand = new CommandLine(project.logger, "svn.exe", project.&exec)
+            sourceDependency = new SvnDependency(project, this, svnCommand)
         } else if (protocol == "hg") {
             def hgCommand = new CommandLine(project.logger, "hg.exe", project.&exec)
-            sourceDependency = new HgDependency(
-                project,
-                this,
-                buildScriptDependencies,
-                hgCommand
-            )
+            sourceDependency = new HgDependency(project, this, csCommand, hgCommand)
         } else if (protocol == "git") {
             def gitCommand = new CommandLine(project.logger, "git.exe", project.&exec)
-            sourceDependency = new GitDependency(
-                project,
-                this,
-                buildScriptDependencies,
-                gitCommand
-            )
+            sourceDependency = new GitDependency(project, this, csCommand, gitCommand)
         } else {
             throw new RuntimeException("Unsupported protocol: " + protocol)
         }

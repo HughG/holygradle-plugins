@@ -21,7 +21,7 @@ class GitRepository implements SourceControlRepository {
 
     public String getUrl() {
         // May need to strip "username[:password]@" from URL.
-        return GitHelper.getConfigValue(gitCommand, workingCopyDir, "remote.origin.url")
+        return ScmHelper.getGitConfigValue(gitCommand, workingCopyDir, "remote.origin.url")
     }
 
     public String getRevision() {

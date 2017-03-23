@@ -1,25 +1,23 @@
 package holygradle.scm
 
-import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.source_dependencies.SourceDependency
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Project
-import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
 class HgDependency extends SourceDependency {
-    private final BuildScriptDependencies buildScriptDependencies
+    private final Command credentialStoreCommand
     private final Command hgCommand
-    
+
     public HgDependency(
         Project project,
         SourceDependencyHandler sourceDependency,
-        BuildScriptDependencies buildScriptDependencies,
+        Command credentialStoreCommand,
         Command hgCommand
     ) {
         super(project, sourceDependency)
-        this.buildScriptDependencies = buildScriptDependencies
+        this.credentialStoreCommand = credentialStoreCommand
         this.hgCommand = hgCommand
     }
     
@@ -29,25 +27,11 @@ class HgDependency extends SourceDependency {
     }
     
     private void cacheCredentials(String username, String password, String repoUrl) {
-        String credUrl = repoUrl.split("@")[0]
-        String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
+        final String credUrl = repoUrl.split("@")[0]
         final String credentialName = "${username}@@${credUrl}@Mercurial"
-        ExecResult execResult = project.exec { ExecSpec spec ->
-            spec.setIgnoreExitValue true
-            spec.commandLine credentialStorePath, credentialName, username, password
-        }
-        project.logger.debug "cacheCredentials: cache credential exit value: ${execResult.exitValue}."
-        if (execResult.getExitValue() == -1073741515) {
-            project.logger.info "-"*80
-            project.logger.info "Failed to cache Mercurial credentials. This is probably because you don't have the " +
-                    "Visual C++ 2010 Redistributable installed on your machine. Please download and " +
-                    "install the x86 version before continuing. Here's the link: "
-            project.logger.info "    http://www.microsoft.com/download/en/details.aspx?id=5555"
-            project.logger.info "-"*80
-        }
-        execResult.assertNormalExitValue()
-        project.logger.info "Cached credential '${credentialName}'."
+        ScmHelper.storeCredential(project.logger, credentialStoreCommand, credentialName, username, password)
     }
+
 
     private boolean TryCheckout(String repoUrl, File destinationDir, String repoBranch) {
         Collection<String> args = ["clone"]
