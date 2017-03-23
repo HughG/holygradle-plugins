@@ -68,38 +68,44 @@ class HgDependency extends SourceDependency {
     protected boolean doCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
 
         boolean result = TryCheckout(repoUrl, destinationDir, repoBranch)
-        
+
         if (!result) {
             deleteEmptyDir(destinationDir)
+            boolean repoSupportsAuthentication = ScmHelper.repoSupportsAuthentication(repoUrl)
+            if (!repoSupportsAuthentication) {
+                throw new RuntimeException(
+                    "Failed to clone ${repoUrl}.  Cannot re-try with authentication " +
+                    "because repo URL is not HTTP(S): ${repoUrl}."
+                )
+            }
             CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
-            if (myCredentialsExtension != null) {
-                project.logger.info "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
-                cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
-                project.logger.info "  Cached Mercurial credentials. Trying again..."
-                result = TryCheckout(repoUrl, destinationDir, repoBranch)
-                if (!result) {
-                    deleteEmptyDir(destinationDir)
-
-                    if (keyringIsConfigured(destinationDir)) {
-                        throw new RuntimeException(
-                            "Failed to clone ${repoUrl} even after pre-caching credentials. " +
-                            "The mercurial_keyring IS configured. If your password changed recently, " +
-                            "try running 'credential-store.exe' which should be in the root of your workspace, " +
-                            "then try again."
-                        )
-                    } else {
-                        throw new RuntimeException(
-                            "Failed to clone ${repoUrl}. The mercurial_keyring is NOT configured. " +
-                            "Please configure it and try again."
-                        )
-                    }
-                }
-            } else {
+            if (myCredentialsExtension == null) {
                 throw new RuntimeException(
                     "Failed to clone ${repoUrl}.  Cannot re-try with authentication " +
                     "because the 'my-credentials' plugin is not applied. " +
                     "Please apply the 'my-credentials' plugin and try again."
                 )
+            }
+            project.logger.info "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
+            cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
+            project.logger.info "  Cached Mercurial credentials. Trying again..."
+            result = TryCheckout(repoUrl, destinationDir, repoBranch)
+            if (!result) {
+                deleteEmptyDir(destinationDir)
+
+                if (keyringIsConfigured(destinationDir)) {
+                    throw new RuntimeException(
+                        "Failed to clone ${repoUrl} even after pre-caching credentials. " +
+                        "The mercurial_keyring IS configured. If your password changed recently, " +
+                        "try running 'credential-store.exe' which should be in the root of your workspace, " +
+                        "then try again."
+                    )
+                } else {
+                    throw new RuntimeException(
+                        "Failed to clone ${repoUrl}. The mercurial_keyring is NOT configured. " +
+                        "Please configure it and try again."
+                    )
+                }
             }
         }
         

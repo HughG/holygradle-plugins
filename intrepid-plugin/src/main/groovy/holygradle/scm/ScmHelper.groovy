@@ -39,4 +39,8 @@ class ScmHelper {
 
         logger.info "  Cached credential '${credentialName}'."
     }
+
+    public static boolean repoSupportsAuthentication(String repoUrl) {
+        return new URL(repoUrl).protocol in ["http", "https"]
+    }
 }

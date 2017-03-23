@@ -87,23 +87,34 @@ class GitDependency extends SourceDependency {
         // responses to requests using the "dumb" protocol.  Therefore I decided to keep it simple and consistent, and
         // just always pre-cache credentials.
 
-        CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
-        boolean credentialHelperIsConfigured = getCredentialHelperIsConfigured()
-        if (myCredentialsExtension != null) {
-            if (credentialHelperIsConfigured) {
-                project.logger.info "  Pre-caching credentials for Git from 'my-credentials' plugin..."
-                cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
+        final CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
+        final boolean credentialHelperIsConfigured = getCredentialHelperIsConfigured()
+        boolean repoSupportsAuthentication = ScmHelper.repoSupportsAuthentication(repoUrl)
+        if (repoSupportsAuthentication) {
+            if (myCredentialsExtension != null) {
+                if (credentialHelperIsConfigured) {
+                    project.logger.info "  Pre-caching credentials for Git from 'my-credentials' plugin..."
+                    cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
+                } else {
+                    project.logger.info "  Not pre-caching credentials because the Git credential.helper is not configured."
+                }
             } else {
-                project.logger.info "  Not pre-caching credentials because the Git credential.helper is not configured."
+                project.logger.info "  Not pre-caching credentials because the 'my-credentials' plugin is not applied."
             }
         } else {
-            project.logger.info "  Not pre-caching credentials because the 'my-credentials' plugin is not applied."
+            project.logger.info "  Not pre-caching credentials because the repo URL is not HTTP(S): ${repoUrl}."
         }
 
         boolean result = tryCheckout(repoUrl, destinationDir, repoBranch)
 
         if (!result) {
             deleteEmptyDir(destinationDir)
+            if (!repoSupportsAuthentication) {
+                throw new RuntimeException(
+                    "Failed to clone ${repoUrl}.  Could not try with authentication " +
+                    "because repo URL is not HTTP(S): ${repoUrl}."
+                )
+            }
             if (myCredentialsExtension == null) {
                 throw new RuntimeException(
                     "Failed to clone ${repoUrl}.  Could not try with authentication " +
