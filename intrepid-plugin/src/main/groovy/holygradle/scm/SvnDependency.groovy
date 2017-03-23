@@ -56,7 +56,7 @@ class SvnDependency extends SourceDependency {
         if (writeVersion) {
             writeVersionInfoFile()
         }
-        return true
+        return result
     }
     
     private boolean TryCheckout(File destinationDir, String repoUrl, String repoRevision, File svnConfigDir) {
@@ -87,25 +87,29 @@ class SvnDependency extends SourceDependency {
         
         if (!result) {
             CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
-            if (myCredentialsExtension != null) {
-                println "  Authentication failed. Using credentials from 'my-credentials' plugin..."
-                result = TryCheckout(
-                    destinationDir,
-                    repoUrl,
-                    repoRevision,
-                    svnConfigDir,
-                    myCredentialsExtension.username,
-                    myCredentialsExtension.password
+            if (myCredentialsExtension == null) {
+                throw new RuntimeException(
+                    "Failed to ${getSvnCommandName()} ${repoUrl}.  Could not try with authentication " +
+                    "because the 'my-credentials' plugin is not applied. " +
+                    "Please apply the 'my-credentials' plugin and try again."
                 )
-                if (!result) {
-                    deleteEmptyDir(destinationDir)
-                    println "  Well, that didn't work. Your \"Domain Credentials\" are probably out of date."
-                    println "  Have you changed your password recently? If so then please try running "
-                    println "  'credential-store.exe' which should be in the root of your workspace."
-                    throw new RuntimeException("SVN authentication failure.")
-                }
-            } else {
-                println "  Authentication failed. Please apply the 'my-credentials' plugin."
+            }
+            project.logger.info "  Authentication failed. Using credentials from 'my-credentials' plugin..."
+            result = TryCheckout(
+                destinationDir,
+                repoUrl,
+                repoRevision,
+                svnConfigDir,
+                myCredentialsExtension.username,
+                myCredentialsExtension.password
+            )
+            if (!result) {
+                deleteEmptyDir(destinationDir)
+                throw new RuntimeException(
+                    "Failed to clone ${repoUrl} even after using credentials from 'my-credentials' plugin. " +
+                    "If your password changed recently, " +
+                    "try running 'credential-store.exe' which should be in the root of your workspace, then try again."
+                )
             }
         }
         

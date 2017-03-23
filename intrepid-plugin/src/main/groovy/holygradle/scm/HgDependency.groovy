@@ -31,20 +31,22 @@ class HgDependency extends SourceDependency {
     private void cacheCredentials(String username, String password, String repoUrl) {
         String credUrl = repoUrl.split("@")[0]
         String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
-        // println "${credentialStorePath} ${credUrl} ${username} <password>"
+        final String credentialName = "${username}@@${credUrl}@Mercurial"
         ExecResult execResult = project.exec { ExecSpec spec ->
             spec.setIgnoreExitValue true
-            spec.commandLine credentialStorePath, "${username}@@${credUrl}@Mercurial", username, password
+            spec.commandLine credentialStorePath, credentialName, username, password
         }
+        project.logger.debug "cacheCredentials: cache credential exit value: ${execResult.exitValue}."
         if (execResult.getExitValue() == -1073741515) {
-            println "-"*80
-            println "Failed to cache Mercurial credentials. This is probably because you don't have the " +
+            project.logger.info "-"*80
+            project.logger.info "Failed to cache Mercurial credentials. This is probably because you don't have the " +
                     "Visual C++ 2010 Redistributable installed on your machine. Please download and " +
                     "install the x86 version before continuing. Here's the link: "
-            println "    http://www.microsoft.com/download/en/details.aspx?id=5555"
-            println "-"*80
+            project.logger.info "    http://www.microsoft.com/download/en/details.aspx?id=5555"
+            project.logger.info "-"*80
         }
         execResult.assertNormalExitValue()
+        project.logger.info "Cached credential '${credentialName}'."
     }
 
     private boolean TryCheckout(String repoUrl, File destinationDir, String repoBranch) {
@@ -57,13 +59,17 @@ class HgDependency extends SourceDependency {
         args.add(repoUrl)
         args.add(destinationDir.path)
 
+        project.logger.debug "tryCheckout: checking out with command line ${args}."
+
         try {
             hgCommand.execute { ExecSpec spec ->
                 spec.workingDir = project.projectDir
                 spec.args args
             }
         } catch (RuntimeException ex) {
-            println(ex.message)
+            project.logger.error "Checkout of ${repoUrl} branch ${repoBranch} failed: ${ex.message}. " +
+                                     "Full exception is recorded at debug logging level."
+            project.logger.debug("Checkout of ${repoUrl} branch ${repoBranch} failed", ex)
             return false
         }
         return true
@@ -83,9 +89,9 @@ class HgDependency extends SourceDependency {
             deleteEmptyDir(destinationDir)
             CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
             if (myCredentialsExtension != null) {
-                println "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
+                project.logger.info "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
                 cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
-                println "  Cached Mercurial credentials. Trying again..."
+                project.logger.info "  Cached Mercurial credentials. Trying again..."
                 result = TryCheckout(repoUrl, destinationDir, repoBranch)
                 if (!result) {
                     deleteEmptyDir(destinationDir)

@@ -29,27 +29,26 @@ class GitDependency extends SourceDependency {
     }
 
     private void cacheCredentials(String username, String password, String repoUrl) {
-        URL parsedUrl = new URL(repoUrl)
-        String repoScheme = parsedUrl.getProtocol()
-        String repoHost = parsedUrl.getHost()
-        String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
-        // println "${credentialStorePath} ${credUrl} ${username} <password>"
-        def credentialName = "git://${repoScheme}://${username}@${repoHost}"
+        final URL parsedUrl = new URL(repoUrl)
+        final String repoScheme = parsedUrl.getProtocol()
+        final String repoHost = parsedUrl.getHost()
+        final String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
+        final String credentialName = "git:${repoScheme}://${repoHost}"
         ExecResult execResult = project.exec { ExecSpec spec ->
             spec.setIgnoreExitValue true
             spec.commandLine credentialStorePath, credentialName, username, password
         }
-        println "cacheCredentials: cache credential exit value: ${execResult.exitValue}."
+        project.logger.debug "cacheCredentials: cache credential exit value: ${execResult.exitValue}."
         if (execResult.getExitValue() == -1073741515) {
-            println "-"*80
-            println "Failed to cache Git credentials. This is probably because you don't have the " +
+            project.logger.info "-"*80
+            project.logger.info "Failed to cache Git credentials. This is probably because you don't have the " +
                     "Visual C++ 2010 Redistributable installed on your machine. Please download and " +
                     "install the x86 version before continuing. Here's the link: "
-            println "    http://www.microsoft.com/download/en/details.aspx?id=5555"
-            println "-"*80
+            project.logger.info "    http://www.microsoft.com/download/en/details.aspx?id=5555"
+            project.logger.info "-"*80
         }
         execResult.assertNormalExitValue()
-        println "Cached credential '${credentialName}'."
+        project.logger.info "Cached credential '${credentialName}'."
     }
 
     private boolean tryCheckout(String repoUrl, File destinationDir, String repoBranch) {
@@ -62,7 +61,7 @@ class GitDependency extends SourceDependency {
         args.add(repoUrl)
         args.add(destinationDir.path)
 
-        println "tryCheckout: checking out with command line ${args}."
+        project.logger.debug "tryCheckout: checking out with command line ${args}."
 
         try {
             gitCommand.execute { ExecSpec spec ->
@@ -70,7 +69,9 @@ class GitDependency extends SourceDependency {
                 spec.args args
             }
         } catch (RuntimeException ex) {
-            println(ex.message)
+            project.logger.error "Checkout of ${repoUrl} branch ${repoBranch} failed: ${ex.message}. " +
+                 "Full exception is recorded at debug logging level."
+            project.logger.debug("Checkout of ${repoUrl} branch ${repoBranch} failed", ex)
             return false
         }
         return true
@@ -87,64 +88,58 @@ class GitDependency extends SourceDependency {
         // Manager: wincred, winstore (https://gitcredentialstore.codeplex.com/), and manager
         // (https://github.com/Microsoft/Git-Credential-Manager-for-Windows).  Of these, both winstore and manager will
         // by default pop up a dialog to prompt for credentials.  In all versions of winstore and some versions of
-        // manager this dialog can't be disabled, which would be bad on an auto-build machine.
+        // manager this dialog can't be disabled, which would be bad on an auto-build machine.  There's no way to just
+        // ask whether credentials are available without prompting for them so, to avoid popping up a dialog, which
+        // never times out, on autobuild machines, and thereby hanging a build, we just pre-cache credendtials for the
+        // URL, even though they might not be needed.  We could handle wincred specially, only caching credentials if it
+        // fails, but I'd rather keep things consistent.
         //
-        // Therefore, unless wincred is configured, we always pre-emptively cache credentials just in case.
+        // I tried out checking in advance whether authentication is needed by doing an initial direct HTTP GET for
+        // "${sourceUrl}/info/refs?service=git-receive-pack", as described in
+        // https://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols and https://gist.github.com/schacon/6092633.
+        // If a repo requires authentication the response should be 401, otherwise 200.  This seemed to work fine for
+        // GitLab and GutHub, but not for BitBucket: the latter would sometimes return 401 for a public repo, and then
+        // later requests might start to return 200 for no apparent reason.  Also, the Git HTTP protocol has already
+        // changed once (from "dumb" to "smart") and so might change again, and the aforementioned servers had varied
+        // responses to requests using the "dumb" protocol.  Therefore I decided to keep it simple and consistent, and
+        // just always pre-cache credentials.
+
         CredentialSource myCredentialsExtension = project.extensions.findByName("my") as CredentialSource
-        String credentialHelper = getConfiguredCredentialHelper()
-        def wincredIsConfigured = (credentialHelper == "wincred")
+        boolean credentialHelperIsConfigured = getCredentialHelperIsConfigured()
         if (myCredentialsExtension != null) {
-            if (!wincredIsConfigured) {
-                println "  Pre-caching credentials for Git helper '${credentialHelper}' from 'my-credentials' plugin..."
+            if (credentialHelperIsConfigured) {
+                project.logger.info "  Pre-caching credentials for Git from 'my-credentials' plugin..."
                 cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
+            } else {
+                project.logger.info "  Not pre-caching credentials because the Git credential.helper is not configured."
             }
         } else {
-            println "  Not pre-caching credentials because the 'my-credentials' plugin is not applied."
+            project.logger.info "  Not pre-caching credentials because the 'my-credentials' plugin is not applied."
         }
 
         boolean result = tryCheckout(repoUrl, destinationDir, repoBranch)
 
         if (!result) {
             deleteEmptyDir(destinationDir)
-            if (myCredentialsExtension != null) {
+            if (myCredentialsExtension == null) {
                 throw new RuntimeException(
-                    "Failed to clone ${repoUrl}.  Cannot re-try with authentication " +
+                    "Failed to clone ${repoUrl}.  Could not try with authentication " +
                     "because the 'my-credentials' plugin is not applied. " +
                     "Please apply the 'my-credentials' plugin and try again."
                 )
             }
-            if (credentialHelper == null) {
+            if (credentialHelperIsConfigured) {
                 throw new RuntimeException(
-                    "Failed to clone ${repoUrl}. Cannot try with authentication " +
-                    "because the Git credential.helper is NOT configured. " +
-                    "Please configure it and try again."
+                    "Failed to clone ${repoUrl} even after caching credentials. " +
+                    "The Git credential.helper IS configured. If your password changed recently, " +
+                    "try running 'credential-store.exe' which should be in the root of your workspace, then try again."
                 )
             }
-            if (!wincredIsConfigured) {
-                throw new RuntimeException(
-                    "Failed to clone ${repoUrl}. Already pre-cached credentials for Git helper '${credentialHelper}'. " +
-                    "There must be some other problem."
-                )
-            }
-
-            println "  Authentication failed. " +
-                "Caching credentials for helper '${credentialHelper}' from 'my-credentials' plugin..."
-            cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
-            println "  Cached Git credentials. Trying again..."
-            result = tryCheckout(repoUrl, destinationDir, repoBranch)
-            if (!result) {
-                deleteEmptyDir(destinationDir)
-
-                if (credentialHelper != null) {
-                    throw new RuntimeException(
-                        "Failed to clone ${repoUrl} even after caching credentials. " +
-                        "The Git credential.helper IS configured to '${credentialHelper}'. " +
-                        "If your password changed recently, " +
-                        "try running 'credential-store.exe' which should be in the root of your workspace, " +
-                        "then try again."
-                    )
-                }
-            }
+            throw new RuntimeException(
+                "Failed to clone ${repoUrl}. Cannot try with authentication " +
+                "because the Git credential.helper is NOT configured. " +
+                "Please configure it and try again."
+            )
         }
 
         // Update to a specific revision if necessary.
@@ -158,9 +153,9 @@ class GitDependency extends SourceDependency {
         result
     }
 
-    private String getConfiguredCredentialHelper() {
-        def trimmedLines = GitHelper.getConfigValue(gitCommand, project.projectDir, "credential.helper")
-            .readLines().collect { it.trim() }
-        return trimmedLines.find { !it.isEmpty() }
+    private boolean getCredentialHelperIsConfigured() {
+        GitHelper.getConfigValue(gitCommand, project.projectDir, "credential.helper")
+            .readLines().collect { it.trim() }.any { !it.isEmpty() }
     }
+
 }
