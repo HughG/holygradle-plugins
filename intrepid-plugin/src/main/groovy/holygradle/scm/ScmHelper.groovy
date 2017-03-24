@@ -23,20 +23,7 @@ class ScmHelper {
     ) {
         credentialStoreCommand.execute({ ExecSpec spec ->
             spec.args credentialName, username, password
-        }, { int exitValue ->
-            logger.debug "  credential-store.exe exit value: ${exitValue}"
-            if (exitValue == -1073741515) {
-                logger.info "-" * 80
-                logger.info "Failed to cache credentials. This is probably because you don't have " +
-                    "the Visual C++ 2010 Redistributable installed on your machine. Please download and install the " +
-                    "x86 version before continuing, from"
-                logger.info "    http://www.microsoft.com/download/en/details.aspx?id=5555"
-                logger.info "-" * 80
-                return false
-            }
-            return true
         })
-
         logger.info "  Cached credential '${credentialName}'."
     }
 
