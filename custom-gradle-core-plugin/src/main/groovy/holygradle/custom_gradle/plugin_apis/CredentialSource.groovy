@@ -15,4 +15,16 @@ public interface CredentialSource {
      * @return A password for authentication.
      */
     String getPassword()
+
+    /**
+     * Returns the username stored in a particular "Intrepid - <credentialType>" credential.
+     * @return The username stored in a particular "Intrepid - <credentialType>" credential.
+     */
+    String username(String credentialType)
+
+    /**
+     * Returns the password stored in a particular "Intrepid - <credentialType>" credential.
+     * @return The password stored in a particular "Intrepid - <credentialType>" credential.
+     */
+    String password(String credentialType)
 }

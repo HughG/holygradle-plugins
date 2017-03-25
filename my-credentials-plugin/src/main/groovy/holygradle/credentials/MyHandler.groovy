@@ -8,10 +8,11 @@ import org.gradle.process.ExecSpec
 class MyHandler implements CredentialSource {
     private final Project project
     private final String credentialStorePath
-    private final String separator = "&&&"
-    private final String defaultCredentialType = "Domain Credentials"
+    private static final String CREDENTIAL_INTERNAL_SEPARATOR = "&&&"
     private Map<String,String> credentialsCache = [:]
-    
+
+    public static final String DEFAULT_CREDENTIAL_TYPE = "Domain Credentials"
+
     public static MyHandler defineExtension(Project project, String credentialStorePath) {
         MyHandler myExtension
 
@@ -74,7 +75,7 @@ class MyHandler implements CredentialSource {
             return getCredentialsFromUserAndStore(credentialType, username)
         }
 
-        String[] credentials = credStorageValue.split(separator)
+        String[] credentials = credStorageValue.split(CREDENTIAL_INTERNAL_SEPARATOR)
         username = credentials[0]
         if (credentials.size() == 3) {
             project.logger.info("Warning: Attempting to get credentials from store, got 3 fields")
@@ -106,7 +107,7 @@ class MyHandler implements CredentialSource {
         } else {
             String credStoreExe = credentialStorePath
             String credStorageKey = getCredentialStorageKey(credentialType)
-            GString credStorageValue = "${userCred.userName}${separator}${userCred.password}"
+            GString credStorageValue = "${userCred.userName}${CREDENTIAL_INTERNAL_SEPARATOR}${userCred.password}"
             credentialsCache[credStorageKey] = credStorageValue
             ExecResult result = project.exec { ExecSpec spec ->
                 spec.setIgnoreExitValue true
@@ -123,18 +124,22 @@ class MyHandler implements CredentialSource {
         }
     }
 
+    @Override
     public String getUsername() {
-        username(defaultCredentialType)
+        username(DEFAULT_CREDENTIAL_TYPE)
     }
-    
+
+    @Override
     public String getPassword() {
-        password(defaultCredentialType)
+        password(DEFAULT_CREDENTIAL_TYPE)
     }
-    
+
+    @Override
     public String username(String credentialType) {
         getCredentials(credentialType)?.userName
     }
-    
+
+    @Override
     public String password(String credentialType) {
         getCredentials(credentialType)?.password
     }

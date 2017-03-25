@@ -22,7 +22,6 @@ class FetchSourceDependencyTask extends DefaultTask {
         return sourceDependency
     }
 
-    
     public void initialize(SourceDependency sourceDependency) {
         this.sourceDependency = sourceDependency
         url = sourceDependency.getUrl()
@@ -43,11 +42,7 @@ class FetchSourceDependencyTask extends DefaultTask {
     }
         
     @TaskAction
-    public void Checkout() {
+    public void checkout() {
         sourceDependency.checkout()
-    }
-    
-    public String getSourceDirName() {
-        sourceDependency.sourceDependency.name
     }
 }

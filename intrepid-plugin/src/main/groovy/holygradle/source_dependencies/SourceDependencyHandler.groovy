@@ -22,6 +22,7 @@ class SourceDependencyHandler extends DependencyHandler {
     public String protocol = null
     public String url = null
     public String branch = null
+    public String credentialBasis
     public Boolean writeVersionInfoFile = null
     public boolean export = false
     private File destinationDir
@@ -127,6 +128,10 @@ class SourceDependencyHandler extends DependencyHandler {
         ) {
             configuration(IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME)
         }
+    }
+
+    public void credentialBasis(String credentialBasis) {
+        this.credentialBasis = credentialBasis
     }
 
     public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {

@@ -5,7 +5,7 @@ import org.gradle.api.*
 import holygradle.Helper
 
 abstract class SourceDependency {
-    public final SourceDependencyHandler sourceDependency
+    protected final SourceDependencyHandler sourceDependency
     public final Project project
 
     public SourceDependency(Project project, SourceDependencyHandler sourceDependency) {

@@ -21,7 +21,9 @@ class HgDependencyTest extends AbstractHolyGradleTest {
         final String dummyPassword = "dummy_password"
         project.extensions.add("my", [
             getUsername : { dummyUser },
-            getPassword : { dummyPassword }
+            getPassword : { dummyPassword },
+            username : { String credentialBasis -> dummyUser },
+            password : { String credentialBasis -> dummyPassword }
         ] as CredentialSource)
         final String depDirName = "dep"
         final File depDir = new File(projectDir, depDirName)
@@ -70,7 +72,7 @@ class HgDependencyTest extends AbstractHolyGradleTest {
         List<String> cacheCredArgs = [credentialName, dummyUser, dummyPassword]
         assertEquals(
             "Cache credentials",
-            csCommand.makeEffect(cacheCredArgs, null, false),
+            csCommand.makeEffect(cacheCredArgs, null, null),
             effects[1]
         )
 

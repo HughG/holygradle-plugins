@@ -25,11 +25,11 @@ class HgDependency extends SourceDependency {
     public String getFetchTaskDescription() {
         "Retrieves an Hg Clone for '${sourceDependency.name}' into your workspace."
     }
-    
-    private void cacheCredentials(String username, String password, String repoUrl) {
+
+    private void cacheCredentials(CredentialSource credentialSource, String credentialBasis, String repoUrl) {
         final String credUrl = repoUrl.split("@")[0]
-        final String credentialName = "${username}@@${credUrl}@Mercurial"
-        ScmHelper.storeCredential(project.logger, credentialStoreCommand, credentialName, username, password)
+        final String credentialName = "${credentialSource.username(credentialBasis)}@@${credUrl}@Mercurial"
+        ScmHelper.storeCredential(project, credentialStoreCommand, credentialSource, credentialName, credentialBasis)
     }
 
 
@@ -66,7 +66,6 @@ class HgDependency extends SourceDependency {
     
     @Override
     protected boolean doCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
-
         boolean result = TryCheckout(repoUrl, destinationDir, repoBranch)
 
         if (!result) {
@@ -87,7 +86,7 @@ class HgDependency extends SourceDependency {
                 )
             }
             project.logger.info "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
-            cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
+            cacheCredentials(myCredentialsExtension, sourceDependency.credentialBasis, repoUrl)
             project.logger.info "  Cached Mercurial credentials. Trying again..."
             result = TryCheckout(repoUrl, destinationDir, repoBranch)
             if (!result) {

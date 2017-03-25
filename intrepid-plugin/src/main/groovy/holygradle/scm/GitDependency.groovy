@@ -26,12 +26,12 @@ class GitDependency extends SourceDependency {
         "Retrieves a Git Clone for '${sourceDependency.name}' into your workspace."
     }
 
-    private void cacheCredentials(String username, String password, String repoUrl) {
+    private void cacheCredentials(CredentialSource credentialSource, String credentialBasis, String repoUrl) {
         final URL parsedUrl = new URL(repoUrl)
         final String repoScheme = parsedUrl.getProtocol()
         final String repoHost = parsedUrl.getHost()
         final String credentialName = "git:${repoScheme}://${repoHost}"
-        ScmHelper.storeCredential(project.logger, credentialStoreCommand, credentialName, username, password)
+        ScmHelper.storeCredential(project, credentialStoreCommand, credentialSource, credentialName, credentialBasis)
     }
 
     private boolean tryCheckout(String repoUrl, File destinationDir, String repoBranch) {
@@ -94,7 +94,7 @@ class GitDependency extends SourceDependency {
             if (myCredentialsExtension != null) {
                 if (credentialHelperIsConfigured) {
                     project.logger.info "  Pre-caching credentials for Git from 'my-credentials' plugin..."
-                    cacheCredentials(myCredentialsExtension.username, myCredentialsExtension.password, repoUrl)
+                    cacheCredentials(myCredentialsExtension, sourceDependency.credentialBasis, repoUrl)
                 } else {
                     project.logger.info "  Not pre-caching credentials because the Git credential.helper is not configured."
                 }
