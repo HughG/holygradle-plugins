@@ -55,3 +55,7 @@ that intrepid has not already accessed the PublishinExtension as a property.
 
 * TODO: See if I can make DefaultPublishPackagesExtension not depend on PackageArtifactHandler.  Then it could be useful
 without the rest of intrepid.
+
+----------------------------------------------------------------------------------------
+
+* TODO: See if I can make everything still work even if the custom init-script isn't there.
