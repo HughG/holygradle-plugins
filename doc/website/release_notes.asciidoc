@@ -44,6 +44,26 @@ things for users, and also for plugin developers.
 
 ==== 7.9.x
 
+===== 7.9.2
+(TODO)
+
+CustomGradleCorePlugin::
+
+* GR #6714 Fix: ensure an exception is thrown to stop the build if Git/Hg/Svn processes have a non-zero exit value.
+
+Intrepid::
+
+* GR #6714 Various fixes related to Git (and Hg) source dependencies:
+** The existing Git support was specific to the now-outdated "wincred" Git credential helper.  Support was changed to
+also cover the newer "winstore" and "manager" helpers.  The Holy Gradle will always cache credentials for "http(s):"
+URLs for Git source dependencies, even if they aren't actually needed, otherwise the newer helpers may show a modal
+dialog which never times out which can cause problems on continuous integration build machines.
+** If a source dependency was not fetched correctly, Gradle would still treat the fetch task as "up to date", so running
+it again would do nothing unless you deleted your ".gradle" build state cache folder.
+
+DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.9.1
 (3e6fe3d1f432 at 2016-07-26 13:35:49 UTC)
 
@@ -56,7 +76,7 @@ Intrepid::
 
 * GR #6701 Upgrade the version of 7-zip used, to avoid security vulnerability https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-2335.
 
-DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
 - No changes.
 
 ===== 7.9.0
