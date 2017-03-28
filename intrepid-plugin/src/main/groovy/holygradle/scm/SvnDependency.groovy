@@ -95,13 +95,14 @@ class SvnDependency extends SourceDependency {
                 )
             }
             project.logger.info "  Authentication failed. Using credentials from 'my-credentials' plugin..."
+            final String credentialBasis = sourceDependency.credentialBasis
             result = TryCheckout(
                 destinationDir,
                 repoUrl,
                 repoRevision,
                 svnConfigDir,
-                myCredentialsExtension.username,
-                myCredentialsExtension.password
+                myCredentialsExtension.username(credentialBasis),
+                myCredentialsExtension.username(credentialBasis)
             )
             if (!result) {
                 deleteEmptyDir(destinationDir)

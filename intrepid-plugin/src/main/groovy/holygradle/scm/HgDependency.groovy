@@ -7,17 +7,14 @@ import org.gradle.api.Project
 import org.gradle.process.ExecSpec
 
 class HgDependency extends SourceDependency {
-    private final Command credentialStoreCommand
     private final Command hgCommand
 
     public HgDependency(
         Project project,
         SourceDependencyHandler sourceDependency,
-        Command credentialStoreCommand,
         Command hgCommand
     ) {
         super(project, sourceDependency)
-        this.credentialStoreCommand = credentialStoreCommand
         this.hgCommand = hgCommand
     }
     
@@ -29,11 +26,10 @@ class HgDependency extends SourceDependency {
     private void cacheCredentials(CredentialSource credentialSource, String credentialBasis, String repoUrl) {
         final String credUrl = repoUrl.split("@")[0]
         final String credentialName = "${credentialSource.username(credentialBasis)}@@${credUrl}@Mercurial"
-        ScmHelper.storeCredential(project, credentialStoreCommand, credentialSource, credentialName, credentialBasis)
+        ScmHelper.storeCredential(project, credentialSource, credentialName, credentialBasis)
     }
 
-
-    private boolean TryCheckout(String repoUrl, File destinationDir, String repoBranch) {
+    private boolean tryCheckout(String repoUrl, File destinationDir, String repoBranch) {
         Collection<String> args = ["clone"]
         if (repoBranch != null) { 
             args.add("--branch")
@@ -66,7 +62,7 @@ class HgDependency extends SourceDependency {
     
     @Override
     protected boolean doCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch) {
-        boolean result = TryCheckout(repoUrl, destinationDir, repoBranch)
+        boolean result = tryCheckout(repoUrl, destinationDir, repoBranch)
 
         if (!result) {
             deleteEmptyDir(destinationDir)
@@ -88,7 +84,7 @@ class HgDependency extends SourceDependency {
             project.logger.info "  Authentication failed. Trying credentials from 'my-credentials' plugin..."
             cacheCredentials(myCredentialsExtension, sourceDependency.credentialBasis, repoUrl)
             project.logger.info "  Cached Mercurial credentials. Trying again..."
-            result = TryCheckout(repoUrl, destinationDir, repoBranch)
+            result = tryCheckout(repoUrl, destinationDir, repoBranch)
             if (!result) {
                 deleteEmptyDir(destinationDir)
 

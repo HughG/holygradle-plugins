@@ -1,6 +1,8 @@
 package holygradle.scm
 
 import holygradle.custom_gradle.plugin_apis.CredentialSource
+import holygradle.custom_gradle.plugin_apis.CredentialStore
+import holygradle.custom_gradle.plugin_apis.Credentials
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.test.AbstractHolyGradleTest
 import org.gradle.api.Project
@@ -17,9 +19,20 @@ class HgDependencyTest extends AbstractHolyGradleTest {
     public void test() {
         File projectDir = new File(getTestDir(), "project")
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+
+        // Set up stub/spy objects.
+        String storedCredentialKey = null
+        Credentials storedCredentials = null
+        CredentialStore spyStore = [
+            writeCredential : { key, credentials ->
+                storedCredentialKey = key
+                storedCredentials = credentials
+            }
+        ] as CredentialStore
         final String dummyUser = "dummy_user"
         final String dummyPassword = "dummy_password"
         project.extensions.add("my", [
+            getCredentialStore : { spyStore },
             getUsername : { dummyUser },
             getPassword : { dummyPassword },
             username : { String credentialBasis -> dummyUser },
@@ -36,13 +49,8 @@ class HgDependencyTest extends AbstractHolyGradleTest {
         // to check the arguments directly, I want to check the result of applying the closure arguments to something
         // else.  I could do that with Mockito but it would probably take as much code effort, if not more.
         final List<StubCommand.Effect> effects = []
-        boolean cachedCredentials = false
-        final StubCommand csCommand = new StubCommand('cs', effects, { ExecSpec spec ->
-            cachedCredentials = true
-            return [0, ""]
-        })
         final StubCommand hgCommand = new StubCommand('hg', effects, { ExecSpec spec ->
-            if (!cachedCredentials) {
+            if (storedCredentials == null) {
                 return [1, "In test: Credentials not cached yet"]
             }
             return [0, ""]
@@ -51,14 +59,13 @@ class HgDependencyTest extends AbstractHolyGradleTest {
         HgDependency dependency = new HgDependency(
             project,
             sourceDependencyHandler,
-            csCommand,
             hgCommand
         )
         dependency.checkout()
 
         println "StubCommand calls:"
         effects.each { println it }
-        assertEquals("Expected number of calls", 4, effects.size())
+        assertEquals("Expected number of calls", 3, effects.size())
 
         List<String> cloneArgs = ["clone", "--branch", "some_branch", "--", dummyUrlString, depDir.absolutePath]
         assertEquals(
@@ -69,24 +76,20 @@ class HgDependencyTest extends AbstractHolyGradleTest {
 
         final String credUrl = dummyUrlString.split("@")[0]
         final String credentialName = "${dummyUser}@@${credUrl}@Mercurial"
-        List<String> cacheCredArgs = [credentialName, dummyUser, dummyPassword]
-        assertEquals(
-            "Cache credentials",
-            csCommand.makeEffect(cacheCredArgs, null, null),
-            effects[1]
-        )
+        assertEquals("Cached credential key", credentialName, storedCredentialKey)
+        assertEquals("Cached credentials", new Credentials(dummyUser, dummyPassword), storedCredentials)
 
         assertEquals(
             "Clone the repo (successfully)",
             hgCommand.makeEffect(cloneArgs, projectDir.absoluteFile, null),
-            effects[2]
+            effects[1]
         )
 
         List<String> checkoutArgs = ["update", "-r", "dummy_node"]
         assertEquals(
             "Update to the revision",
             hgCommand.makeEffect(checkoutArgs, depDir.absoluteFile, null),
-            effects[3]
+            effects[2]
         )
     }
 

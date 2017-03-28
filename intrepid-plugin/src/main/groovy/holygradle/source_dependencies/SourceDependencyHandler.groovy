@@ -2,13 +2,13 @@ package holygradle.source_dependencies
 
 import holygradle.Helper
 import holygradle.IntrepidPlugin
-import holygradle.buildscript.BuildScriptDependencies
+import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
 import holygradle.scm.CommandLine
+import holygradle.scm.GitDependency
 import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
-import holygradle.scm.GitDependency
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -22,7 +22,7 @@ class SourceDependencyHandler extends DependencyHandler {
     public String protocol = null
     public String url = null
     public String branch = null
-    public String credentialBasis
+    public String credentialBasis = CredentialSource.DEFAULT_CREDENTIAL_TYPE
     public Boolean writeVersionInfoFile = null
     public boolean export = false
     private File destinationDir
@@ -130,23 +130,22 @@ class SourceDependencyHandler extends DependencyHandler {
         }
     }
 
+    @SuppressWarnings("GroovyUnusedDeclaration") // API method
     public void credentialBasis(String credentialBasis) {
         this.credentialBasis = credentialBasis
     }
 
-    public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {
+    public Task createFetchTask(Project project) {
         SourceDependency sourceDependency
-        final String credentialStorePath = buildScriptDependencies.getPath("credential-store").path
-        def csCommand = new CommandLine(project.logger, credentialStorePath, project.&exec)
         if (protocol == "svn") {
             def svnCommand = new CommandLine(project.logger, "svn.exe", project.&exec)
             sourceDependency = new SvnDependency(project, this, svnCommand)
         } else if (protocol == "hg") {
             def hgCommand = new CommandLine(project.logger, "hg.exe", project.&exec)
-            sourceDependency = new HgDependency(project, this, csCommand, hgCommand)
+            sourceDependency = new HgDependency(project, this, hgCommand)
         } else if (protocol == "git") {
             def gitCommand = new CommandLine(project.logger, "git.exe", project.&exec)
-            sourceDependency = new GitDependency(project, this, csCommand, gitCommand)
+            sourceDependency = new GitDependency(project, this, gitCommand)
         } else {
             throw new RuntimeException("Unsupported protocol: " + protocol)
         }

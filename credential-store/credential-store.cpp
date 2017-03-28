@@ -252,7 +252,11 @@ void UpdateAllCredentials(wstring& username, wstring& password) {
                 IsGitCredential(target_name, username) ||
                 IsIntrepidCredential(target_name, username)
             ) {
-                StoreCredential(target_name, wstring(pCredential->UserName), password);
+                // Note: We use the existing credential username here, not the username parameter, because
+                // some (Mercurial) credentials have the username parameter value as a substring rather than
+                // the full string.
+                wstring credential_user_name = wstring(pCredential->UserName);
+                StoreCredential(target_name, credential_user_name, password);
             }
         }
 

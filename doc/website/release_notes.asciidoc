@@ -42,6 +42,27 @@ things for users, and also for plugin developers.
 
 === 7.x
 
+==== 7.10.x
+
+===== 7.10.0
+(TODO)
+
+CustomGradleCorePlugin {br} CredentialStore {br} Intrepid {br} MyCredentials ::
+
+* GR #6715 Allow source dependency credentials to be derived from a user-named "basis" credential.  This supports
+having source dependencies on repos hosted at different sites, which need different credentials.
+** To use this, add +credentialBasis "AnyStringYouLike"+ to a +sourceDependency+ block.  The default basis string is
++Domain Credentials+ for backward compatibility.
+** The +my.instructions+ block is now ignored, so that all credential bases are treated the same.
+*+ +credential-store.exe+ has been modified to allow users to separately update credentials for a given basis, or
+to update credentials not associated with any basis (for backward compatibility and for use with credentials supplied
+from +my.credentials+ to binary dependency repositories such as Artifactory).  This relies on a file
++holygradle/credential-bases.txt+ which is written into the user's Gradle Home directory by the Intrepid plugin and
+read by credential-store.exe.
+
+DevEnv {br} UnitTest {br} ArtifactoryManager {br} Stamper {br} Utils::
+- No changes.
+
 ==== 7.9.x
 
 ===== 7.9.2

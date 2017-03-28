@@ -1,11 +1,16 @@
 package holygradle.scm
 
 import holygradle.custom_gradle.plugin_apis.CredentialSource
+import holygradle.custom_gradle.plugin_apis.Credentials
 import holygradle.io.FileHelper
 import org.gradle.api.Project
 import org.gradle.process.ExecSpec
 
+// TODO 2017-03-28 HughG: Refactor credential methods out to a separate class.
+
 class ScmHelper {
+    private static final String CREDENTIAL_BASIS_FILE_PATH = "holygradle/credential-bases.txt"
+
     public static String getGitConfigValue(Command gitCommand, File workingDir, String configKey) {
         return gitCommand.execute({ ExecSpec spec ->
             spec.workingDir = workingDir
@@ -18,7 +23,7 @@ class ScmHelper {
 
     private static Map<String, Set<String>> readCredentialBasisFile(Project project) {
         Map<String, Set<String>> bases = [:].withDefault { new LinkedHashSet<String>() }
-        File basisFile = new File(project.gradle.gradleUserHomeDir, "holygradle/credential-basis.txt")
+        File basisFile = new File(project.gradle.gradleUserHomeDir, CREDENTIAL_BASIS_FILE_PATH)
         if (!basisFile.exists()) {
             return bases
         }
@@ -50,7 +55,7 @@ class ScmHelper {
     }
 
     private static void writeCredentialBasisFile(Project project, Map<String, Set<String>> credentialsByBasis) {
-        File basisFile = new File(project.gradle.gradleUserHomeDir, "holygradle/credential-basis.txt")
+        File basisFile = new File(project.gradle.gradleUserHomeDir, CREDENTIAL_BASIS_FILE_PATH)
         FileHelper.ensureMkdirs(basisFile.parentFile, "create folder for ${basisFile.name}")
         basisFile.withPrintWriter { pw ->
             pw.println "# This is a machine-generated Holy Gradle Credential Basis file."
@@ -86,6 +91,10 @@ class ScmHelper {
         def credentialsForBasis = credentialsByBasis[credentialBasis]
         boolean hadCredential = credentialsForBasis.contains(credentialName)
         if (!hadBasis || !hadCredential) {
+            credentialsForBasis.add(credentialName)
+
+            // TODO 2017-03-28 HughG: Make sure the credential isn't associated with any other bases!
+
             writeCredentialBasisFile(project, credentialsByBasis)
         }
 
@@ -93,18 +102,18 @@ class ScmHelper {
 
     public static void storeCredential(
         Project project,
-        Command credentialStoreCommand,
         CredentialSource credentialSource,
         String credentialName,
         String credentialBasis
     ) {
         updateCredentialBasisFile(project, credentialName, credentialBasis)
-        credentialStoreCommand.execute({ ExecSpec spec ->
-            final username = credentialSource.username(credentialBasis)
-            final password = credentialSource.password(credentialBasis)
-            spec.args credentialName, username, password
-        })
-        project.logger.info "  Cached credential '${credentialName}'."
+        final username = credentialSource.username(credentialBasis)
+        final password = credentialSource.password(credentialBasis)
+        if (username == null || password == null) {
+            throw new RuntimeException("Failed to get username and password for credential basis ${credentialBasis}")
+        }
+        credentialSource.credentialStore.writeCredential(credentialName, new Credentials(username, password))
+        project.logger.info "  Cached credential '${credentialName}' from basis '${credentialBasis}'."
     }
 
     public static boolean repoSupportsAuthentication(String repoUrl) {

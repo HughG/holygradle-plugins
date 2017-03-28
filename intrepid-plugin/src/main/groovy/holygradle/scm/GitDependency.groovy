@@ -7,17 +7,14 @@ import org.gradle.api.Project
 import org.gradle.process.ExecSpec
 
 class GitDependency extends SourceDependency {
-    private final Command credentialStoreCommand
     private final Command gitCommand
 
     public GitDependency(
         Project project,
         SourceDependencyHandler sourceDependency,
-        Command credentialStoreCommand,
         Command gitCommand
     ) {
         super(project, sourceDependency)
-        this.credentialStoreCommand = credentialStoreCommand
         this.gitCommand = gitCommand
     }
 
@@ -31,7 +28,7 @@ class GitDependency extends SourceDependency {
         final String repoScheme = parsedUrl.getProtocol()
         final String repoHost = parsedUrl.getHost()
         final String credentialName = "git:${repoScheme}://${repoHost}"
-        ScmHelper.storeCredential(project, credentialStoreCommand, credentialSource, credentialName, credentialBasis)
+        ScmHelper.storeCredential(project, credentialSource, credentialName, credentialBasis)
     }
 
     private boolean tryCheckout(String repoUrl, File destinationDir, String repoBranch) {

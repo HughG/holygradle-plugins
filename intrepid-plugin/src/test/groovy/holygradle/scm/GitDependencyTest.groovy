@@ -1,6 +1,8 @@
 package holygradle.scm
 
 import holygradle.custom_gradle.plugin_apis.CredentialSource
+import holygradle.custom_gradle.plugin_apis.CredentialStore
+import holygradle.custom_gradle.plugin_apis.Credentials
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.test.AbstractHolyGradleTest
 import org.gradle.api.Project
@@ -17,9 +19,20 @@ class GitDependencyTest extends AbstractHolyGradleTest {
     public void test() {
         File projectDir = new File(getTestDir(), "project")
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+
+        // Set up stub/spy objects.
+        String storedCredentialKey = null
+        Credentials storedCredentials = null
+        CredentialStore spyStore = [
+            writeCredential : { key, credentials ->
+                storedCredentialKey = key
+                storedCredentials = credentials
+            }
+        ] as CredentialStore
         final String dummyUser = "dummy_user"
         final String dummyPassword = "dummy_password"
         project.extensions.add("my", [
+            getCredentialStore : { spyStore },
             getUsername : { dummyUser },
             getPassword : { dummyPassword },
             username : { String credentialBasis -> dummyUser },
@@ -36,7 +49,6 @@ class GitDependencyTest extends AbstractHolyGradleTest {
         // to check the arguments directly, I want to check the result of applying the closure arguments to something
         // else.  I could do that with Mockito but it would probably take as much code effort, if not more.
         final List<StubCommand.Effect> effects = []
-        final StubCommand csCommand = new StubCommand('cs', effects)
         final StubCommand gitCommand = new StubCommand('git', effects, { ExecSpec spec ->
             def value = (spec.args == ['config', '--get', 'credential.helper']) ? "dummy_helper" : ""
             return [0, value]
@@ -45,14 +57,13 @@ class GitDependencyTest extends AbstractHolyGradleTest {
         GitDependency dependency = new GitDependency(
             project,
             sourceDependencyHandler,
-            csCommand,
             gitCommand
         )
         dependency.checkout()
 
         println "StubCommand calls:"
         effects.each { println it }
-        assertEquals("Expected number of calls", 4, effects.size())
+        assertEquals("Expected number of calls", 3, effects.size())
 
         List<String> configArgs = ["config", "--get", "credential.helper"]
         assertEquals(
@@ -65,25 +76,21 @@ class GitDependencyTest extends AbstractHolyGradleTest {
         final String repoScheme = parsedUrl.getProtocol()
         final String repoHost = parsedUrl.getHost()
         final String credentialName = "git:${repoScheme}://${repoHost}"
-        List<String> cacheCredArgs = [credentialName, dummyUser, dummyPassword]
-        assertEquals(
-            "Cache credentials",
-            csCommand.makeEffect(cacheCredArgs, null, null),
-            effects[1]
-        )
+        assertEquals("Cached credential key", credentialName, storedCredentialKey)
+        assertEquals("Cached credentials", new Credentials(dummyUser, dummyPassword), storedCredentials)
 
         List<String> cloneArgs = ["clone", "--branch", "some_branch", "--", dummyUrlString, depDir.absolutePath]
         assertEquals(
             "Clone the repo",
             gitCommand.makeEffect(cloneArgs, projectDir.absoluteFile, null),
-            effects[2]
+            effects[1]
         )
 
         List<String> checkoutArgs = ["checkout", "dummy_node"]
         assertEquals(
             "Checkout the branch",
             gitCommand.makeEffect(checkoutArgs, depDir.absoluteFile, null),
-            effects[3]
+            effects[2]
         )
     }
 }
