@@ -77,9 +77,10 @@ class MyHandler implements CredentialSource {
     }
 
     private Credentials getCredentialsFromUserAndStore(String credentialType, String currentUserName) {
-        Collection<String> instructions = ["Please provide details for '${credentialType}'"]*.toString()
+        InstructionsHandler instructionsHandler = project.my.instructions.findByName(credentialType)
         final String title = "Intrepid - ${credentialType}".toString()
-        Credentials userCred = CredentialsForm.getCredentialsFromUser(title, instructions, currentUserName, 60 * 3)
+        Credentials userCred =
+            CredentialsForm.getCredentialsFromUser(title, instructionsHandler?.instructions, currentUserName, 60 * 3)
         if (userCred == null) {
             println "No change to credentials '${credentialType}'."
             return null

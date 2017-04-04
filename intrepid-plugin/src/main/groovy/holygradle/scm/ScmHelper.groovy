@@ -83,18 +83,19 @@ class ScmHelper {
 
     // Update credential basis file if necessary.
     private static void updateCredentialBasisFile(Project project, String credentialName, String credentialBasis) {
-        // - Read contents of basis file.
+        // Read contents of basis file.
         Map<String, Set<String>> credentialsByBasis = readCredentialBasisFile(project)
 
-        // - Write file, if it was new.
-        boolean hadBasis = credentialsByBasis.containsKey(credentialBasis)
-        def credentialsForBasis = credentialsByBasis[credentialBasis]
-        boolean hadCredential = credentialsForBasis.contains(credentialName)
-        if (!hadBasis || !hadCredential) {
-            credentialsForBasis.add(credentialName)
+        // Ensure the credential name is associated with one and only one basis.
+        boolean changed = credentialsByBasis[credentialBasis].add(credentialName)
+        credentialsByBasis.each { String basis, Set<String> credentials ->
+            if (basis != credentialName) {
+                changed |= credentials.remove(credentialName)
+            }
+        }
 
-            // TODO 2017-03-28 HughG: Make sure the credential isn't associated with any other bases!
-
+        // Write file, if the mapping is effectively changed.
+        if (changed) {
             writeCredentialBasisFile(project, credentialsByBasis)
         }
 

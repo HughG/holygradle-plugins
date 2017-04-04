@@ -439,13 +439,13 @@ void ShowUsage(wchar_t* program_name) {
     wcout << L"  " << program_name << L" set <credential_name> <username> <password>" << endl;
     wcout << L"    Sets the content of the named credential to \"<username>&&&<password>\"." << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" from-basis <credential_name>" << endl;
+    wcout << L"  " << program_name << L" for-basis <credential_name>" << endl;
     wcout << L"    Prompts for a username and password, then sets them as the content of" << endl;
     wcout << L"    credential \"" << HOLY_GRADLE_CREDENTIAL_PREFIX << L"<credential_name>\", and" << endl;
     wcout << L"    all credentials listed under <credential_name> in" << endl;
     wcout << L"    " << GetCredentialBasisFileName() << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" from-default" << endl;
+    wcout << L"  " << program_name << L" for-default" << endl;
     wcout << L"    Prompts for a username and password, then sets them as the content of" << endl;
     wcout << L"    credential \"" << HOLY_GRADLE_CREDENTIAL_PREFIX L"Domain Credentials\"," << endl;
     wcout << L"    all Git and Mercurial credentials not listed under any name in" << endl;
@@ -458,7 +458,7 @@ void ShowUsage(wchar_t* program_name) {
     wcout << L"    " << GetCredentialBasisFileName() << endl;
     wcout << endl;
     wcout << L"  " << program_name << L" list-defaults <username>" << endl;
-    wcout << L"    Lists all the credentials which would be updated by the from-default command" << endl;
+    wcout << L"    Lists all the credentials which would be updated by the for-default command" << endl;
     wcout << L"    for the given <username>." << endl;
     wcout << endl;
 }
@@ -480,9 +480,9 @@ int _tmain(int argc, wchar_t* argv[]) {
         wstring username(argv[3]);
         wstring password(argv[4]);
         StoreCredential(writeKey, username, password);
-    } else if (_wcsnicmp(argv[1], L"from-basis", command_length) == 0 && argc == 3) {
+    } else if (_wcsnicmp(argv[1], L"for-basis", command_length) == 0 && argc == 3) {
         UpdateCredentialsFromBasis(argv[2]);
-    } else if (_wcsnicmp(argv[1], L"from-default", command_length) == 0 && argc == 2) {
+    } else if (_wcsnicmp(argv[1], L"for-default", command_length) == 0 && argc == 2) {
         UpdateCredentialsFromDefault();
     } else if (_wcsnicmp(argv[1], L"list-bases", command_length) == 0 && argc == 2) {
         ListBases();

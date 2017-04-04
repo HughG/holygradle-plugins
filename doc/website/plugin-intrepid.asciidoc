@@ -709,6 +709,7 @@ digraph {
     a_debugging_x64_Debug -> b_debugging_x64_Debug;
     a_debugging_x64_Release -> b_debugging_x64_Release;
 }
+
 --
 
 
@@ -891,7 +892,19 @@ The Gradle concept of project/module dependencies _does_ apply to source depende
 
 ==== Credentials
 
-By default, intrepid can only fetch source from repositories which do not require authentication.  If the project also has the link:plugin-my-credentials.html[] applied, it will use passwords cached in Windows Credential Manager to access Mercurial and Subversion repositories.  If cloning, checking out, or exporting a repository for which no password is already cached, the plugin will initialise the cached password for that repository using the value stored under +"Intrepid - Domain Credentials"+ (the default username and password managed by link:plugin-my-credentials.html[]).
+By default, intrepid can only fetch source from repositories which do not require authentication.  If the project also
+has the link:plugin-my-credentials.html[] applied, it will use passwords cached in Windows Credential Manager to access
+Mercurial and Subversion repositories.  If cloning, checking out, or exporting a repository for which no password is
+already cached, the plugin will initialise the cached username and password for that repository based on a value stored
+under "Intrepid - _type_" for some string "_type_".
+
+Before link:release_notes.html#_7.10.0[7.10.0] this type was always the default username and password managed by
+link:plugin-my-credentials.html[], "Domain Credentials".  Since 7.10.0 you can override the credential used as a basis
+for the source repository with the +link:plugin-intrepid.html#_credentialBasis[]+ property.
+
+
+using the value stored under
++"Intrepid - Domain Credentials"+ (the default username and password managed by link:plugin-my-credentials.html[]).
 
 ==== hg
 
@@ -955,6 +968,34 @@ rerunning +fetchAllDependencies+ will have no effect on your local copy.
 -> Call this method at most once.
 
 -> You must call one of +hg+, +git+, or +svn+.
+
+==== credentialBasis
+
+This is an optional property that defines which "Intrepid - _type_" credential will be used for the source repository.
+Using another credential type as a basis means that the user only has to enter their username and password once, even if
+the same credentials are used for multiple source repositories.  The intrepid plugin will read the username and password
+from the "Intrepid - _type_" credential in the gloss:credential-manager[] and cache it for the relevant source control
+software.
+
+Usage:
+
+[source,groovy]
+----
+sourceDependencies {
+    foo {
+        svn "http://shared-server.example-corp.com/path/to/foo"
+        // Uses "Intrepid - Domain Credentials" by default
+    }
+    bar {
+        hg "http://my-server.my-corp.com/path/to/bar"
+        credentialBasis = "MyCorp" // Uses "Intrepid - MyCorp"
+    }
+    baz {
+        git "http://other-server.other-corp.com/path/to/baz"
+        credentialBasis = "OtherCorp" // Uses "Intrepid - OtherCorp"
+    }
+}
+----
 
 ==== branch
 

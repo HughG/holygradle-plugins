@@ -130,11 +130,6 @@ class SourceDependencyHandler extends DependencyHandler {
         }
     }
 
-    @SuppressWarnings("GroovyUnusedDeclaration") // API method
-    public void credentialBasis(String credentialBasis) {
-        this.credentialBasis = credentialBasis
-    }
-
     public Task createFetchTask(Project project) {
         SourceDependency sourceDependency
         if (protocol == "svn") {
