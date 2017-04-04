@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.10.x
 
 ===== 7.10.0
-(TODO)
+(238dac7222d6 at 2017-04-04 08:40:10 UTC)
 
 CustomGradleCorePlugin {br} CredentialStore {br} Intrepid {br} MyCredentials ::
 
