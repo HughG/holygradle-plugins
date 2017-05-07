@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module external.linked.project.id=":integration:test" external.linked.project.path="$MODULE_DIR$/../../../integration" external.root.project.path="$MODULE_DIR$/../../.." external.system.id="GRADLE" external.system.module.group="holygradle" external.system.module.type="sourceSet" external.system.module.version="0.0-hughgSNAPSHOT-0" type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7" inherit-compiler-output="false">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_7">
     <output-test url="file://$MODULE_DIR$/../../../integration/build/classes/test" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../../integration/src/test">
@@ -15,16 +15,25 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
+          <root url="jar://$GRADLE_USER_HOME$/caches/2.14.1/generated-gradle-jars/gradle-api-2.14.1.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module" module-name="integration_main" />
+    <orderEntry type="module" module-name="intrepid-plugin_test" production-on-test="" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
           <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/groovy-all-2.4.4.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="module" module-name="intrepid-plugin_test" production-on-test="" />
     <orderEntry type="module" module-name="stamper-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="devenv-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="integration_main" />
+    <orderEntry type="module" module-name="unit-test-plugin_test" production-on-test="" />
     <orderEntry type="module" module-name="my-credentials-plugin_test" production-on-test="" />
     <orderEntry type="module-library">
       <library>
@@ -37,16 +46,7 @@
         </SOURCES>
       </library>
     </orderEntry>
-    <orderEntry type="module" module-name="unit-test-plugin_test" production-on-test="" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/caches/2.14.1/generated-gradle-jars/gradle-api-2.14.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
+    <orderEntry type="module" module-name="devenv-plugin_test" production-on-test="" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
