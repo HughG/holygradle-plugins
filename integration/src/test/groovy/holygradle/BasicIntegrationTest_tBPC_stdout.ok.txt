@@ -82,7 +82,10 @@ generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xm
 packageEverything - Creates all zip packages for project 'tBPC'. [createPublishNotes]
     packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tBPC'.
     packageDefault - Creates a zip file for 'default' in preparation for publishing project 'tBPC'.
-publish - Publishes all publications produced by this project.
+publish - Publishes all publications produced by this project. [publishIvyPublicationToIvyRepository]
+publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'. [createPublishNotes, generateDescriptorFileForIvyPublication]
+    packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tBPC'.
+    packageDefault - Creates a zip file for 'default' in preparation for publishing project 'tBPC'.
 repackageEverything - As 'packageEverything' but doesn't auto-generate any files. [packageEverything]
 
 Source Dependencies tasks

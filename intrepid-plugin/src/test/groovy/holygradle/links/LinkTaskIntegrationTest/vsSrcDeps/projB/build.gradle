@@ -7,8 +7,10 @@ configurations {
     it."default"
 }
 
-repositories.ivy {
-    url "..\\..\\..\\..\\testUtil\\repository\\"
+repositories {
+    ivy {
+        url "..\\..\\..\\..\\testUtil\\repository\\"
+    }
 }
 
 // Declare a packed dependency for this root project

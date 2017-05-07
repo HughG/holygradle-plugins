@@ -36,12 +36,14 @@ prerequisites {
 exec {
     commandLine "${projectDir}/credential-store.exe", '"Intrepid - holygradle_test"', 'test', 'testpass'
 }
-repositories.ivy {
-    credentials {
-        username my.username("holygradle_test")
-        password my.password("holygradle_test")
+repositories {
+    ivy {
+        credentials {
+            username my.username("holygradle_test")
+            password my.password("holygradle_test")
+        }
+        url (new File(project.projectDir, "local-repo").toURI())
     }
-    url (new File(project.projectDir, "local-repo").toURI())
 }
 
 /*
@@ -73,12 +75,14 @@ packageArtifacts {
 }
 
 publishPackages {
-    repositories.ivy {
-        credentials {
-            username my.username("Artifactory")
-            password my.password("Artifactory")
+    repositories {
+        ivy {
+            credentials {
+                username my.username("Artifactory")
+                password my.password("Artifactory")
+            }
+            url "http://artifactory.example-corp.com/artifactory/teamX-integration-local"
         }
-        url "http://artifactory.example-corp.com/artifactory/teamX-integration-local"
     }
 }
 

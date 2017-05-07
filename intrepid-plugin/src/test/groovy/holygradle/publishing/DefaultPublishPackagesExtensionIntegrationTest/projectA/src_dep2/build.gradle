@@ -19,7 +19,9 @@ packageArtifacts {
 }
 
 publishPackages { 
-    repositories.ivy {
-        url "http://dummy_repo_url"
+    repositories {
+        ivy {
+            url "http://dummy_repo_url"
+        }
     }
 }

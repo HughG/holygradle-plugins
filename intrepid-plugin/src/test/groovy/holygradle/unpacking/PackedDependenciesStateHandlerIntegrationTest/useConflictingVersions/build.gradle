@@ -8,8 +8,10 @@ configurations {
     bar
 }
 
-repositories.ivy {
-    url "..\\..\\..\\testUtil\\repository\\"
+repositories {
+    ivy {
+        url "..\\..\\..\\testUtil\\repository\\"
+    }
 }
 
 dependenciesSettings.defaultFailOnVersionConflict = false

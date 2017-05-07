@@ -9,8 +9,10 @@ configurations {
     privateFoo
 }
 
-repositories.ivy {
-    url "..\\..\\..\\testUtil\\repository\\"
+repositories {
+    ivy {
+        url "..\\..\\..\\testUtil\\repository\\"
+    }
 }
 
 sourceDependencies {

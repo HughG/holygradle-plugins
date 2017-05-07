@@ -22,8 +22,10 @@ configurations {
     toProjectA2
 }
 
-repositories.ivy {
-    url "..\\..\\..\\testUtil\\repository\\"
+repositories {
+    ivy {
+        url "..\\..\\..\\testUtil\\repository\\"
+    }
 }
 
 sourceDependencies {
