@@ -4,12 +4,13 @@ apply plugin: 'groovy'
 
 // Force-add a Mercurial client-side hook to avoid comitting anything with "banned" words.
 project.ext.HGRC = new File('.hg/hgrc')
-def ensureHgHook(String hookName, String hookText) {
+def ensureHgHook(String hookName, String hookComment, String hookText) {
     if (!HGRC.readLines().any { it.contains(hookName) }) {
         HGRC.withWriterAppend { BufferedWriter bw ->
             bw.withPrintWriter { PrintWriter pw ->
                 pw.println()
                 pw.println('[hooks]')
+                pw.println('# '+ hookComment)
                 pw.println(hookName + ' = ' + hookText)
             }
         }
@@ -19,6 +20,7 @@ String findBannedWords = 'findstr /i /r /g:local\\holy-gradle-plugins\\banned-wo
     'if errorlevel 1 (exit /b 0) else (exit /b 1)'
 ensureHgHook(
     'pretxncommit.sanitise',
+    'If this fails, use "hg diff | ..." at the command line to find the problem; "export tip" is only right during commit.',
     'hg export tip | ' + findBannedWords
 )
 
