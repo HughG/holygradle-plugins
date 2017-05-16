@@ -1,4 +1,4 @@
-package holygradle.credentials;
+package holygradle.custom_gradle.plugin_apis;
 
 /**
  * Simple holder class for username and password.
@@ -31,5 +31,13 @@ public final class Credentials {
         int result = userName != null ? userName.hashCode() : 0;
         result = 31 * result + (password != null ? password.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Credentials{" +
+                "userName='" + userName + '\'' +
+                ", password='********'" +
+                '}';
     }
 }

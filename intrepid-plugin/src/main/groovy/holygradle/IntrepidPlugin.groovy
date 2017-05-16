@@ -327,7 +327,7 @@ public class IntrepidPlugin implements Plugin<Project> {
                 // For each source dependency, create a suitable task and link it into the
                 // fetchAllDependencies task.
                 sourceDependencies.each { sourceDep ->
-                    Task fetchTask = sourceDep.createFetchTask(project, buildScriptDependencies)
+                    Task fetchTask = sourceDep.createFetchTask(project)
                     fetchTask.dependsOn beforeFetchSourceDependenciesTask
                     fetchAllSourceDependenciesTask.dependsOn fetchTask
                     fetchFirstLevelSourceDependenciesTask.dependsOn fetchTask

@@ -16,7 +16,8 @@ class MyCredentialsPlugin implements Plugin<Project> {
         /**************************************
          * Dependencies
          **************************************/
-        
+
+        // TODO 2017-03-28 HughG: Use BuildScriptDependencies to get this instead.
         ResolvedArtifact credentialStoreArtifact = null
         project.getBuildscript().getConfigurations().each((Closure){ conf ->
             conf.resolvedConfiguration.getFirstLevelModuleDependencies().each { resolvedDependency ->
@@ -28,8 +29,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
                 }
             }
         })
-        String credentialStorePath = credentialStoreArtifact.getFile().path
-        
+
         // Copy the credential-store to the root of the workspace.
         if (project == project.rootProject) {
             File credStoreFile = new File(project.projectDir, "credential-store.exe")
@@ -47,7 +47,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
          **************************************/
             
         // Define 'my' DSL to allow user to retrieve secure user-specific settings.
-        MyHandler.defineExtension(project, credentialStorePath)
+        MyHandler.defineExtension(project)
         
         /**************************************
          * Tasks

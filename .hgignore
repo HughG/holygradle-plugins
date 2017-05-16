@@ -31,6 +31,11 @@ syntax: regexp
 # Generated doc
 ^doc/website/(raw-html|output)(-local)?/
 ^doc/website/local/
+# Website examples
+^doc/website/files/examples/multi-project/(\.gradle|gradle|dep)/
+^doc/website/files/examples/multi-project/gw.bat
+^doc/website/files/examples/multi-project/([^/]+/|)(\.gradle|gradle|dep)/
+^doc/website/files/examples/multi-project/[^/]+/userHome/
 # Other
 ^[^/]+/src/test/groovy/holygradle/.*/settings.gradle
 ^credential-store/_ReSharper.credential-store/
