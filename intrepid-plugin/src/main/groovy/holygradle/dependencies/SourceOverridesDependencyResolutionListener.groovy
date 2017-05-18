@@ -2,6 +2,8 @@ package holygradle.dependencies
 
 import groovy.util.slurpersupport.GPathResult
 import holygradle.Helper
+import org.gradle.BuildListener
+import org.gradle.BuildResult
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -12,10 +14,12 @@ import org.gradle.api.artifacts.result.DependencyResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.artifacts.result.ResolvedModuleVersionResult
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.initialization.Settings
 import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
 import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.StrictConflictResolution
+import org.gradle.api.invocation.Gradle
 
-class SourceOverridesDependencyResolutionListener implements DependencyResolutionListener {
+class SourceOverridesDependencyResolutionListener implements DependencyResolutionListener, BuildListener {
     private final Project project
 
     public SourceOverridesDependencyResolutionListener(Project project) {
@@ -42,6 +46,8 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
     // connected to any in the root project.
     private List<String> conflictBetweenOverrideMessages = null
 
+    private Set<String> unusedSourceOverrides = null
+
     @Override
     void beforeResolve(ResolvableDependencies resolvableDependencies) {
         if (findProjectConfiguration(resolvableDependencies) == null) {
@@ -50,10 +56,15 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
         }
         project.logger.debug("source overrides: beforeResolve ${resolvableDependencies.path}")
 
+        NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
+
+        if (unusedSourceOverrides == null) {
+            unusedSourceOverrides.addAll(project.sourceOverrides*.dependencyCoordinate)
+        }
+
         // Create dummy module files for each source override.  (Internally it will only do this once per build
         // run.)  We do this in beforeResolve handler because we don't need to do it unless we are actually
         // resolving some configurations: for tasks like "tasks" we don't need to.
-        NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
         sourceOverrides.each { SourceOverrideHandler handler ->
             project.logger.debug(
                 "beforeResolve ${resolvableDependencies.name}; " +
@@ -79,6 +90,7 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
 
         project.logger.debug("source overrides: afterResolve ${resolvableDependencies.path}")
         rethrowIfBeforeResolveHadException()
+        noteUsedSourceOverrides(resolvableDependencies)
         debugLogResolvedDependencies(resolvableDependencies)
         Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies =
             getSourceOverrideDependencies()
@@ -94,6 +106,25 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
         collectConflictsBetweenOverrides(conflictMessages, sourceOverrideDependencies)
 
         logOrThrowIfConflicts(conflictMessages, projectConfiguration)
+    }
+
+    @Override void buildStarted(Gradle gradle) { }
+
+    @Override void settingsEvaluated(Settings settings) { }
+
+    @Override void projectsLoaded(Gradle gradle) { }
+
+    @Override void projectsEvaluated(Gradle gradle) { }
+
+    @Override
+    void buildFinished(BuildResult buildResult) {
+        if (!unusedSourceOverrides.empty) {
+            project.logger.warn(
+                "Some source override definitions in ${project} did not match any of the direct or transitive " +
+                "dependencies of any configuration.  Please check that these source override dependency coordinates " +
+                "are correct: " + unusedSourceOverrides.join(",")
+            )
+        }
     }
 
     private Configuration findProjectConfiguration(ResolvableDependencies resolvableDependencies) {
@@ -112,8 +143,16 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
             // Gradle to output useful information at the default logging level, so we also explicitly log the
             // the nested exception.
             final String message = "beforeResolve handler failed"
-            project.logger.error("${message}: ${beforeResolveException.toString()}")
+            project.logger.error("${message}: ${beforeResolveException.toString()}", beforeResolveException)
             throw new RuntimeException(message, beforeResolveException)
+        }
+    }
+
+    private void noteUsedSourceOverrides(ResolvableDependencies resolvableDependencies) {
+        resolvableDependencies.resolutionResult.allDependencies.each { DependencyResult result ->
+            if (result instanceof ResolvedDependencyResult) {
+                unusedSourceOverrides.remove(((ResolvedDependencyResult) result).selected.id.toString())
+            }
         }
     }
 
@@ -284,5 +323,4 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
                     StrictConflictResolution
         return hasStrictResolutionStrategy
     }
-
 }
