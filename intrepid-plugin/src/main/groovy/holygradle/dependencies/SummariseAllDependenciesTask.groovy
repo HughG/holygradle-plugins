@@ -30,14 +30,22 @@ class SummariseAllDependenciesTask extends DefaultTask {
                                     )
                                 )
 
-                                Dependency(
-                                    name: dep.moduleName,
-                                    group: dep.moduleGroup,
-                                    version: dep.moduleVersion,
-                                    configuration: dep.configuration,
-                                    isSource: sourceDep != null,
-                                    absolutePath: sourceDep != null ? sourceDep.projectDir.toString() : ""
-                                )
+                                if (sourceDep == null) {
+                                    Dependency(
+                                        name: dep.moduleName,
+                                        group: dep.moduleGroup,
+                                        version: dep.moduleVersion,
+                                        configuration: dep.configuration
+                                    )
+                                } else {
+                                    Dependency(
+                                        name: dep.moduleName,
+                                        group: dep.moduleGroup,
+                                        version: dep.moduleVersion,
+                                        configuration: dep.configuration,
+                                        sourcePath: sourceDep.projectDir.toString()
+                                    )
+                                }
                             }
                         }
                     })

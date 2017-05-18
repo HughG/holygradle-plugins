@@ -1529,8 +1529,8 @@ This declares one dependency +framework+ and instead of using the packed binarie
 
 WARNING: Use of source overrides will make the link:plugin-intrepid.html#_fetchAllDependencies[] task slower, because
 it is also necessary to fetch and check the dependencies from the override source projects.  You can temporarily skip
-this step by passing +-PuseCachedIvyFiles+ to +gw.bat+.  However, if you do that, the Holy Gradle cannot warn you about
-inconsistent dependency versions between the containing project and the override projects.  This may result in
+this step by passing +-PuseCachedSourceOverrideFiles+ to +gw.bat+.  However, if you do that, the Holy Gradle cannot warn
+you about inconsistent dependency versions between the containing project and the override projects.  This may result in
 unexpected errors at build time or runtime.
 
 ==== Limitations and restrictions
@@ -1592,12 +1592,12 @@ a full list of immediate and transitive dependencies for the project in the form
 <?xml version="1.0" encoding="UTF-8"?>
 <Configurations>
   <Configuration name="compileVc10Debug">
-    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
-    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug"/>
+    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug"/>
   </Configuration>
   <Configuration name="compileVc10Release">
-    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
-    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release"/>
+    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug"/>
   </Configuration>
   <Configuration name="source"/>
 </Configurations>
@@ -2399,12 +2399,12 @@ This task resolves all dependencies and saves them as a flat list grouped by con
 <?xml version="1.0" encoding="UTF-8"?>
 <Configurations>
     <Configuration name="compileVc10Debug">
-        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
-        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug"/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" sourcePath="C:/projects/external-lib"/>
     </Configuration>
     <Configuration name="compileVc10Release">
-        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
-        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" isSource="true" absolutePath="C:/projects/external-lib"/>
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release"/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" sourcePath="C:/projects/external-lib"/>
     </Configuration>
     <Configuration name="source"/>
 </Configurations>

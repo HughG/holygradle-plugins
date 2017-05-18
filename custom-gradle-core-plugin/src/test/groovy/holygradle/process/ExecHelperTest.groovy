@@ -34,8 +34,8 @@ class ExecHelperTest {
         ExecHelper.executeAndReturnResultAsString(
             project.logger,
             project.&exec,
-            { it.commandLine "non_existent_executable" },
-            { false }
+            { false },
+            { it.commandLine "non_existent_executable" }
         )
     }
 
@@ -44,8 +44,8 @@ class ExecHelperTest {
         ExecHelper.executeAndReturnResultAsString(
             project.logger,
             project.&exec,
-            { it.commandLine "cmd", "/c", "exit /b ${actual}" },
-            { expected == it }
+            { expected == it },
+            { it.commandLine "cmd", "/c", "exit /b ${actual}" }
         )
     }
 }

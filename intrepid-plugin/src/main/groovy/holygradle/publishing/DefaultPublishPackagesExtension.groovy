@@ -471,9 +471,8 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 }
 
                 if (sourceDep != null) {
-                    project.logger.info "Adding isSource tag to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
-                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:isSource" = true
-                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:absolutePath" = sourceDep.getAbsolutePath().getCanonicalPath().toString()
+                    project.logger.info "Adding sourcePath attribute to source dep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
+                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:sourcePath" = sourceDep.getAbsolutePath().getCanonicalPath().toString()
                 }
             }
         }

@@ -3,6 +3,7 @@ package holygradle.dependencies
 import groovy.xml.Namespace
 import holygradle.Helper
 import holygradle.io.FileHelper
+import holygradle.process.ExecHelper
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.file.CopySpec
@@ -26,7 +27,7 @@ class SourceOverrideHandler {
     private boolean hasGeneratedDependencyFiles = false
     private boolean hasGeneratedDummyModuleFiles = false
     private File sourceOverrideIvyFile = null
-    private File sourceOverrideDependencyFile = null
+    private File sourceOverrideDependenciesFile = null
 
     public static Collection<SourceOverrideHandler> createContainer(Project project) {
         project.extensions.sourceOverrides = project.container(SourceOverrideHandler) { String name ->
@@ -83,10 +84,10 @@ class SourceOverrideHandler {
     }
 
     public File getDependenciesFile() {
-        if (sourceOverrideDependencyFile == null) {
+        if (sourceOverrideDependenciesFile == null) {
             generateDependencyFiles()
         }
-        return sourceOverrideDependencyFile
+        return sourceOverrideDependenciesFile
     }
 
     public void generateDependencyFiles() {
@@ -99,47 +100,56 @@ class SourceOverrideHandler {
             return
         }
 
-        final File ivyXmlFile = new File(from, "build/publications/ivy/ivy.xml")
-        final File allDependenciesXmlFile = new File(from, "all-dependencies.xml")
+        final File defaultIvyXmlFile = new File(from, "build/publications/ivy/ivy.xml")
+        final File defaultAllDependenciesXmlFile = new File(from, "all-dependencies.xml")
         final File gradleWrapperScript = new File(from, "gw.bat")
         final File generateSourceOverrideDetailsScript = new File(from, "generateSourceOverrideDetails.bat")
 
-        if (project.hasProperty("useCachedIvyFiles")) {
+        if (project.hasProperty("useCachedSourceOverrideFiles")) {
             project.logger.info("Skipping generation of fresh ivy file for ${dependencyCoordinate}")
-            sourceOverrideIvyFile = ivyXmlFile
-            sourceOverrideDependencyFile = allDependenciesXmlFile
+            sourceOverrideIvyFile = defaultIvyXmlFile
+            sourceOverrideDependenciesFile = defaultAllDependenciesXmlFile
         }
 
-        // First check the cache map (only the Ivy File cache, tolerate the dependency file cache being null)
+        // First check the cache.
         if (sourceOverrideIvyFile != null) {
             project.logger.info("Using cached ivy file for ${dependencyCoordinate}")
         } else if (getIvyFileGenerator()) {
+            // Otherwise use the generator function, if defined.
             project.logger.info("Using custom ivy file generator for ${dependencyCoordinate}")
             def generator = getIvyFileGenerator()
-            (sourceOverrideIvyFile, sourceOverrideDependencyFile) = generator(this)
-        } else if (generateSourceOverrideDetailsScript.exists()) {
-            // Otherwise try to run a user provided Ivy file generator
-            project.logger.info("Using standard ivy file generator batch script for ${dependencyCoordinate}")
-            project.logger.info("Batch File: ${generateSourceOverrideDetailsScript.canonicalPath}")
-            project.exec { ExecSpec spec ->
-                spec.workingDir from
-                spec.executable generateSourceOverrideDetailsScript.canonicalPath
-                spec.standardOutput = new ByteArrayOutputStream()
+            def (ivyXmlFile, dependenciesXmlFile) = generator(this)
+            if (!(ivyXmlFile != null && dependenciesXmlFile != null)) {
+                throw new RuntimeException(
+                    "ivyFileGenerator for source override ${name} in ${project} must return two valid filenames, " +
+                    "but returned '${ivyXmlFile}' and '${dependenciesXmlFile}'."
+                )
             }
             sourceOverrideIvyFile = ivyXmlFile
-            sourceOverrideDependencyFile = allDependenciesXmlFile
-        } else if (gradleWrapperScript.exists()) { // Otherwise try to run gw.bat
+            sourceOverrideDependenciesFile = dependenciesXmlFile
+        } else if (generateSourceOverrideDetailsScript.exists()) {
+            // Otherwise try to run a user provided Ivy file generator, if it exists.
+            project.logger.info("Using standard ivy file generator batch script for ${dependencyCoordinate}")
+            project.logger.info("Batch File: ${generateSourceOverrideDetailsScript.canonicalPath}")
+
+            ExecHelper.execute(project.logger, project.&exec) { ExecSpec spec ->
+                spec.workingDir from
+                spec.executable generateSourceOverrideDetailsScript.canonicalPath
+            }
+            sourceOverrideIvyFile = defaultIvyXmlFile
+            sourceOverrideDependenciesFile = defaultAllDependenciesXmlFile
+        } else if (gradleWrapperScript.exists()) {
+            // Otherwise try to run gw.bat, if it exists.
             project.logger.info("Using gw.bat ivy file generation for ${dependencyCoordinate}")
             project.logger.info("${generateSourceOverrideDetailsScript.canonicalPath} not found")
 
-            project.exec { ExecSpec spec ->
+            ExecHelper.execute(project.logger, project.&exec) { ExecSpec spec ->
                 spec.workingDir from
                 spec.executable gradleWrapperScript.canonicalPath
                 spec.args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
-                spec.standardOutput = new ByteArrayOutputStream()
             }
-            sourceOverrideIvyFile = ivyXmlFile
-            sourceOverrideDependencyFile = allDependenciesXmlFile
+            sourceOverrideIvyFile = defaultIvyXmlFile
+            sourceOverrideDependenciesFile = defaultAllDependenciesXmlFile
         } else {
             throw new RuntimeException(
                 "No Ivy file generation available for '${name}'. " +
@@ -148,10 +158,33 @@ class SourceOverrideHandler {
             )
         }
 
-        project.logger.info("generateDependencyFiles result: ${sourceOverrideIvyFile}, ${sourceOverrideDependencyFile}")
+        project.logger.info("generateDependencyFiles result: ${sourceOverrideIvyFile}, ${sourceOverrideDependenciesFile}")
+
+        // Lastly, check the files really exist.
+        List<String> missingFileMessages = []
+        if (!sourceOverrideIvyFile.exists()) {
+            missingFileMessages << "Ivy file '${sourceOverrideIvyFile}' does not exist"
+        }
+        if (!sourceOverrideDependenciesFile.exists()) {
+            missingFileMessages << "All-dependencies file '${sourceOverrideDependenciesFile}' does not exist"
+        }
+        if (!missingFileMessages.empty) {
+            throw new RuntimeException(
+                "For source override ${name} in ${project}, some dependency files do not exist: " +
+                missingFileMessages.join(";") + "."
+            )
+        }
+
         hasGeneratedDependencyFiles = true
     }
 
+    // This method creates the minimum set of files required to represent a "dummy" version of a module in a local
+    // ivy "file://" repository.  We need to create these so that we can allow Gradle's dependency resolution to be
+    // applied to the containing build and find valid modules for both dependencies in that build (from that build's
+    // projects' normal repos) and in any override projects (from the local file repo we create).  We can't just try
+    // to find dependencies in the override projects using repos from the containing build, because the override
+    // projects might use different ivy repos -- or use some different way of finding dependencies.  Once Gradle can
+    // find all these dependencies, we can make use of its ability to detect version conflicts.
     public void generateDummyModuleFiles() {
         if (hasGeneratedDummyModuleFiles) {
             return
@@ -166,6 +199,7 @@ class SourceOverrideHandler {
         project.logger.info("Writing dummy artifact for ${dummyDependencyCoordinate}")
         File dummyArtifactFile = new File(tempDir, "dummy_artifact-${dummyVersionString}.zip")
         ZipOutputStream dummyArtifact = new ZipOutputStream(new FileOutputStream(dummyArtifactFile))
+        // We need to add an empty entry otherwise we get an invalid ZIP file.
         dummyArtifact.putNextEntry(new ZipEntry("file.txt"))
         dummyArtifact.closeEntry()
         dummyArtifact.close()
@@ -180,9 +214,9 @@ class SourceOverrideHandler {
         }
         project.copy { CopySpec copySpec ->
             copySpec.into tempDir
-            copySpec.from(ivyFile.parentFile) {
-                include ivyFile.name
-                rename { tempIvyFileName }
+            copySpec.from(ivyFile.parentFile) { CopySpec innerCopySpec ->
+                innerCopySpec.include ivyFile.name
+                innerCopySpec.rename { tempIvyFileName }
             }
         }
 
@@ -196,18 +230,18 @@ class SourceOverrideHandler {
         ivyXml.info.@organisation = groupName
         ivyXml.info.@module = dependencyName
         ivyXml.info.@revision = dummyVersionString
-        // Todo: Handle the case where there is no publications node
-        ivyXml.publications.replaceNode {
-            publications() {
-                ivyXml.configurations.conf.each { conf ->
-                    artifact(name: 'dummy_artifact', type: 'zip', ext: 'zip', conf: conf.@name)
-                }
-            }
+        // In theory we could just use replaceNode here, but I want to cope with the possibility that there isn't exactly
+        // one "publications" element in the original file, and make sure we end up with exactly one.
+        (ivyXml['publications'] as NodeList).each { ivyXml.remove(it as Node) }
+        def publications = ivyXml.appendNode('publications')
+        ivyXml.configurations.conf.each { conf ->
+            publications.appendNode('artifact', [name: 'dummy_artifact', type: 'zip', ext: 'zip', conf: conf.@name])
         }
 
         ivyXml.dependencies.dependency.each { Node dep ->
-            if (dep.attributes()[hg.'isSource']?.toBoolean()) {
-                dep.@rev = Helper.convertPathToVersion(dep.attributes()[hg.'absolutePath'] as String)
+            String sourcePathValue = dep.attributes().get(hg.'isSource')
+            if (sourcePathValue != null) {
+                dep.@rev = Helper.convertPathToVersion(sourcePathValue)
             }
         }
 
