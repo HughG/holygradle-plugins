@@ -232,19 +232,36 @@ class SourceOverrideHandler {
         } else {
             final List<String> match = groupMatch[0] as List<String>
             dependencyId = new DefaultModuleVersionIdentifier(match[1], match[2], match[3])
+            project.logger.debug "Initialised source override '${name}' with dependency coordinate ${dependencyId}" +
+                "(from '${dependencyCoordinate}')"
         }
     }
 
+    /**
+     * Throw if this handler is NOT in a valid state.  This allows callers to avoid wasting time in
+     * {@link #generateDummyModuleFiles} only to find something fails later on.
+     */
+    public void checkValid() {
+        if (dependencyId == null) {
+            throw new RuntimeException("You must call the 'dependency' method for source override '${name}'")
+        }
+    }
+
+    private ModuleVersionIdentifier getDependencyId() {
+        checkValid()
+        return dependencyId
+    }
+
     public String getGroupName() {
-        dependencyId.group
+        getDependencyId().group
     }
 
     public String getDependencyName() {
-        dependencyId.module.name
+        getDependencyId().module.name
     }
 
     public String getVersionStr() {
-        dependencyId.version
+        getDependencyId().version
     }
 
     public String getDummyVersionString() {
@@ -252,13 +269,14 @@ class SourceOverrideHandler {
     }
 
     public String getDependencyCoordinate() {
-        dependencyId.toString()
+        getDependencyId().toString()
     }
 
     public String getDummyDependencyCoordinate() {
         if (dummyVersionString == null) {
             throw new RuntimeException("You must call the sourceOverride method before requesting a dummy coordinate")
         }
-        "${dependencyId.group}:${dependencyId.name}:${dummyVersionString}"
+        final ModuleVersionIdentifier depId = getDependencyId()
+        "${depId.group}:${depId.name}:${dummyVersionString}"
     }
 }
