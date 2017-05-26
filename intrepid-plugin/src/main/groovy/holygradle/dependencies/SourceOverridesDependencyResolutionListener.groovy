@@ -65,18 +65,22 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
         // Create dummy module files for each source override.  (Internally it will only do this once per build
         // run.)  We do this in beforeResolve handler because we don't need to do it unless we are actually
         // resolving some configurations: for tasks like "tasks" we don't need to.
-        sourceOverrides.each { SourceOverrideHandler handler ->
-            project.logger.debug(
-                "beforeResolve ${resolvableDependencies.name}; " +
+        try {
+            // First, check that all handlers are valid.  Otherwise we may waste time generating files for
+            // some, only for the others to fail.
+            sourceOverrides.each { SourceOverrideHandler handler -> handler.checkValid() }
+            // Now actually generate the files.
+            sourceOverrides.each { SourceOverrideHandler handler ->
+                project.logger.debug(
+                    "beforeResolve ${resolvableDependencies.name}; " +
                     "generating dummy module files for ${handler.dependencyCoordinate}"
-            )
-            try {
+                )
                 handler.generateDummyModuleFiles()
-            } catch (Exception e) {
-                // Throwing in the beforeResolve handler leaves logging in a broken state so we need to catch
-                // this exception and throw it later.
-                beforeResolveException = e
             }
+        } catch (Exception e) {
+            // Throwing in the beforeResolve handler leaves logging in a broken state so we need to catch
+            // this exception and throw it later.
+            beforeResolveException = e
         }
     }
 

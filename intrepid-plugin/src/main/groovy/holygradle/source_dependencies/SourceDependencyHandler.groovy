@@ -37,6 +37,7 @@ class SourceDependencyHandler extends DependencyHandler {
     public SourceDependencyHandler(String depName, Project project) {
         super(depName, project)
         destinationDir = new File(project.projectDir, depName).getCanonicalFile()
+        project.afterEvaluate { validate() }
     }
 
     public File getDestinationDir() {
@@ -153,10 +154,11 @@ class SourceDependencyHandler extends DependencyHandler {
     }
 
     /**
-     * Returns the module version ID of the source dependency, unless it doesn't have a Gradle project, in which case
-     * throws RuntimeException.
+     * Returns the module version ID of the source dependency, unless there is no configuration mapping to it (in which
+     * case returns {@code null}), or unless it has configuration mappings doesn't have a Gradle project which is
+     * included in the build (in which case throws RuntimeException).
      * @return The module version ID of the source dependency.
-     * @throws RuntimeException if the source dependency does not have a Gradle project.
+     * @throws RuntimeException if the source dependency has configuration mappings but does not have a Gradle project.
      */
     public ModuleVersionIdentifier getDependencyId() {
         ModuleVersionIdentifier identifier = null
@@ -178,11 +180,32 @@ class SourceDependencyHandler extends DependencyHandler {
         identifier
     }
 
+    /**
+     * Returns the module version ID of the source dependency as a string, unless there is no configuration mapping to
+     * it (in which case returns {@code null}), or unless it has configuration mappings doesn't have a Gradle project
+     * which is included in the build (in which case throws RuntimeException).
+     * @return The module version ID string of the source dependency.
+     * @throws RuntimeException if the source dependency has configuration mappings but does not have a Gradle project.
+     */
     public String getDependencyCoordinate() {
-        return dependencyId.toString()
+        return dependencyId?.toString()
     }
 
     public Project getSourceDependencyProject() {
         project.rootProject.findProject(targetName)
+    }
+
+    void validate() {
+        Project dependencyProject = project.rootProject.findProject(targetName)
+        if (configurationMappings.size() == 0) {
+            if (dependencyProject == null) {
+                project.logger.debug "${project} has a source dependency on ${name}, which is not a Gradle project " +
+                     "in this build -- it is a non-Gradle source checkout"
+            } else {
+                project.logger.warn "WARNING: ${project} has a source dependency on ${name}, which is a project in " +
+                    "this build, but there is no configuration mapping.  This is probably a mistake.  It means that, " +
+                    "when ${project.name} is published, there will be no real dependency on ${targetName}."
+            }
+        }
     }
 }
