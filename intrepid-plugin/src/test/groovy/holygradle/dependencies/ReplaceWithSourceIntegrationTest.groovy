@@ -181,7 +181,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                "For root project 'projectJ', " +
+                "For root project 'projectJ' configuration :bar, " +
                 "module in source override 'application' configuration compileVc10Debug " +
                 "(holygradle.test:external-lib:1.1) " +
                 "does not match " +

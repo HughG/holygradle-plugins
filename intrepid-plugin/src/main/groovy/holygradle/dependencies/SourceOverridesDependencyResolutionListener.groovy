@@ -46,7 +46,7 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
     // connected to any in the root project.
     private List<String> conflictBetweenOverrideMessages = null
 
-    private Set<String> unusedSourceOverrides = null
+    private Set<String> unusedSourceOverrides = new HashSet<>()
 
     @Override
     void beforeResolve(ResolvableDependencies resolvableDependencies) {
@@ -58,7 +58,7 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
 
         NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
 
-        if (unusedSourceOverrides == null) {
+        if (unusedSourceOverrides.empty) {
             unusedSourceOverrides.addAll(project.sourceOverrides*.dependencyCoordinate)
         }
 
@@ -107,7 +107,7 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
         }
 
         // Compare source override full dependencies to each other
-        collectConflictsBetweenOverrides(conflictMessages, sourceOverrideDependencies)
+        collectConflictsBetweenOverrides(resolvableDependencies.path, conflictMessages, sourceOverrideDependencies)
 
         logOrThrowIfConflicts(conflictMessages, projectConfiguration)
     }
@@ -234,23 +234,28 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
     }
 
     private void collectConflictsBetweenOverrides(
+        String projectConfiguration,
         List<String> conflictMessages,
         Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies
     ) {
-        conflictMessages.addAll(getConflictsBetweenOverrides(sourceOverrideDependencies))
+        conflictMessages.addAll(getConflictsBetweenOverrides(projectConfiguration, sourceOverrideDependencies))
     }
 
     private List<String> getConflictsBetweenOverrides(
+        String projectConfiguration,
         Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies
     ) {
         if (conflictBetweenOverrideMessages == null) {
             conflictBetweenOverrideMessages = new LinkedList<>()
-            calculateConflictsBetweenOverrides(conflictBetweenOverrideMessages, sourceOverrideDependencies)
+            calculateConflictsBetweenOverrides(
+                projectConfiguration, conflictBetweenOverrideMessages, sourceOverrideDependencies
+            )
         }
         return conflictBetweenOverrideMessages
     }
 
     private void calculateConflictsBetweenOverrides(
+        String projectConfiguration,
         List<String> conflictMessages,
         Map<SourceOverrideHandler, Map<String, Map<String, String>>> sourceOverrideDependencies
     ) {
@@ -267,13 +272,27 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
                     Map<String, Map<String, String>> deps2
                         ->
                         if (handler == handler2 || alreadyCompared[handler].contains(handler2)) {
+                            project.logger.lifecycle "Skipping ${handler.name} <-> ${handler2.name}"
                             return
                         }
                         deps.each { configName, config ->
                             deps2.each { configName2, config2 ->
                                 config.each { dep, version ->
+                                    if (config2.containsKey(dep)) {
+                                        project.logger.lifecycle "handler2 ${handler2.name} config ${config2} has ${dep}"
+                                        final String config2DepVersion = config2.get(dep)
+                                        if (config2DepVersion != version) {
+                                            project.logger.lifecycle "handler2 ${handler2.name} config ${config2} " +
+                                                 "has ${dep} at version ${config2DepVersion} but " +
+                                                 "handler(1) ${handler.name} config ${config} has version ${version}"
+                                        }
+                                    } else {
+                                        project.logger.lifecycle "handler2 ${handler2.name} config ${config2} " +
+                                             "does NOT have ${dep}"
+                                    }
                                     if (config2.containsKey(dep) && config2.get(dep) != version) {
-                                        final String message = "For ${project}, module in " +
+                                        final String message = "For ${project} configuration ${projectConfiguration}, " +
+                                            "module in " +
                                             "source override '${handler.name}' configuration ${configName} " +
                                             "(${dep}:${version}) " +
                                             "does not match module in " +
