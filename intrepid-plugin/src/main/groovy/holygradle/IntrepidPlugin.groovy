@@ -450,7 +450,9 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
         }
 
-        setupSourceOverrides(project)
+        profilingHelper.timing("IntrepidPlugin(${project}) set up source overrides") {
+            setupSourceOverrides(project)
+        }
 
         timer.endBlock()
     }
@@ -474,7 +476,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         IvyArtifactRepository sourceOverrideDummyModulesRepo = null
         sourceOverrides.whenObjectAdded {
             if (sourceOverrideDummyModulesRepo == null) {
-                File tempDir = new File(project.buildDir, "holygradle/source_replacement")
+                File tempDir = new File(project.buildDir, "holygradle/source_override")
                 FileHelper.ensureMkdirs(tempDir)
                 sourceOverrideDummyModulesRepo = project.repositories.ivy { it.url = tempDir.toURI() }
                 project.repositories.remove(sourceOverrideDummyModulesRepo)
@@ -489,7 +491,7 @@ public class IntrepidPlugin implements Plugin<Project> {
             //noinspection GroovyAssignabilityCheck
             configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
                 project.logger.debug(
-                    "Checking for source replacements: requested ${details.requested}, target ${details.target}, " +
+                    "Checking for source overrides: requested ${details.requested}, target ${details.target}, " +
                     "in ${configuration}"
                 )
                 for (SourceOverrideHandler handler in sourceOverrides) {

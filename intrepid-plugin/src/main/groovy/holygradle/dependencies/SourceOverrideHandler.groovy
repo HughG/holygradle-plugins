@@ -192,9 +192,9 @@ class SourceOverrideHandler {
 
         File tempDir = new File(
             project.buildDir,
-            "holygradle/source_replacement/${groupName}/${dependencyName}/${dummyVersionString}"
+            "holygradle/source_override/${groupName}/${dependencyName}/${dummyVersionString}"
         )
-        FileHelper.ensureMkdirs(tempDir, "for source replacement dummy file repository")
+        FileHelper.ensureMkdirs(tempDir, "for source override dummy file repository")
 
         project.logger.info("Writing dummy artifact for ${dummyDependencyCoordinate}")
         File dummyArtifactFile = new File(tempDir, "dummy_artifact-${dummyVersionString}.zip")

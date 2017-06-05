@@ -28,10 +28,10 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
 
     private Exception beforeResolveException = null
     // Mapping each handler
-    //   to each configuration in the replacement project
+    //   to each configuration in the override project
     //     to each "group:name" dependency in that configuration (including all transitive deps, not just
     // direct)
-    //       to the "version" for that dependency (which might be a "normal" version or also a replacement).
+    //       to the "version" for that dependency (which might be a "normal" version or also an override).
     //
     // We use LinkedHashMaps to get a stable order for which things appear first in the error messages.
     private LinkedHashMap<

@@ -1498,9 +1498,12 @@ This property determine whether +fetchAllDependencies+ should perform full up-to
 
 === sourceOverrides
 
++WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
+
 This container allows you to override the handling of specific packed dependencies to instead point to existing source
 on a local disk. This is intended for testing changes to dependencies without having to first package and publish those
-dependencies.
+dependencies.  The replaced source does not have to use the Holy Gradle to build, or use Gradle at all, provided the
+correct XML files can be provided, as described below.
 
 [source,groovy]
 ----
@@ -1585,7 +1588,7 @@ are multiple dependencies with source overrides, or if the override source proje
 To do this check, the +sourceOverride+ requires a valid Ivy file with the list of immediate dependencies at
 +<sourceOverride>/build/publications/ivy/ivy.xml+ and an XML file at +<sourceOverride>/all-dependencies.xml+ containing
 a full list of immediate and transitive dependencies for the project in the format created by the
-+summariseAllDependencies+ task, e.g.,
++summariseAllDependencies+ task, as follows.
 
 [source,xml]
 ----
@@ -1624,8 +1627,9 @@ the two files and return the paths to them.
 
 This method specifies the coordinates of the dependency to override. It should follow the same pattern as the
 +packedDependency+ definition. Transitive dependencies of this and any source dependencies will also be overridden
-but dependencies of a source override will not. This will be reported as a version conflict at dependency resolution
-time.
+but transitive dependencies of a source override will not. This will be reported as a version conflict at dependency
+resolution time.  If you need to override the transitive dependencies of a source override, then you must use
++sourceOverrides+ in that source override project as well.
 
 ==== from
 
@@ -2391,6 +2395,8 @@ This task publishes the artifacts of your module:
 You may notice a task called +publishIvyPublicationToIvyRepository+ or similar. This exists because the +intrepid+ plugin uses the +ivy-publish+ plugin.
 
 === summariseAllDependencies
+
+WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
 
 This task resolves all dependencies and saves them as a flat list grouped by configuration to +all-dependencies.xml+ in the project directory. For example.
 
