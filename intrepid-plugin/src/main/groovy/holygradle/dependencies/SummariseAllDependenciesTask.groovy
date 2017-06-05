@@ -1,59 +1,73 @@
 package holygradle.dependencies
 
-import groovy.xml.StreamingMarkupBuilder
-import groovy.xml.XmlUtil
 import org.gradle.api.DefaultTask
-import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedDependency
-import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
+import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 
 class SummariseAllDependenciesTask extends DefaultTask {
     public void initialize() {
+        GenerateIvyDescriptor generateDescriptorTask =
+            project.tasks.findByName("generateIvyModuleDescriptor") as GenerateIvyDescriptor
+        dependsOn generateDescriptorTask
+
         doLast {
-            def file = new File(project.projectDir, "all-dependencies.xml")
+            def file = new File(project.buildDir, "holygradle/flat-ivy.xml")
             project.logger.info("Writing dependencies to ${file.canonicalPath}")
-            def markupBuilder = new StreamingMarkupBuilder()
 
-            Writable xml = markupBuilder.bind {
-                mkp.xmlDeclaration()
-                Configurations {
-                    project.configurations.each((Closure){ Configuration config ->
-                        Configuration(name: config.name) {
-                            flattenModules(config.resolvedConfiguration.firstLevelModuleDependencies).each { dep ->
-                                // Check if this is a source dependency
-                                Project sourceDep = project.dependenciesState.findModuleInBuild(
-                                    new DefaultModuleVersionIdentifier(
-                                        dep.moduleGroup,
-                                        dep.moduleName,
-                                        dep.moduleVersion
-                                    )
-                                )
+            Map<ModuleVersionIdentifier, Map<String, Collection<String>>> depenenciesMap = buildDepenencies()
+            XmlParser xml = new XmlParser()
+            def root = xml.parse(generateDescriptorTask.destination)
 
-                                if (sourceDep == null) {
-                                    Dependency(
-                                        name: dep.moduleName,
-                                        group: dep.moduleGroup,
-                                        version: dep.moduleVersion,
-                                        configuration: dep.configuration
-                                    )
-                                } else {
-                                    Dependency(
-                                        name: dep.moduleName,
-                                        group: dep.moduleGroup,
-                                        version: dep.moduleVersion,
-                                        configuration: dep.configuration,
-                                        sourcePath: sourceDep.projectDir.toString()
-                                    )
-                                }
-                            }
-                        }
-                    })
+            def dependenciesNode = root.dependencies as Node
+            dependenciesNode.children().clear()
+            depenenciesMap.each { ModuleVersionIdentifier id, Map<String, Collection<String>> confMap ->
+                def allMappings = confMap.collect { String fromConf, Collection<String> toConfs ->
+                    new StringBuilder() << fromConf << "->" << joinAsBuilder(toConfs, ',')
                 }
-            } as Writable
+                def conf = joinAsBuilder(allMappings, ";")
 
-            file.text = XmlUtil.serialize(xml)
+                TODO: deal with source dependencies
+
+                dependenciesNode.appendNode('dependency', [
+                    org: id.group,
+                    name: id.name,
+                    version: id.version,
+                    conf: conf
+                ])
+            }
+
+            file.withWriter { root.writeTo(it) }
         }
+    }
+
+    // Only public so it can be called from a lambda
+    public StringBuilder joinAsBuilder(Collection<CharSequence> items, String separator) {
+        StringBuilder b = new StringBuilder()
+        boolean first = true
+        items.each {
+            if (first) {
+                first = false
+            } else {
+                b.append(separator)
+            }
+            b.append(it)
+        }
+        return b
+    }
+
+    private Map<ModuleVersionIdentifier, Map<String, Collection<String>>> buildDepenencies() {
+        Map<ModuleVersionIdentifier, Map<String, Collection<String>>> dependencies =
+            [:].withDefault { [:].withDefault { [] }}
+
+        project.configurations.each { Configuration c ->
+            flattenModules(c.resolvedConfiguration.firstLevelModuleDependencies).each { ResolvedDependency d ->
+                dependencies[d.module.id][c.name] << d.configuration
+            }
+        }
+
+        return dependencies
     }
 
     public Set<ResolvedDependency> flattenModules(Set<ResolvedDependency> input) {

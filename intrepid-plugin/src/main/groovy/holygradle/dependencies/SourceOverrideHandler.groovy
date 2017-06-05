@@ -27,7 +27,6 @@ class SourceOverrideHandler {
     private boolean hasGeneratedDependencyFiles = false
     private boolean hasGeneratedDummyModuleFiles = false
     private File sourceOverrideIvyFile = null
-    private File sourceOverrideDependenciesFile = null
 
     public static Collection<SourceOverrideHandler> createContainer(Project project) {
         project.extensions.sourceOverrides = project.container(SourceOverrideHandler) { String name ->
@@ -78,19 +77,12 @@ class SourceOverrideHandler {
 
     public File getIvyFile() {
         if (sourceOverrideIvyFile == null) {
-            generateDependencyFiles()
+            generateIvyFile()
         }
         return sourceOverrideIvyFile
     }
 
-    public File getDependenciesFile() {
-        if (sourceOverrideDependenciesFile == null) {
-            generateDependencyFiles()
-        }
-        return sourceOverrideDependenciesFile
-    }
-
-    public void generateDependencyFiles() {
+    public void generateIvyFile() {
         if (from == null) {
             throw new RuntimeException(
                 "Cannot generate dependency files for source override '${name}': the 'from' location has not been set"
@@ -100,15 +92,13 @@ class SourceOverrideHandler {
             return
         }
 
-        final File defaultIvyXmlFile = new File(from, "build/publications/ivy/ivy.xml")
-        final File defaultAllDependenciesXmlFile = new File(from, "all-dependencies.xml")
+        final File defaultIvyXmlFile = new File(from, "build/holygradle/flat-ivy.xml")
         final File gradleWrapperScript = new File(from, "gw.bat")
         final File generateSourceOverrideDetailsScript = new File(from, "generateSourceOverrideDetails.bat")
 
         if (project.hasProperty("useCachedSourceOverrideFiles")) {
             project.logger.info("Skipping generation of fresh ivy file for ${dependencyCoordinate}")
             sourceOverrideIvyFile = defaultIvyXmlFile
-            sourceOverrideDependenciesFile = defaultAllDependenciesXmlFile
         }
 
         // First check the cache.
@@ -126,7 +116,6 @@ class SourceOverrideHandler {
                 )
             }
             sourceOverrideIvyFile = ivyXmlFile
-            sourceOverrideDependenciesFile = dependenciesXmlFile
         } else if (generateSourceOverrideDetailsScript.exists()) {
             // Otherwise try to run a user provided Ivy file generator, if it exists.
             project.logger.info("Using standard ivy file generator batch script for ${dependencyCoordinate}")
@@ -137,7 +126,6 @@ class SourceOverrideHandler {
                 spec.executable generateSourceOverrideDetailsScript.canonicalPath
             }
             sourceOverrideIvyFile = defaultIvyXmlFile
-            sourceOverrideDependenciesFile = defaultAllDependenciesXmlFile
         } else if (gradleWrapperScript.exists()) {
             // Otherwise try to run gw.bat, if it exists.
             project.logger.info("Using gw.bat ivy file generation for ${dependencyCoordinate}")
@@ -149,7 +137,6 @@ class SourceOverrideHandler {
                 spec.args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
             }
             sourceOverrideIvyFile = defaultIvyXmlFile
-            sourceOverrideDependenciesFile = defaultAllDependenciesXmlFile
         } else {
             throw new RuntimeException(
                 "No Ivy file generation available for '${name}'. " +
@@ -158,15 +145,12 @@ class SourceOverrideHandler {
             )
         }
 
-        project.logger.info("generateDependencyFiles result: ${sourceOverrideIvyFile}, ${sourceOverrideDependenciesFile}")
+        project.logger.info("generateIvyFile result: ${sourceOverrideIvyFile}")
 
         // Lastly, check the files really exist.
         List<String> missingFileMessages = []
         if (!sourceOverrideIvyFile.exists()) {
             missingFileMessages << "Ivy file '${sourceOverrideIvyFile}' does not exist"
-        }
-        if (!sourceOverrideDependenciesFile.exists()) {
-            missingFileMessages << "All-dependencies file '${sourceOverrideDependenciesFile}' does not exist"
         }
         if (!missingFileMessages.empty) {
             throw new RuntimeException(
@@ -239,7 +223,7 @@ class SourceOverrideHandler {
         }
 
         ivyXml.dependencies.dependency.each { Node dep ->
-            String sourcePathValue = dep.attributes().get(hg.'isSource')
+            String sourcePathValue = dep.attributes().get(hg.'sourcePath')
             if (sourcePathValue != null) {
                 dep.@rev = Helper.convertPathToVersion(sourcePathValue)
             }

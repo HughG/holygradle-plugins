@@ -189,7 +189,7 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
 
         NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
         sourceOverrides.each { SourceOverrideHandler handler ->
-            File dependencyFile = handler.dependenciesFile
+            File dependencyFile = handler.dependenciesFile // TODO 2017-06-05 HughG: fix this
             def dependencyXml = new XmlSlurper(false, false).parse(dependencyFile)
 
             // Build hashsets from the dependency XML
