@@ -12,7 +12,7 @@ group = 'com.example-corp.teamX'
 version = System.getenv('NEXT_VERSION') ?: Project.DEFAULT_VERSION
 
 configurations {
-    it."default"
+    create("default")
     privateBuild
 }
 
@@ -69,7 +69,7 @@ links {
 }
 
 packageArtifacts {
-    it."default" {
+    create("default") {
         include "main/build/main/Output/*.*"
     }
 }

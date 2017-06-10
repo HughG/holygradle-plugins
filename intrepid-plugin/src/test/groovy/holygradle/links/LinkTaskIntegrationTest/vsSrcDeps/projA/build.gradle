@@ -4,7 +4,7 @@ buildscript {
 gplugins.apply()
 
 configurations {
-    it."default"
+    create("default")
 }
 
 repositories {

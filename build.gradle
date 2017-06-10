@@ -1,5 +1,3 @@
-import org.gradle.api.initialization.dsl.ScriptHandler
-
 apply plugin: 'groovy'
 
 // Force-add a Mercurial client-side hook to avoid comitting anything with "banned" words.
@@ -81,9 +79,7 @@ subprojects {
 subprojects {
     // Add a default configuration for any subprojects which don't have one.
     if (configurations.findByName("default") == null) {
-        configurations {
-            it."default"
-        }
+        configurations.create('default')
     }
 
     // Set a common group.

@@ -20,7 +20,7 @@ project.group = "holygradle"
 project.version = wrapperVersion
 
 configurations {
-    it."default"
+    create("default")
 }
 
 String targetDir = "${project.projectDir}/plainWrapper"

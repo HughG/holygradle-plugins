@@ -11,42 +11,42 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="artifactory-manager-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="custom-gradle-core-plugin_test" production-on-test="" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/caches/2.14.1/generated-gradle-jars/gradle-api-2.14.1.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module" module-name="integration_main" />
-    <orderEntry type="module" module-name="intrepid-plugin_test" production-on-test="" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/groovy-all-2.4.4.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="module" module-name="stamper-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="unit-test-plugin_test" production-on-test="" />
-    <orderEntry type="module" module-name="my-credentials-plugin_test" production-on-test="" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/lib/gradle-installation-beacon-2.14.1.jar!/" />
+          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-3.0-all/6v8c6qg2jpi8twyfv2a5s9mii/gradle-3.0/lib/gradle-installation-beacon-3.0.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="file://$GRADLE_USER_HOME$/wrapper/dists/gradle-2.14.1-all/8bnwg5hd3w55iofp58khbp6yv/gradle-2.14.1/src/installation-beacon" />
+          <root url="file://$GRADLE_USER_HOME$/wrapper/dists/gradle-3.0-all/6v8c6qg2jpi8twyfv2a5s9mii/gradle-3.0/src/installation-beacon" />
         </SOURCES>
       </library>
     </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$GRADLE_USER_HOME$/wrapper/dists/gradle-3.0-all/6v8c6qg2jpi8twyfv2a5s9mii/gradle-3.0/lib/groovy-all-2.4.7.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module" module-name="my-credentials-plugin_test" production-on-test="" />
+    <orderEntry type="module" module-name="stamper-plugin_test" production-on-test="" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$GRADLE_USER_HOME$/caches/3.0/generated-gradle-jars/gradle-api-3.0.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="module" module-name="devenv-plugin_test" production-on-test="" />
+    <orderEntry type="module" module-name="integration_main" />
+    <orderEntry type="module" module-name="unit-test-plugin_test" production-on-test="" />
+    <orderEntry type="module" module-name="intrepid-plugin_test" production-on-test="" />
+    <orderEntry type="module" module-name="custom-gradle-core-plugin_test" production-on-test="" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>

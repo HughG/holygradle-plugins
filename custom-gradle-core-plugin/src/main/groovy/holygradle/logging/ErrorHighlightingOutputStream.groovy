@@ -1,9 +1,6 @@
-package holygradle.devenv
-
-import org.gradle.logging.StyledTextOutput
+package holygradle.logging
 
 class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
-    private ByteArrayOutputStream fullStream
     private String projectName
     private StyledTextOutput output
     private Collection<String> errors = []
@@ -12,53 +9,41 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
     private Collection<String> errorRegexes
     
     ErrorHighlightingOutputStream(
-        String projectName,
-        StyledTextOutput output,
-        Collection<String> warningRegexes,
-        Collection<String> errorRegexes
+            String projectName,
+            StyledTextOutput output,
+            Collection<String> warningRegexes,
+            Collection<String> errorRegexes
     ) {
-        fullStream = new ByteArrayOutputStream()
         this.projectName = projectName
         this.output = output
         this.warningRegexes = warningRegexes
         this.errorRegexes = errorRegexes
-        
-        /*this.output.withStyle(StyledTextOutput.Style.Error).println("Error")
-        this.output.withStyle(StyledTextOutput.Style.Description).println("Description")
-        this.output.withStyle(StyledTextOutput.Style.Failure).println("Failure")
-        this.output.withStyle(StyledTextOutput.Style.Success).println("Success")
-        this.output.withStyle(StyledTextOutput.Style.Info).println("Info")
-        this.output.withStyle(StyledTextOutput.Style.Identifier).println("Identifier")
-        this.output.withStyle(StyledTextOutput.Style.Header).println("Header")
-        this.output.withStyle(StyledTextOutput.Style.UserInput).println("UserInput")
-        this.output.withStyle(StyledTextOutput.Style.ProgressStatus).println("ProgressStatus")*/
     }
     
     @Override
     public synchronized void write(byte[] b, int off, int len) {
         super.write(b, off, len)
-        fullStream.write(b, off, len)
-        
-        toString().eachLine {
+
+        toString().eachLine { line ->
             StyledTextOutput.Style style = StyledTextOutput.Style.Normal
             
             for (regex in warningRegexes) {
-                if (it ==~ regex) {
+                if (line ==~ regex) {
                     style = StyledTextOutput.Style.Info
-                    warnings.add(it)
+                    warnings.add(line)
                     break
                 }
             }
             
             for (regex in errorRegexes) {
-                if (it ==~ regex) {
+                if (line ==~ regex) {
                     style = StyledTextOutput.Style.Failure
-                    errors.add(it)
+                    errors.add(line)
                     break
                 }
             }
             
-            output.withStyle(style).println(it)
+            output.withStyle(style) { it.println(line) }
         }
         
         reset() 
@@ -79,16 +64,13 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
         String msg = " ${projectName}: ${messages.size()} ${type} "
         int firstDashes = (int) (LINE_LENGTH - msg.length()) / 2
         int secondDashes = (LINE_LENGTH - msg.length()) - firstDashes
-        StyledTextOutput o = output.withStyle(style)
-        o.println("=" * firstDashes + msg + "=" * secondDashes)
-        messages.each {
-            o.println(it)
+        output.withStyle(style) { o ->
+            o.println("=" * firstDashes + msg + "=" * secondDashes)
+            messages.each {
+                o.println(it)
+            }
+            o.println("=" * LINE_LENGTH)
         }
-        o.println("=" * LINE_LENGTH)
         output.println()
-    }
-
-    public String getFullStreamString() {
-        fullStream.toString()
     }
 }

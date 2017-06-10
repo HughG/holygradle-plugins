@@ -1,12 +1,13 @@
 package holygradle.devenv
 
 import holygradle.custom_gradle.plugin_apis.StampingProvider
+import holygradle.logging.DefaultStyledTextOutput
+import holygradle.logging.ErrorHighlightingOutputStream
+import holygradle.logging.StyledTextOutput
 import holygradle.source_dependencies.SourceDependenciesStateHandler
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.gradle.logging.StyledTextOutput
-import org.gradle.logging.StyledTextOutputFactory
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
@@ -44,7 +45,7 @@ class DevEnvTask extends DefaultTask {
 
     public DevEnvTask() {
         group = "DevEnv"
-        output = services.get(StyledTextOutputFactory).create(DevEnvTask)
+        output = new DefaultStyledTextOutput(System.out)
     }
     
     public void init(Operation operation, String configuration) {
@@ -173,8 +174,8 @@ class DevEnvTask extends DefaultTask {
             devEnvOutput.summarise()
             
             // Write the entire output to a file.
-            outputFile.write(devEnvOutput.getFullStreamString())
-            
+            outputFile.write(devEnvOutput.toString())
+
             int exit = result.getExitValue()
             if (exit != 0) {
                 throw new RuntimeException("${buildToolPath.name} exited with code $exit.")

@@ -21,7 +21,7 @@ project.group = localGroupFile.exists() ? localGroupFile.text : "holygradle"
 project.version = wrapperVersion
 
 configurations {
-    it."default"
+    create("default")
 }
 
 String targetDir = "${project.projectDir}/newWrapper"

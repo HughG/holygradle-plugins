@@ -1,27 +1,17 @@
 package holygradle.publishing
 
+import holygradle.ArtifactoryHelper
 import holygradle.unpacking.PackedDependenciesStateSource
-import holygradle.unpacking.UnpackModule
 import holygradle.unpacking.UnpackModuleVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.repositories.PasswordCredentials
-import org.gradle.logging.StyledTextOutput
-import org.gradle.logging.StyledTextOutputFactory
-import holygradle.ArtifactoryHelper
 
 class CheckPublishedDependenciesTask extends DefaultTask {
-    private final StyledTextOutput output
-    
-    CheckPublishedDependenciesTask() {
-        output = services.get(StyledTextOutputFactory).create(CheckPublishedDependenciesTask)
-    }
-    
     public void initialize(
         PackedDependenciesStateSource packedDependenciesStateSource,
         String repoUrl,
         PasswordCredentials repoCredentials
     ) {
-        StyledTextOutput localOutput = output // capture private for closure
         doLast {
             ArtifactoryHelper helper = new ArtifactoryHelper(
                 repoUrl,
@@ -42,15 +32,15 @@ class CheckPublishedDependenciesTask extends DefaultTask {
                 int thisTab = (moduleVersion.length() + 8)
                 tab = (thisTab > tab) ? thisTab : tab
             }
-            localOutput.println "The following artifacts are available at '${repoUrl}':"
+            logger.lifecycle "The following artifacts are available at '${repoUrl}':"
             modules.each { String moduleVersion, Boolean available ->
                 String line = "   ${moduleVersion}" + (" "*(tab-moduleVersion.length()))
                 if (available) {
                     line += "[OK]"
-                    localOutput.withStyle(StyledTextOutput.Style.Success).println(line)
+                    logger.lifecycle(line)
                 } else {
                     line += "[NOT AVAILABLE]"
-                    localOutput.withStyle(StyledTextOutput.Style.Failure).println(line)
+                    logger.error(line)
                 }
             }
         }

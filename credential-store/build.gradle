@@ -73,5 +73,5 @@ project.publishTasks.each { Upload it ->
 project.tasks["publishPluginsLocally"].inputs.files(project.tasks["build"].outputs.files)
 
 artifacts {
-    it."default" CREDENTIAL_STORE_EXE
+    "default" CREDENTIAL_STORE_EXE
 }
