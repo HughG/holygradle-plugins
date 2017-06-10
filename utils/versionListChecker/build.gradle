@@ -106,7 +106,7 @@ task checkVersions {
     description = "Checks that any transitive dependencies of a given module, if they appear in a " +
         "given 'required versions' file, match the versions in that file."
 }
-tasks.checkVersions << {
+tasks.checkVersions.doLast {
     // ----------------------------------------------------------------------------------------
     // Parse the list of required library versions
     //

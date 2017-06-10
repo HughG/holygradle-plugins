@@ -7,8 +7,8 @@ All tasks runnable from root project
 
 Build Setup tasks
 -----------------
-init - Initializes a new Gradle build. [incubating]
-wrapper - Generates Gradle wrapper files. [incubating]
+init - Initializes a new Gradle build.
+wrapper - Generates Gradle wrapper files.
 
 Credentials tasks
 -----------------
@@ -17,8 +17,6 @@ cacheCredentials - Refreshes and caches all credentials.
 Custom Gradle tasks
 -------------------
 checkPrerequisites - Runs all prerequisite checks.
-    checkPrerequisiteHgAuth
-    checkPrerequisiteJava1.7
 createWrapper - Creates a Gradle wrapper in the current directory using this instance of Gradle.
 doskey - Helps you configure doskey to allow 'gw' to be used from any directory.
 openAllBuildscripts - Opens all build-scripts in this workspace using the default program for '.gradle' files.
@@ -30,25 +28,25 @@ versionInfo - Outputs version information about this instance of Gradle.
 Dependencies tasks
 ------------------
 beforeFetchSourceDependencies - Runs before source dependencies are fetched, to check authorisation setup. Extend it with doLast if needed.
-collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder. [createPublishNotes]
-deleteLinks - Remove all links. [deleteLinksToCache]
+collectDependencies - Collect all non-source dependencies into a 'local_artifacts' folder.
+deleteLinks - Remove all links.
 deleteLinksToCache - Delete all links to the unpack cache
 extractPackedDependencies - Extract all packed dependencies, to the unpack cache or to the workspace
-fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links. [rebuildLinks]
+fetchAllDependencies - Retrieves all 'packedDependencies' and 'sourceDependencies', and sets up necessary links.
 fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
-rebuildLinks - Rebuild all links. [fetchAllSourceDependencies, rebuildLinksToCache]
-rebuildLinksToCache - Rebuild all links to the unpack cache [extractPackedDependencies]
-zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP. [createPublishNotes]
+rebuildLinks - Rebuild all links.
+rebuildLinksToCache - Rebuild all links to the unpack cache
+zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
 
 DevEnv tasks
 ------------
 beforeBuild - This task is a dependency of all build tasks, so will run before any of them
 beforeClean - This task is a dependency of all clean tasks, so will run before any of them
-buildDebug - Builds all dependent projects in Debug mode. [beforeBuild]
-buildRelease - Builds all dependent projects in Release mode. [beforeBuild]
-cleanDebug - Cleans all dependent projects in Debug mode. [beforeClean]
-cleanRelease - Cleans all dependent projects in Release mode. [beforeClean]
+buildDebug - Builds all dependent projects in Debug mode.
+buildRelease - Builds all dependent projects in Release mode.
+cleanDebug - Cleans all dependent projects in Debug mode.
+cleanRelease - Cleans all dependent projects in Release mode.
 
 Help tasks
 ----------
@@ -56,6 +54,7 @@ buildEnvironment - Displays all buildscript dependencies declared in root projec
 components - Displays the components produced by root project 'tAPIT'. [incubating]
 dependencies - Displays all dependencies declared in root project 'tAPIT'.
 dependencyInsight - Displays the insight into a specific dependency in root project 'tAPIT'.
+dependentComponents - Displays the dependent components of components in root project 'tAPIT'. [incubating]
 help - Displays a help message.
 model - Displays the configuration model of root project 'tAPIT'. [incubating]
 projects - Displays the sub-projects of root project 'tAPIT'.
@@ -66,12 +65,11 @@ Publishing tasks
 ----------------
 beforeGenerateDescriptor - Actions to run before any Ivy descriptor generation tasks
 createPublishNotes - Creates 'build_info' directory which will be included in published packages.
-generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'. [beforeGenerateDescriptor]
-generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication. [generateDescriptorFileForIvyPublication]
-packageEverything - Creates all zip packages for project 'tAPIT'. [createPublishNotes]
-    packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tAPIT'.
+generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'.
+generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication.
+packageEverything - Creates all zip packages for project 'tAPIT'.
 publish - Publishes all publications produced by this project.
-repackageEverything - As 'packageEverything' but doesn't auto-generate any files. [packageEverything]
+repackageEverything - As 'packageEverything' but doesn't auto-generate any files.
 
 Source Dependencies tasks
 -------------------------
@@ -88,8 +86,11 @@ unitTestRelease - Run the Release unit tests for 'tAPIT'.
 
 Other tasks
 -----------
-buildAndTestAll - Build 'tAPIT' and all dependent projects in Debug and Release, and run unit tests. [buildDebug, buildRelease, unitTestDebug, unitTestRelease]
+buildAndTestAll - Build 'tAPIT' and all dependent projects in Debug and Release, and run unit tests.
+checkPrerequisiteHgAuth
+checkPrerequisiteJava1.7
 extractSevenZip - Unpack build dependency 'sevenZip'
+packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tAPIT'.
 
 BUILD SUCCESSFUL
 

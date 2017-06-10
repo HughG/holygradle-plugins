@@ -63,7 +63,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
         }
 
-        beforeGenerateDescriptorTask << {
+        beforeGenerateDescriptorTask.doLast {
             this.failIfPackedDependenciesNotCreatingLink(packedDependencies)
         }
 

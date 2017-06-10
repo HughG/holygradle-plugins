@@ -29,7 +29,7 @@ if (wrapperVersion != customGradleCoreVersion) {
     )
 }
 
-task clean << {
+task clean.doLast {
     delete "gradlew", "gradlew.bat", "gw.bat", "gradle"
 }
 
@@ -41,7 +41,7 @@ createWrapper.dependsOn clean
     that top-level build.gradle file.  These are only the site-local, private init files; the general ones will be
     written in by the "wrapper" task.
 */
-createWrapper << {
+createWrapper.doLast {
     copy {
         into(new File(projectDir, "gradle/wrapper"))
         from(new File(rootProject.projectDir, "gradle/wrapper")) {

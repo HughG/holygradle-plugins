@@ -62,7 +62,7 @@ publishing {
     }
 }
 
-project.tasks["publish"] << {
+project.tasks["publish"].doLast {
     println "Published ${project.name} ${project.version} " +
         "to ${PUBLISH_TARGET_URI} at: " + new Date()
     println "Once you have tested the wrapper, unzip it into this folder and commit the changes."

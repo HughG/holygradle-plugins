@@ -120,6 +120,13 @@ public class WrapperBuildLauncher implements BuildLauncher {
     }
 
     @Override
+    public WrapperBuildLauncher setEnvironmentVariables(Map<String, String> var1) {
+        launcher.setEnvironmentVariables(var1);
+        return this;
+    }
+
+
+    @Override
     public WrapperBuildLauncher setStandardError(OutputStream outputStream) {
         launcher.setStandardError(outputStream);
         return this;

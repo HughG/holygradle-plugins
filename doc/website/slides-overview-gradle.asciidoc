@@ -308,7 +308,7 @@ task hello {
 
 // or, for short, simple cases ...
 
-task hello2 << {
+task hello2.doLast {
     println "Hello world!"
 }
 ----
@@ -381,7 +381,7 @@ task hello {
         print "Hello"
     }
 }
-task world << {
+task world.doLast {
     print " world"
     // dependsOn should be outside doLast.
     // Doing this means the dependency isn't set
@@ -403,7 +403,7 @@ task helloWorld {
 
 [source,groovy]
 ----
-task hello << {
+task hello.doLast {
     4.times { counter ->
         println "Hello ${counter}"
     }
@@ -434,7 +434,7 @@ put any expression in +${}+ inside a double-quoted string
 [source,groovy]
 ----
 4.times { counter ->
-    task "hello${counter}" << {
+    task "hello${counter}".doLast {
         println "Hello ${counter}"
     }
 }
@@ -505,7 +505,7 @@ dependencies {
     testExample "org.mockito:mockito-core:1.+" // floating version
 }
 
-task listDependencies << {
+task listDependencies.doLast {
     for (c in configurations) {
         println "Listing ${c}"
         for (d in c.allDependencies) {

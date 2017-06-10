@@ -139,7 +139,7 @@ boolean keyExists() {
     return (0 == result.exitValue)
 }
 
-task exportCACertFromWindows << {
+task exportCACertFromWindows.doLast {
     return project.exec { execSpec ->
         executable = "certutil.exe"
         args = [
@@ -152,7 +152,7 @@ task exportCACertFromWindows << {
 }
 exportCACertFromWindows.description = "Exports a CA certificate from Windows Certificate Services"
 
-task checkCACert << {
+task checkCACert.doLast {
     setupKeystoreProperties()
 
     if (keyExists()) {
@@ -164,7 +164,7 @@ task checkCACert << {
 }
 checkCACert.description = "Checks whether a certificate matching the given certAlias/certFile exists in the cacerts keystore"
 
-task importCACert << {
+task importCACert.doLast {
     setupKeystoreProperties()
 
     ExecResult result = null

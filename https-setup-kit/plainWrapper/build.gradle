@@ -1,4 +1,4 @@
-task clean << {
+task clean.doLast {
     delete "gradlew", "gradlew.bat", "gw", "gw.bat", "gradle"
 }
 
