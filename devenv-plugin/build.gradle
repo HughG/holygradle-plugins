@@ -1,11 +1,32 @@
+buildscript {
+    ext.kotlin_version = '1.1.2'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 apply plugin: 'groovy'
+apply plugin: 'kotlin'
+
+sourceCompatibility = 1.8
 
 configurations {
     optional
 }
 
+repositories {
+    maven { url 'https://repo.gradle.org/gradle/plugins-releases' }
+    //plugins-releases/org/gradle/gradle-script-kotlin/0.8.0/gradle-script-kotlin-0.8.0.jar
+}
+
 dependencies {
     compile localGroovy()
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+    compile "org.gradle:gradle-script-kotlin:0.9.1"
     ["custom-gradle-core", "intrepid"].each { pluginProjectName ->
         compile project(":${pluginProjectName}-plugin")
         optional project(path: ":${pluginProjectName}-plugin", configuration: 'optional')

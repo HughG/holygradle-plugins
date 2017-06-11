@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Javac" />
-    <resourceExtensions />
     <wildcardResourcePatterns>
       <entry name="?*.properties" />
       <entry name="?*.xml" />
@@ -15,32 +13,29 @@
       <entry name="?*.tld" />
       <entry name="?*.ftl" />
     </wildcardResourcePatterns>
-    <annotationProcessing>
-      <profile default="true" name="Default" enabled="false">
-        <processorPath useClasspath="true" />
-      </profile>
-    </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="artifactory-manager-plugin_main" target="1.7" />
-      <module name="artifactory-manager-plugin_test" target="1.7" />
-      <module name="buildSrc_main" target="1.7" />
-      <module name="buildSrc_test" target="1.7" />
-      <module name="custom-gradle-core-plugin_main" target="1.7" />
-      <module name="custom-gradle-core-plugin_test" target="1.7" />
-      <module name="devenv-plugin_main" target="1.7" />
-      <module name="devenv-plugin_test" target="1.7" />
-      <module name="holy-gradle-plugins_main" target="1.7" />
-      <module name="holy-gradle-plugins_test" target="1.7" />
-      <module name="integration_main" target="1.7" />
-      <module name="integration_test" target="1.7" />
-      <module name="intrepid-plugin_main" target="1.7" />
-      <module name="intrepid-plugin_test" target="1.7" />
-      <module name="my-credentials-plugin_main" target="1.7" />
-      <module name="my-credentials-plugin_test" target="1.7" />
-      <module name="stamper-plugin_main" target="1.7" />
-      <module name="stamper-plugin_test" target="1.7" />
-      <module name="unit-test-plugin_main" target="1.7" />
-      <module name="unit-test-plugin_test" target="1.7" />
+      <module name="artifactory-manager-plugin_main" target="1.8" />
+      <module name="artifactory-manager-plugin_test" target="1.8" />
+      <module name="buildSrc_main" target="1.8" />
+      <module name="buildSrc_test" target="1.8" />
+      <module name="custom-gradle-core-plugin_main" target="1.8" />
+      <module name="custom-gradle-core-plugin_test" target="1.8" />
+      <module name="devenv-plugin_main" target="1.8" />
+      <module name="devenv-plugin_test" target="1.8" />
+      <module name="holy-gradle-plugins_main" target="1.8" />
+      <module name="holy-gradle-plugins_test" target="1.8" />
+      <module name="integration_main" target="1.8" />
+      <module name="integration_test" target="1.8" />
+      <module name="intrepid-plugin_main" target="1.8" />
+      <module name="intrepid-plugin_test" target="1.8" />
+      <module name="kotlintmp_main" target="1.8" />
+      <module name="kotlintmp_test" target="1.8" />
+      <module name="my-credentials-plugin_main" target="1.8" />
+      <module name="my-credentials-plugin_test" target="1.8" />
+      <module name="stamper-plugin_main" target="1.8" />
+      <module name="stamper-plugin_test" target="1.8" />
+      <module name="unit-test-plugin_main" target="1.8" />
+      <module name="unit-test-plugin_test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

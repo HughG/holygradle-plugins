@@ -1,18 +1,20 @@
 package holygradle.logging
 
+import java.util.regex.Pattern
+
 class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
     private String projectName
     private StyledTextOutput output
     private Collection<String> errors = []
     private Collection<String> warnings = []
-    private Collection<String> warningRegexes
-    private Collection<String> errorRegexes
+    private Iterable<Pattern> warningRegexes
+    private Iterable<Pattern> errorRegexes
     
     ErrorHighlightingOutputStream(
             String projectName,
             StyledTextOutput output,
-            Collection<String> warningRegexes,
-            Collection<String> errorRegexes
+            Iterable<Pattern> warningRegexes,
+            Iterable<Pattern> errorRegexes
     ) {
         this.projectName = projectName
         this.output = output
@@ -28,7 +30,7 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
             StyledTextOutput.Style style = StyledTextOutput.Style.Normal
             
             for (regex in warningRegexes) {
-                if (line ==~ regex) {
+                if (regex.matcher(line).matches()) {
                     style = StyledTextOutput.Style.Info
                     warnings.add(line)
                     break
@@ -36,7 +38,7 @@ class ErrorHighlightingOutputStream extends ByteArrayOutputStream {
             }
             
             for (regex in errorRegexes) {
-                if (line ==~ regex) {
+                if (regex.matcher(line).matches()) {
                     style = StyledTextOutput.Style.Failure
                     errors.add(line)
                     break

@@ -1,43 +1,38 @@
 package holygradle.custom_gradle
 
+import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
-class PrerequisitesChecker {
+class PrerequisitesChecker<T> {
     public final String name
     public final Project project
-    private final Closure checkClosure
+    private final Action<PrerequisitesChecker<T>> checkAction
+    public final T parameter
     private boolean ok = true
-    private boolean checkingAllPrerequisites = false
-    
-    PrerequisitesChecker(Project project, String name, Closure checkClosure) {
+
+    PrerequisitesChecker(Project project, String name, Action<PrerequisitesChecker<T>> checkAction, T parameter) {
         this.project = project
         this.name = name
-        this.checkClosure = checkClosure
-        
-        project.gradle.taskGraph.whenReady {
-            final PrerequisitesExtension prerequisites = PrerequisitesExtension.getPrerequisites(project)
-            checkingAllPrerequisites = project.gradle.taskGraph.hasTask(prerequisites.getCheckAllPrerequisitesTask())
-        }
+        this.checkAction = checkAction
+        this.parameter = parameter
     }
 
-    public boolean run(Object[] params) {
+    private boolean getCheckingAllPrerequisites() {
+        return PrerequisitesExtension.getPrerequisites(project).checkingAllPrerequisites
+    }
+
+    public boolean run() {
         // The 'ok' variable is not really stateful. Its purpose is to determine the return value for this method.
         // It will be set to false if the fail method is called.
         ok = true
-        if (checkingAllPrerequisites) {
-            if (params == null) {
-                println "Checking '${name}'..."
-            } else {
-                println "Checking '${name}' (${params.join(', ')})..."
-            }
-        }
-        if (params == null) {
-            checkClosure(this)
+        if (parameter == null) {
+            println "Checking '${name}'..."
         } else {
-            checkClosure(this, params)
+            println "Checking '${name}' (${parameter})..."
         }
+        checkAction.execute(this)
         ok
     }
     
