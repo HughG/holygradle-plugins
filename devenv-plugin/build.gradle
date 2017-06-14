@@ -17,16 +17,21 @@ sourceCompatibility = 1.8
 configurations {
     optional
 }
+configurations.all {
+    resolutionStrategy {
+        // Need to force this because Gradle 3.5 provides 2.4.10 but gradle-script-kotlin depends on 2.4.7.
+        force 'org.codehaus.groovy:groovy-all:2.4.10'
+    }
+}
 
 repositories {
     maven { url 'https://repo.gradle.org/gradle/plugins-releases' }
-    //plugins-releases/org/gradle/gradle-script-kotlin/0.8.0/gradle-script-kotlin-0.8.0.jar
 }
 
 dependencies {
     compile localGroovy()
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
-    compile "org.gradle:gradle-script-kotlin:0.9.1"
+    compile "org.gradle:gradle-script-kotlin:0.8.0"
     ["custom-gradle-core", "intrepid"].each { pluginProjectName ->
         compile project(":${pluginProjectName}-plugin")
         optional project(path: ":${pluginProjectName}-plugin", configuration: 'optional')

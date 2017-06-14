@@ -12,6 +12,10 @@ class DevEnvHandler(
         val project: Project,
         val parentHandler: DevEnvHandler?
 ) {
+    val errorRegexes: MutableList<Pattern> = mutableListOf()
+    val warningRegexes: MutableList<Pattern> = mutableListOf()
+
+    // The init block needs to come after the regex fields are initialised, or else the defineXxxRegex methods throw NPE.
     init {
         defineErrorRegex("\\d+>Build FAILED".toRegex())
         defineErrorRegex(".* (error|fatal error) \\w+\\d{2,5}:.*".toRegex())
@@ -67,9 +71,6 @@ class DevEnvHandler(
             }
             return f
         }
-
-    val errorRegexes: MutableList<Pattern> = mutableListOf()
-    val warningRegexes: MutableList<Pattern> = mutableListOf()
 
     fun version(version: String) {
         _devEnvVersion = version
