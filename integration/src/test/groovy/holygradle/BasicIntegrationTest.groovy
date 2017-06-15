@@ -6,8 +6,10 @@ import holygradle.test.WrapperBuildLauncher
 import org.gradle.api.Project
 import org.gradle.api.file.CopySpec
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.Ignore
 import org.junit.Test
+
+import static org.junit.Assert.*
+
 /**
  * Very basic integration "smoke test".
  */
@@ -64,65 +66,6 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
     public void testBasicPluginConfig() {
         compareBuildOutput("tBPC") { WrapperBuildLauncher launcher ->
             launcher.forTasks("tasks", "--all")
-        }
-    }
-
-    /**
-     * This tests that a warning is logged if different versions of the same plugin are selected in different projects.
-     */
-    @Ignore("TODO 2017-05-07 HughG: Write this test")
-    @Test
-    public void testInconsistentVersionDetection() {
-//        final String pluginName = 'custom-gradle-core-plugin'
-//        final String originalVersion = "0.0-${System.getProperty('user.name')}SNAPSHOT-0"
-//        final String overrideVersion = "0"
-//        createExtraPluginVersion(pluginName, originalVersion, overrideVersion)
-//
-//        // Now run the build.
-//        File projectDir = new File(getTestDir(), "tVOD")
-//        OutputStream outputStream = new ByteArrayOutputStream()
-//        invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
-//            launcher.forTasks("tasks", "--all")
-//            launcher.setStandardOutput(outputStream)
-//        }
-//        List<String> outputLines = outputStream.toString().readLines()
-//
-//        // Write the build output to a file to check in case the test fails.
-//        final File baseDir = new File(testDir.path + "_tVOD")
-//        final File outputFile = new File(baseDir.path + ".stdout.txt")
-//        outputFile.withPrintWriter { pw -> outputLines.each { pw.println it } }
-//
-//        final String expectedWarning =
-//            "WARNING: Buildscript for root project 'tVOD' requested holygradle:${pluginName}:${overrideVersion} but " +
-//            "selected holygradle:${pluginName}:0.0-${System.getProperty('user.name')}SNAPSHOT-0.  " +
-//            "If this is not expected please check plugin versions are consistent in all projects, including checking " +
-//            "any resolutionStrategy.  The reason for this selection is: conflict resolution."
-//        int messageIndex = outputLines.indexOf(expectedWarning)
-//        assertNotEquals("Override warning should appear in output", -1, messageIndex)
-    }
-
-    // Fake up a version "0" of custom-gradle-core-plugin.
-    private void createExtraPluginVersion(String pluginName, String originalVersion, String overrideVersion) {
-        File pluginsRepoOverrideDir = new File(pluginsRepoOverride.toString() - (pluginsRepoOverride.scheme + ':'))
-        File pluginDir = new File(pluginsRepoOverrideDir, "holygradle/${pluginName}")
-        File pluginOriginalVersionDir = new File(pluginDir, originalVersion)
-        File pluginOverrideVersionDir = new File(pluginDir, overrideVersion)
-        FileHelper.ensureDeleteDirRecursive(pluginOverrideVersionDir)
-        Project project = ProjectBuilder.builder().withProjectDir(new File(getTestDir(), "tVOD")).build()
-        project.copy { CopySpec it ->
-            it.from pluginOriginalVersionDir
-            it.into pluginOverrideVersionDir
-            it.rename "(.*)${originalVersion}(.*)", "\$1${overrideVersion}\$2"
-            it.exclude "*.xml"
-        }
-        project.copy { CopySpec it ->
-            it.from pluginOriginalVersionDir
-            it.into pluginOverrideVersionDir
-            it.rename "(.*)${originalVersion}(.*)", "\$1${overrideVersion}\$2"
-            it.include "*.xml"
-            it.filter { String line ->
-                line.replaceAll(originalVersion, overrideVersion)
-            }
         }
     }
 }

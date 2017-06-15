@@ -1,6 +1,3 @@
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-
 // NOTE: IntelliJ claims that these are unused imports but, for some reason, Gradle (1.4) needs them when this init
 // script is actually run.
 /**
@@ -14,56 +11,12 @@ import java.text.SimpleDateFormat
 final String PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY = "holygradle.pluginsRepoOverride"
 final String PLUGINS_REPO_OVERRIDE = System.getProperty(PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY)
 
-class ProfilingHelper {
-    public static DateFormat ELAPSED_TIME_TO_MILLIS_FORMAT = new SimpleDateFormat("HH:mm:ss.SSS")
-
-    private static class TimedBlock {
-        private final long startNanos = System.nanoTime()
-        private final Logger logger
-        private final String name
-
-        TimedBlock(Logger logger, String name) {
-            this.logger = logger
-            this.name = name
-        }
-
-        void endBlock() {
-            final long endNanos = System.nanoTime()
-            final long diffNanos = endNanos - startNanos
-            final long diffJustNanos = diffNanos % 1000
-            final long diffMicros = diffNanos / 1000
-            final long diffJustMicros = diffMicros % 1000
-            final long diffMillis = diffMicros / 1000
-            final String formattedMillis = ELAPSED_TIME_TO_MILLIS_FORMAT.format(new Date(diffMillis))
-
-            logger.info("TimedBlock\t${name}\t${startNanos}\t${endNanos}\t${diffNanos}\t${formattedMillis},${diffJustMicros},${diffJustNanos}")
-        }
-    }
-
-    private final Logger logger
-
-    ProfilingHelper(Logger logger) {
-        this.logger = logger
-    }
-
-    void timing(String blockName, Closure block) {
-        def timer = startBlock(blockName)
-        block()
-        timer.endBlock()
-    }
-
-    private TimedBlock startBlock(String blockName) {
-        return new TimedBlock(logger, blockName)
-    }
-}
-
 class HolyGradlePlugins {
     // NOTE 2013-06-07 HughG: Referenced by holygradle.custom_gradle.VersionInfo.
     public Map<String,String> usages = [:]
 
     private ScriptHandler buildscript
     private Project project
-    private Map<Project, Map<ModuleIdentifier, String>> buildscriptClasspathSelectedVersions = [:]
     
     HolyGradlePlugins(ScriptHandler buildscript, Project project) {
         this.buildscript = buildscript
@@ -98,83 +51,39 @@ class HolyGradlePlugins {
             }
         })
 
-        warnIfHolyGradleSnashotModuleDependsOnNonSnapshot(buildscript, project)
-        if (project == project.rootProject) {
-            warnIfInconsistentVersionsSelected(buildscript, project)
-        }
+        warnIfRequestedVersionsNotSelected(buildscript, project)
     }
 
-    // Warn if a plugin is used with different versions in different projects.  That's usually a bad idea, particularly
-    // if you try to use objects from one project within another.  In that case you may get ClassCastExceptions or
-    // similar because their classes come from different classloaders.
+    // Warn if the requested version of any module is not the version which ends up getting used.  This is typically
+    // because a plugin version is changed in a sub-project of the root project, and the root depends on the
+    // sub-project, but the root uses a different version.  In that case the version from the root may be selected.
+    // This is probably not what the user wanted and may lead to unpleasant surprises.
     //
-    // (There used to be code in useInternal which tried to force SNAPSHOT-0 versions of the Holy Gradle to be selected
-    // in all projects if they were selected in any.  However, that never really worked because the root project's
-    // buildscript configuration will already have been resolved before the sub-project buildscripts get a chance to
-    // change their resolution strategy.)
-    private static void warnIfInconsistentVersionsSelected(ScriptHandler buildscript, Project project) {
-        // TODO 2017-05-07 HughG: Write this check.
-    }
-
-
-    // Warn if the requested version of any "holygadle:..." buildscript dependency is a snapshot version but any of its
-    // dependencies are not.  This is an internal sanity-check against future dependency changes which would require
-    // another hack in this file like the one which force-adds a "changing" dependency on custom-gradle-core-plugin.
-    private static void warnIfHolyGradleSnashotModuleDependsOnNonSnapshot(ScriptHandler buildscript, Project project) {
+    // (There used to be code in useInternal which tried to force SNAPSHOT-0 versions to be selected in all
+    // projects, if they were selected in any.  However, that doesn't work because the root project's buildscript
+    // configuration will already have been resolved before the sub-project buildscripts get a chance to change
+    // their resolution strategy.)
+    private static warnIfRequestedVersionsNotSelected(ScriptHandler buildscript, Project project) {
         buildscript.configurations.all((Closure) { Configuration conf ->
             conf.incoming.afterResolve((Closure) { ResolvableDependencies deps ->
                 // The resolutionResult.root gives us just those modules which were explicitly specified in the
                 // configuration, excluding their dependencies.
                 deps.resolutionResult.root.dependencies.each { /* ? extends DependencyResult */ result ->
-                    if (!(result instanceof ResolvedDependencyResult)) {
-                        return
-                    }
-                    ResolvedDependencyResult depResult = result as ResolvedDependencyResult
-                    if (!(depResult.requested instanceof ModuleComponentSelector)) {
-                        return
-                    }
-                    ModuleComponentSelector requested = depResult.requested as ModuleComponentSelector
-                    if (requested.group != "holygradle") {
-                        return
-                    }
-                    ResolvedComponentResult selected = depResult.selected
-                    if (!isSnapshotVersion(selected.moduleVersion.version)) {
-                        return
-                    }
-                    Collection<ResolvedComponentResult> hgDeps = findHolyGradleDependencies(selected)
-                    Collection<ResolvedComponentResult> hgNonSnapshotDeps = hgDeps.findResults {
-                        isSnapshotVersion(it.moduleVersion.version) ? null : it
-                    }
-                    hgNonSnapshotDeps.each {
-                        project.logger.warn(
-                                "WARNING: Buildscript for ${project} depends on holygradle snapshot module version " +
-                                        "${selected.moduleVersion} but that depends on holygradle non-snapshot " +
-                                        "module version ${it.moduleVersion.version}.  " +
-                                        "This probably means that a new special case needs to be added to the " +
-                                        "holy-gradle-init.gradle script, like the case for custom-gradle-core."
-                        )
+                    if (result instanceof ResolvedDependencyResult) {
+                        def requested = result.requested
+                        def selected = result.selected
+                        if (requested.displayName != selected.id.displayName) {
+                            project.logger.warn(
+                                "WARNING: Buildscript for ${project} requested ${requested.displayName} but selected " +
+                                "${selected.id.displayName}.  If this is not expected please check plugin versions " +
+                                "are consistent in all projects, including checking any resolutionStrategy.  " +
+                                "The reason for this selection is: ${selected.selectionReason.description}."
+                            )
+                        }
                     }
                 }
             })
         })
-    }
-
-    private static Collection<ResolvedComponentResult> findHolyGradleDependencies(ResolvedComponentResult componentResult) {
-        List<ResolvedComponentResult> transitiveHolyGradleDependencies = new LinkedList<>()
-        Queue<ResolvedComponentResult> queue = new LinkedList<>()
-        queue.add(componentResult)
-        while (!queue.empty) {
-            ResolvedComponentResult result = queue.pop()
-            def holyGradleDependencies = result.dependencies
-                    .findAll {
-                        (it.requested instanceof ModuleComponentSelector) && it.requested.group == "holygradle"
-                    }.findResults {
-                        (it instanceof ResolvedDependencyResult) ? it.selected : null
-                    }
-            queue.addAll(holyGradleDependencies)
-            transitiveHolyGradleDependencies.addAll(holyGradleDependencies)
-        }
-        transitiveHolyGradleDependencies
     }
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
@@ -220,7 +129,7 @@ class HolyGradlePlugins {
         
         boolean usingSnapshots = false
         // Tell the user if individual plugins are set to SNAPSHOT versions.
-        if (isSnapshotVersion(version)) {
+        if (version.endsWith("SNAPSHOT-0")) {
             println "Detected a changing module (e.g., under development) due to SNAPSHOT-0 in version: $plugin $version"
             usingSnapshots = true
         }
@@ -254,11 +163,6 @@ class HolyGradlePlugins {
         if (usingSnapshots && !usages.containsKey("custom-gradle-core")) {
             use("custom-gradle-core", version)
         }
-    }
-
-    // Public so it can be called from within a closure.
-    private static boolean isSnapshotVersion(String version) {
-        version.endsWith("SNAPSHOT-0")
     }
 
     // This is an API method to be called from build scripts, so suppress IntelliJ warning.
