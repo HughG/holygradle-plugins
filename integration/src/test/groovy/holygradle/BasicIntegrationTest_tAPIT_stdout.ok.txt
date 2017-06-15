@@ -92,6 +92,5 @@ checkPrerequisiteJava1.7
 extractSevenZip - Unpack build dependency 'sevenZip'
 packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tAPIT'.
 
-BUILD SUCCESSFUL
-
-Total time: [snipped]
+BUILD SUCCESSFUL in [snipped]s
+1 actionable task: 1 executed
