@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="holygradle.test" module="another-application" revision="1.0" status="release" publication="20130321140835"/>
+  <configurations>
+    <conf name="compileVc10Debug" visibility="public"/>
+    <conf name="compileVc10Release" visibility="public"/>
+    <conf name="everything" visibility="public" extends="compileVc10Debug,compileVc10Release,source"/>
+    <conf name="source" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="another-application-compileVc10Debug" type="zip" ext="zip" conf="compileVc10Debug"/>
+    <artifact name="another-application-compileVc10Release" type="zip" ext="zip" conf="compileVc10Release"/>
+    <artifact name="another-application-buildScript" type="zip" ext="zip" conf="everything"/>
+    <artifact name="another-application-source" type="zip" ext="zip" conf="source"/>
+  </publications>
+  <dependencies>
+    <dependency org="holygradle.test" name="another-framework" rev="1.0" conf="compileVc10Debug-&gt;compileVc10Debug" relativePath="../extlib"/>
+    <dependency org="holygradle.test" name="another-framework" rev="1.0" conf="compileVc10Release-&gt;compileVc10Release" relativePath="../extlib"/>
+	<dependency org="holygradle.test" name="external-lib"  version="1.0" conf="compileVc10Debug-&gt;compileVc10Debug" relativePath="../extlib"/>
+	<dependency org="holygradle.test" name="external-lib"  version="1.0" conf="compileVc10Release-&gt;compileVc10Release" relativePath="../extlib"/>
+  </dependencies>
+</ivy-module>

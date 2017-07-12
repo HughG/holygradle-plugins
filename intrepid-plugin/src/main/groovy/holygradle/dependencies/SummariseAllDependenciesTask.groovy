@@ -16,13 +16,13 @@ class SummariseAllDependenciesTask extends DefaultTask {
             def file = new File(project.buildDir, "holygradle/flat-ivy.xml")
             project.logger.info("Writing dependencies to ${file.canonicalPath}")
 
-            Map<ModuleVersionIdentifier, Map<String, Collection<String>>> depenenciesMap = buildDepenencies()
+            Map<ModuleVersionIdentifier, Map<String, Collection<String>>> dependenciesMap = buildDependencies()
             XmlParser xml = new XmlParser()
             def root = xml.parse(generateDescriptorTask.destination)
 
             def dependenciesNode = root.dependencies as Node
             dependenciesNode.children().clear()
-            depenenciesMap.each { ModuleVersionIdentifier id, Map<String, Collection<String>> confMap ->
+            dependenciesMap.each { ModuleVersionIdentifier id, Map<String, Collection<String>> confMap ->
                 def allMappings = confMap.collect { String fromConf, Collection<String> toConfs ->
                     new StringBuilder() << fromConf << "->" << joinAsBuilder(toConfs, ',')
                 }
@@ -57,7 +57,7 @@ class SummariseAllDependenciesTask extends DefaultTask {
         return b
     }
 
-    private Map<ModuleVersionIdentifier, Map<String, Collection<String>>> buildDepenencies() {
+    private Map<ModuleVersionIdentifier, Map<String, Collection<String>>> buildDependencies() {
         Map<ModuleVersionIdentifier, Map<String, Collection<String>>> dependencies =
             [:].withDefault { [:].withDefault { [] }}
 
