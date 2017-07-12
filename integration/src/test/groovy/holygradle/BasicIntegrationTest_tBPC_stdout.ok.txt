@@ -106,6 +106,5 @@ packageDefault - Creates a zip file for 'default' in preparation for publishing 
 unitTestMain_testDebug
 unitTestMain_testRelease
 
-BUILD SUCCESSFUL
-
-Total time: [snipped]
+BUILD SUCCESSFUL in [snipped]s
+1 actionable task: 1 executed

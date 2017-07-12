@@ -398,7 +398,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                         "org" : dep.group,
                         "name": dep.name,
                         "rev" : dep.version,
-                        "conf": "${conf.name}->${dep.configuration}"
+                        "conf": "${conf.name}->${dep.targetConfiguration}"
                     ])
                 }
             })
