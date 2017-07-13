@@ -3,6 +3,10 @@ package holygradle.devenv
 import org.gradle.api.Project
 import org.gradle.api.Task
 
+import java.util.regex.Pattern
+import java.util.regex.Matcher
+import java.io.BufferedReader
+
 class DevEnvHandler {
     private Project project
     private DevEnvHandler parentHandler
@@ -12,10 +16,22 @@ class DevEnvHandler {
     private String incredibuildPath = null
     private List<String> warningRegexes = []
     private List<String> errorRegexes = []
+    private String vsWhereLocation = null
     
     public DevEnvHandler(Project project, DevEnvHandler parentHandler) {
         this.project = project
         this.parentHandler = parentHandler
+        
+        String programFiles = System.getenv("ProgramFiles(x86)");
+        
+        // 32 bit OS before windows 10
+        String programFiles32 = System.getenv("ProgramFiles");
+        // look for vsWhere
+        if (new File("${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
+            this.vsWhereLocation = "${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+        } else if( new File("${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
+            this.vsWhereLocation = "${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+        }
         
         defineErrorRegex(/\d+>Build FAILED/)
         defineErrorRegex(/.* [error|fatal error]+ \w+\d{2,5}:.*/)
@@ -85,7 +101,46 @@ class DevEnvHandler {
         }
     }
     
-    public File getDevEnvPath() {
+    public File getDevEnvPathFromVSWhere() {
+        String chosenDevEnvVersion = getDevEnvVersion()
+        
+        Pattern versionPattern = Pattern.compile("VS([0-9]+)", Pattern.CASE_INSENSITIVE);
+        Matcher versionMatcher = versionPattern.matcher(chosenDevEnvVersion);
+        
+        if (versionMatcher.find()){
+            Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
+            String decimalVersionNumber = (devEnvVersion/10.0).toString();
+            String nextDecimalVersionNumber = ((devEnvVersion/10.0)+0.1).toString();
+            
+            Process vsWhereProcess =
+                Runtime
+                    .getRuntime()
+                        .exec(
+                            "${this.vsWhereLocation} -property installationPath -legacy -format value -version [${decimalVersionNumber},${nextDecimalVersionNumber})",
+                            null
+                        );
+            
+            InputStream is = vsWhereProcess.getInputStream()
+            InputStreamReader isReader = new InputStreamReader(is)
+            
+            BufferedReader buffIsReader = new BufferedReader(isReader)
+            String installPath = buffIsReader.readLine()
+            File devEnvPath = new File(installPath, "/Common7/IDE/devenv.com");
+            
+            if (!devEnvPath.exists()) {
+                throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
+            }
+            
+            devEnvPath
+            
+        } else {
+            throw new RuntimeException("Failed to parse DevEnv version '${chosenDevEnvVersion}'")
+            
+        }
+        
+    }
+    
+    public File getDevEnvPathFromRegistry() {
         String chosenDevEnvVersion = getDevEnvVersion()
         String envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
         if (envVarComnTools == null || envVarComnTools == "") {
@@ -97,6 +152,15 @@ class DevEnvHandler {
             throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
         }
         devEnvPath
+    }
+     
+    public File getDevEnvPath() {
+        
+        if (vsWhereLocation != null){
+            getDevEnvPathFromVSWhere();
+        } else {
+            getDevEnvPathFromRegistry();
+        }
     }
     
     public File getBuildToolPath(boolean allowIncredibuild) {

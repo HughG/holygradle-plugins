@@ -77,6 +77,16 @@ DevEnv {
 
 The +version+ is used to construct a path to +devenv.com+ as follows.
 
+If VSWhere.exe (installed with Visual studio 2017 onwards) is available
+(checked by searching “%ProgramFiles(x86)%\Microsoft Visual Studio\Installer” and
+ “%ProgramFiles%\Microsoft Visual Studio\Installer”):
+ 
+- The DevEnv Version string is converted to the decimal representation e.g VS120 would be 12.0
+- VSWhere.exe is queried with decimal version string for the installation path. 
+- The resulting path is then appended with "/Common7/IDE/devenv.com"
+
+if VSwhere.exe is not available:
+
 - Get the value of the +<version>COMNTOOLS+ environment variable, for example, +VS100COMNTOOLS+
 - The resulting path will be appended with +../IDE/devenv.com+
 
