@@ -28,7 +28,7 @@ syntax: regexp
 # IntelliJ IDEA
 ^\.idea/workspace.xml
 ^\.idea/tasks.xml
-^\.idea/modules/
+^\.idea/(libraries|modules)/
 # Generated doc
 ^buildSrc/gradle.properties
 ^doc/website/(raw-html|output)(-local)?/
