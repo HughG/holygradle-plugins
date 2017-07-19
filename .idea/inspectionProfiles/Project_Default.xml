@@ -10,7 +10,7 @@
     <inspection_tool class="GrUnnecessaryPublicModifier" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
     <inspection_tool class="GrUnresolvedAccess" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="GroovyUnresolvedAccess" enabled="true" level="WEAK WARNING" enabled_by_default="true" />
-    <inspection_tool class="RemoveCurlyBracesFromTemplate" enabled="true" level="VERY WEAK WARNING" enabled_by_default="true" />
+    <inspection_tool class="RemoveCurlyBracesFromTemplate" enabled="false" level="VERY WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="SyntaxError" enabled="true" level="ERROR" enabled_by_default="false">
       <scope name="Inspection" level="ERROR" enabled="true" />
     </inspection_tool>

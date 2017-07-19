@@ -30,6 +30,7 @@ import org.gradle.api.artifacts.ConfigurationContainer
 public class IntrepidPlugin implements Plugin<Project> {
     public static final String EVERYTHING_CONFIGURATION_NAME = "everything"
     public static final String EVERYTHING_CONFIGURATION_PROPERTY = "createEverythingConfiguration"
+    public static final String LAZY_CONFIGURATION_EXT_PROPERTY = "lazyConfiguration"
 
     void apply(Project project) {
         ProfilingHelper profilingHelper = new ProfilingHelper(project.logger)
@@ -245,7 +246,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         // property containing a single Closure, it will be executed just before that specific task runs.  As long as
         // intrepid-plugin is applied in a build script, this is available to all plugins.
         project.rootProject.gradle.taskGraph.beforeTask { Task task ->
-            if (task.hasProperty("lazyConfiguration")) {
+            if (task.hasProperty(LAZY_CONFIGURATION_EXT_PROPERTY)) {
                 Closure lazyConfig = task.lazyConfiguration
                 if (lazyConfig != null) {
                     task.logger.info("Applying lazyConfiguration for task ${task.name}.")
