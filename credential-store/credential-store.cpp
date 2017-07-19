@@ -209,15 +209,24 @@ bool HasBasis(const map<wstring, list<wstring>>& bases, wstring credential_name)
     return false;
 }
 
-void RequestUsernameAndPassword(wstring& username, wstring& password)
+wstring GetUserName()
 {
     DWORD usernameLen = UNLEN;
-    TCHAR usernameBuffer[UNLEN];
-    GetUserName(usernameBuffer, &usernameLen);
-    wcout << L"Username [ENTER to accept default '" << usernameBuffer << L"']: ";
+    wchar_t usernameBuffer[UNLEN];
+    if (GetUserName(usernameBuffer, &usernameLen)) {
+        return usernameBuffer;
+    } else {
+        return L"";
+    }
+}
+
+void RequestUsernameAndPassword(wstring& username, wstring& password)
+{
+    wstring usernameDefault(GetUserName());
+    wcout << L"Username [ENTER to accept default '" << usernameDefault << L"']: ";
     getline(wcin, username);
     if (username.empty()) {
-        username = usernameBuffer;
+        username = usernameDefault;
     }
     if (username.empty()) {
         wcerr << L"ERROR: Empty username" << endl;
@@ -232,36 +241,6 @@ void RequestUsernameAndPassword(wstring& username, wstring& password)
     if (password.empty()) {
         wcerr << L"ERROR: Empty password" << endl;
         exit(1);
-    }
-}
-
-void UpdateAllCredentials(wstring& username, wstring& password) {
-    PCREDENTIAL *pCredArray = NULL;
-    DWORD dwCount = 0;
-
-    //Load all credentials into array.
-    if (::CredEnumerate(NULL, 0, &dwCount, &pCredArray)) {
-        for (DWORD dwIndex = 0; dwIndex < dwCount; dwIndex++) {
-            PCREDENTIAL pCredential = pCredArray[dwIndex];
-
-            wstring target_name(pCredential->TargetName);
-
-            //PrintCredential(pCredential);
-
-            if (IsMercurialCredential(target_name, username) ||
-                IsGitCredential(target_name, username) ||
-                IsIntrepidCredential(target_name, username)
-            ) {
-                // Note: We use the existing credential username here, not the username parameter, because
-                // some (Mercurial) credentials have the username parameter value as a substring rather than
-                // the full string.
-                wstring credential_user_name = wstring(pCredential->UserName);
-                StoreCredential(target_name, credential_user_name, password);
-            }
-        }
-
-        //Free the credentials array.
-        ::CredFree(pCredArray);
     }
 }
 
@@ -396,12 +375,26 @@ list<wstring> GetDefaultCredentials(const wstring& username) {
     return defaultCredentials;
 }
 
+/*
+    Update the username & password for all non-basis credentials for the given username.
+*/
 void UpdateCredentialsFromDefault()
 {
     wstring username;
     wstring password;
     RequestUsernameAndPassword(username, password);
-    UpdateAllCredentials(username, password);
+
+    wstring credentialBasisFileName = GetCredentialBasisFileName();
+    auto defaultCredentials = GetDefaultCredentials(username);
+    if (defaultCredentials.empty()) {
+        wcout << L"ERROR: There are no default credentials listed in " << endl
+            << credentialBasisFileName << L"." << endl;
+        exit(1);
+    }
+
+    for (auto it = defaultCredentials.begin(); it != defaultCredentials.end(); ++it) {
+        StoreCredential(*it, username, password);
+    }
 }
 
 /*
@@ -410,23 +403,20 @@ void UpdateCredentialsFromDefault()
 */
 void UpdateCredentialsFromBasis(const wstring& basis)
 {
-    wstring username;
-    wstring password;
-    RequestUsernameAndPassword(username, password);
-
     wstring credentialBasisFileName = GetCredentialBasisFileName();
     auto bases = ReadBases(credentialBasisFileName);
     auto basisCredentials = bases[basis];
     if (basisCredentials.empty()) {
-        wcout << L"There are no credentials for basis '" << basis << L"' listed in " << endl
-            << L"  " << credentialBasisFileName << L"." << endl;
+        wcout << L"ERROR: There are no credentials for basis '" << basis << L"' listed in " << endl
+            << credentialBasisFileName << L"." << endl;
         exit(1);
     }
 
-    wstringstream basisCredentialNameStream;
-    basisCredentialNameStream << HOLY_GRADLE_CREDENTIAL_PREFIX << basis;
-    auto basisCredentialName = basisCredentialNameStream.str();
-    StoreCredential(basisCredentialName, username, password);
+    wstring username;
+    wstring password;
+    RequestUsernameAndPassword(username, password);
+
+    StoreCredential(HOLY_GRADLE_CREDENTIAL_PREFIX + basis, username, password);
     for (auto it = basisCredentials.begin(); it != basisCredentials.end(); ++it) {
         StoreCredential(*it, username, password);
     }
@@ -435,9 +425,25 @@ void UpdateCredentialsFromBasis(const wstring& basis)
 void ListBases() {
     wstring credentialBasisFileName = GetCredentialBasisFileName();
     auto bases = ReadBases(credentialBasisFileName);
-    wcout << L"The following basis credentials exist in " << credentialBasisFileName << L":" << endl;
+    wcout << L"The following basis credentials exist in " << credentialBasisFileName << L":" << endl << endl;
     for (auto it = bases.begin(); it != bases.end(); ++it) {
         wcout << it->first << endl;
+    }
+}
+
+void ListBasis(const wstring& basis) {
+    wstring credentialBasisFileName = GetCredentialBasisFileName();
+    auto bases = ReadBases(credentialBasisFileName);
+    auto basisCredentials = bases[basis];
+    if (basisCredentials.empty()) {
+        wcout << L"There are no Git, or Mercurial credentials listed for " << basis << L" in " << endl
+            << credentialBasisFileName << L"." << endl;
+    } else {
+        wcout << L"The following Git or Mercurial credentials are listed for " << basis << L" in " << endl
+            << credentialBasisFileName << L":" << endl << endl;
+        for (auto it = basisCredentials.begin(); it != basisCredentials.end(); ++it) {
+            wcout << *it << endl;
+        }
     }
 }
 
@@ -445,11 +451,11 @@ void ListDefaults(const wstring& username) {
     wstring credentialBasisFileName = GetCredentialBasisFileName();
     auto defaultCredentials = GetDefaultCredentials(username);
     if (defaultCredentials.empty()) {
-        wcout << L"There are no Git, Mercurial, Subversion, and Holy Gradle credentials are listed in " << endl
-            << L"  " << credentialBasisFileName << L"." << endl;
+        wcout << L"There are no Git, Mercurial, and Holy Gradle credentials listed in " << endl
+            << credentialBasisFileName << L"." << endl;
     } else {
-        wcout << L"The following Git, Mercurial, Subversion, and Holy Gradle credentials are not listed in " << endl
-            << L"  " << credentialBasisFileName << L":" << endl;
+        wcout << L"The following Git, Mercurial, and Holy Gradle credentials are not listed in " << endl
+            << credentialBasisFileName << L":" << endl << endl;
         for (auto it = defaultCredentials.begin(); it != defaultCredentials.end(); ++it) {
             wcout << *it << endl;
         }
@@ -461,29 +467,31 @@ void ShowUsage(wchar_t* program_name) {
     wcout << endl;
     wcout << L"Main commands:" << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" for-default" << endl;
+    wcout << L"  " << program_name << L" for-defaults" << endl;
     wcout << L"    Prompts for a username and password, then sets them as the content of" << endl;
     wcout << L"    credential \"" << HOLY_GRADLE_CREDENTIAL_PREFIX L"Domain Credentials\"," << endl;
     wcout << L"    all Git and Mercurial credentials not listed under any name in" << endl;
     wcout << L"    " << GetCredentialBasisFileName() << L", and" << endl;
-    wcout << L"    all \"" << HOLY_GRADLE_CREDENTIAL_PREFIX
-        << L"<credential_name>\" credentials not listed as bases there." << endl;
+    wcout << L"    all \"" << HOLY_GRADLE_CREDENTIAL_PREFIX << L"*\" credentials not listed as bases there." << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" for-basis <credential_name>" << endl;
+    wcout << L"  " << program_name << L" for-basis <basis_name>" << endl;
     wcout << L"    Prompts for a username and password, then sets them as the content of" << endl;
-    wcout << L"    credential \"" << HOLY_GRADLE_CREDENTIAL_PREFIX << L"<credential_name>\", and" << endl;
-    wcout << L"    all credentials listed under <credential_name> in" << endl;
+    wcout << L"    credential \"" << HOLY_GRADLE_CREDENTIAL_PREFIX << L"<basis_name>\", and" << endl;
+    wcout << L"    all credentials listed under <basis_name> in" << endl;
     wcout << L"    " << GetCredentialBasisFileName() << endl;
     wcout << endl;
     wcout << L"Other commands:" << endl;
     wcout << endl;
+    wcout << L"  " << program_name << L" list-defaults [<username>]" << endl;
+    wcout << L"    Lists all the credentials which would be updated by the 'for-default' command" << endl;
+    wcout << L"    for the given <username> (default: '" << GetUserName() << "')." << endl;
+    wcout << endl;
     wcout << L"  " << program_name << L" list-bases" << endl;
-    wcout << L"    Lists all the basis <credential_name> values in" << endl;
+    wcout << L"    Lists all the <basis_name> values in" << endl;
     wcout << L"    " << GetCredentialBasisFileName() << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" list-defaults <username>" << endl;
-    wcout << L"    Lists all the credentials which would be updated by the for-default command" << endl;
-    wcout << L"    for the given <username>." << endl;
+    wcout << L"  " << program_name << L" list-basis <basis_name>" << endl;
+    wcout << L"    Lists all the credentials which would be updated by the 'for-basis <basis_name>' command" << endl;
     wcout << endl;
     wcout << L"  " << program_name << L" get <credential_name>" << endl;
     wcout << L"    Outputs the content of the named credential; normally \"<username>&&&<password>\"." << endl;
@@ -512,10 +520,14 @@ int _tmain(int argc, wchar_t* argv[]) {
         StoreCredential(writeKey, username, password);
     } else if (_wcsnicmp(argv[1], L"for-basis", command_length) == 0 && argc == 3) {
         UpdateCredentialsFromBasis(argv[2]);
-    } else if (_wcsnicmp(argv[1], L"for-default", command_length) == 0 && argc == 2) {
+    } else if (_wcsnicmp(argv[1], L"for-defaults", command_length) == 0 && argc == 2) {
         UpdateCredentialsFromDefault();
     } else if (_wcsnicmp(argv[1], L"list-bases", command_length) == 0 && argc == 2) {
         ListBases();
+    } else if (_wcsnicmp(argv[1], L"list-basis", command_length) == 0 && argc == 3) {
+        ListBasis(argv[2]);
+    } else if (_wcsnicmp(argv[1], L"list-defaults", command_length) == 0 && argc == 2) {
+        ListDefaults(GetUserName());
     } else if (_wcsnicmp(argv[1], L"list-defaults", command_length) == 0 && argc == 3) {
         ListDefaults(argv[2]);
     } else {
