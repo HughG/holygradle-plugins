@@ -265,34 +265,60 @@ void UpdateAllCredentials(wstring& username, wstring& password) {
     }
 }
 
-wstring GetCredentialBasisFileName() {
+bool GetPathFromEnv(const wstring& name, wstring& value) {
+    wchar_t raw_value[MAX_PATH];
+    DWORD length = ::GetEnvironmentVariable(name.c_str(), raw_value, MAX_PATH);
+    bool ok = !(length == 0 || length > MAX_PATH);
+    if (ok) {
+        value.assign(raw_value, length);
+    }
+    return ok;
+}
+
+bool GetGradleUserHome(wstring& home) {
     bool found_home = false;
-    wchar_t gradle_user_home[MAX_PATH];
-    if (SUCCEEDED(::GetEnvironmentVariable(L"GRADLE_USER_HOME", gradle_user_home, MAX_PATH))) {
-        found_home = true;
+    if (GetPathFromEnv(L"GRADLE_USER_HOME", home)) {
+        found_home = (home.size() > 0);
     } else {
-        if (::GetLastError() == ERROR_ENVVAR_NOT_FOUND) {
-            if (SUCCEEDED(::GetEnvironmentVariable(L"USERPROFILE", gradle_user_home, MAX_PATH))) {
+        if (GetPathFromEnv(L"USERPROFILE", home)) {
+            auto size = home.size();
+            if (size > 0) {
+                if (home[size - 1] != L'\\') {
+                    home += L'\\';
+                }
+                home += L".gradle";
                 found_home = true;
             }
         }
     }
+    return found_home;
+}
 
-    if (!found_home) {
-        wcerr << L"Failed to read environment variable " GRADLE_USER_HOME_ENV_VAR_NAME L" or "
+wstring GetCredentialBasisFileName() {
+    // Statically cache the result, because this function may be called multiple times and it won't change.
+    static wstring basis_file_name;
+    if (basis_file_name.size() > 0) {
+        return basis_file_name;
+    }
+
+    wstring home;
+    if (GetGradleUserHome(home)) {
+        wstringstream basis_file_name_stream;
+        basis_file_name_stream << home;
+        wchar_t last_char = home[home.size() - 1];
+        if (!(last_char == L'/' || last_char == L'\\')) {
+            basis_file_name_stream << L'\\';
+        }
+        basis_file_name_stream << HOLY_GRADLE_DIR_NAME << L'\\' << CREDENTIAL_BASIS_FILE_NAME;
+        basis_file_name = basis_file_name_stream.str();
+    } else {
+        wcerr << L"ERROR: Failed to read environment variable " GRADLE_USER_HOME_ENV_VAR_NAME L" or "
             USERPROFILE_ENV_VAR_NAME L"." << endl;
         wcerr << L"One of these must be set to locate the credential basis file." << endl;
+        basis_file_name = L"???";
     }
 
-    wstring home(gradle_user_home);
-    wstringstream basis_file_name;
-    basis_file_name << home;
-    wchar_t last_char = home[home.size() - 1];
-    if (!(last_char == L'/' || last_char == L'\\')) {
-        basis_file_name << L'\\';
-    }
-    basis_file_name << HOLY_GRADLE_DIR_NAME << L'\\' << CREDENTIAL_BASIS_FILE_NAME;
-    return basis_file_name.str();
+    return basis_file_name;
 }
 
 map<wstring, list<wstring>> ReadBases(const wstring& credentialBasisFileName) {
@@ -433,11 +459,15 @@ void ListDefaults(const wstring& username) {
 void ShowUsage(wchar_t* program_name) {
     wcout << L"Usage: " << program_name << L" <command> <arguments>" << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" get <credential_name>" << endl;
-    wcout << L"    Outputs the content of the named credential; normally \"<username>&&&<password>\"." << endl;
+    wcout << L"Main commands:" << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" set <credential_name> <username> <password>" << endl;
-    wcout << L"    Sets the content of the named credential to \"<username>&&&<password>\"." << endl;
+    wcout << L"  " << program_name << L" for-default" << endl;
+    wcout << L"    Prompts for a username and password, then sets them as the content of" << endl;
+    wcout << L"    credential \"" << HOLY_GRADLE_CREDENTIAL_PREFIX L"Domain Credentials\"," << endl;
+    wcout << L"    all Git and Mercurial credentials not listed under any name in" << endl;
+    wcout << L"    " << GetCredentialBasisFileName() << L", and" << endl;
+    wcout << L"    all \"" << HOLY_GRADLE_CREDENTIAL_PREFIX
+        << L"<credential_name>\" credentials not listed as bases there." << endl;
     wcout << endl;
     wcout << L"  " << program_name << L" for-basis <credential_name>" << endl;
     wcout << L"    Prompts for a username and password, then sets them as the content of" << endl;
@@ -445,13 +475,7 @@ void ShowUsage(wchar_t* program_name) {
     wcout << L"    all credentials listed under <credential_name> in" << endl;
     wcout << L"    " << GetCredentialBasisFileName() << endl;
     wcout << endl;
-    wcout << L"  " << program_name << L" for-default" << endl;
-    wcout << L"    Prompts for a username and password, then sets them as the content of" << endl;
-    wcout << L"    credential \"" << HOLY_GRADLE_CREDENTIAL_PREFIX L"Domain Credentials\"," << endl;
-    wcout << L"    all Git and Mercurial credentials not listed under any name in" << endl;
-    wcout << L"    " << GetCredentialBasisFileName() << L", and" << endl;
-    wcout << L"    all \""<< HOLY_GRADLE_CREDENTIAL_PREFIX
-        << L"<credential_name>\" credentials not listed as bases there." << endl;
+    wcout << L"Other commands:" << endl;
     wcout << endl;
     wcout << L"  " << program_name << L" list-bases" << endl;
     wcout << L"    Lists all the basis <credential_name> values in" << endl;
@@ -460,6 +484,12 @@ void ShowUsage(wchar_t* program_name) {
     wcout << L"  " << program_name << L" list-defaults <username>" << endl;
     wcout << L"    Lists all the credentials which would be updated by the for-default command" << endl;
     wcout << L"    for the given <username>." << endl;
+    wcout << endl;
+    wcout << L"  " << program_name << L" get <credential_name>" << endl;
+    wcout << L"    Outputs the content of the named credential; normally \"<username>&&&<password>\"." << endl;
+    wcout << endl;
+    wcout << L"  " << program_name << L" set <credential_name> <username> <password>" << endl;
+    wcout << L"    Sets the content of the named credential to \"<username>&&&<password>\"." << endl;
     wcout << endl;
 }
 
