@@ -25,6 +25,8 @@ syntax: regexp
 (^|/).gradle/
 (^|/)build/
 ^classes/
+# Holy Gradle
+^(|https-setup-kit/|wrapper-starter-kit/)gradle/(cacerts|cacerts.import.log|certs/)
 # IntelliJ IDEA
 .idea/workspace.xml
 .idea/tasks.xml
