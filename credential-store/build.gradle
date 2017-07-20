@@ -1,79 +1,64 @@
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 
-
-import java.io.BufferedReader
-
-import org.gradle.process.ExecSpec
 import holygradle.process.ExecHelper
 
-public File getDevEnvPathFromvswhere(String vswhereLocation, String chosenDevEnvVersion) {
+public File getCommonToolsPathFromVSWhere(String vswhereLocation) {
+    Pattern versionPattern = Pattern.compile("VS([0-9]+)", Pattern.CASE_INSENSITIVE)
+    Matcher versionMatcher = versionPattern.matcher(chosenDevEnvVersion)
 
-    String devEnvLocationPropertyName = "holygradleDevEnv" +chosenDevEnvVersion+"Location";
-    
-    Pattern versionPattern = Pattern.compile("VS([0-9]+)", Pattern.CASE_INSENSITIVE);
-    Matcher versionMatcher = versionPattern.matcher(chosenDevEnvVersion);
-    
-    if (versionMatcher.find()){
+    if (versionMatcher.find()) {
         Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
-        String decimalVersionNumber = (devEnvVersion/10).toString()
-        String nextDecimalVersionNumber = ((devEnvVersion/10)+0.1).toString()
-        
-         String installPath = ExecHelper.executeAndReturnResultAsString(
+        String decimalVersionNumber = (devEnvVersion / 10).toString()
+        String nextDecimalVersionNumber = decimalVersionNumber = '.1'
+
+        String installPath = ExecHelper.executeAndReturnResultAsString(
             project.logger,
             project.&exec,
             { ExecSpec spec ->
-                spec.commandLine vswhereLocation, "-property","installationPath","-legacy","-format","value","-version","[${decimalVersionNumber},${nextDecimalVersionNumber})"
+                spec.commandLine vswhereLocation,
+                                 "-property", "installationPath",
+                                 "-legacy",
+                                 "-format", "value",
+                                 "-version", "[${decimalVersionNumber},${nextDecimalVersionNumber})"
             },
             { return true }
         )
-        File devEnvPath = new File(installPath, "/Common7/IDE/devenv.com");
-        
-        if (!devEnvPath.exists()) {
-            throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
-        }
-        devEnvPath
-        
+        return new File(installPath, "Common7")
     } else {
         throw new RuntimeException("Failed to parse DevEnv version '${chosenDevEnvVersion}'")
-        
     }
-        
 }
 
-public File getDevEnvPathFromRegistry(String chosenDevEnvVersion) {
+public File getCommonToolsPathFromEnvironment() {
     String envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
     if (envVarComnTools == null || envVarComnTools == "") {
         throw new RuntimeException("'version' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
     }
-    File comnToolsPath = new File(envVarComnTools)
-    File devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")
-    if (!devEnvPath.exists()) {
-        throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
+    return new File(envVarComnTools)
+}
+
+public File getCommonToolsPath() {
+    // Check for the existence of vswhere.exe
+    final String vswhereLocation = ["ProgramFiles", "ProgramFiles(x86)"] // look at 64-bit then 32-bit environment variables
+        .findResults { System.getenv(it) } // collect all non-null environment variable values
+        .collect { "${it}\\Microsoft Visual Studio\\Installer\\vswhere.exe" } // map to filenames
+        .find { new File(it).exists() } // return the first filename for which a file exists
+
+    if (vswhereLocation != null) {
+        return getCommonToolsPathFromVSWhere(vswhereLocation)
+    } else {
+        return getCommonToolsPathFromEnvironment()
     }
-    devEnvPath
-    
 }
 
 public File getDevEnvPath() {
-    String devEnvVersion = "VS120"
-    // Check for the existence of vswhere.exe
-    String vswhereLocation = null;
-    String programFiles = System.getenv("ProgramFiles(x86)");
-    String programFiles32 = System.getenv("ProgramFiles"); //  Location of vswhere.exe on 32 bit OS's before windows 10.
-    if (programFiles != null &&
-        new File("${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
-            vswhereLocation = "${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe";   
-    } else if (programFiles32 != null && 
-        new File("${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
-            vswhereLocation = "${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+    File commonToolsPath = getCommonToolsPath()
+    File devEnvPath = new File(commonToolsPath, "../IDE/devenv.com")
+    if (!devEnvPath.exists()) {
+        throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
     }
-    
-    if (vswhereLocation != null){
-        getDevEnvPathFromvswhere(vswhereLocation,devEnvVersion);
-    } else {
-        getDevEnvPathFromRegistry(devEnvVersion);
-    }
+    return devEnvPath
 }
 
 String releaseVersionInfoFileName = 'release_version_info.h'

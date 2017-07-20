@@ -416,7 +416,8 @@ void UpdateCredentialsFromBasis(const wstring& basis)
     wstring password;
     RequestUsernameAndPassword(username, password);
 
-    StoreCredential(HOLY_GRADLE_CREDENTIAL_PREFIX + basis, username, password);
+    auto credentialName = HOLY_GRADLE_CREDENTIAL_PREFIX + basis;
+    StoreCredential(credentialName, username, password);
     for (auto it = basisCredentials.begin(); it != basisCredentials.end(); ++it) {
         StoreCredential(*it, username, password);
     }

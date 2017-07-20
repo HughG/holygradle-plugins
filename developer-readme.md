@@ -38,6 +38,7 @@ of your choice, containing a file with that name.
 ## Creating gradle.properties
 Create 'gradle.properties' in the root of your workspace add define these properties:
 ```
+chosenDevEnvVersion=VS120
 artifactoryServer=<fully qualified domain name of artifactory server, including port if necessary,
   e.g., http://artifact-server.company.com:8081/artifactory/>
 artifactoryPluginRepo=<name of the repository for obtaining dependent plugins, e.g., plugins-release>
@@ -48,6 +49,8 @@ artifactoryPluginSnapshotPublishRepo=<name of the (non-remote, non-virtual) repo
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
+
+The 'chosenDevEnvVersion' should be, e.g., "VS120" to use the C++ compiler from Visual Studio 2013.
 
 Run 'gw tasks'.  You may need to supply proxy arguments if it's the first time you've run this version of Gradle
 (e.g., 'gw -Dhttp.proxyHost=proxyserver -Dhttp.proxyPort=8080').
