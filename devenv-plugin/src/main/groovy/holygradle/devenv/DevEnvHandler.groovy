@@ -16,7 +16,7 @@ class DevEnvHandler {
     private String incredibuildPath = null
     private List<String> warningRegexes = []
     private List<String> errorRegexes = []
-    private String vswhereLocation = null
+    public String vswhereLocation = null // Only public so it can be accessed from inside a closure.  Stupid Groovy.
     
     public DevEnvHandler(Project project, DevEnvHandler parentHandler) {
         this.project = project
@@ -97,8 +97,9 @@ class DevEnvHandler {
         
         if (versionMatcher.find()) {
             Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
-            String decimalVersionNumber = (devEnvVersion / 10).toString()
-            String nextDecimalVersionNumber = decimalVersionNumber = '.1'
+            String majorVersionNumber = (devEnvVersion / 10).toString()
+            String fullVersionNumber = majorVersionNumber + ".0"
+            String nextFullVersionNumber = majorVersionNumber + '.1'
 
             String installPath = ExecHelper.executeAndReturnResultAsString(
                 project.logger,
@@ -108,11 +109,11 @@ class DevEnvHandler {
                                      "-property", "installationPath",
                                      "-legacy",
                                      "-format", "value",
-                                     "-version", "[${decimalVersionNumber},${nextDecimalVersionNumber})"
+                                     "-version", "[${fullVersionNumber},${nextFullVersionNumber})"
                 },
                 { return true }
             )
-            return new File(installPath, "Common7")
+            return new File(installPath, "Common7/Tools")
         } else {
             throw new RuntimeException("Failed to parse DevEnv version '${chosenDevEnvVersion}'")
         }
@@ -158,8 +159,8 @@ class DevEnvHandler {
         return devEnvPath
     }
     
-    public File getBuildToolPath(boolean allowIncredibuild) {
-        if (allowIncredibuild && useIncredibuild()) {
+    public File getBuildToolPath() {
+        if (useIncredibuild()) {
             getVerifiedIncredibuildPath()
         } else {
             getDevEnvPath()
