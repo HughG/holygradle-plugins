@@ -2,10 +2,11 @@ package holygradle.devenv
 
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.process.ExecSpec
+import holygradle.process.ExecHelper
 
 import java.util.regex.Pattern
 import java.util.regex.Matcher
-import java.io.BufferedReader
 
 class DevEnvHandler {
     private Project project
@@ -16,22 +17,12 @@ class DevEnvHandler {
     private String incredibuildPath = null
     private List<String> warningRegexes = []
     private List<String> errorRegexes = []
-    private String vsWhereLocation = null
+    private Boolean shouldCheckForVSWhere = true
+    private String vswhereLocation = null
     
     public DevEnvHandler(Project project, DevEnvHandler parentHandler) {
         this.project = project
         this.parentHandler = parentHandler
-        
-        String programFiles = System.getenv("ProgramFiles(x86)");
-        
-        // 32 bit OS before windows 10
-        String programFiles32 = System.getenv("ProgramFiles");
-        // look for vsWhere
-        if (new File("${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
-            this.vsWhereLocation = "${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe";
-        } else if( new File("${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
-            this.vsWhereLocation = "${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe";
-        }
         
         defineErrorRegex(/\d+>Build FAILED/)
         defineErrorRegex(/.* [error|fatal error]+ \w+\d{2,5}:.*/)
@@ -101,36 +92,37 @@ class DevEnvHandler {
         }
     }
     
-    public File getDevEnvPathFromVSWhere() {
+    public File getDevEnvPathFromvswhere() {
         String chosenDevEnvVersion = getDevEnvVersion()
+        
+        String devEnvLocationPropertyName = "holygradleDevEnv" +chosenDevEnvVersion+"Location";
+        if (project.rootProject.hasProperty(devEnvLocationPropertyName)) {
+            return project.rootProject.ext[devEnvLocationPropertyName];
+        }
         
         Pattern versionPattern = Pattern.compile("VS([0-9]+)", Pattern.CASE_INSENSITIVE);
         Matcher versionMatcher = versionPattern.matcher(chosenDevEnvVersion);
         
         if (versionMatcher.find()){
             Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
-            String decimalVersionNumber = (devEnvVersion/10.0).toString();
-            String nextDecimalVersionNumber = ((devEnvVersion/10.0)+0.1).toString();
+            String decimalVersionNumber = (devEnvVersion/10).toString()
+            String nextDecimalVersionNumber = ((devEnvVersion/10)+0.1).toString()
             
-            Process vsWhereProcess =
-                Runtime
-                    .getRuntime()
-                        .exec(
-                            "${this.vsWhereLocation} -property installationPath -legacy -format value -version [${decimalVersionNumber},${nextDecimalVersionNumber})",
-                            null
-                        );
-            
-            InputStream is = vsWhereProcess.getInputStream()
-            InputStreamReader isReader = new InputStreamReader(is)
-            
-            BufferedReader buffIsReader = new BufferedReader(isReader)
-            String installPath = buffIsReader.readLine()
+            String installPath = ExecHelper.executeAndReturnResultAsString(
+                project.logger,
+                project.&exec,
+                { ExecSpec spec ->
+                    spec.commandLine this.vswhereLocation, "-property","installationPath","-legacy","-format","value","-version","[${decimalVersionNumber},${nextDecimalVersionNumber})"
+                },
+                { return true }
+            )
             File devEnvPath = new File(installPath, "/Common7/IDE/devenv.com");
             
             if (!devEnvPath.exists()) {
                 throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
             }
             
+            project.rootProject.ext[devEnvLocationPropertyName] = devEnvPath
             devEnvPath
             
         } else {
@@ -156,8 +148,23 @@ class DevEnvHandler {
      
     public File getDevEnvPath() {
         
-        if (vsWhereLocation != null){
-            getDevEnvPathFromVSWhere();
+        // Check for the existence of vswhere.exe
+        if (this.shouldCheckForVSWhere) {
+            
+            this.shouldCheckForVSWhere = false;
+            String programFiles = System.getenv("ProgramFiles(x86)");
+            String programFiles32 = System.getenv("ProgramFiles"); //  Location of vswhere.exe on 32 bit OS's before windows 10.
+            if (programFiles != null &&
+                new File("${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
+                    this.vswhereLocation = "${programFiles}\\Microsoft Visual Studio\\Installer\\vswhere.exe";   
+            } else if (programFiles32 != null && 
+                new File("${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe").exists()) {
+                    this.vswhereLocation = "${programFiles32}\\Microsoft Visual Studio\\Installer\\vswhere.exe";
+            }
+        }
+                
+        if (this.vswhereLocation != null){
+            getDevEnvPathFromvswhere();
         } else {
             getDevEnvPathFromRegistry();
         }
