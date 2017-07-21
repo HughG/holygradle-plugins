@@ -13,9 +13,17 @@ class StampingHandler(private val project: Project) : StampingProvider {
     val patternReplacers: Collection<PatternReplacer> get() = _patternReplacers
 
     val taskDescription = "Stamp things"
-    var taskName = "stampFiles"
-    var runPriorToBuild = false
-    
+    private var _taskName = "stampFiles"
+    private var _runPriorToBuild = false
+
+    override fun setTaskName(taskName: String) {
+        _taskName = taskName
+    }
+
+    override fun getTaskName(): String = _taskName
+
+    override fun getRunPriorToBuild(): Boolean = _runPriorToBuild
+
     fun files(filePattern: String, config: Action<Replacer>): Replacer {
         val replacer = PatternReplacer(filePattern)
         ConfigureUtil.configure(config, replacer)

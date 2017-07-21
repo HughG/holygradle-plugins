@@ -8,6 +8,7 @@ sealed class Replacer {
 
     private val regexFindAndReplace: MutableCollection<ReplacePair> = mutableListOf()
     
+    @Suppress("unused") // API method
     fun replaceRegex(regex: Pattern, replacementString: String) {
         regexFindAndReplace.add(ReplacePair(regex.toRegex(), replacementString))
     }
