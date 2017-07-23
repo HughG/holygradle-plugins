@@ -1,3 +1,29 @@
+buildscript {
+    ext.kotlin_version = '1.1.3'
+
+    repositories {
+        mavenCentral()
+    }
+    it.dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+def javaVersion = System.getProperty('java.specification.version').split('\\.')*.toInteger()
+if (!(javaVersion[0] >= 1 || javaVersion[1] >= 8)) {
+    throw new RuntimeException(
+        "The Holy Gradle can only be built with JDK 1.8 or later.  If you need to set JAVA_HOME to a different version, " +
+        "please set HOLY_GRADLE_JAVA_HOME to a 1.8 or later JDK."
+    )
+    /*
+        If you try to build with JDK 7 or earlier, you'll get the following error,
+        because the Kotlin plugin needs JDK 1.8 or later.
+
+        > Failed to apply plugin [id 'kotlin']
+           > Could not generate a proxy class for class org.jetbrains.kotlin.gradle.tasks.KotlinCompile.
+   */
+}
+
 apply plugin: 'groovy'
 
 // Force-add a Mercurial client-side hook to avoid committing anything with "banned" words.
@@ -64,27 +90,12 @@ buildscript { ScriptHandler script ->
 }
 
 subprojects {
-    if (project.name.endsWith("plugin") || project.name == "integration") {
-        apply plugin: "groovy"
-
-        // Specify common dependencies for all projects.
-        dependencies {
-            compile localGroovy()
-            compile gradleApi()
-            testCompile files("../buildSrc/build/classes/main/")
-        }
-    }
-}
-
-subprojects {
     // Add a default configuration for any subprojects which don't have one.
-    if (configurations.findByName("default") == null) {
-        configurations.create('default')
-    }
+    configurations.maybeCreate("default")
 
     // Set a common group.
     group = "holygradle"
-    
+
     // Set common repo info for dependencies.
     repositories {
         if (project.hasProperty('artifactoryServer')) {
@@ -111,6 +122,29 @@ subprojects {
             }
         } else {
             mavenCentral()
+            maven { url 'https://repo.gradle.org/gradle/plugins-releases' }
+        }
+    }
+}
+
+subprojects {
+    if (project.name.endsWith("plugin") || project.name == "integration") {
+        apply plugin: "groovy"
+
+        apply plugin: 'kotlin'
+        sourceCompatibility = 1.8
+
+        configurations {
+            optional
+        }
+
+        // Specify common dependencies for all projects.
+        dependencies {
+            compile localGroovy()
+            compile gradleApi()
+            testCompile files("../buildSrc/build/classes/main/")
+            testCompile group: 'junit', name: 'junit', version: '4.12'
+            testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
         }
     }
 }

@@ -9,13 +9,13 @@ This repository contains:
  - a redistribution of Gradle, including an init script which facilitates usage of the plugins
 
 # Prerequisites
- - Java JDK 1.7 - you do need the dev-kit, not just the run-time.
- - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 15.
- - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
+ - Java JDK 1.8 - you do need the dev-kit, not just the run-time.
+ - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 2017.1.
+ - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.8.0_141
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
     - If you normally need JAVA_HOME to point to another version of Java such as JDK 1.8, you can set
-    HOLY_GRADLE_JAVA_HOME to your JDK 1.7 location, and the "gw.bat" in this repo will use that instead.
+    HOLY_GRADLE_JAVA_HOME to your JDK 1.8 location, and the "gw.bat" in this repo will use that instead.
  - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  
    - It will tell you about this in the "Event Log" window. You can open the "Event Log" window by clicking on the 
     icon in the bottom right corner of the window. The event log will show a message like the following.
