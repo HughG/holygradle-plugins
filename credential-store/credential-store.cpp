@@ -181,13 +181,16 @@ bool IsMercurialCredential(const wstring& target_name, const wstring& username) 
     );
     // Need to check matches_format is true before calling GetCredentialUsername or we may get
     // ERROR_NOT_FOUND from CredRead, if the target_name is not for a CRED_TYPE_GENERIC credential.
+
+
     return matches_format &&
-        (wcsncmp(GetCredentialUsername(target_name).c_str(), username.c_str(), double_at_pos) == 0);
+        (_wcsnicmp(GetCredentialUsername(target_name).c_str(), username.c_str(), double_at_pos) == 0);
 }
 
 bool IsGitCredential(const wstring& target_name, const wstring& username) {
     // git://<scheme>://<username>@<hostname> or git:<scheme>://<hostname> 
-    return (target_name.find(L"git:") == 0) && (GetCredentialUsername(target_name) == username);
+    return (target_name.find(L"git:") == 0) && (_wcsnicmp(GetCredentialUsername(target_name).c_str() ,username.c_str(), username.size()) == 0);
+
 }
 
 bool IsIntrepidCredential(const wstring& target_name, const wstring& username) {
