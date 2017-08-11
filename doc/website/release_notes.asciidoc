@@ -44,6 +44,35 @@ things for users, and also for plugin developers.
 
 ==== 7.10.x
 
+===== 7.10.2
+(TODO)
+
+CredentialStore ::
+
+* Change +credential-store.exe+ to compare usernames case-insensitively.
+
+Stamper ::
+
+* GR #6718 Add support for reading/writing files with a non-default charset, e.g., UTF-8 on Windows 7.
++
+----
+stamping {
+    charsetName = "UTF-8" // New in 7.10.2
+
+    def commas = nextVersionNumber.replaceAll("\\.", ",")
+    files(".rc") {
+        replaceRegex ~/(FILEVERSION )[\d,]+(.*)/, commas
+        replaceRegex ~/(PRODUCTVERSION )[\d,]+(.*)/, commas
+        replaceRegex ~/(VALUE \"FileVersion\", \")[\d\.]+(\\0\")/, nextVersionNumber
+        replaceRegex ~/(VALUE \"ProductVersion\", \")[\d\.]+(\\0\")/, nextVersionNumber
+    }
+}
+----
++
+
+CustomGradleCorePlugin {br} Intrepid {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Utils::
+- No changes.
+
 ===== 7.10.1
 (d61afb3c0e6d at 2017-07-20 16:18:17 UTC)
 
