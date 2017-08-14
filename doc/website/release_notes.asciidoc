@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.10.x
 
 ===== 7.10.2
-(TODO)
+(bcbdabef989b at 2017-08-11 12:05:12 UTC)
 
 CredentialStore ::
 
