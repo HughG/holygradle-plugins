@@ -109,7 +109,10 @@ for (local in [false, true]) {
     final String rawHtmlDir = "${project.WEBSITE_DIR}/${rawHtmlSubdir}"
     final String websiteOutputSubdir = local ? 'output-local' : 'output'
     final String websiteOutputDir = "${project.WEBSITE_DIR}/${websiteOutputSubdir}"
-    final String publishUrl = local ? project.localWebsitePublishUrl : project.publicWebsitePublishUrl
+    final String publishUrlProperty = namePartLowercase + 'WebsitePublishUrl'
+    final String websiteUrlProperty = namePartLowercase + 'WebsiteUrl'
+    final String publishUrl =
+        project.hasProperty(publishUrlProperty) ? project.property(publishUrlProperty) : null
     final String publishUsernameProperty = "${namePartLowercase}WebsitePublishUsername"
     final File quicklyFile = new File("${rawHtmlDir}/_quickly.txt")
 
@@ -146,9 +149,17 @@ for (local in [false, true]) {
             addWebsiteExamples(it, "local/")
         }
 
-        String rootString = project.property("${namePartLowercase}WebsiteUrl")
-
-        filter { line -> WEBSITE_ROOT_PATTERN.matcher(line).replaceAll(rootString) }
+        if (project.hasProperty(websiteUrlProperty)) {
+            final String rootString = project.property(websiteUrlProperty)
+            filter { line -> WEBSITE_ROOT_PATTERN.matcher(line).replaceAll(rootString) }
+        } else {
+            doFirst {
+                logger.warn(
+                    "WARNING: Not replacing published websute URL in examples because property " +
+                    "${websiteUrlProperty} is not set"
+                )
+            }
+        }
     }
 
     def addWebsiteExtraFiles = { CopySpec spec, String prefix ->
@@ -245,6 +256,12 @@ for (local in [false, true]) {
         t.dependsOn "build${namePart}Website"
         t.dependsOn ":credential-store:build"
         t.doFirst {
+            if (publishUrl == null) {
+                throw new RuntimeException(
+                    "Can't publish ${namePartLowercase} website because ${publishUrlProperty} is not set"
+                )
+            }
+
             final Task cleanTask = project.tasks["clean${namePart}Website"]
             if (!gradle.taskGraph.hasTask(cleanTask) || !cleanTask.state.executed) {
                 throw new RuntimeException("Must use ${cleanTask.name} before ${t.name}")
