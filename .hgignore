@@ -30,6 +30,7 @@ syntax: regexp
 # IntelliJ IDEA
 .idea/workspace.xml
 .idea/tasks.xml
+.idea/libraries/
 # Generated doc
 ^doc/website/(raw-html|output)(-local)?/
 ^doc/website/local/
