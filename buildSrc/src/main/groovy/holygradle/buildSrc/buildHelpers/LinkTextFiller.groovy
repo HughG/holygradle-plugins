@@ -1,6 +1,6 @@
-package holygradle.buildHelpers
+package holygradle.buildSrc.buildHelpers
 
-import holygradle.groovy.util.*
+import holygradle.buildSrc.groovy.util.*
 
 import java.util.regex.Matcher
 

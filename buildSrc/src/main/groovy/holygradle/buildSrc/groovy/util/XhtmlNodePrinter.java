@@ -1,4 +1,4 @@
-package holygradle.groovy.util;
+package holygradle.buildSrc.groovy.util;
 
 import groovy.util.*;
 import groovy.xml.*;

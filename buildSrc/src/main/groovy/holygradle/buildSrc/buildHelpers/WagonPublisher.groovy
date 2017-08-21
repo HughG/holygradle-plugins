@@ -1,4 +1,4 @@
-package holygradle.buildHelpers
+package holygradle.buildSrc.buildHelpers
 
 import org.apache.maven.wagon.Wagon
 import org.apache.maven.wagon.authentication.AuthenticationInfo

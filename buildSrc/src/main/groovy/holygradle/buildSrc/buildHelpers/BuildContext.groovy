@@ -1,4 +1,4 @@
-package holygradle.buildHelpers
+package holygradle.buildSrc.buildHelpers
 
 import org.gradle.api.Project
 import org.gradle.api.logging.Logger

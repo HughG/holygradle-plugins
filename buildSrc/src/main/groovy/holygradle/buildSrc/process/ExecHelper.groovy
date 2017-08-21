@@ -1,4 +1,4 @@
-package holygradle.process
+package holygradle.buildSrc.process
 
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
