@@ -84,11 +84,6 @@ ensureHgHook(
     }
 }
 
-buildscript { ScriptHandler script ->
-    // Make sure we don't publish something which is based on conflicting versions of dependencies.
-    script.configurations["classpath"].resolutionStrategy { ResolutionStrategy rs ->  rs.failOnVersionConflict() }
-}
-
 subprojects {
     // Add a default configuration for any subprojects which don't have one.
     configurations.maybeCreate("default")
