@@ -97,9 +97,10 @@ class DevEnvHandler {
         
         if (versionMatcher.find()) {
             Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
-            String majorVersionNumber = (devEnvVersion / 10).toString()
-            String fullVersionNumber = majorVersionNumber + ".0"
-            String nextFullVersionNumber = majorVersionNumber + '.1'
+            Integer majorVersionNumber = devEnvVersion / 10;
+
+            String versionRangeStart = majorVersionNumber.toString()
+            String versionRangeEnd = (majorVersionNumber + 1).toString()
 
             String installPath = ExecHelper.executeAndReturnResultAsString(
                 project.logger,
@@ -109,7 +110,7 @@ class DevEnvHandler {
                                      "-property", "installationPath",
                                      "-legacy",
                                      "-format", "value",
-                                     "-version", "[${fullVersionNumber},${nextFullVersionNumber})"
+                                     "-version", "[${versionRangeStart}.0,${versionRangeEnd}.0)"
                 },
                 { return true }
             )
