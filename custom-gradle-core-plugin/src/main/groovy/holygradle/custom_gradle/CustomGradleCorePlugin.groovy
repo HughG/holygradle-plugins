@@ -2,10 +2,14 @@ package holygradle.custom_gradle
 
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.VersionNumber
+import org.gradle.BuildListener
+import org.gradle.BuildResult
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.initialization.Settings
+import org.gradle.api.invocation.Gradle
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.wrapper.Wrapper
 import org.gradle.process.ExecSpec
@@ -186,6 +190,44 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                     }
                 }
             }
+
+            project.gradle.addBuildListener(new BuildListener() {
+                void buildFinished(BuildResult result) {
+                    Throwable e = result.failure
+                    while (e != null) {
+                        if (e.message.startsWith("A conflict was found between the following modules:")) {
+//2345678901234567890123456789012345678901234567890123456789012345678901234567890 <-- 80-column ruler
+                            project.logger.error("""
+
+Run the 'dependencies' task to see a tree of dependencies for each configuration
+in your project(s).  Any dependency which has two versions separated by an arrow
+("group:name:version1 -> version2") will cause a conflict.  The error message
+for this build will only report one version conflict but your project may have
+more, so check for any such arrows.
+
+There are two main ways to resolve such a conflict.
+
+1. Change the versions of some dependencies so that there is no conflict.  You
+may have to do this by changing the versions of other dependencies nearer the
+root of the dependency graph.
+
+2. Move one conflicting dependency version to a different configuration.  You
+may have to do this by changing the configurations of other dependencies nearer
+the root of the dependency graph.  In that case you may also need to change the
+target folder of that dependency, so that you are not trying to put two
+different versions in the same location.
+
+""")
+                            return
+                        }
+                        e = e.cause
+                    }
+                }
+                void buildStarted(Gradle gradle) {}
+                void projectsEvaluated(Gradle gradle) {}
+                void projectsLoaded(Gradle gradle) {}
+                void settingsEvaluated(Settings settings) {}
+            })
         }
 
         timer.endBlock()
