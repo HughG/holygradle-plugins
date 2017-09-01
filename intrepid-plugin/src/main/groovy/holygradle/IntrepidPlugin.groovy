@@ -488,96 +488,47 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
         }
 
-        if (project == project.rootProject) {
-            // Add a dependency resolve rule for all configurations, which applies source overrides (if there are any).  We
-            // use ConfigurationContainer#all so that this is applied for each configuration when it's created.
-            project.configurations.all((Closure){ Configuration configuration ->
-                // Gradle automatically converts Closures to Action<>, so ignore IntelliJ warning.
-                //noinspection GroovyAssignabilityCheck
-                configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-                    project.logger.debug(
-                        "Checking for source overrides: requested ${details.requested}, target ${details.target}, " +
-                            "in ${configuration}"
-                    )
-                    for (SourceOverrideHandler handler in sourceOverrides) {
-                        if (shouldUseSourceOverride(project, details, handler)) {
-                            details.useVersion(handler.dummyVersionString)
-                            break
-                        }
+        // Add a dependency resolve rule for all configurations, which applies source overrides (if there are any).  We
+        // use ConfigurationContainer#all so that this is applied for each configuration when it's created.
+        project.configurations.all((Closure){ Configuration configuration ->
+            // Gradle automatically converts Closures to Action<>, so ignore IntelliJ warning.
+            //noinspection GroovyAssignabilityCheck
+            configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                project.logger.debug(
+                    "Checking for source overrides: requested ${details.requested}, target ${details.target}, " +
+                        "in ${configuration}"
+                )
+                for (SourceOverrideHandler handler in sourceOverrides) {
+                    if (shouldUseSourceOverride(project, details, handler)) {
+                        details.useVersion(handler.dummyVersionString)
+                        break
                     }
                 }
-            })
-
-            project.gradle.addListener(new SourceOverridesDependencyResolutionListener(project))
-
-            project.gradle.taskGraph.whenReady {
-                // Do this late, because the 'dependencies' task won't have been created when we're initialising.
-                addInformationToDependenciesTask(project)
             }
-        }
-    }
+        })
 
-    private void addInformationToDependenciesTask(Project project) {
-        project.tasks["dependencies"].doLast {
-            if (!project.sourceOverrides.empty) {
+        project.gradle.addListener(new SourceOverridesDependencyResolutionListener(project))
+
+        if (project == project.rootProject) {
+            // We use taskGraph.whenReady here, instead of just project.afterEvaluate, because we want to know whether
+            // the "dependencies" task was selected.
+            project.gradle.taskGraph.whenReady {
+                if (!project.sourceOverrides.empty) {
+                    // If the user is running the 'dependencies' task then it may because they have a depdendency conflict, so
+                    // make sure they get the details of sourceOverrides regardless of the configured logging level.
+                    LogLevel level = (project.gradle.taskGraph.hasTask("dependencies")) ? LogLevel.LIFECYCLE : LogLevel.INFO
 //2345678901234567890123456789012345678901234567890123456789012345678901234567890 <-- 80-column ruler
-                project.logger.lifecycle(
-                    """
+                    project.logger.log(
+                        level,
+                        """
 This project has source overrides, which have automatically-generated versions:
 """
-                )
-                for (SourceOverrideHandler override in project.sourceOverrides) {
-                    project.logger.lifecycle(
-                        "  ${override.dependencyCoordinate} -> ${override.dummyDependencyCoordinate}"
                     )
-                    project.logger.lifecycle("    at ${override.from}")
+                    for (SourceOverrideHandler override in project.sourceOverrides) {
+                        project.logger.log(level, "  ${override.dependencyCoordinate} -> ${override.dummyDependencyCoordinate}")
+                        project.logger.log(level, "    at ${override.from}")
+                    }
                 }
-                project.logger.lifecycle(
-                    """
-The source override mechanism copies dependency information from override
-projects and adds them as direct dependencies of the overridden module version
-in the root project.  So, if you see version conflicts in the dependency trees
-("group:name:version1 -> version2"), some of the conflicting versions may come
-from the source override projects.
-
-There are four possible causes of version conflicts involving source overrides.
-
-1. The conflict is not related to source overrides and is just caused by normal
-conflicts between versions of indirect dependencies.  You can resolve these as
-normal.
-
-2. The root build (the root project and/or its subprojects) has versions which
-conflict with one or more source override builds (the root project of a source
-override and/or its subprojects).  You can detect this because one of the
-conflicting versions will appear in the tree under a module with an override
-version ("SOURCE_..."), and the other will appear not under any override.  
-You can resolve this by changing the dependency version in the root build, or
-in the override build.  In the latter case it may be helpful to run the
-'dependencies' task separately in each conflicting source override directory.
-
-3. Similar to the previous case, two or more different source overrides
-builds (the root project of a source override and/or its subprojects) may have
-versions which conflict with each other, even though they don't conflict with
-dependencies from the root project.  You can detect this because each
-conflicting version will appear under a module with an override version
-("SOURCE_...").  Again, to resolve this, change the dependency version in one
-or more override builds.  It may be useful to run the 'dependencies' task
-separately in each source override directory.  
-
-4. Two or more source overrides may have been added for the same original
-module version ("group:name:version") but pointing to different locations on
-disk.  All overrides for the same original version must point to the same
-location.  (They may be specified as different relative paths but they must
-resolve to the same absolute location.)  You can detect this because the two
-versions involved in the conflict are both source override versions
-("SOURCE_...").  To resolve this, change all overrides for the same original
-module version to point to the same location.
-
-Remember that override projects can also contain further source overrides, so
-you may have to run the 'dependencies' task at multiple levels.
-"""
-//2345678901234567890123456789012345678901234567890123456789012345678901234567890 <-- 80-column ruler
-                )
             }
         }
     }

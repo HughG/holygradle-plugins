@@ -193,11 +193,9 @@ class CustomGradleCorePlugin implements Plugin<Project> {
 
             project.gradle.addBuildListener(new BuildListener() {
                 void buildFinished(BuildResult result) {
-                    Throwable e = result.failure
-                    while (e != null) {
-                        if (e.message.startsWith("A conflict was found between the following modules:")) {
+                    if (BuildHelper.buildFailedDueToVersionConflict(result)) {
 //2345678901234567890123456789012345678901234567890123456789012345678901234567890 <-- 80-column ruler
-                            project.logger.error("""
+                        project.logger.error("""
 
 Run the 'dependencies' task to see a tree of dependencies for each configuration
 in your project(s).  Any dependency which has two versions separated by an arrow
@@ -218,9 +216,6 @@ target folder of that dependency, so that you are not trying to put two
 different versions in the same location.
 
 """)
-                            return
-                        }
-                        e = e.cause
                     }
                 }
                 void buildStarted(Gradle gradle) {}
