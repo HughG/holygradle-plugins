@@ -7,10 +7,8 @@ import org.gradle.api.Project
  */
 class PackedDependenciesSettingsHandler {
     public static final String PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME = "packedDependenciesSettings"
-    private static boolean DEFAULT_USE_RELATIVE_PATH_FROM_IVY_XML = false
     private static String DEFAULT_UNPACK_CACHE_DIR = "unpackCache"
 
-    private Boolean useRelativePathFromIvyXml = null
     private File unpackedDependenciesCacheDir = null
     private final Project project
 
@@ -50,28 +48,7 @@ class PackedDependenciesSettingsHandler {
     }
 
     public void setUseRelativePathFromIvyXml(boolean defaultFail) {
-        useRelativePathFromIvyXml = defaultFail
-    }
-
-    /**
-     * If {@code true}, the intrepid plugin will use an old method to decide where to put the transitive dependencies of
-     * each packed dependency -- it will use a custom, non-namespaced {@code relativePath} attribute on each {@code
-     * &lt;dependency/&gt;} element in the {@code ivy.xml};
-     * if unset (null), use the value from the root project (defaulting to false);
-     * if false, use the current behaviour, which is to put transitive dependencies as siblings of the dependency, using
-     * the module name as the folder name.
-     */
-    public boolean getUseRelativePathFromIvyXml() {
-        // Fall back to the settings from the root project, if its extension has already been added there.  (It normally
-        // will have, but not if the evaluation order is changed with "evaluationDependsOn" or similar.)
-        if (useRelativePathFromIvyXml != null) {
-            return useRelativePathFromIvyXml
-        }
-        PackedDependenciesSettingsHandler fallback = getFallback()
-        if (fallback != null) {
-            return fallback.getUseRelativePathFromIvyXml()
-        }
-        return DEFAULT_USE_RELATIVE_PATH_FROM_IVY_XML
+        throw new UnsupportedOperationException("Using the relative path from ivy.xml files is no longer supported.")
     }
 
     public void setUnpackedDependenciesCacheDir(File unpackCacheDir) {

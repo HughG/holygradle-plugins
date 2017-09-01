@@ -20,16 +20,17 @@ class SpeedyUnpackManyTask
     extends DefaultTask
 {
     private Unzipper unzipper
-    private Map<ModuleVersionIdentifier, UnpackEntry> entries = new HashMap<ModuleVersionIdentifier, UnpackEntry>()
+    private Map<ModuleVersionIdentifier, Set<UnpackEntry>> entries =
+        new HashMap<ModuleVersionIdentifier, Set<UnpackEntry>>().withDefault { new HashSet<UnpackEntry>() }
 
     public void initialize(
         Unzipper unzipper
     ) {
         this.unzipper = unzipper
         dependsOn unzipper.dependencies
-        Collection<UnpackEntry> localEntries = entries.values() // capture private for closure
+        Collection<Set<UnpackEntry>> localEntrySets = entries.values() // capture private for closure
         doLast {
-            localEntries.each { processEntry it }
+            localEntrySets.each { set -> set.each { processEntry it } }
         }
     }
 
@@ -38,10 +39,12 @@ class SpeedyUnpackManyTask
         // inputs/outputs during task execution is deprecated.
         ext.lazyConfiguration = { Task it ->
             logger.debug "${it.path} before adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}"
-            source.allUnpackModules.each { UnpackModule module ->
-                module.versions.values().each { UnpackModuleVersion versionInfo ->
-                    // Add the unpack entry to unpack the module to the cache or directly to the workspace.
-                    addEntry(versionInfo)
+            source.allUnpackModules.values().each { Collection<UnpackModule> modules ->
+                modules.each { UnpackModule module ->
+                    module.versions.values().each { UnpackModuleVersion versionInfo ->
+                        // Add the unpack entry to unpack the module to the cache or directly to the workspace.
+                        addEntry(versionInfo)
+                    }
                 }
             }
             logger.debug "${it.path} after adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}"
@@ -57,30 +60,26 @@ class SpeedyUnpackManyTask
     }
 
     public void addEntry(ModuleVersionIdentifier id, UnpackEntry entry) {
-        if (entries.containsKey(id)) {
-            if (entries[id] != entry) {
-                throw new RuntimeException("Attempted to add inconsistent ${entry} to replace ${entries[id]} for ${id}")
-            }
-            return
-        } else {
-            entries[id] = entry
-        }
-        logger.debug "Adding ${id} inputs ${entry.zipFiles}"
-        inputs.files entry.zipFiles
-        if (entry.applyUpToDateChecks) {
-            // Use Gradle's normal pattern for copying files from a ZIP file to the filesystem.
-            entry.zipFiles.each { File zipFile ->
-                project.zipTree(zipFile).visit { FileVisitDetails fileDetails ->
-                    final File file = new File(entry.unpackDir, fileDetails.path)
-                    logger.debug "Adding ${id} output ${file}"
-                    outputs.file(file)
+        if (entries[id].add(entry)) {
+            // We haven't seen an equivalent entry yet, so configure the task to unpack this entry's files, too.
+
+            logger.debug "Adding ${id} inputs ${entry.zipFiles}"
+            inputs.files entry.zipFiles
+            if (entry.applyUpToDateChecks) {
+                // Use Gradle's normal pattern for copying files from a ZIP file to the filesystem.
+                entry.zipFiles.each { File zipFile ->
+                    project.zipTree(zipFile).visit { FileVisitDetails fileDetails ->
+                        final File file = new File(entry.unpackDir, fileDetails.path)
+                        logger.debug "Adding ${id} output ${file}"
+                        outputs.file(file)
+                    }
                 }
+            } else {
+                // Just check the special "info file" to decide whether the unzipped contents are up to date.
+                final File infoFile = getInfoFile(entry)
+                logger.debug "Adding ${id} output ${infoFile}"
+                outputs.file infoFile
             }
-        } else {
-            // Just check the special "info file" to decide whether the unzipped contents are up to date.
-            final File infoFile = getInfoFile(entry)
-            logger.debug "Adding ${id} output ${infoFile}"
-            outputs.file infoFile
         }
     }
 
