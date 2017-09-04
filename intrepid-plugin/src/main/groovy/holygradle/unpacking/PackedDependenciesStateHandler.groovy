@@ -270,12 +270,14 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             }
         }
 
-        // Check if any target locations are used by more than one module/version.  (We use "inject", instead of "any",
+        // Check if any target locations are used by more than one module/version with different unpack entries.  It's
+        // okay if there are multiple but they all unpack to the same thing/place.  (We use "inject", instead of "any",
         // because we want to keep checking even after we find a problem, so we can log them all.)
         boolean foundTargetClash = targetLocations.inject(false) {
             boolean found, File target, Collection<UnpackModuleVersion> versions
              ->
-            final boolean thisTargetHasClashes = versions.size() > 1
+            final Set<UnpackEntry> uniqueUnpackEntries = versions.collect { it.getUnpackEntry(project) }.toSet()
+            final boolean thisTargetHasClashes = uniqueUnpackEntries.size() > 1
             if (thisTargetHasClashes) {
                 project.logger.error(
                     "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
