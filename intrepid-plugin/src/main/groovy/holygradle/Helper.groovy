@@ -14,6 +14,7 @@ import org.gradle.testfixtures.ProjectBuilder
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.security.MessageDigest
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -197,54 +198,17 @@ Please run the task 'fixMercurialIni'."""
     }
 
     /**
-     * Converts a file path to a version string, by escaping characters not valid in a version string, and by shortening
-     * it to {@link Helper#MAX_VERSION_STRING_LENGTH}.  The string is clamped to a maximum length because it may itself
-     * be used as part of a file path and some parts of Windows are limited to 260 charactes for the entire file path.
+     * Converts a file path to a version string, by hashing the path and prefixing "SOURCE".  A short, 4 character,
+     * hash is used because it may itself be used as part of a file path and some parts of Windows are limited to 260
+     * characters for the entire file path.
      * @param path A file path
      * @return A valid version string, of length at most {@link Helper#MAX_VERSION_STRING_LENGTH}.
      */
     public static String convertPathToVersion(String path) {
         String canonicalPath = new File(path).canonicalPath
-        // "Escape" any invalid version characters (org.apache.ivy.core.module.id.ModuleRevisionId#STRICT_CHARS_PATTERN)
-        // to a form which is both a valid Ivy revision string and a valid Windows filename.
-        String sanitisedPath = canonicalPath.replaceAll(/[^a-zA-Z0-9-._+=]/) { String[] group ->
-            int ch = (int) group[0].charAt(0)
-            switch (ch) {
-                case 0x5F: // '_'
-                    return '__'
-                case { ch < 0x100 }:
-                    return String.format("_a%02x", ch)
-                default:
-                    return String.format("_u%04x", ch)
-            }
-        }
 
-        return abbreviateMiddle(
-            sanitisedPath,
-            "...",
-            MAX_VERSION_STRING_LENGTH
-        )
-    }
-
-    /**
-     * Returns a new string which is a possibly-shortened version of the string {@code str} -- at most the given
-     * {@code length} -- with its middle characters replaced by the string {@code middle}.
-     * This exists in StringUtils 2.5 but the version that Gradle 1.4 uses is 2.4
-     */
-    public static String abbreviateMiddle(String str, String middle, int length) {
-        if (str.length() <= length ||
-            str.empty ||
-            middle.empty ||
-            middle.length() + 2 > length) {
-            return str
-        }
-
-        int firstCut = Math.floor((length - middle.length()) / 2.0)
-        int secondCut = Math.ceil((length - middle.length()) / 2.0)
-
-        return new StringBuilder(str.substring(0, firstCut))
-            .append(middle)
-            .append(str.substring(str.length() - secondCut, str.length()))
-            .toString()
+        MessageDigest sha1 = MessageDigest.getInstance("SHA1")
+        byte[] digest = sha1.digest(canonicalPath.getBytes())
+        return "SOURCE_${digest[0..3].collect { String.format('%02x', it) }.join()}"
     }
 }

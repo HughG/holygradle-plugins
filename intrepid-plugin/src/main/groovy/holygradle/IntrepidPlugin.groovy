@@ -1,5 +1,6 @@
 package holygradle
 
+import bsh.This
 import holygradle.artifacts.*
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
@@ -24,9 +25,14 @@ import holygradle.unpacking.GradleZipHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
+import org.gradle.BuildListener
+import org.gradle.BuildResult
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
+import org.gradle.api.initialization.Settings
+import org.gradle.api.invocation.Gradle
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
@@ -459,22 +465,20 @@ public class IntrepidPlugin implements Plugin<Project> {
 
     private void setupSourceOverrides(Project project) {
         NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
+        IvyArtifactRepository sourceOverrideDummyModulesRepo = null
 
-        // Fail if source overrides are added in a non-root project, because it will be even more effort to tie together
-        // overrides across subprojects and cross-check them.  We'd like to support that some day, maybe.  We could just
-        // not add the DSL handler to non-root projects, but then the user would only get a MissingMethodException
-        // instead of a useful error message.
         sourceOverrides.whenObjectAdded {
+            // Fail if source overrides are added in a non-root project, because it will be even more effort to tie together
+            // overrides across subprojects and cross-check them.  We'd like to support that some day, maybe.  We could just
+            // not add the DSL handler to non-root projects, but then the user would only get a MissingMethodException
+            // instead of a useful error message.
             if (project != project.rootProject) {
                 throw new RuntimeException("Currently sourceOverrides can only be used in the root project.")
             }
-        }
 
-        // If and when any source overrides are added, we also need to add a repo to contain dummy entries for all the
-        // overridden module versions.  We force this to the start of the project repo list because it will contain
-        // relatively few entries, and those versions won't appear in any normal repo.
-        IvyArtifactRepository sourceOverrideDummyModulesRepo = null
-        sourceOverrides.whenObjectAdded {
+            // If and when any source overrides are added, we also need to add a repo to contain dummy entries for all the
+            // overridden module versions.  We force this to the start of the project repo list because it will contain
+            // relatively few entries, and those versions won't appear in any normal repo.
             if (sourceOverrideDummyModulesRepo == null) {
                 File tempDir = new File(project.buildDir, "holygradle/source_override")
                 FileHelper.ensureMkdirs(tempDir)
@@ -492,7 +496,7 @@ public class IntrepidPlugin implements Plugin<Project> {
             configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
                 project.logger.debug(
                     "Checking for source overrides: requested ${details.requested}, target ${details.target}, " +
-                    "in ${configuration}"
+                        "in ${configuration}"
                 )
                 for (SourceOverrideHandler handler in sourceOverrides) {
                     if (shouldUseSourceOverride(project, details, handler)) {
@@ -504,6 +508,29 @@ public class IntrepidPlugin implements Plugin<Project> {
         })
 
         project.gradle.addListener(new SourceOverridesDependencyResolutionListener(project))
+
+        if (project == project.rootProject) {
+            // We use taskGraph.whenReady here, instead of just project.afterEvaluate, because we want to know whether
+            // the "dependencies" task was selected.
+            project.gradle.taskGraph.whenReady {
+                if (!project.sourceOverrides.empty) {
+                    // If the user is running the 'dependencies' task then it may because they have a depdendency conflict, so
+                    // make sure they get the details of sourceOverrides regardless of the configured logging level.
+                    LogLevel level = (project.gradle.taskGraph.hasTask("dependencies")) ? LogLevel.LIFECYCLE : LogLevel.INFO
+//2345678901234567890123456789012345678901234567890123456789012345678901234567890 <-- 80-column ruler
+                    project.logger.log(
+                        level,
+                        """
+This project has source overrides, which have automatically-generated versions:
+"""
+                    )
+                    for (SourceOverrideHandler override in project.sourceOverrides) {
+                        project.logger.log(level, "  ${override.dependencyCoordinate} -> ${override.dummyDependencyCoordinate}")
+                        project.logger.log(level, "    at ${override.from}")
+                    }
+                }
+            }
+        }
     }
 
     private static boolean shouldUseSourceOverride(
