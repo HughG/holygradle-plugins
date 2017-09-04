@@ -187,27 +187,7 @@ class SourceOverridesDependencyResolutionListener implements DependencyResolutio
         sourceOverrideDependencies =
             new LinkedHashMap<SourceOverrideHandler, LinkedHashMap<String, LinkedHashMap<String,String>>>()
 
-        NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
-        sourceOverrides.each { SourceOverrideHandler handler ->
-            File dependencyFile = handler.dependenciesFile // TODO 2017-06-05 HughG: fix this
-            def dependencyXml = new XmlSlurper(false, false).parse(dependencyFile)
-
-            // Build hashsets from the dependency XML
-            sourceOverrideDependencies[handler] =
-                dependencyXml.Configuration.list().collectEntries(new LinkedHashMap<>()) { config -> [
-                    config.@name.toString(),
-                    config.Dependency.list().collectEntries(new LinkedHashMap<>()) { dep ->
-                        GPathResult absolutePathAttrs = dep.@absolutePath
-                        [
-                            "${dep.@group.toString()}:${dep.@name.toString()}",
-                            (
-                                (absolutePathAttrs.size() == 1)
-                                    ? Helper.convertPathToVersion(absolutePathAttrs[0].toString())
-                                    : dep.@version.toString()
-                            )
-                        ]}
-                ]} as LinkedHashMap<String, LinkedHashMap<String, String>>
-        }
+        // Todo: Remove this method
     }
 
     private collectConflictsForProjectVsOverride(
