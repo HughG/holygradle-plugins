@@ -276,13 +276,17 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         boolean foundTargetClash = targetLocations.inject(false) {
             boolean found, File target, Collection<UnpackModuleVersion> versions
              ->
-            final Set<UnpackEntry> uniqueUnpackEntries = versions.collect { it.getUnpackEntry(project) }.toSet()
-            final boolean thisTargetHasClashes = uniqueUnpackEntries.size() > 1
+            final Set<UnpackDirEntry> uniqueUnpackDirEntries = versions.collect { it.getUnpackDirEntry(project) }.toSet()
+            final boolean thisTargetHasClashes = uniqueUnpackDirEntries.size() > 1
             if (thisTargetHasClashes) {
                 project.logger.error(
                     "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
                 )
-                versions.each { logUnpackModuleVersionAncestry(it, 1) }
+                versions.each {
+                    logUnpackModuleVersionAncestry(it, 1)
+                    project.logger.error("    "+ it.getUnpackEntry(project).toString())
+                }
+                project.logger.error("  Unique unpack dir entries: " + uniqueUnpackDirEntries)
             }
             return found || thisTargetHasClashes
         }

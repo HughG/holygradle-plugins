@@ -89,11 +89,26 @@ class UnpackModuleVersion {
     }
 
     /**
-     * Returns an {@link UnpackEntry} object which describes how to unpack this module version in the context of the
-     * given {@code project}.  This is suitable for passing to
+     * Returns an {@link UnpackDirEntry} object which describes how and where to unpack this module version in the
+     * context of the given {@code project}.
+     * @param project
+     * @return An {@link UnpackDirEntry} object which describes how and where to unpack this module version.
+     */
+    public UnpackDirEntry getUnpackDirEntry(Project project) {
+        return new UnpackDirEntry(
+            getUnpackDir(project),
+            (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
+            (boolean)getPackedDependency()?.shouldMakeReadonly()
+        )
+    }
+
+    /**
+     * Returns an {@link UnpackEntry} object which describes what files to unpack, and how and where, for this module
+     * version in the context of the given {@code project}.  This is suitable for passing to
      * {@link SpeedyUnpackManyTask#addEntry(ModuleVersionIdentifier,UnpackEntry)}
      * @param project
-     * @return An {@link UnpackEntry} object which describes how to unpack this module version
+     * @return An {@link UnpackEntry} object which describes what files to unpack, and how and where, for this module
+     * version
      */
     public UnpackEntry getUnpackEntry(Project project) {
         return new UnpackEntry(
