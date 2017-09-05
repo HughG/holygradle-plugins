@@ -14,13 +14,16 @@ class SummariseAllDependenciesTask extends DefaultTask {
 
         doLast {
             def file = new File(project.buildDir, "holygradle/flat-ivy.xml")
+            file.getParentFile().mkdirs()
+            file.createNewFile()
+
             project.logger.info("Writing dependencies to ${file.canonicalPath}")
 
             Map<ModuleVersionIdentifier, Map<String, Collection<String>>> dependenciesMap = buildDependencies()
             XmlParser xml = new XmlParser()
             def root = xml.parse(generateDescriptorTask.destination)
 
-            def dependenciesNode = root.dependencies as Node
+            def dependenciesNode = root.dependencies.first() as Node
             dependenciesNode.children().clear()
             dependenciesMap.each { ModuleVersionIdentifier id, Map<String, Collection<String>> confMap ->
                 def allMappings = confMap.collect { String fromConf, Collection<String> toConfs ->
@@ -28,7 +31,7 @@ class SummariseAllDependenciesTask extends DefaultTask {
                 }
                 def conf = joinAsBuilder(allMappings, ";")
 
-                TODO: deal with source dependencies
+                // TODO: deal with source dependencies
 
                 dependenciesNode.appendNode('dependency', [
                     org: id.group,
@@ -38,7 +41,9 @@ class SummariseAllDependenciesTask extends DefaultTask {
                 ])
             }
 
-            file.withWriter { root.writeTo(it) }
+            file.withWriter {
+                new XmlNodePrinter(new PrintWriter(it)).print(root)
+            }
         }
     }
 
@@ -57,7 +62,7 @@ class SummariseAllDependenciesTask extends DefaultTask {
         return b
     }
 
-    private Map<ModuleVersionIdentifier, Map<String, Collection<String>>> buildDependencies() {
+    public Map<ModuleVersionIdentifier, Map<String, Collection<String>>> buildDependencies() {
         Map<ModuleVersionIdentifier, Map<String, Collection<String>>> dependencies =
             [:].withDefault { [:].withDefault { [] }}
 

@@ -214,10 +214,9 @@ class SourceOverrideHandler {
         ivyXml.info.@organisation = groupName
         ivyXml.info.@module = dependencyName
         ivyXml.info.@revision = dummyVersionString
-        // In theory we could just use replaceNode here, but I want to cope with the possibility that there isn't exactly
-        // one "publications" element in the original file, and make sure we end up with exactly one.
-        (ivyXml['publications'] as NodeList).each { ivyXml.remove(it as Node) }
-        def publications = ivyXml.appendNode('publications')
+        // Remove all the existing artifacts
+        def publications = ivyXml.publications.first()
+        publications.value = ""
         ivyXml.configurations.conf.each { conf ->
             publications.appendNode('artifact', [name: 'dummy_artifact', type: 'zip', ext: 'zip', conf: conf.@name])
         }

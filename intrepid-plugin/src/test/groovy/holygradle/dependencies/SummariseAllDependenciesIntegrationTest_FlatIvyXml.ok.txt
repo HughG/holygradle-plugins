@@ -1,0 +1,16 @@
+<ivy-module version="2.0">
+  <info organisation="" module="projectA" revision="dummy" status="release" publication="dummy"/>
+  <configurations>
+    <conf name="bar" visibility="public"/>
+    <conf name="buildScript" visibility="public"/>
+    <conf name="foo" visibility="public"/>
+  </configurations>
+  <publications>
+    <artifact name="projectA-buildScript" type="zip" ext="zip" conf="buildScript"/>
+  </publications>
+  <dependencies>
+    <dependency org="holygradle.test" name="example-application" version="1.0" conf="bar-&gt;compileVc10Debug,compileVc10Release"/>
+    <dependency org="holygradle.test" name="example-framework" version="1.0" conf="bar-&gt;compileVc10Debug,compileVc10Release"/>
+    <dependency org="holygradle.test" name="external-lib" version="1.0" conf="bar-&gt;compile"/>
+  </dependencies>
+</ivy-module>

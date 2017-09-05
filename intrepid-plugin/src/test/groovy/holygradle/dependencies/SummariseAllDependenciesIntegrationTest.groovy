@@ -19,7 +19,7 @@ class SummariseAllDependenciesIntegrationTest extends AbstractHolyGradleIntegrat
         File templateDir = new File(getTestDir(), "projectAIn")
         File projectDir = new File(getTestDir(), "projectA")
 
-        File outputFile = new File(projectDir, "all-dependencies.xml")
+        File outputFile = new File(projectDir, "build/holygradle/flat-ivy.xml")
 
         if (projectDir.exists()) {
             assertTrue("Removed existing ${projectDir}", projectDir.deleteDir())
@@ -32,9 +32,17 @@ class SummariseAllDependenciesIntegrationTest extends AbstractHolyGradleIntegrat
         }
 
         assertTrue(outputFile.exists())
-        println(regression.getOkFile("AllDependenciesXml"))
-        Files.copy(outputFile, regression.getTestFile("AllDependenciesXml"))
+        println(regression.getOkFile("FlatIvyXml"))
+        Files.copy(outputFile, regression.getTestFile("FlatIvyXml"))
 
-        regression.checkForRegression("AllDependenciesXml")
+        regression.replacePatterns(
+            "FlatIvyXml",
+            [
+                (~/revision="(.+?)"/): "revision=\"dummy\"",
+                (~/publication="([0-9]+)"/): "publication=\"dummy\""
+            ]
+        )
+
+        regression.checkForRegression("FlatIvyXml")
     }
 }
