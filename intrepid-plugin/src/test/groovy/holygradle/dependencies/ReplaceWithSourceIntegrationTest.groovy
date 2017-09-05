@@ -9,6 +9,8 @@ import holygradle.test.WrapperBuildLauncher
 import org.apache.commons.io.FileUtils
 import org.junit.Test
 
+import java.nio.channels.WritableByteChannel
+
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
 
@@ -144,14 +146,16 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         String expectedDummyVersion = Helper.convertPathToVersion(new File(projectDir, "../source/ext-1.1").toString())
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(
-                "For root project 'projectE' configuration :bar, " +
-                "module 'holygradle.test:external-lib:${expectedDummyVersion}' " +
-                "does not match the dependency declared in " +
-                "source override 'application' configuration compileVc10Debug " +
-                "(holygradle.test:external-lib:1.1); " +
-                "you may have to declare a matching source override in the source project."
-            )
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
+                    """Failed to notify dependency resolution listener.
+> Failed to notify dependency resolution listener.
+   > Failed to notify dependency resolution listener.
+      > Could not resolve all dependencies for configuration ':bar'.
+         > A conflict was found between the following modules:
+            - holygradle.test:external-lib:SOURCE_bc7ae8e4
+            - holygradle.test:external-lib:1.1
+"""
+            ))
         }
     }
 
@@ -180,15 +184,16 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(
-                "For root project 'projectJ' configuration :bar, " +
-                "module in source override 'application' configuration compileVc10Debug " +
-                "(holygradle.test:external-lib:1.1) " +
-                "does not match " +
-                "module in source override 'framework' configuration compileVc10Debug " +
-                "(holygradle.test:external-lib:1.0); " +
-                "you may have to declare a matching source override."
-            )
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
+"""Failed to notify dependency resolution listener.
+> Failed to notify dependency resolution listener.
+   > Failed to notify dependency resolution listener.
+      > Could not resolve all dependencies for configuration ':bar'.
+         > A conflict was found between the following modules:
+            - holygradle.test:external-lib:1.1
+            - holygradle.test:external-lib:1.0
+"""
+            ))
         }
     }
 
