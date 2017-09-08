@@ -142,14 +142,14 @@ class UnpackModuleVersion {
         Collection<TSource> sources,
         Closure<TValue> getValue
     ) {
-        Collection<TValue> values = sources.collect(getValue)
-        Collection<TValue> uniqueValues = values.unique()
+        Map<TSource, TValue> values = sources.collectEntries { [it, getValue(it)] }
+        Collection<TValue> uniqueValues = values.values().toSet()
 
         // If there is not exactly one result, throw an error
         if (uniqueValues.size() != 1) {
-            throw new RuntimeException("Error - module '${getFullCoordinate()}' has different parent results for ${methodName}: ${values}")
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has different parent results for ${methodName}: ${values.collect { "${it.value} from ${it.key}" }}")
         }
-        return uniqueValues.first()
+        return uniqueValues.iterator().next()
     }
 
     private String getParentRelativePath(UnpackModuleVersion module) {
@@ -271,7 +271,7 @@ class UnpackModuleVersion {
                 (parents.size() > 0 ? getParentRelativePath(this) : "") :
                 "n/a"
             ) +
-            "', parentUnpackModuleVersion={" + getParentModuleVersions() +
+            "', parentUnpackModuleVersions={" + parents + // getParentModuleVersions() +
             '}';
     }
 }

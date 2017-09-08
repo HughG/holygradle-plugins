@@ -34,7 +34,7 @@ class UnpackDirEntry {
     @Override
     public String toString() {
         return "UnpackDirEntry{" +
-            ", unpackDir=" + unpackDir +
+            "unpackDir=" + unpackDir +
             ", applyUpToDateChecks=" + applyUpToDateChecks +
             ", makeReadOnly=" + makeReadOnly +
             '}'
