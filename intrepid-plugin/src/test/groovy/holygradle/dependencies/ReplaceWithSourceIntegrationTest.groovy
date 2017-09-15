@@ -9,8 +9,6 @@ import holygradle.test.WrapperBuildLauncher
 import org.apache.commons.io.FileUtils
 import org.junit.Test
 
-import java.nio.channels.WritableByteChannel
-
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
 
@@ -152,7 +150,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
    > Failed to notify dependency resolution listener.
       > Could not resolve all dependencies for configuration ':bar'.
          > A conflict was found between the following modules:
-            - holygradle.test:external-lib:SOURCE_bc7ae8e4
+            - holygradle.test:external-lib:${expectedDummyVersion}
             - holygradle.test:external-lib:1.1
 """
             ))

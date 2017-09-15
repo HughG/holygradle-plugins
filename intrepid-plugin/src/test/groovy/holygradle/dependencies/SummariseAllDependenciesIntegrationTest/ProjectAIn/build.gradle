@@ -12,6 +12,15 @@ repositories.ivy {
     url "..\\..\\..\\testUtil\\repository\\"
 }
 
+// We just need a source dependency to make sure it gets represented as a dependency in the flat-ivy.xml, so we don't
+// really need to fetch anything.
+sourceDependencies {
+    "subproj" {
+        hg "https://dummy-url/"
+        configuration "foo->foo"
+    }
+}
+
 packedDependencies {
     "application" {
         dependency "holygradle.test:example-application:1.0"

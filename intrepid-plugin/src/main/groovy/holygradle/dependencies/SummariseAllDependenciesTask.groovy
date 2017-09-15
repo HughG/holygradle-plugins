@@ -1,5 +1,6 @@
 package holygradle.dependencies
 
+import holygradle.io.FileHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -13,31 +14,34 @@ class SummariseAllDependenciesTask extends DefaultTask {
         dependsOn generateDescriptorTask
 
         doLast {
-            def file = new File(project.buildDir, "holygradle/flat-ivy.xml")
-            file.getParentFile().mkdirs()
+            File file = new File(project.buildDir, "holygradle/flat-ivy.xml")
+            FileHelper.ensureMkdirs(file.parentFile, "for flat-ivy.xml used by source overrides")
             file.createNewFile()
 
             project.logger.info("Writing dependencies to ${file.canonicalPath}")
 
             Map<ModuleVersionIdentifier, Map<String, Collection<String>>> dependenciesMap = buildDependencies()
             XmlParser xml = new XmlParser()
-            def root = xml.parse(generateDescriptorTask.destination)
+            Node root = xml.parse(generateDescriptorTask.destination)
 
-            def dependenciesNode = root.dependencies.first() as Node
+            Node dependenciesNode = root.dependencies.first() as Node
             dependenciesNode.children().clear()
             dependenciesMap.each { ModuleVersionIdentifier id, Map<String, Collection<String>> confMap ->
-                def allMappings = confMap.collect { String fromConf, Collection<String> toConfs ->
+                List<StringBuilder> allMappings = confMap.collect { String fromConf, Collection<String> toConfs ->
                     new StringBuilder() << fromConf << "->" << joinAsBuilder(toConfs, ',')
                 }
-                def conf = joinAsBuilder(allMappings, ";")
+                StringBuilder conf = joinAsBuilder(allMappings, ";")
 
-                // TODO: deal with source dependencies
-
+                // Make the dependency non-transitive because we want to make sure that another Holy Gradle build using
+                // this file only picks up exactly the set of transitive dependencies we have calculated and flattened,
+                // using the repositories in the this build.  Without that flag, the other build might resolve some
+                // transitive dependencies from a different repo (in that other build script) to a newer version.
                 dependenciesNode.appendNode('dependency', [
                     org: id.group,
                     name: id.name,
                     version: id.version,
-                    conf: conf
+                    conf: conf,
+                    transitive: false
                 ])
             }
 
