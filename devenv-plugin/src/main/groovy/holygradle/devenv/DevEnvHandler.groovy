@@ -8,6 +8,13 @@ import java.util.regex.Pattern
 import java.util.regex.Matcher
 
 class DevEnvHandler {
+    private static final Pattern VERSION_PATTERN =
+        Pattern.compile(
+            /(VS([0-9][0-9]?)0)|/ + // "VSnnnCOMNTOOLS" environment variable
+            /([0-9]+)\.([0-9]+|\+))/, // "nn.n" vswhere version string, also allowing "nn.+"
+            Pattern.CASE_INSENSITIVE
+        )
+
     private Project project
     private DevEnvHandler parentHandler
     private String devEnvVersion = null
@@ -17,7 +24,7 @@ class DevEnvHandler {
     private List<String> warningRegexes = []
     private List<String> errorRegexes = []
     public String vswhereLocation = null // Only public so it can be accessed from inside a closure.  Stupid Groovy.
-    
+
     public DevEnvHandler(Project project, DevEnvHandler parentHandler) {
         this.project = project
         this.parentHandler = parentHandler
@@ -82,6 +89,8 @@ class DevEnvHandler {
                 throw new RuntimeException(
                     "You must set the devenv version, for example, 'DevEnv { version \"VS120\"}' for the " +
                     "Visual Studio 2013 compiler, or \"VS100\" for the Visual Studio 2010 compiler. " +
+                    "From Visual Studio 2017 onwards you can use a string without the \"VS\" prefix, " +
+                    "such as \"15.2\" to get an exact version match, or \"15.+\" to match only the major version. " +
                     "This value is used to find the appropriate path to 'devenv.com'."
                 )
             }
@@ -89,18 +98,25 @@ class DevEnvHandler {
             devEnvVersion
         }
     }
-    
+
     public File getCommonToolsPathFromVSWhere() {
-        String chosenDevEnvVersion = getDevEnvVersion()
-        Pattern versionPattern = Pattern.compile("VS([0-9]+)", Pattern.CASE_INSENSITIVE)
-        Matcher versionMatcher = versionPattern.matcher(chosenDevEnvVersion)
+        final String chosenDevEnvVersion = getDevEnvVersion()
+        final Matcher versionMatcher = VERSION_PATTERN.matcher(chosenDevEnvVersion)
         
         if (versionMatcher.find()) {
-            Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
-            Integer majorVersionNumber = devEnvVersion / 10;
+            final Integer majorVersionNumber = Integer.parseInt(versionMatcher.group(1))
+            final String minorVersion = versionMatcher.group(2)
 
-            String versionRangeStart = majorVersionNumber.toString()
-            String versionRangeEnd = (majorVersionNumber + 1).toString()
+            final String versionRangeStart
+            final String versionRangeEnd
+            if (chosenDevEnvVersion.startsWith("VS") || minorVersion == "+") {
+                versionRangeStart = "${majorVersionNumber}.0"
+                versionRangeEnd = "${majorVersionNumber + 1}.0"
+            } else {
+                versionRangeStart = "${majorVersionNumber}.${minorVersion}"
+                final Integer minorVersionNumber = Integer.parseInt(minorVersion)
+                versionRangeEnd = "${majorVersionNumber + 1}.${minorVersionNumber + 1}"
+            }
 
             String installPath = ExecHelper.executeAndReturnResultAsString(
                 project.logger,
@@ -110,7 +126,7 @@ class DevEnvHandler {
                                      "-property", "installationPath",
                                      "-legacy",
                                      "-format", "value",
-                                     "-version", "[${versionRangeStart}.0,${versionRangeEnd}.0)"
+                                     "-version", "[${versionRangeStart},${versionRangeEnd})"
                 },
                 { return true }
             )
@@ -119,27 +135,68 @@ class DevEnvHandler {
             throw new RuntimeException("Failed to parse DevEnv version '${chosenDevEnvVersion}'")
         }
     }
-    
-    public File getCommonToolsPathFromEnvironment() {
-        String chosenDevEnvVersion = getDevEnvVersion()
-        String envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
-        if (envVarComnTools == null || envVarComnTools == "") {
-            throw new RuntimeException("'version' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
+
+    public String getCommonToolsEnvironmentVariableName() {
+        final String chosenDevEnvVersion = getDevEnvVersion()
+        if (chosenDevEnvVersion.startsWith("VS")) {
+            return "${chosenDevEnvVersion}COMNTOOLS"
+        } else {
+            return null
         }
-        return new File(envVarComnTools)
+    }
+
+    public File getCommonToolsPathFromEnvironment() {
+        String envVarName = getCommonToolsEnvironmentVariableName()
+        if (envVarName == null) {
+            return null
+        } else {
+            String envVarComnTools = System.getenv(envVarName)
+            if (envVarComnTools == null || envVarComnTools == "") {
+                return null
+            } else {
+                return new File(envVarComnTools)
+            }
+        }
     }
 
     public File getCommonToolsPath() {
-        // Check for the existence of vswhere.exe
-        this.vswhereLocation = ["ProgramFiles", "ProgramFiles(x86)"] // look at 64-bit then 32-bit environment variables
-            .findResults { System.getenv(it) } // collect all non-null environment variable values
-            .collect { "${it}\\Microsoft Visual Studio\\Installer\\vswhere.exe" } // map to filenames
-            .find { new File(it).exists() } // return the first filename for which a file exists
+        final File pathFromEnvironment = getCommonToolsPathFromEnvironment()
+        if (pathFromEnvironment == null || !pathFromEnvironment.exists()) {
+            // Check for the existence of vswhere.exe
+            final List<String> vswherePossibleLocations =
+                ["ProgramFiles", "ProgramFiles(x86)"] // look at 64-bit then 32-bit environment variables
+                .findResults { String it -> System.getenv(it) } // collect all non-null environment variable values
+                .collect { "${it}\\Microsoft Visual Studio\\Installer\\vswhere.exe".toString() } // map to filenames
+            this.vswhereLocation = vswherePossibleLocations
+                .find { new File(it).exists() } // return the first filename for which a file exists
 
-        if (this.vswhereLocation != null) {
-            return getCommonToolsPathFromVSWhere()
+            if (this.vswhereLocation != null) {
+                return getCommonToolsPathFromVSWhere()
+            } else {
+                // Failed; now we need to pick the right error message.
+                def envVarComnTools = getCommonToolsEnvironmentVariableName()
+                if (envVarComnTools == null) {
+                    throw new RuntimeException(
+                        "Cannot find \"vswhere.exe\" to locate \"devenv.com\" " +
+                        "(should be in ${vswherePossibleLocations})."
+                    )
+                } else if (!pathFromEnvironment.exists()) {
+                    throw new RuntimeException(
+                        "Environment variable ${envVarComnTools} is set, but " +
+                        "its target (${pathFromEnvironment}) does not exist, and " +
+                        "cannot find \"vswhere.exe\" to locate \"devenv.com\" " +
+                        "(should be in ${vswherePossibleLocations})."
+                    )
+                } else {
+                    throw new RuntimeException(
+                        "Environment variable ${envVarComnTools} is not set, and " +
+                        "cannot find \"vswhere.exe\" to locate \"devenv.com\" " +
+                        "(should be in ${vswherePossibleLocations})."
+                    )
+                }
+            }
         } else {
-            return getCommonToolsPathFromEnvironment()
+            return pathFromEnvironment
         }
     }
 
@@ -167,11 +224,11 @@ class DevEnvHandler {
             getDevEnvPath()
         }
     }
-    
+
     public boolean useIncredibuild() {
         getIncredibuildPath() != null
     }
-    
+
     public String getIncredibuildPath() {
         if (incredibuildPath == null) {
             if (parentHandler != null) {
@@ -183,8 +240,8 @@ class DevEnvHandler {
             incredibuildPath
         }
     }
-     
-    public File getVerifiedIncredibuildPath() {     
+
+    public File getVerifiedIncredibuildPath() {
         File f = new File(getIncredibuildPath())
         if (!f.exists()) {
             throw new RuntimeException("The incredibuild path was set to '${f.path}' but nothing exists at that location.")
