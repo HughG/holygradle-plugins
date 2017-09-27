@@ -8,22 +8,72 @@ import java.util.regex.Pattern
 import java.util.regex.Matcher
 
 class DevEnvHandler {
-    private static final Pattern VERSION_PATTERN =
-        Pattern.compile(
-            /(VS([0-9][0-9]?)0)|/ + // "VSnnnCOMNTOOLS" environment variable
-            /([0-9]+)\.([0-9]+|\+))/, // "nn.n" vswhere version string, also allowing "nn.+"
-            Pattern.CASE_INSENSITIVE
-        )
-
     private Project project
     private DevEnvHandler parentHandler
-    private String devEnvVersion = null
+    private VSVersion devEnvVersion = null
     private String vsSolutionFile = null
     private List<String> buildPlatforms = null
     private String incredibuildPath = null
     private List<String> warningRegexes = []
     private List<String> errorRegexes = []
     public String vswhereLocation = null // Only public so it can be accessed from inside a closure.  Stupid Groovy.
+
+    public static class VSVersion {
+        private static final Pattern VERSION_PATTERN =
+            Pattern.compile(
+                /VS([0-9]+)(0)|/ + // "VSnnnCOMNTOOLS" environment variable
+                /([0-9]+)\.([0-9]+|\+)/, // "nn.n" vswhere version string, also allowing "nn.+"
+                Pattern.CASE_INSENSITIVE
+            )
+
+        private final String asString
+
+        public final String major
+        public final String minor
+        public final String rangeStart
+        public final String rangeEnd
+        public final String envVarName
+
+        public VSVersion(final String version) {
+            asString = version
+            Matcher versionMatcher = match(version)
+            if (versionMatcher.group(1) != null) {
+                // Matched "VSnnn"
+                major = versionMatcher.group(1)
+                minor = versionMatcher.group(2)
+            } else {
+                // Matched "nn.x"
+                major = versionMatcher.group(3)
+                minor = versionMatcher.group(4)
+            }
+
+            final char firstChar = version.charAt(0)
+            final boolean isEnvVarStyle = (Character.toLowerCase(firstChar) == ('v' as char))
+            final boolean isWildcardMinorVersion = isEnvVarStyle || (this.minor == '+')
+            envVarName = "VS${major}0COMNTOOLS"
+            if (isWildcardMinorVersion) {
+                rangeStart = "${major}.0"
+                rangeEnd = "${major.toInteger() + 1}.0"
+            } else {
+                rangeStart = "${major}.${this.minor}"
+                rangeEnd = "${major}.${minor.toInteger() + 1}"
+            }
+        }
+
+        // Pulled out as a static method because IntelliJ gives "field may be uninitialised" warnings otherwise.
+        private static Matcher match(String version) {
+            final Matcher versionMatcher = VERSION_PATTERN.matcher(version)
+            if (!versionMatcher.find()) {
+                throw new RuntimeException("Failed to parse DevEnv version '${version}'")
+            }
+            return versionMatcher
+        }
+
+        @Override
+        public String toString() {
+            return asString
+        }
+    }
 
     public DevEnvHandler(Project project, DevEnvHandler parentHandler) {
         this.project = project
@@ -35,7 +85,7 @@ class DevEnvHandler {
     }
     
     public void version(String ver) {
-        devEnvVersion = ver
+        devEnvVersion = new VSVersion(ver)
     }
     
     public void solutionFile(String f) {
@@ -81,7 +131,7 @@ class DevEnvHandler {
         }
     }
         
-    public String getDevEnvVersion() {
+    public VSVersion getDevEnvVersion() {
         if (devEnvVersion == null) {
             if (parentHandler != null) {
                 parentHandler.getDevEnvVersion()
@@ -100,57 +150,33 @@ class DevEnvHandler {
     }
 
     public File getCommonToolsPathFromVSWhere() {
-        final String chosenDevEnvVersion = getDevEnvVersion()
-        final Matcher versionMatcher = VERSION_PATTERN.matcher(chosenDevEnvVersion)
-        
-        if (versionMatcher.find()) {
-            final Integer majorVersionNumber = Integer.parseInt(versionMatcher.group(1))
-            final String minorVersion = versionMatcher.group(2)
-
-            final String versionRangeStart
-            final String versionRangeEnd
-            if (chosenDevEnvVersion.startsWith("VS") || minorVersion == "+") {
-                versionRangeStart = "${majorVersionNumber}.0"
-                versionRangeEnd = "${majorVersionNumber + 1}.0"
-            } else {
-                versionRangeStart = "${majorVersionNumber}.${minorVersion}"
-                final Integer minorVersionNumber = Integer.parseInt(minorVersion)
-                versionRangeEnd = "${majorVersionNumber + 1}.${minorVersionNumber + 1}"
-            }
-
-            String installPath = ExecHelper.executeAndReturnResultAsString(
-                project.logger,
-                project.&exec,
-                { ExecSpec spec ->
-                    spec.commandLine this.vswhereLocation,
-                                     "-property", "installationPath",
-                                     "-legacy",
-                                     "-format", "value",
-                                     "-version", "[${versionRangeStart},${versionRangeEnd})"
-                },
-                { return true }
-            )
-            return new File(installPath, "Common7/Tools")
-        } else {
-            throw new RuntimeException("Failed to parse DevEnv version '${chosenDevEnvVersion}'")
+        final VSVersion version = getDevEnvVersion()
+        final String versionRange = "[${version.rangeStart},${version.rangeEnd})"
+        final String installPath = ExecHelper.executeAndReturnResultAsString(
+            project.logger,
+            project.&exec,
+            { ExecSpec spec ->
+                spec.commandLine this.vswhereLocation,
+                                 "-property", "installationPath",
+                                 "-legacy",
+                                 "-format", "value",
+                                 "-version", versionRange
+            },
+            { return true }
+        )
+        if (installPath == null || installPath.trim().empty) {
+            throw new RuntimeException("vswhere.exe could not find a Visual Studio version in range ${versionRange}")
         }
+        return new File(installPath, "Common7/Tools")
     }
 
-    public String getCommonToolsEnvironmentVariableName() {
-        final String chosenDevEnvVersion = getDevEnvVersion()
-        if (chosenDevEnvVersion.startsWith("VS")) {
-            return "${chosenDevEnvVersion}COMNTOOLS"
-        } else {
-            return null
-        }
-    }
 
     public File getCommonToolsPathFromEnvironment() {
-        String envVarName = getCommonToolsEnvironmentVariableName()
+        final String envVarName = getDevEnvVersion().envVarName
         if (envVarName == null) {
             return null
         } else {
-            String envVarComnTools = System.getenv(envVarName)
+            final String envVarComnTools = System.getenv(envVarName)
             if (envVarComnTools == null || envVarComnTools == "") {
                 return null
             } else {
@@ -174,22 +200,22 @@ class DevEnvHandler {
                 return getCommonToolsPathFromVSWhere()
             } else {
                 // Failed; now we need to pick the right error message.
-                def envVarComnTools = getCommonToolsEnvironmentVariableName()
+                final String envVarComnTools = getDevEnvVersion().envVarName
                 if (envVarComnTools == null) {
                     throw new RuntimeException(
                         "Cannot find \"vswhere.exe\" to locate \"devenv.com\" " +
                         "(should be in ${vswherePossibleLocations})."
                     )
-                } else if (!pathFromEnvironment.exists()) {
+                } else if (pathFromEnvironment == null) {
                     throw new RuntimeException(
-                        "Environment variable ${envVarComnTools} is set, but " +
-                        "its target (${pathFromEnvironment}) does not exist, and " +
+                        "Environment variable ${envVarComnTools} is not set, and " +
                         "cannot find \"vswhere.exe\" to locate \"devenv.com\" " +
                         "(should be in ${vswherePossibleLocations})."
                     )
-                } else {
+                } else /* !pathFromEnvironment.exists() */ {
                     throw new RuntimeException(
-                        "Environment variable ${envVarComnTools} is not set, and " +
+                        "Environment variable ${envVarComnTools} is set, but " +
+                        "its target (${pathFromEnvironment}) does not exist, and " +
                         "cannot find \"vswhere.exe\" to locate \"devenv.com\" " +
                         "(should be in ${vswherePossibleLocations})."
                     )
@@ -201,9 +227,12 @@ class DevEnvHandler {
     }
 
     public File getDevEnvPath() {
-        String chosenDevEnvVersion = getDevEnvVersion()
-        final String devEnvLocationPropertyName = "holygradleDevEnv${chosenDevEnvVersion}Location"
-        if (project.rootProject.hasProperty(devEnvLocationPropertyName)) {
+        VSVersion version = getDevEnvVersion()
+
+        // Check if the version was already cached in the root project.
+        final String devEnvLocationPropertyName =
+            "holygradleDevEnv_${version.major}_${version.minor}_Location"
+        if (project != project.rootProject && project.rootProject.hasProperty(devEnvLocationPropertyName)) {
             return project.rootProject.ext[devEnvLocationPropertyName] as File
         }
 
@@ -213,6 +242,7 @@ class DevEnvHandler {
             throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
         }
 
+        // Cache location in the root project, so we don't have to run vswhere for every sub-project.
         project.rootProject.ext[devEnvLocationPropertyName] = devEnvPath
         return devEnvPath
     }
