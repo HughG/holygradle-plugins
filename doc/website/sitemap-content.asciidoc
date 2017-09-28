@@ -13,7 +13,7 @@ include::stdattr.ascinc[]
 The Holy Gradle
 and Artifactory
 </div>
-version 7.10.2
+version 7.10.3
 <hr />
 <ul>
     <li><a href="index.html" target="_top">Home</a></li>

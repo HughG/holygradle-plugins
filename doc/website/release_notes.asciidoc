@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.10.x
 
 ===== 7.10.3
-(TODO)
+(62ee2a1a8eaf at 2017-09-27 12:12:57 UTC)
 
 DevEnv ::
 
