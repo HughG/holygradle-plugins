@@ -44,6 +44,68 @@ things for users, and also for plugin developers.
 
 ==== 7.10.x
 
+===== 7.10.3
+(62ee2a1a8eaf at 2017-09-27 12:12:57 UTC)
+
+DevEnv ::
+
+* Improve support for choosing a Visual Studio version.  See link:plugin-devenv.html#_version[] for more details.
+** For a version of Visual Studio before 2017, try to use the +VSnnnCOMNTOOLS+ environment variable before trying to run
++vswhere.exe+, because some early versions of +vswhere.exe+ don't detect older versions of Visual Studio.
+** For versions of Visual Studio from 2017 onwards, allow specifying an exact update version (such as +15.0+ or +15.35+)
+or the latest minor version (using +15.++).
+
+CustomGradleCorePlugin {br} Intrepid {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
+===== 7.10.2
+(bcbdabef989b at 2017-08-11 12:05:12 UTC)
+
+CredentialStore ::
+
+* Change +credential-store.exe+ to compare usernames case-insensitively.
+
+Stamper ::
+
+* GR #6718 Add support for reading/writing files with a non-default charset, e.g., UTF-8 on Windows 7.
++
+----
+stamping {
+    charsetName = "UTF-8" // New in 7.10.2
+
+    def commas = nextVersionNumber.replaceAll("\\.", ",")
+    files(".rc") {
+        replaceRegex ~/(FILEVERSION )[\d,]+(.*)/, commas
+        replaceRegex ~/(PRODUCTVERSION )[\d,]+(.*)/, commas
+        replaceRegex ~/(VALUE \"FileVersion\", \")[\d\.]+(\\0\")/, nextVersionNumber
+        replaceRegex ~/(VALUE \"ProductVersion\", \")[\d\.]+(\\0\")/, nextVersionNumber
+    }
+}
+----
++
+
+CustomGradleCorePlugin {br} Intrepid {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Utils::
+- No changes.
+
+===== 7.10.1
+(d61afb3c0e6d at 2017-07-20 16:18:17 UTC)
+
+CredentialStore ::
+
+* GR #6716 Fix bugs in the changes to +credential-store.exe+ in 7.10.0
+
+** +credential-store for-default+ would update _all_ credentials, not just those not associated with any basis.
+** +credential-store.exe+ would fail without an error message if environment variable +GRADLE_USER_HOME+ was not set.
+
+DevEnv ::
+
+* Support Visual Studio 2017.  (Instead of using environment variables, this version has a new mechanism for locating
++devenv.com+, namely by running +vswhere.exe+.  This allows installing multiple "flavours" of VS but needs changes to
+the Holy Gradle.)
+
+CustomGradleCorePlugin {br} Intrepid {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ===== 7.10.0
 (238dac7222d6 at 2017-04-04 08:40:10 UTC)
 
@@ -58,7 +120,7 @@ having source dependencies on repos hosted at different sites, which need differ
 to update credentials not associated with any basis (for backward compatibility and for use with credentials supplied
 from +my.credentials+ to binary dependency repositories such as Artifactory).  This relies on a file
 +holygradle/credential-bases.txt+ which is written into the user's Gradle Home directory by the Intrepid plugin and
-read by credential-store.exe.
+read by +credential-store.exe+.
 
 DevEnv {br} UnitTest {br} ArtifactoryManager {br} Stamper {br} Utils::
 - No changes.

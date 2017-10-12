@@ -23,4 +23,5 @@ class DevEnvHandlerTest {
         
         assertEquals(new File(project.projectDir, "blah.sln"), devenv.getVsSolutionFile())
     }
+    
 }

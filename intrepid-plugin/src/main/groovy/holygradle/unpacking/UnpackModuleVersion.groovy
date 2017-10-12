@@ -273,7 +273,7 @@ class UnpackModuleVersion {
      *     <li>that entry has not had {@code noCreateSymlinkToCache() called on it; and</li>
      *     <li>this module version actually has any artifacts -- if not, nothing will be unpacked in the cache, so there
      *     will be no folder to which to make a symlink.</li>
- *     </ul>
+     * </ul>
      * @return A flag indicating whether to create a symlink to the unpack cache for this version.
      */
     public boolean shouldCreateLinkToCache() {

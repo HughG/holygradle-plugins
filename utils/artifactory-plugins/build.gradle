@@ -1,6 +1,6 @@
 /**
  * Note: This project doesn't need to be built or deployed, because Artifactory loads plugins from source.  This
- * build.gradle file is just here to help IntelliJ fond all the dependencies, to get syntax highlighting correct.
+ * build.gradle file is just here to help IntelliJ find all the dependencies, to get syntax highlighting correct.
  */
 
 group = "holygradle"
@@ -31,7 +31,7 @@ repositories {
 }
 
 project.ext.localConfDir = "${projectDir}/localConf"
-if (!new File(localConfDir).exists()) {
+if (!new File((String)localConfDir).exists()) {
     "cmd /c mklink /j \"${localConfDir}\" \"${projectDir}\\..\\..\\local\\local-artifactory-plugins\\conf\"".execute().waitFor()
 }
 
@@ -41,7 +41,7 @@ project.ext.contentPackageSubdir = "content"
 if (!project.hasProperty("pluginsDeployDir")) {
     project.ext.pluginsDeployDir = new File(buildDir, "deploy/artifactory-etc-plugins")
 }
-project.ext.pluginsConfDeployDir = new File(pluginsDeployDir, "conf")
+project.ext.pluginsConfDeployDir = new File((File)pluginsDeployDir, "conf")
 if (!project.hasProperty("contentDeployDir")) {
     project.ext.contentDeployDir = new File(buildDir, "deploy/webserver")
 }
