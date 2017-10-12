@@ -9,11 +9,37 @@ import org.gradle.process.ExecSpec
  * Utility methods related to executing processes.
  */
 class ExecHelper {
-    public static executeAndReturnResultAsString(
+    public static String executeAndReturnResultAsString(
         Logger logger,
         Closure<ExecResult> execMethod,
-        Closure configureSpec,
-        Closure throwForExitValue
+        Closure configureSpec
+    ) {
+        return executeAndReturnResultAsString(logger, execMethod, { return true }, configureSpec)
+    }
+
+    public static String executeAndReturnResultAsString(
+        Logger logger,
+        Closure<ExecResult> execMethod,
+        Closure throwForExitValue,
+        Closure configureSpec
+    ) {
+        def streams = execute(logger, execMethod, throwForExitValue, configureSpec)
+        return streams.stdout.toString().trim()
+    }
+
+    public static Map<String, OutputStream> execute(
+        Logger logger,
+        Closure<ExecResult> execMethod,
+        Closure configureSpec
+    ) {
+        return execute(logger, execMethod, { return true }, configureSpec)
+    }
+
+    public static Map<String, OutputStream> execute(
+        Logger logger,
+        Closure<ExecResult> execMethod,
+        Closure throwForExitValue,
+        Closure configureSpec
     ) {
         String commandLine = null
 
@@ -50,6 +76,9 @@ class ExecHelper {
                 execResult.assertNormalExitValue()
             }
         }
-        stdout.toString().trim()
+        return [
+            "stdout": stdout,
+            "stderr": stderr
+        ]
     }
 }

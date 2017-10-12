@@ -95,6 +95,14 @@
                     <option name="myName" value="buildScriptDependencies" />
                   </DPropertyElement>
                   <DPropertyElement>
+                    <option name="name" value="dependenciesState" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.dependencies.DependenciesStateHandler" />
+                    <option name="myType" value="holygradle.dependencies.DependenciesStateHandler" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="dependenciesState" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="hgVersionInfo" />
                     <option name="static" value="false" />
                     <option name="type" value="java.lang.String" />
@@ -181,6 +189,14 @@
                     <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;SourceDependencyHandler&gt;" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="sourceDependencies" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="sourceOverrides" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.SourceOverrideHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.SourceOverrideHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="sourceOverrides" />
                   </DPropertyElement>
                 </set>
               </option>

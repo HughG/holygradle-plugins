@@ -49,7 +49,9 @@ class DefaultPublishPackagesExtensionIntegrationTest extends AbstractHolyGradleI
         // Filter out the <info> tag which has a timestamp, therefore breaks the test
         regTestFile.withPrintWriter { w ->
             ivyXml.eachLine { l ->
-                if (!l.contains("publication=")) w.println(l)
+                if (!l.contains("publication=")) {
+                    w.println(l)
+                }
             }
         }
         regression.checkForRegression(regressionFileNameBase)

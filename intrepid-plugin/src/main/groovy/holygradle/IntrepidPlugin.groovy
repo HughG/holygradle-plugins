@@ -1,5 +1,6 @@
 package holygradle
 
+import bsh.This
 import holygradle.artifacts.*
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
@@ -8,6 +9,7 @@ import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.dependencies.*
 import holygradle.io.Link
+import holygradle.io.FileHelper
 import holygradle.links.LinkHandler
 import holygradle.links.LinkTask
 import holygradle.links.LinksToCacheTask
@@ -23,12 +25,14 @@ import holygradle.unpacking.GradleZipHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
-import org.gradle.api.DefaultTask
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ConfigurationContainer
+import org.gradle.BuildListener
+import org.gradle.BuildResult
+import org.gradle.api.*
+import org.gradle.api.artifacts.*
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository
+import org.gradle.api.initialization.Settings
+import org.gradle.api.invocation.Gradle
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
@@ -122,6 +126,9 @@ public class IntrepidPlugin implements Plugin<Project> {
 
         // Define the 'packedDependency' DSL for the project.
         Collection<PackedDependencyHandler> packedDependencies = PackedDependencyHandler.createContainer(project)
+
+        // Define the 'sourceOverrides' DSL for the project
+        /*Collection<SourceOverrideHandler> sourceOverrides =*/ SourceOverrideHandler.createContainer(project)
 
         // Define the 'dependenciesState' DSL for the project.
         /*DependenciesStateHandler dependenciesState =*/ DependenciesStateHandler.createExtension(project)
@@ -234,7 +241,7 @@ public class IntrepidPlugin implements Plugin<Project> {
             t.doFirst { logger.warn(t.description) }
         }
 
-        Task fetchAllDependenciesTask = project.task(
+        /*Task fetchAllDependenciesTask =*/ project.task(
             FETCH_ALL_DEPENDENCIES_TASK_NAME,
             type: DefaultTask
         ) { Task it ->
@@ -263,6 +270,14 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.doLast {
                 Helper.fixMercurialIni()
             }
+        }
+        /*SummariseAllDependenciesTask allDependenciesTask =*/ (SummariseAllDependenciesTask)project.task(
+            "summariseAllDependencies",
+            type: SummariseAllDependenciesTask
+        ) { SummariseAllDependenciesTask it ->
+            it.group = "Dependencies"
+            it.description = "Create an XML file listing all direct and transitive dependencies"
+            it.initialize()
         }
 
         // Lazy configuration is a "secret" internal feature for use by plugins.  If a task adds a ".ext.lazyConfiguration"
@@ -441,8 +456,113 @@ public class IntrepidPlugin implements Plugin<Project> {
             }
         }
 
+        profilingHelper.timing("IntrepidPlugin(${project}) set up source overrides") {
+            setupSourceOverrides(project)
+        }
 
         timer.endBlock()
     }
-}
 
+    private void setupSourceOverrides(Project project) {
+        NamedDomainObjectContainer<SourceOverrideHandler> sourceOverrides = project.sourceOverrides
+        IvyArtifactRepository sourceOverrideDummyModulesRepo = null
+
+        sourceOverrides.whenObjectAdded {
+            // Fail if source overrides are added in a non-root project, because it will be even more effort to tie together
+            // overrides across subprojects and cross-check them.  We'd like to support that some day, maybe.  We could just
+            // not add the DSL handler to non-root projects, but then the user would only get a MissingMethodException
+            // instead of a useful error message.
+            if (project != project.rootProject) {
+                throw new RuntimeException("Currently sourceOverrides can only be used in the root project.")
+            }
+
+            // If and when any source overrides are added, we also need to add a repo to contain dummy entries for all the
+            // overridden module versions.  We force this to the start of the project repo list because it will contain
+            // relatively few entries, and those versions won't appear in any normal repo.
+            if (sourceOverrideDummyModulesRepo == null) {
+                File tempDir = new File(project.buildDir, "holygradle/source_override")
+                FileHelper.ensureMkdirs(tempDir)
+                sourceOverrideDummyModulesRepo = project.repositories.ivy { it.url = tempDir.toURI() }
+                project.repositories.remove(sourceOverrideDummyModulesRepo)
+                project.repositories.addFirst(sourceOverrideDummyModulesRepo)
+            }
+        }
+
+        // Add a dependency resolve rule for all configurations, which applies source overrides (if there are any).  We
+        // use ConfigurationContainer#all so that this is applied for each configuration when it's created.
+        project.configurations.all((Closure){ Configuration configuration ->
+            // Gradle automatically converts Closures to Action<>, so ignore IntelliJ warning.
+            //noinspection GroovyAssignabilityCheck
+            configuration.resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+                project.logger.debug(
+                    "Checking for source overrides: requested ${details.requested}, target ${details.target}, " +
+                        "in ${configuration}"
+                )
+                for (SourceOverrideHandler handler in sourceOverrides) {
+                    if (shouldUseSourceOverride(project, details, handler)) {
+                        details.useVersion(handler.dummyVersionString)
+                        break
+                    }
+                }
+            }
+        })
+
+        project.gradle.addListener(new SourceOverridesDependencyResolutionListener(project))
+
+        if (project == project.rootProject) {
+            // We use taskGraph.whenReady here, instead of just project.afterEvaluate, because we want to know whether
+            // the "dependencies" task was selected.
+            project.gradle.taskGraph.whenReady {
+                if (!project.sourceOverrides.empty) {
+                    // If the user is running the 'dependencies' task then it may because they have a depdendency conflict, so
+                    // make sure they get the details of sourceOverrides regardless of the configured logging level.
+                    LogLevel level = (project.gradle.taskGraph.hasTask("dependencies")) ? LogLevel.LIFECYCLE : LogLevel.INFO
+//2345678901234567890123456789012345678901234567890123456789012345678901234567890 <-- 80-column ruler
+                    project.logger.log(
+                        level,
+                        """
+This project has source overrides, which have automatically-generated versions:
+"""
+                    )
+                    for (SourceOverrideHandler override in project.sourceOverrides) {
+                        project.logger.log(level, "  ${override.dependencyCoordinate} -> ${override.dummyDependencyCoordinate}")
+                        project.logger.log(level, "    at ${override.from}")
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean shouldUseSourceOverride(
+        Project project,
+        DependencyResolveDetails details,
+        SourceOverrideHandler handler
+    ) {
+        // If there's a dependency conflict, the 'requested' version may not be the one in the source
+        // override handler, even though the current 'target' version is, so check both.
+        if (details.requested.group == handler.groupName &&
+            details.requested.name == handler.dependencyName &&
+            details.requested.version == handler.versionStr
+        ) {
+            project.logger.debug("  MATCH requested: using ${handler.dummyVersionString}")
+            return true
+        }
+        if (details.target.group == handler.groupName &&
+            details.target.name == handler.dependencyName &&
+            details.target.version == handler.versionStr
+        ) {
+            project.logger.debug("  MATCH target: using ${handler.dummyVersionString}")
+            return true
+        }
+        if (details.target.group == handler.groupName &&
+            details.target.name == handler.dependencyName &&
+            details.target.version.endsWith("+")
+        ) {
+            project.logger.debug(
+                "  MATCH FLOATING version for source override ${handler.name}: using ${handler.dummyVersionString}"
+            )
+            return true
+        }
+        return false
+    }
+}

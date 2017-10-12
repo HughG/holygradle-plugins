@@ -1496,6 +1496,249 @@ This property determine whether +fetchAllDependencies+ should perform full up-to
 
 -> Default value: **false**
 
+=== sourceOverrides
+
++WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
+
+This container allows you to override the handling of specific packed dependencies to instead point to existing source
+on a local disk. This is intended for testing changes to dependencies without having to first package and publish those
+dependencies.  The replaced source does not have to use the Holy Gradle to build, or use Gradle at all, provided the
+correct XML files can be provided, as described below.
+
+[source,groovy]
+----
+sourceOverrides {
+    "framework" {
+        dependency "com.company:framework:1.1"
+        from "../source/framework-1.1"
+    }
+    "ext_lib" {
+        dependency "com.company.rendering:RenderingLib:2012a2"
+        from "C:/projects/renderingLib"
+    }
+}
+
+packedDependencies {
+    "framework" {
+        dependency "com.company:framework:1.1"
+        configuration "privateBuild->compileVc10Debug,compileVc10Release"
+    }
+}
+----
+
+This declares one dependency +framework+ and instead of using the packed binaries, will create links to
++../source/framework-1.1+. In addition, any transitive dependencies on +RenderingLib+ will be linked to
++C:/projects/renderingLib+ instead of the packed binaries.
+
+WARNING: Use of source overrides will make the link:plugin-intrepid.html#_fetchAllDependencies[] task slower, because
+it is also necessary to fetch and check the dependencies from the override source projects.  You can temporarily skip
+this step by passing +-PuseCachedSourceOverrideFiles+ to +gw.bat+.  However, if you do that, the Holy Gradle cannot warn
+you about inconsistent dependency versions between the containing project and the override projects.  This may result in
+unexpected errors at build time or runtime.
+
+==== Limitations and restrictions
+
+There are several limitations restrictions in using source overrides.
+
+* The source override mechanism allows for the override source to be built with a different version of the Holy
+Gradle, or built with some tool other than Gradle.  That can be useful but has some constraints.
+
+** Source overrides in the root project apply to all sub-projects, if it is a multi-project build, *but* they do not
+apply to any projects within the override source locations.  This is because the build tool for the override source may
+not provide a standard way to override direct and transitive dependencies.  If you want the same overrides to apply
+within an override source project, you must add source overrides within that project if it is a Holy Gradle project, or
+use some other mechanism if it uses a different build tool.
+
+** Fetching dependencies for the root project will also attempt to fetch dependencies in override source projects, so
+that an up-to-date list of dependencies can be checked against the root project and other override projects.  However,
+other tasks in the root project are not linked into the replacement projects, because there may be no standard way to
+do that.  Therefore, if you make changes in the override projects, you must rebuild them independently before you build
+the root project.  It would be possible to add custom tasks to your root project's +build.gradle+ to do that, but the
+details of how to do that are beyond this documentation.
+
+** The containing project will expect the published files of the source override project to be in the same location,
+relative to the link in the containing project's workspace, as they would be if the override project had been published,
+with its files zipped, uploaded, downloaded, and unzipped.  If this is not the case, then you should modify the override
+source project so that the location of its packaged files is the same before packaing as when unzipped.  If you cannot
+do that, you will need to add some extra build steps, in the containing project or the override source project, to copy
+or link those files into the expected location.
+
+* A project with source overrides defined can not be published because it depends on versions of some other modules
+which are unpublished.  Therefore it would be impossible to produce a valid gloss:ivy-xml[] file for the project itself.
+
+* In a multi-project build, the +sourceOverrides+ block can only be used in the root project, and the overrides apply to
+all projects.  (This restriction is in place because otherwise it is difficult or impossible to calculate the complete
+override structure.)
+
+* Source overrides apply to all configurations in a project.  If a packed dependency is used by two or more unconnected
+configurations, it is not possible to override it to source in some of those configurations and leave it as a packed
+dependency in others.
+
+* Dependencies that use +unpackToCache = false+ can not be overridden.  This is because their files are copied into the
+project workspace directly, instead of being linked in, so it is not possible to change a link to point to the
+override source.
+
+==== Transitive Dependencies
+
+The direct and transitive dependencies of a source override may differ from those of the binary package it is replacing.
+In that case, the Holy Gradle will make sure that dependency versions are consistent between the root project and the
+override source -- just as gloss:gradle[] checks consistency for binary dependencies.  This check also applies if there
+are multiple dependencies with source overrides, or if the override source project itself contains source overrides.
+
+To do this check, the +sourceOverride+ requires a valid Ivy file with the list of immediate dependencies at
++<sourceOverride>/build/publications/ivy/ivy.xml+ and an XML file at +<sourceOverride>/all-dependencies.xml+ containing
+a full list of immediate and transitive dependencies for the project in the format created by the
++summariseAllDependencies+ task, as follows.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<Configurations>
+  <Configuration name="compileVc10Debug">
+    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug"/>
+    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug"/>
+  </Configuration>
+  <Configuration name="compileVc10Release">
+    <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release"/>
+    <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug"/>
+  </Configuration>
+  <Configuration name="source"/>
+</Configurations>
+----
+
+NOTE: The +ivy.xml+ file is needed to "publish" a dummy module (with only one, empty ZIP artifact) to a private local
+"file://" repository, so that the Holy Gradle can force core Gradle to fetch that instead of the real module.  The
+"all dependencies" file is needed to check the versions of all transitive dependencies of the override project against
+all dependencies of the containing project.  It might seem that it should be possible to just add the direct
+dependencies of the override project to the containing project, then let Gradle find the transitive dependencies as
+normal.  However, that might give a different result because the override project source might use different
+repositories to find modules, or have custom dependency resolution rules.  Therefore the override project must generate
+these files.
+
+To make sure these files are up-to-date, when trying to resolve dependencies the plugin will try several methods in turn
+until one succeeds, as follows.
+
+# If the +sourceOverride+ declares an +link:plugin-intrepid.html#_ivyFileGenerator[]+ closure, call that to generate
+the two files and return the paths to them.
+# If the batch file +<sourceOverride>/generateSourceOverrideDetails.bat+ exists, run that to generate the two files.
+# Run "+<sourceOverride>/gw.bat -PrecordAbsolutePaths generateIvyModuleDescriptor summariseAllDependencies+".
+
+==== dependency
+
+This method specifies the coordinates of the dependency to override. It should follow the same pattern as the
++packedDependency+ definition. Transitive dependencies of this and any source dependencies will also be overridden
+but transitive dependencies of a source override will not. This will be reported as a version conflict at dependency
+resolution time.  If you need to override the transitive dependencies of a source override, then you must use
++sourceOverrides+ in that source override project as well.
+
+==== from
+
+This method defines a path, either absolute or relative to the root project, where the override source is located.
+
+==== ivyFileGenerator
+
+This method defines a closure to run to generate the dependency files for this source override. It should return a list
+of two +File+ objects, one for the direct dependency Ivy file and the other for the transitive dependency XML file. The
++SourceOverrideHandler+ is passed into the closure giving access to (among other things) the project object.
+
+This is useful in cases where the source does not use a compatible version of the Holy Gradle, or is not a Holy Gradle
+project, or not a Gradle project at all.  It is also useful if want to override some dependencies which are built as
+part of a multi-project build; the following example will generate the dependency files for a sub-project of
+"framework".
+
+[source,groovy]
+----
+sourceOverrides {
+    "subproject" {
+        dependency "com.company:subproject:1.1"
+        from "C:/projects/framework/subproject"
+        ivyFileGenerator { /*SourceOverrideHandler*/ handler ->
+            project.exec {
+                workingDir handler.from
+                executable "gw.bat"
+                args "-PrecordAbsolutePaths",
+                    "subproject:summariseAllDependencies", "subproject:generateIvyModuleDescriptor"
+            }
+            return [
+                new File("${handler.from}/subproject", "build/publications/ivy/ivy.xml"),
+                new File("${handler.from}/subproject", "all-dependencies.xml")
+            ]
+        }
+    }
+}
+----
+
+Note that the +SourceOverrideHandler+ is private to the Holy Gradle so you cannot actually reference that type in your
+build script.  However, since Groovy is a dynamic language, you can still call methods from +SourceOverrideHandler+ on
+that object.
+
+The next example just returns static files; for example, these might be created by hand.
+
+[source,groovy]
+----
+sourceOverrides {
+    "framework" {
+        dependency "com.company:framework:1.1"
+        from "C:/projects/framework/"
+        ivyFileGenerator { /*SourceOverrideHandler*/ handler ->
+            return [
+                new File(handler.from, "ivy.xml"),
+                new File(handler.from, "all-dependencies.xml")
+            ]
+        }
+    }
+}
+----
+
+If you override a module which comes from a multi-project build, and that module depends on other modules in that
+multi-project build, you may want to override several modules from one build.  To do that, you can use a pattern like
+the following.
+
+[source,groovy]
+----
+project.ext.subProjectOverrideProcessedRoots = new HashSet<File>()
+
+project.ext.subProjectOverride = { rootRelativePath ->
+    return { /*SourceOverrideHandler*/ handler ->
+        File overrideRootDir = new File(handler.from, rootRelativePath)
+        // Note: HashSet's add method returns true if the item was NOT already in the set.
+        if (subProjectOverrideProcessedRoots.add(overrideRootDir)) {
+            project.exec {
+                workingDir overrideRootDir
+                executable "gw.bat"
+                args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
+            }
+        }
+        return [
+            new File(handler.from, "build/publications/ivy/ivy.xml"),
+            new File(handler.from, "all-dependencies.xml")
+        ]
+    }
+}
+
+// These definitions assume that the folder with the root "build.gradle" for "framework" is
+// "C:/projects/framework" -- that is, ""C:/projects/framework/subprojectA/..".
+sourceOverrides {
+    "subprojectA" {
+        dependency "com.company:subprojectA:1.1"
+        from "C:/projects/framework/subprojectA"
+        ivyFileGenerator subProjectOverride("..")
+    }
+    "subprojectB" {
+        dependency "com.company:subprojectB:1.1"
+        from "C:/projects/framework/subprojectB"
+        ivyFileGenerator subProjectOverride("..")
+    }
+    "subprojectC" {
+        dependency "com.company:subprojectC:1.1"
+        from "C:/projects/framework/subprojectC"
+        ivyFileGenerator subProjectOverride("..")
+    }
+}
+----
+
+-> Calling this method is optional.
+
 === packedDependenciesSettings
 
 This DSL block contains settings which control how packed dependencies are unpacked.
@@ -2150,6 +2393,28 @@ This task publishes the artifacts of your module:
 * increments the version number in the text file (if using <<_nextVersionNumberAutoIncrementFile>>)
 
 You may notice a task called +publishIvyPublicationToIvyRepository+ or similar. This exists because the +intrepid+ plugin uses the +ivy-publish+ plugin.
+
+=== summariseAllDependencies
+
+WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
+
+This task resolves all dependencies and saves them as a flat list grouped by configuration to +all-dependencies.xml+ in the project directory. For example.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<Configurations>
+    <Configuration name="compileVc10Debug">
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Debug"/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" sourcePath="C:/projects/external-lib"/>
+    </Configuration>
+    <Configuration name="compileVc10Release">
+        <Dependency name="framework" group="com.company" version="1.0" configuration="compileVc10Release"/>
+        <Dependency name="external-lib" group="com.company" version="1.0" configuration="compileVc10Debug" sourcePath="C:/projects/external-lib"/>
+    </Configuration>
+    <Configuration name="source"/>
+</Configurations>
+----
 
 [[_relative_paths_2]]
 == Relative paths

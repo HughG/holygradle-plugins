@@ -1,6 +1,7 @@
 package holygradle.publishing
 
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.*
@@ -15,7 +16,8 @@ import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.util.ConfigureUtil
 
 public class DefaultPublishPackagesExtension implements PublishPackagesExtension {
-    private final Project project
+    // Only public so it can be used in a closure.
+    public final Project project
     private final PublishingExtension publishingExtension
     private final RepositoryHandler repositories
     private final LinkedHashSet<String> originalConfigurationOrder = new LinkedHashSet()
@@ -67,6 +69,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 this.collapseMultipleConfigurationDependencies()
                 if (this.addDependencyRelativePaths) {
                     this.addDependencyRelativePaths(project, packedDependencies, sourceDependencies)
+                }
+                if (project.hasProperty("recordAbsolutePaths")) {
+                    this.addDependencySourceTags(project, sourceDependencies)
                 }
 
                 ivyPublishTask.doFirst {
@@ -451,33 +456,46 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
+    public void addDependencySourceTags(Project project, Collection<SourceDependencyHandler> sourceDependencies) {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
+        mainIvyDescriptor.withXml { xml ->
+            xml.asNode()."@xmlns:${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}" = SourceOverrideHandler.HOLY_GRADLE_NAMESPACE
+            xml.asNode().dependencies.dependency.each { depNode ->
+                // If the dependency is a source dependency, get its relative path from the
+                // gradle script's sourceDependencyHandler
+                SourceDependencyHandler sourceDep = findSourceDependencyForDependencyNode(sourceDependencies, depNode)
+
+                if (sourceDep != null) {
+                    project.logger.info "Adding sourcePath attribute to source dep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
+                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:sourcePath" = sourceDep.getAbsolutePath().getCanonicalPath().toString()
+                }
+            }
+        }
+    }
+
     // This adds a custom "relativePath" attribute, to say where packedDependencies should be unpacked (or linked) to.
     public void addDependencyRelativePaths(Project project, Collection<PackedDependencyHandler> packedDependencies, Collection<SourceDependencyHandler> sourceDependencies) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         mainIvyDescriptor.withXml { xml ->
             xml.asNode().dependencies.dependency.each { depNode ->
-                // If the dependency is a packed dependency, get its relative path from the 
+                // If the dependency is a packed dependency, get its relative path from the
                 // gradle script's packedDependencyHandler
                 PackedDependencyHandler packedDep = packedDependencies.find {
-                    it.getGroupName() == depNode.@org && 
+                    it.getGroupName() == depNode.@org &&
                     it.getDependencyName() == depNode.@name &&
                     it.getVersionStr() == depNode.@rev
                 }
-                
+
                 if (packedDep != null) {
                     project.logger.info "Adding relative path to packedDep node: ${packedDep.getGroupName()}:${packedDep.getDependencyName()}:${packedDep.getVersionStr()} path=${packedDep.getFullTargetPath()}"
                     depNode.@relativePath = packedDep.getFullTargetPath()
                 } else {
-                    // Else if the dependency is a source dependency, get its relative path from the 
+                    // Else if the dependency is a source dependency, get its relative path from the
                     // gradle script's sourceDependencyHandler
-                    SourceDependencyHandler sourceDep = sourceDependencies.find {
-                        ModuleVersionIdentifier latestPublishedModule = it.getDependencyId()
-                        latestPublishedModule.getGroup() == depNode.@org && 
-                        latestPublishedModule.getName() == depNode.@name &&
-                        latestPublishedModule.getVersion() == depNode.@rev
-                    }
-                    
+                    SourceDependencyHandler sourceDep = findSourceDependencyForDependencyNode(sourceDependencies, depNode)
+
                     if (sourceDep != null) {
                         project.logger.info "Adding relative path to sourceDep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
                         depNode.@relativePath = sourceDep.getFullTargetPath()
@@ -486,6 +504,24 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     }
                 }
             }
+        }
+    }
+
+    // Only public because it needs to be used from wtihin a lambda.
+    public SourceDependencyHandler findSourceDependencyForDependencyNode(
+        Collection<SourceDependencyHandler> sourceDependencies,
+        depNode
+    ) {
+        return sourceDependencies.find {
+            ModuleVersionIdentifier dependencyModule = it.getDependencyId()
+            if (dependencyModule == null) {
+                project.logger.debug "Ignoring source dependency on ${it.targetName} because there are no " +
+                    "configuration mappings"
+                return false
+            }
+            return dependencyModule.getGroup() == depNode.@org &&
+                dependencyModule.getName() == depNode.@name &&
+                dependencyModule.getVersion() == depNode.@rev
         }
     }
 }

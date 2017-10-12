@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.linked.project.id=":custom-gradle" external.linked.project.path="$MODULE_DIR$/../../../custom-gradle" external.root.project.path="$MODULE_DIR$/../../.." external.system.id="GRADLE" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../../custom-gradle">
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle/src/main/groovy" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle/src/main/resources" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle/src/test/groovy" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle/src/test/resources" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/../../../custom-gradle/.gradle" />
+      <excludeFolder url="file://$MODULE_DIR$/../../../custom-gradle/build" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

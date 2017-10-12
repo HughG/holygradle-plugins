@@ -19,15 +19,11 @@ class CommandLine implements Command {
     @Override
     String execute(Closure configureExecSpec, Closure throwForExitValue) {
         String localHgPath = hgPath
-        ExecHelper.executeAndReturnResultAsString(
-            logger,
-            exec,
-            { ExecSpec spec ->
-                spec.executable localHgPath
-                configureExecSpec(spec)
-            },
-            throwForExitValue
-        )
+        ExecHelper.executeAndReturnResultAsString(logger, exec, throwForExitValue) { ExecSpec spec ->
+            println "Setting exe to ${localHgPath}"
+            spec.executable localHgPath
+            configureExecSpec(spec)
+        }
     }
 
     @Override

@@ -31,11 +31,8 @@ class PackedDependencyHandler extends DependencyHandler {
 
     public PackedDependencyHandler(String depName) {
         super(depName)
-
-        //throw new RuntimeException("No project for PackedDependencyHandler for $depName")
-
     }
-    
+
     public PackedDependencyHandler(String depName, Project projectForHandler) {
         super(depName, projectForHandler)
 
@@ -45,28 +42,7 @@ class PackedDependencyHandler extends DependencyHandler {
 
         this.projectForHandler = projectForHandler
     }
-    
-    public PackedDependencyHandler(
-        String depName,
-        Project projectForHandler,
-        String dependencyCoordinate,
-        Collection<AbstractMap.SimpleEntry<String, String>> configurations
-    ) {
-        this(depName, projectForHandler)
-        this.projectForHandler = projectForHandler
-        initialiseDependencyId(dependencyCoordinate)
-        this.configurationMappings.addAll(configurations)
-    }
-    
-    public PackedDependencyHandler(
-        String depName,
-        Project projectForHandler,
-        ModuleVersionIdentifier dependencyCoordinate
-    ) {
-        this(depName, projectForHandler)
-        dependencyId = dependencyCoordinate
-    }
-    
+
     private PackedDependencyHandler getParentHandler() {
         if (projectForHandler == null) {
             null
@@ -93,6 +69,10 @@ class PackedDependencyHandler extends DependencyHandler {
                 return true
             }
         } else {
+            if (getSourceOverride() != null && !unpackToCache) {
+                throw new RuntimeException("A source override can not be applied to a packed dependency with unpackToCache = false")
+            }
+
             return unpackToCache
         }
     }
@@ -142,7 +122,7 @@ class PackedDependencyHandler extends DependencyHandler {
             return createSettingsFile
         }
     }
-    
+
     public boolean shouldMakeReadonly() {
         if (readonly == null) {
             PackedDependencyHandler p = getParentHandler()
@@ -168,7 +148,7 @@ class PackedDependencyHandler extends DependencyHandler {
             return applyUpToDateChecks
         }
     }
-    
+
     private void initialiseDependencyId(String dependencyCoordinate) {
         if (dependencyId != null) {
             throw new RuntimeException("Cannot set dependency more than once")
@@ -181,7 +161,7 @@ class PackedDependencyHandler extends DependencyHandler {
             dependencyId = new DefaultModuleVersionIdentifier(match[1], match[2], match[3])
         }
     }
-        
+
     public void dependency(String dependencyCoordinate) {
         initialiseDependencyId(dependencyCoordinate)
     }
@@ -202,6 +182,16 @@ class PackedDependencyHandler extends DependencyHandler {
                 )
             )
         }
+    }
+
+    /**
+     * Returns the {@link SourceOverrideHandler} from the root project which corresponds to this dependency, if there is
+     * one; otherwise return null.
+     * @return the {@link SourceOverrideHandler} from the root project which corresponds to this dependency, if there is
+     * one, otherwise null.
+     */
+    public SourceOverrideHandler getSourceOverride() {
+        return project.rootProject.sourceOverrides.find { it.dependencyCoordinate == dependencyCoordinate }
     }
 
     public String getGroupName() {

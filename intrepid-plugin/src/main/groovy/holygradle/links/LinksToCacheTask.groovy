@@ -41,7 +41,9 @@ class LinksToCacheTask extends DefaultTask {
         doLast {
             localVersionList.each { UnpackModuleVersion version ->
                 File linkDir = version.getTargetPathInWorkspace(project)
-                File targetDir = version.getUnpackDir(project)
+                File targetDir = version.getLinkDir(project)
+
+                LinkTask.checkIsLinkOrMissing(linkDir, targetDir)
 
                 switch (mode) {
                     case Mode.BUILD:
@@ -83,13 +85,15 @@ class LinksToCacheTask extends DefaultTask {
             return
         }
         // Now we recursively travel up the parent chain, re-adding each parent.  This means that each ancestor will
-        // appear before its descendants, which ensures that links exist before any attempts to create links
+        // appear before its descendants, which ensures that symlinks exist before any attempts to create links
         // *inside* those linked folders.  We remove the parent first, in case it is already in the list, so that we
         // don't process it twice.
-        final UnpackModuleVersion parent = version.parent
-        if (parent != null) {
-            removeUnpackModuleVersionIfPresent(parent)
-            addUnpackModuleVersionWithAncestors(parent)
+        Collection<UnpackModuleVersion> parents = version.parents
+        parents.each {
+            UnpackModuleVersion parent ->
+                removeUnpackModuleVersionIfPresent(parent)
+                addUnpackModuleVersionWithAncestors(parent)
+
         }
     }
 
@@ -116,7 +120,7 @@ class LinksToCacheTask extends DefaultTask {
      * Removes {@code version} from the list of versions for which this task will create links.  If the version is
      * NOT already present, this method does nothing.
      */
-    private void removeUnpackModuleVersionIfPresent(UnpackModuleVersion version) {
+    public void removeUnpackModuleVersionIfPresent(UnpackModuleVersion version) {
         if (versionsSeen.remove(version.moduleVersion)) {
             versionList.remove(version)
         }
