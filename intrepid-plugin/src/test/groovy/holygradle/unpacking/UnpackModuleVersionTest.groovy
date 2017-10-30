@@ -44,7 +44,6 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     ) {
         new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
-            getIvyFile(moduleName + ".xml"),
             ((parent == null) ? [] : [parent]).toSet(),
             (parent == null) ? new PackedDependencyHandler(moduleName, project) : null
         )
@@ -101,7 +100,6 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         PackedDependencyHandler eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty", project)
         UnpackModuleVersion eggfruit = new UnpackModuleVersion(
             new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
-            getIvyFile("eggfruit.xml"),
             new HashSet<UnpackModuleVersion>(),
             eggfruitPackedDep
         )
@@ -167,21 +165,5 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         File eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
         assertEquals(new File(project.projectDir, "eggfruit"), eggfruitPath)
 
-    }
-
-    @Test
-    public void testRelativePathsUsingRelativePathFromIvyXml() {
-        Project project = getProject()
-        PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).useRelativePathFromIvyXml = true
-
-        Map<String, UnpackModuleVersion> modules = getTestModules()
-
-        assertEquals(new File(project.projectDir, "root/aa"), modules["apricot"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/sub/bb"), modules["blueberry"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/sub/coconut"), modules["coconut"].getTargetPathInWorkspace(project))
-        assertEquals(new File(project.projectDir, "root/sub/coconut/date"), modules["date"].getTargetPathInWorkspace(project))
-
-        File eggfruitPath = modules["eggfruit"].getTargetPathInWorkspace(project)
-        assertEquals(new File(project.projectDir, "root/eggfruit"), eggfruitPath)
     }
 }
