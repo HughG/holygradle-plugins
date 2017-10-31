@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configurations>
+  <Configuration name="compileVc10Debug">
+    <Dependency name="another-framework" group="holygradle.test" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="external-lib" group="holygradle.test" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+  </Configuration>
+  <Configuration name="compileVc10Release">
+    <Dependency name="another-framework" group="holygradle.test" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+    <Dependency name="external-lib" group="holygradle.test" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+  </Configuration>
+  <Configuration name="everything">
+    <Dependency name="another-framework" group="holygradle.test" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="another-framework" group="holygradle.test" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+    <Dependency name="external-lib" group="holygradle.test" version="1.0" configuration="compileVc10Debug" isSource="false" absolutePath=""/>
+    <Dependency name="external-lib" group="holygradle.test" version="1.0" configuration="compileVc10Release" isSource="false" absolutePath=""/>
+  </Configuration>
+  <Configuration name="source"/>
+</Configurations>

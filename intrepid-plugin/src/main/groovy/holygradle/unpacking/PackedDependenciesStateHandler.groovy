@@ -5,6 +5,7 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.ResolvedDependenciesVisitor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
+
 /**
  * This project extension provides information about the state of packed dependencies when they are resolved.
  *
@@ -39,8 +40,7 @@ import org.gradle.api.artifacts.*
 class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
     private final Project project
     private final DependenciesStateHandler dependenciesStateHandler
-    private Map<ModuleIdentifier, UnpackModule> unpackModulesMap = null
-    private Collection<UnpackModule> unpackModules = null
+    private Map<Configuration, Collection<UnpackModule>> unpackModules = null
 
     public static PackedDependenciesStateHandler createExtension(Project project) {
         project.extensions.packedDependenciesState = new PackedDependenciesStateHandler(project)
@@ -204,9 +204,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         }
                     }
                 } else {
-                    File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
-                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                    unpackModuleVersion = new UnpackModuleVersion(id, ivyFile, parents, thisPackedDep)
+                    unpackModuleVersion = new UnpackModuleVersion(id, parents, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                             "collectUnpackModules: created version for ${id} " +
@@ -225,19 +223,27 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
      *
      * @return The transitive set of unpacked modules used by the project.
      */
-    public Collection<UnpackModule> getAllUnpackModules() {
-        if (unpackModulesMap == null) {
+    public Map<Configuration, Collection<UnpackModule>> getAllUnpackModules() {
+        if (unpackModules == null) {
             unpackModules = initializeAllUnpackModules()
         }
         unpackModules
     }
 
-    private ArrayList initializeAllUnpackModules() {
+    private Map<Configuration, Collection<UnpackModule>> initializeAllUnpackModules() {
         project.logger.debug("getAllUnpackModules for ${project}")
 
         final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
+        // Build a map of all unpack modules per configuration.  This allows us to force an unpack module to have only
+        // one location per configuration (by setting its packedDependency or its parents) but allow different locations
+        // for different configurations.  (A different configuration may have some, but not all, module versions
+        // different.  If the same version of a transitive dependency appears in more that one configuration, we want to
+        // link it next to its originating packed dependency/-ies in *all* configurations, not only in the first one we
+        // happen to process.)
+        Map<Configuration, Map<ModuleIdentifier, UnpackModule>> configurationUnpackModulesMap =
+            [:].withDefault { new HashMap<ModuleIdentifier, UnpackModule>() }
+
         // Build a list (without duplicates) of all artifacts the project depends on.
-        unpackModulesMap = [:]
         Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
         project.configurations.each((Closure){ Configuration conf ->
             ResolvedConfiguration resConf = conf.resolvedConfiguration
@@ -245,7 +251,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 conf,
                 resConf.getFirstLevelModuleDependencies(),
                 packedDependencies,
-                unpackModulesMap,
+                configurationUnpackModulesMap[conf],
                 modulesWithoutIvyFiles
             )
         })
@@ -255,26 +261,33 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         }
 
         // Build a map of target locations to module versions
+        List<UnpackModule> flattenedUnpackModules = configurationUnpackModulesMap.values().collect { it.values() }.flatten()
         Map<File, Collection<UnpackModuleVersion>> targetLocations =
             [:].withDefault { new ArrayList<UnpackModuleVersion>() }
-        unpackModulesMap.values().each { UnpackModule module ->
+        flattenedUnpackModules.each { UnpackModule module ->
             module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
                 File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
                 targetLocations[targetPath].add(versionInfo)
             }
         }
 
-        // Check if any target locations are used by more than one module/version.  (We use "inject", instead of "any",
+        // Check if any target locations are used by more than one module/version with different unpack entries.  It's
+        // okay if there are multiple but they all unpack to the same thing/place.  (We use "inject", instead of "any",
         // because we want to keep checking even after we find a problem, so we can log them all.)
         boolean foundTargetClash = targetLocations.inject(false) {
             boolean found, File target, Collection<UnpackModuleVersion> versions
              ->
-            final boolean thisTargetHasClashes = versions.size() > 1
+            final Set<UnpackDirEntry> uniqueUnpackDirEntries = versions.collect { it.getUnpackDirEntry(project) }.toSet()
+            final boolean thisTargetHasClashes = uniqueUnpackDirEntries.size() > 1
             if (thisTargetHasClashes) {
                 project.logger.error(
                     "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
                 )
-                versions.each { logUnpackModuleVersionAncestry(it, 1) }
+                versions.each {
+                    logUnpackModuleVersionAncestry(it, 1)
+                    project.logger.debug("    "+ it.getUnpackEntry(project).toString())
+                }
+                project.logger.debug("  Unique unpack dir entries: " + uniqueUnpackDirEntries)
             }
             return found || thisTargetHasClashes
         }
@@ -282,7 +295,8 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             throw new RuntimeException("Multiple different dependencies/versions are targeting the same locations.")
         }
 
-        unpackModules = new ArrayList(unpackModulesMap.values())
+        def map = new HashMap<Configuration, Collection<UnpackModule>>()
+        unpackModules = configurationUnpackModulesMap.collectEntries(map) { [it.key, it.value.values()] }
         unpackModules
     }
 

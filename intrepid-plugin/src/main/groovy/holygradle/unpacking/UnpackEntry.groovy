@@ -1,36 +1,22 @@
 package holygradle.unpacking
 
-class UnpackEntry {
+/**
+ * Extends {@link UnpackDirEntry} with a specific list of ZIP files.  The mulitple {@link UnpackModuleVersion} objects
+ * for the same module version (but from different configurations) should have equal {@link UnpackDirEntry} objects but
+ * may have different sets of ZIP files.  Thee contents of these ZIP files will be merged in the unpack dir.
+ */
+class UnpackEntry extends UnpackDirEntry {
     /**
      * The set of ZIP files to unpack.
      */
     public final Collection<File> zipFiles
 
-    /**
-     * The location to which to unpack all the {@link #zipFiles}.
-     */
-    public final File unpackDir
-
-    /**
-     * If true, unpacking tasks should use Gradle's built-in "up-to-date checking" mechanisms to compare the files in
-     * inside the {@link #zipFiles} with the files in the {@link #unpackDir} before unpacking.  Otherwise, they may use
-     * some quicker short-cut mechanism.
-     */
-    public final boolean applyUpToDateChecks
-
-    /**
-     * If true, the unpacked files should be marked as readonly; otherwise, they may be read-write.
-     */
-    public final boolean makeReadOnly
-
     public UnpackEntry(Collection<File> zipFiles, File unpackDir, boolean applyUpToDateChecks, boolean makeReadOnly) {
+        super(unpackDir, applyUpToDateChecks, makeReadOnly)
         this.zipFiles = zipFiles
-        this.unpackDir = unpackDir
-        this.applyUpToDateChecks = applyUpToDateChecks
-        this.makeReadOnly = makeReadOnly
 
-        if (unpackDir == null) {
-            throw new NullPointerException("unpackDir is null in UnpackEntry")
+        if (zipFiles == null) {
+            throw new NullPointerException("zipFiles is null in UnpackEntry")
         }
     }
 
@@ -41,7 +27,7 @@ class UnpackEntry {
             ", unpackDir=" + unpackDir +
             ", applyUpToDateChecks=" + applyUpToDateChecks +
             ", makeReadOnly=" + makeReadOnly +
-            '}';
+            '}'
     }
 
     @Override
@@ -63,9 +49,7 @@ class UnpackEntry {
     public int hashCode() {
         int result
         result = zipFiles.hashCode()
-        result = 31 * result + unpackDir.hashCode()
-        result = 31 * result + (applyUpToDateChecks ? 1 : 0)
-        result = 31 * result + (makeReadOnly ? 1 : 0)
+        result = 31 * result + super.hashCode()
         return result
     }
 }
