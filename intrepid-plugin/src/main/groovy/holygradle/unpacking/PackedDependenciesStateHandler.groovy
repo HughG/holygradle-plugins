@@ -5,6 +5,7 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.ResolvedDependenciesVisitor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
+
 /**
  * This project extension provides information about the state of packed dependencies when they are resolved.
  *
@@ -284,9 +285,9 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 )
                 versions.each {
                     logUnpackModuleVersionAncestry(it, 1)
-                    project.logger.error("    "+ it.getUnpackEntry(project).toString())
+                    project.logger.debug("    "+ it.getUnpackEntry(project).toString())
                 }
-                project.logger.error("  Unique unpack dir entries: " + uniqueUnpackDirEntries)
+                project.logger.debug("  Unique unpack dir entries: " + uniqueUnpackDirEntries)
             }
             return found || thisTargetHasClashes
         }
