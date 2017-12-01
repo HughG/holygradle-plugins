@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.12.x
 
 ===== 7.12.0
-(TODO)
+(01356a342715 at 2017-12-01 16:21:13 UTC)
 
 Intrepid {br} ::
 
@@ -68,11 +68,21 @@ CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} Cr
 ==== 7.11.x
 
 ===== 7.11.0
-(TODO)
+(4ec3faf09545 at 2017-10-12 15:56:06 UTC)
 
 Intrepid {br} ::
 
-* [TODO: Source overrides changes]
+* Major new feature: added support for "source overrides", which allow developers to replace the links for packed
+dependencies with links to a local checkout of corresponding source code.  This allows you to modify the source, for
+example to help debug a problem.  See link:plugin-intrepid.html#_sourceoverrides[] for more details.
+** Multiple packed dependencies can be replaced.
+** If the source of the replaced dependencies itself uses a new enough version of the Holy Gradle, then multiple levels
+of source override are possible.
+** The Holy Gradle can ensure that the transitive dependencies of the replaced source are consistent with the
+dependencies of the main build and any other source overrides.
+** A module with source overrides cannot be published, because Gradle cannot know the published version of the
+overridden dependency.
+
 
 CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
 - No changes.

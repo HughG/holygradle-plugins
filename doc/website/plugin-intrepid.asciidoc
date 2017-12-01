@@ -1637,7 +1637,7 @@ packedDependenciesSettings {
 
 === sourceOverrides
 
-+WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
+WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
 
 This container allows you to override the handling of specific packed dependencies to instead point to existing source
 on a local disk. This is intended for testing changes to dependencies without having to first package and publish those
