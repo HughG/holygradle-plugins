@@ -42,6 +42,41 @@ things for users, and also for plugin developers.
 
 === 7.x
 
+==== 7.12.x
+
+===== 7.12.0
+(TODO)
+
+Intrepid {br} ::
+
+* Transitive packed dependencies can now appear in the workspace (as links or unpack folders) in more than one
+location.  Previously, if a transitive dependency was expected to appear in multiple locations (because it came from
+multiple packed dependencies which were configured to appear in different folders) it would only appear in one of those
+locations, and the location was not predictable.
+** To prevent multiple versions of the same transitive dependency targeting the same location, this change introduces
+the restriction that any packed dependency can only appear in one location per configuration.  In other words, each
+configuration must all its dependencies in one folder.  This may require breaking changes to the dependency paths in
+your +packedDependencies+ block.  See link:plugin-intrepid.html#_dependency_locations[] for more details.
+** Also as part of this, removed support for +packedDependenciesSettings.useRelativePathFromIvyXmle+, which was
+introduced in <<_7_4_0>> as a temporary way to re-enable that deprecated feature.
+
+
+CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
+
+==== 7.11.x
+
+===== 7.11.0
+(TODO)
+
+Intrepid {br} ::
+
+* [TODO: Source overrides changes]
+
+CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ==== 7.10.x
 
 ===== 7.10.3
