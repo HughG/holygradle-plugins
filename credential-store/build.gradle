@@ -1,20 +1,65 @@
-public File getDevEnvPath() {
-    if (!project.hasProperty('chosenDevEnvVersion')) {
-        throw new RuntimeException(
-            'Cannot configure ${project.name} to build because property chosenDevEnvVersion is not set. ' +
-            'The value should be something like "VS120".'
+import java.util.regex.Pattern
+import java.util.regex.Matcher
+
+import holygradle.process.ExecHelper
+
+public File getCommonToolsPathFromVSWhere(String vswhereLocation) {
+    Pattern versionPattern = Pattern.compile("VS([0-9]+)", Pattern.CASE_INSENSITIVE)
+    Matcher versionMatcher = versionPattern.matcher(chosenDevEnvVersion)
+
+    if (versionMatcher.find()) {
+        Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
+        String majorVersionNumber = (devEnvVersion / 10).toString()
+        String fullVersionNumber = majorVersionNumber + ".0"
+        String nextFullVersionNumber = majorVersionNumber + '.1'
+
+        String installPath = ExecHelper.executeAndReturnResultAsString(
+            project.logger,
+            project.&exec,
+            { ExecSpec spec ->
+                spec.commandLine vswhereLocation,
+                                 "-property", "installationPath",
+                                 "-legacy",
+                                 "-format", "value",
+                                 "-version", "[${fullVersionNumber},${nextFullVersionNumber})"
+            },
+            { return true }
         )
+        return new File(installPath, "Common7/Tools")
+    } else {
+        throw new RuntimeException("Failed to parse DevEnv version '${chosenDevEnvVersion}'")
     }
+}
+
+public File getCommonToolsPathFromEnvironment() {
     String envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
     if (envVarComnTools == null || envVarComnTools == "") {
-        throw new RuntimeException("'chosenDevEnvVersion' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
+        throw new RuntimeException("'version' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
     }
-    File comnToolsPath = new File(envVarComnTools)
-    File devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")
+    return new File(envVarComnTools)
+}
+
+public File getCommonToolsPath() {
+    // Check for the existence of vswhere.exe
+    final String vswhereLocation = ["ProgramFiles", "ProgramFiles(x86)"] // look at 64-bit then 32-bit environment variables
+        .findResults { System.getenv(it) } // collect all non-null environment variable values
+        .collect { "${it}\\Microsoft Visual Studio\\Installer\\vswhere.exe" } // map to filenames
+        .find { new File(it).exists() } // return the first filename for which a file exists
+
+    if (vswhereLocation != null) {
+        return getCommonToolsPathFromVSWhere(vswhereLocation)
+    } else {
+        return getCommonToolsPathFromEnvironment()
+    }
+}
+
+public File getDevEnvPath() {
+    File commonToolsPath = getCommonToolsPath()
+    File devEnvPath = new File(commonToolsPath, "../IDE/devenv.com")
     if (!devEnvPath.exists()) {
         throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
     }
-    devEnvPath
+    return devEnvPath
 }
 
 String releaseVersionInfoFileName = 'release_version_info.h'

@@ -18,6 +18,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
          * Dependencies
          **************************************/
 
+        // TODO 2017-03-28 HughG: Use BuildScriptDependencies to get this instead.
         ResolvedArtifact credentialStoreArtifact = null
         // credential-store is declared as attached to the 'compile' configuration in this plugin's
         // build.gradle, but 'runtime' extends 'compile', and we're using it here at runtime.
@@ -30,7 +31,6 @@ class MyCredentialsPlugin implements Plugin<Project> {
                 }
             }
         }
-        String credentialStorePath = credentialStoreArtifact.getFile().path
         
         // Copy the credential-store to the root of the workspace.
         if (project == project.rootProject) {
@@ -49,7 +49,7 @@ class MyCredentialsPlugin implements Plugin<Project> {
          **************************************/
             
         // Define 'my' DSL to allow user to retrieve secure user-specific settings.
-        MyHandler.defineExtension(project, credentialStorePath)
+        MyHandler.defineExtension(project)
         
         /**************************************
          * Tasks

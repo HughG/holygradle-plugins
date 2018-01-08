@@ -2,13 +2,13 @@ package holygradle.source_dependencies
 
 import holygradle.Helper
 import holygradle.IntrepidPlugin
-import holygradle.buildscript.BuildScriptDependencies
+import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
 import holygradle.scm.CommandLine
+import holygradle.scm.GitDependency
 import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
-import holygradle.scm.GitDependency
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -22,6 +22,7 @@ class SourceDependencyHandler extends DependencyHandler {
     public String protocol = null
     public String url = null
     public String branch = null
+    public String credentialBasis = CredentialSource.DEFAULT_CREDENTIAL_TYPE
     public Boolean writeVersionInfoFile = null
     public boolean export = false
     private File destinationDir
@@ -115,40 +116,17 @@ class SourceDependencyHandler extends DependencyHandler {
         }
     }
 
-    public Task createFetchTask(Project project, BuildScriptDependencies buildScriptDependencies) {
+    public Task createFetchTask(Project project) {
         SourceDependency sourceDependency
         if (protocol == "svn") {
-            def hgCommand = new CommandLine(
-                "svn.exe",
-                project.&exec
-            )
-            sourceDependency = new SvnDependency(
-                project,
-                this,
-                hgCommand
-            )
+            def svnCommand = new CommandLine(project.logger, "svn.exe", project.&exec)
+            sourceDependency = new SvnDependency(project, this, svnCommand)
         } else if (protocol == "hg") {
-            def hgCommand = new CommandLine(
-                "hg.exe",
-                project.&exec
-            )
-            sourceDependency = new HgDependency(
-                project,
-                this,
-                buildScriptDependencies,
-                hgCommand
-            )
+            def hgCommand = new CommandLine(project.logger, "hg.exe", project.&exec)
+            sourceDependency = new HgDependency(project, this, hgCommand)
         } else if (protocol == "git") {
-            def gitCommand = new CommandLine(
-                "git.exe",
-                project.&exec
-            )
-            sourceDependency = new GitDependency(
-                project,
-                this,
-                buildScriptDependencies,
-                gitCommand
-            )
+            def gitCommand = new CommandLine(project.logger, "git.exe", project.&exec)
+            sourceDependency = new GitDependency(project, this, gitCommand)
         } else {
             throw new RuntimeException("Unsupported protocol: " + protocol)
         }

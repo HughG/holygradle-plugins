@@ -1,0 +1,232 @@
+// This template has some parts which you should change for your own project.  They are marked with ####.
+
+// ---------------------------------------------------------------------------------------------------------------------
+/*
+    Header code to include the Holy Gradle plugins.
+*/
+buildscript {
+    // ---- Main plugins.
+
+    // Get username and password from Windows Credential Store
+    gplugins.use "my-credentials-plugin:${holyGradlePluginsVersion}"
+
+    // Create and use packed dependencies.  Use source dependencies.
+    gplugins.use "intrepid-plugin:${holyGradlePluginsVersion}"
+
+    // ---- The following are optional, and not as well-supported.
+
+    // Create tasks to run Visual Studio (build and clean, for Debug and Release; for x64 by default, can also do Win32)
+    gplugins.use "devenv-plugin:${holyGradlePluginsVersion}"
+
+    // Create tasks to run unit test executables (for Debug and Release)
+    gplugins.use "unit-test-plugin:${holyGradlePluginsVersion}"
+}
+gplugins.apply()
+
+// ---------------------------------------------------------------------------------------------------------------------
+/*
+    Specifies the group and version for your module.  The name of your module must be specified in "settings.gradle".
+
+    This module ID "group:name:version" is used when Gradle is running, and also when your module is published to
+    Artifactory.
+
+    (For anyone who has used earlier versions of the Holy Gradle: we set these early in this build file, instead of in
+    the publishPackages block, because sometimes the information is needed earlier.
+*/
+
+// The group is a namespace for your module.  It should be a "reverse domain name" for your company/department, usually
+// with a team name added at the end.
+group = multiprojGroup
+
+// This sets the module version string to the environent variable NEXT_MYAPP_VERSION, or uses Gradle's default version
+// string if the variable is not set.
+version = System.getenv("NEXT_MULTIPROJ_VERSION") ?: Project.DEFAULT_VERSION // #### Change env var to one for your build.
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+/*
+    Defines sets of related configurations.
+
+    See [[WEBSITE_ROOT]]/intrepid-plugin.html#_configurationSets
+    and [[WEBSITE_ROOT]]/workflows.html#_determine_outputs
+
+    Configurations are used to get parts of dependency modules, and to publish parts of this module for use in other
+    projects.
+*/
+configurationSets {
+    main {
+        type configurationSetTypes.DLL_64
+    }
+}
+
+/*
+    Defines individual configurations which are not part of a set of related configurations.
+
+    See https://docs.gradle.org/1.4/dsl/org.gradle.api.Project.html#org.gradle.api.Project:configurations%28groovy.lang.Closure%29
+    and [[WEBSITE_ROOT]]/workflows.html#_determine_outputs
+*/
+configurations {
+    // Declaring any configurationSets automatically creates a private "build" configuration, so we don't need to add it.
+
+    test_runtime_all {
+        visible = false
+        description = "Files only needed for testing this module (not needed to use it), " +
+            "which need to be deployed to some location to use them; for example, unit test framework DLLs."
+    }
+
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+/*
+    Specifies the repositories to look in for this project's packedDependencies.
+
+    See [[WEBSITE_ROOT]]/intrepid-plugin.html#_repositories
+    and [[WEBSITE_ROOT]]/workflows.html#_declare_dependency_repositories
+
+    Use "project.holyGradleRepositoryBase" as the start of the URL so that same source can be built at different sites.
+*/
+repositories.ivy {
+    credentials {
+        username my.username("Artifactory")
+        password my.password("Artifactory")
+    }    
+    // url project.holyGradleRepositoryBase + multiprojRepo
+    url project.holyGradleRepositoryBase + "libs-release" // #### Remove: multiprojRepo virtual repo should include libs-release.
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+/*
+    Specifies source dependencies to check out.
+
+    See [[WEBSITE_ROOT]]/plugin-intrepid.html#_sourceDependencies
+
+    These will be added to the multi-project build if they contain a "build.gradle" or "<folder-name>.gradle", causing
+    the Holy Gradle to re-run the build.  The handling of source dependencies is very simple: if the folder doesn't
+    exist, it is cloned from the give URL; if it already exists, the Holy Gradle does nothing.
+*/
+sourceDependencies {
+    "../otherLib" {
+        hg "http://hg.example-corp.com/otherLib"
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64
+    }
+
+    "../testData" {
+        svn "http://svn.example-corp.com/testData"
+    }
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+/*
+    Specifies where to create symlinks for unpacked dependencies.  Currently this dir setting is just a pattern, not a
+    built-in Holy Gradle feature.  It may become a built-in feature in future.
+*/
+// This will put all dependencies inside a sub-folder
+project.ext.dependenciesDir = "./dep"
+
+// Some teams want dependencies in the project folder:
+// def dependenciesDir = "."
+
+// Some teams want dependencies one level up.  However, this is not recommended, because then it is hard to re-use
+// your project's source code within another project.
+// def dependenciesDir = ".."
+
+/*
+    Specifies other modules to download, unzip, and symlink into the dependencies dir.
+
+    See [[WEBSITE_ROOT]]/intrepid-plugin.html#_packedDependencies
+    and [[WEBSITE_ROOT]]/workflows.html#_determine_module_dependencies
+
+    NOTE: It is recommended that the folder for each dependency should have the same name as the "name" part of the
+    "group:name:version" module ID.  This may be enforced by the Holy Gradle in future.
+
+    NOTE: If you import a module and want to make it visible to users of your module, add ", export: true" to the end of
+    the configurationSet line.  You should do this if and only if you expose the types of that module from your module.
+    That means that another module which uses yours will get the headers and LIBs of the module you import.
+    See [[WEBSITE_ROOT]]/plugin-intrepid.html#_sourceDependencies_configurationSet.
+    (That documentation is for source dependencies but the behaviour is the same as for packed dependencies:
+    [[WEBSITE_ROOT]]/plugin-intrepid.html#_packedDependencies_configurationSet.)
+*/
+packedDependencies {
+    // -----------------------------------------------------------------------------------------------------------------
+    // Main dependencies.
+
+    addDependency(project, it, "boost") {
+        configurationSet configurationSets.main, configurationSetTypes.DLL_64, export: true
+    }
+    addDependency(project, it, "zlib") {
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Test dependencies.
+
+    addDependency(project, it, "boost") {
+        configurationSet configurations.test_runtime_all, configurationSetTypes.DLL_64
+    }
+
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+/*
+    Specifies the solution file to build with "buildRelease" and "cleanRelease".
+
+    See [[WEBSITE_ROOT]]/plugin-devenv.html#_devenv
+    and [[WEBSITE_ROOT]]/workflows.html#_check_build
+*/
+DevEnv {
+    solutionFile "mainLib.sln" // ####
+    version "vs120"
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+/*
+    Specifies which files should be included in the ZIP files which are published for this module.
+
+    See [[WEBSITE_ROOT]]/plugin-intrepid.html#_packageArtifacts
+    and [[WEBSITE_ROOT]]/workflows.html#_check_packaging
+
+    For a web application, you may choose to publish the client and server parts of your app individually, or you may
+    decide to publish only an installer.  Remove any sections below which you do not need.
+*/
+packageArtifacts { packArts ->
+    import_common {
+        include "src/**/*.h"
+    }
+
+    configurationSets.main.axes.Platform.each { vsPlatform ->
+        configurationSets.main.axes.Configuration.each { vsConfiguration ->
+            // Platform-specific imports are usually only needed for COM. // ####
+            // packArts."import_${vsPlatform}_${vsConfiguration}" {
+            // }
+
+            packArts."runtime_${vsPlatform}_${vsConfiguration}" {
+                include "${vsPlatform}/${vsConfiguration}/mainLib_vc12_${vsConfiguration}_${vsPlatform}.dll" // ####
+            }
+
+            packArts."debugging_${vsPlatform}_${vsConfiguration}" {
+                include "${vsPlatform}/${vsConfiguration}/mainLib_vc12_${vsConfiguration}_${vsPlatform}.pdb" // ####
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+/*
+    Specifies where to publish this module.
+
+    See [[WEBSITE_ROOT]]/plugin-intrepid.html#_publishPackages
+    and [[WEBSITE_ROOT]]/workflows.html#_check_publishing
+
+    Use "project.holyGradleRepositoryBase" as the start of the URL so that same source can be built at different sites.
+*/
+publishPackages {
+    repositories.ivy {
+        credentials {
+            username my.username("Artifactory")
+            password my.password("Artifactory")
+        }
+        url project.holyGradleRepositoryBase + multiprojPublishRepo
+    }
+}
