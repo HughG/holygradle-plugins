@@ -1,4 +1,4 @@
-package holygradle.buildHelpers
+package holygradle.buildSrc.buildHelpers
 
 /**
  * Simple class representing what we need to know about an XML document.

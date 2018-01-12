@@ -30,6 +30,7 @@ syntax: regexp
 (^|/).gradle/
 (^|/)build/
 ^classes/
+# Holy Gradle
 (^|^wrapper-starter-kit/|^https-setup-kit/)gradle/(certs|cacerts|cacerts.import.log)
 # IntelliJ IDEA
 ^\.idea/workspace.xml
@@ -60,6 +61,7 @@ syntax: regexp
 ^ivy\.xml
 ^(wrapper-starter|https-setup)-kit/gradle/init.d
 ^(wrapper-starter|https-setup)-kit/gradle/init.d
+^wrapper-starter-kit/gradle/distributionPath\.txt
 ^wrapper-starter-kit/newWrapper/(gw|gradlew)(\.bat)?
 ^wrapper-starter-kit/newWrapper/gradle
 ^https-setup-kit/plainWrapper/(gw|gradlew)(\.bat)?
