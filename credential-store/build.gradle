@@ -70,7 +70,7 @@ task createReleaseVersionFile {
     doLast {
         versionFile.withWriter { BufferedWriter writer ->
             String username = System.getProperty("user.name").toLowerCase()
-            boolean isSnapshot = (project.version == "${username}-SNAPSHOT")
+            boolean isSnapshot = project.version.toString().endsWith('-SNAPSHOT')
             String ver = isSnapshot ? "0.0.0.0" : project.version
             String commaVer = isSnapshot ? "0,0,0,0" : project.version.replaceAll('\\.', ',')
             writer.writeLine "#define RELEASE_VERSION \"${ver}\""
