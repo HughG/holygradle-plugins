@@ -39,12 +39,21 @@ class LinkTest extends AbstractHolyGradleTest {
             Link.delete(link)
         }
 
-        // Act
-        Link.rebuild(link, target)
+        try {
+            // Act
+            Link.rebuild(link, target)
 
-        // Assert
-        Assert.assertTrue("Link exists", link.exists())
-        Assert.assertTrue("Link is symlink", Symlink.isSymlink(link))
+            // Assert
+            Assert.assertTrue("Link exists", link.exists())
+            Assert.assertTrue("Link is symlink", Symlink.isSymlink(link))
+        } finally {
+            // Delete the link, otherwise directory traversal may fail in future (if the target goes away), for example,
+            // when we next try to build and run the Holy Gradle!
+            if (link.exists()) {
+                Link.delete(link)
+            }
+            "net share ${SHARE_NAME} /DELETE".execute().waitForProcessOutput()
+        }
     }
 
     @Test
@@ -63,15 +72,23 @@ class LinkTest extends AbstractHolyGradleTest {
 
         Symlink.rebuild(link, target)
 
-        // Act
-        Link.rebuild(link, target)
+        try {
+            // Act
+            Link.rebuild(link, target)
 
-        // Assert
-        Assert.assertTrue("${link} should be a directory junction after rebuild.", Junction.isJunction(link))
+            // Assert
+            Assert.assertTrue("${link} should be a directory junction after rebuild.", Junction.isJunction(link))
+        } finally {
+            // Delete the link, otherwise directory traversal may fail in future (if the target goes away), for example,
+            // when we next try to build and run the Holy Gradle!
+            if (link.exists()) {
+                Link.delete(link)
+            }
+        }
     }
 
-    @Test(expected = IOException.class)
-    public void testFallbackToSymlinkIsLogged() {
+    @Test(expected = RuntimeException.class)
+    public void testLinkToNonExistentTargetFails() {
         // Arrange
 
         File target = new File("C:\\directory\\that\\doesnt\\exist\\hopefully\\").canonicalFile
@@ -83,16 +100,24 @@ class LinkTest extends AbstractHolyGradleTest {
 
         Logger logger = Logging.getLogger(Link.class)
 
-        // Act
-        Link.rebuild(link, target)
+        try {
+            // Act
+            Link.rebuild(link, target)
 
-        // Assert
-        Assert.assertTrue(logger.toString().contains(
-            "Failed to create a directory junction from '${link.toString()}' to '${target.toString()}'. " +
-            "Falling back to symlinks."
-        ))
-        Assert.assertTrue(logger.toString().contains(
-            "Directory junction and symlink creation failed from '${link.toString()}' to '${target.toString()}'."
-        ))
+            // Assert
+            Assert.assertTrue(logger.toString().contains(
+                "Failed to create a directory junction from '${link.toString()}' to '${target.toString()}'. " +
+                    "Falling back to symlinks."
+            ))
+            Assert.assertTrue(logger.toString().contains(
+                "Directory junction and symlink creation failed from '${link.toString()}' to '${target.toString()}'."
+            ))
+        } finally {
+            // Delete the link, otherwise directory traversal may fail in future (if the target goes away), for example,
+            // when we next try to build and run the Holy Gradle!
+            if (link.exists()) {
+                Link.delete(link)
+            }
+        }
     }
 }
