@@ -107,7 +107,9 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
                 } catch (TaskExecutionException e) {
                     if (e.cause?.message?.startsWith("Could not install Gradle distribution from")) {
                         println "Failed to install base Gradle distribution."
-                        println "Try re-running tests with proxy arguments: -Dhttp.proxyHost=xxx -Dhttp.proxyPort=NNNN"
+                        println "Try re-running tests with proxy arguments: " +
+                            "-Dhttp.proxyHost=xxx -Dhttp.proxyPort=NNNN " +
+                            "-Dhttps.proxyHost=xxx -Dhttps.proxyPort=NNNN"
                     }
                 } catch (RuntimeException e) {
                     println(e.toString())

@@ -1,0 +1,19 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+configurations {
+    foo
+}
+
+repositories.ivy {
+    url "..\\..\\..\\..\\testUtil\\repository\\"
+}
+
+packedDependencies {
+    "another-lib" {
+        dependency "holygradle.test:another-lib:1.0"
+        configuration "foo->compile"
+    }
+}

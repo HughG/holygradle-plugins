@@ -1,4 +1,4 @@
-import holygradle.buildHelpers.*
+import holygradle.buildSrc.buildHelpers.*
 
 import java.nio.file.*
 import java.util.regex.*

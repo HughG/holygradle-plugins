@@ -158,9 +158,9 @@ configurations({ ConfigurationHandler c ->
     gloss:directory-junction[], gloss:link[], and gloss:symbolic-link[].
 [[gloss-holygradle]] Holy Gradle::
     A set of gloss:gradle[] plugins which extend it to cover: using passwords stored in the 
-    Windows Credential Manager; getting source code from Mercurial or Subversion; getting and 
-    publishing dependencies with many files (packed as ZIP files); and deleting temporary 
-    publications from Artifactory.  There are other features with minimal support: building with 
+    gloss:credential-manager[]; getting source code from gloss:git[], gloss:mercurial[] or gloss-subversion[];
+    getting and publishing dependencies with many files (packed as ZIP files); and deleting temporary
+    publications from gloss:artifactory[].  There are other features with minimal support: building with
     Visual Studio; running unit tests.  Currently the Holy Gradle is based on gloss:gradle[] 1.4.
 [[gloss-init-script]] init script::
     A gloss:gradle[] init script is a +.gradle+ script which is run before your build.  Such a
@@ -249,7 +249,7 @@ a name and URL unique within that server.  A repository can be
 * virtual: the repository does not store files, instead it searches a list of other repositories.
 --
 +
-In version control systems such as gloss:subversion[] or gloss:mercurial[] a repository stores a
+In version control systems such as gloss@git[], gloss:subversion[], or gloss:mercurial[] a repository stores a
 history of a set of related files.
 
 [[gloss-root-cert]] root certificate::

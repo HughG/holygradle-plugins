@@ -3,6 +3,7 @@ package holygradle.stamper
 import holygradle.custom_gradle.plugin_apis.StampingProvider
 import org.gradle.api.Project
 import org.gradle.util.ConfigureUtil
+import java.nio.charset.Charset
 
 class StampingHandler implements StampingProvider {
     private Project project
@@ -12,20 +13,21 @@ class StampingHandler implements StampingProvider {
     public String taskDescription = "Stamp things"
     private String taskName = "stampFiles"
     private boolean runPriorToBuild = false
+    private String charsetName = Charset.defaultCharset().name()
     
     StampingHandler(Project project) {
         this.project = project
     }
 
     public Replacer files(String filePattern, Closure config) {
-        Replacer replacer = new Replacer(filePattern)
+        Replacer replacer = new Replacer(filePattern, charsetName)
         ConfigureUtil.configure(config, replacer)
         this.patternReplacers.add(replacer)
         return replacer
     }
 
     public Replacer file(String filePath, Closure config) {
-        Replacer replacer = new Replacer(new File(project.projectDir, filePath))
+        Replacer replacer = new Replacer(new File(project.projectDir, filePath), charsetName)
         ConfigureUtil.configure(config, replacer)
         this.fileReplacers.add(replacer)
         return replacer
@@ -56,5 +58,13 @@ class StampingHandler implements StampingProvider {
 
     public void setRunPriorToBuild(boolean runPriorToBuild) {
         this.runPriorToBuild = runPriorToBuild
+    }
+
+    String getCharsetName() {
+        return this.charsetName
+    }
+
+    public void setCharsetName(String charsetName) {
+        this.charsetName = charsetName
     }
 }

@@ -84,42 +84,25 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
         project.logger.debug("    and packedDependencies ${packedDependencies*.name.sort().join('\r\n')}")
 
-        Set<ResolvedDependenciesVisitor.ResolvedDependencyId> dependencyConfigurationsAlreadySeen =
-            new HashSet<ResolvedDependenciesVisitor.ResolvedDependencyId>()
-
         ResolvedDependenciesVisitor.traverseResolvedDependencies(
             dependencies,
             { ResolvedDependency resolvedDependency ->
-                // Visit this dependency only if: we've haven't seen it already for the configuration we're
-                // processing, it's not a module we're building from source (because we don't want to include those
-                // as UnpackModules).
+                // Visit this dependency only if: it's not a module we're building from source (because we don't want to
+                // include those as UnpackModules).
                 //
-                // Visit this dependency's children only if: we've haven't seen it already for the configuration
-                // we're processing.
+                // (Previously we wouldn't re-visit the module or its children if we'd already seen this
+                // resolvedDependency.configuration of this module.  However, this check was removed in 45f38934dea9
+                // for ticket GR #6279 (mis-labelled in the commit) because ...TODO )
 
                 ModuleVersionIdentifier id = resolvedDependency.module.id
-
-                final ResolvedDependenciesVisitor.ResolvedDependencyId newId =
-                    new ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
-                project.logger.debug("Adding ${newId} to ${dependencyConfigurationsAlreadySeen}")
-                final boolean isNewModuleConfiguration = dependencyConfigurationsAlreadySeen.add(newId)
-                if (!isNewModuleConfiguration) {
-                    project.logger.debug(
-                        "collectUnpackModules: Skipping ${id}, conf ${resolvedDependency.configuration}, " +
-                        "because it has already been visited"
-                    )
-                }
-
-                final boolean moduleIsInBuild = dependenciesStateHandler.isModuleInBuild(id)
-                if (moduleIsInBuild) {
+                final boolean isNonBuildModule = !dependenciesStateHandler.isModuleInBuild(id)
+                if (!isNonBuildModule) {
                     project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
                 }
 
-                final boolean isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
-
                 return new ResolvedDependenciesVisitor.VisitChoice(
-                    isNewNonBuildModuleConfiguration,
-                    isNewNonBuildModuleConfiguration
+                    isNonBuildModule,
+                    isNonBuildModule
                 )
             },
             { ResolvedDependency resolvedDependency ->
@@ -138,15 +121,18 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     project.logger.debug("collectUnpackModules: created module for ${id.module}")
                 }
 
-                // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on 'this'
-                // UnpackModuleVersion. There will only be a parent if this is a transitive dependency, and not if it
-                // is a direct dependency of the project.
-                UnpackModuleVersion parentUnpackModuleVersion =
-                    resolvedDependency.getParents().findResult { parentDependency ->
-                        ModuleVersionIdentifier parentDependencyVersion = parentDependency.module.id
-                        UnpackModule parentUnpackModule = unpackModules[parentDependencyVersion.module]
-                        parentUnpackModule?.getVersion(parentDependencyVersion)
+                // Find all parent UnpackModuleVersion instances, i.e., ones which have a dependency on 'this'
+                // UnpackModuleVersion. There will only be parents if this is a transitive dependency, and not if it
+                // is only a direct dependency of the project.
+                Set<UnpackModuleVersion> parents = new HashSet<>()
+                for (parentDependency in resolvedDependency.parents) {
+                    ModuleVersionIdentifier parentDependencyVersion = parentDependency.module.id
+                    UnpackModule parentUnpackModule = unpackModules[parentDependencyVersion.module]
+                    UnpackModuleVersion version = parentUnpackModule?.getVersion(parentDependencyVersion)
+                    if (version != null) {
+                        parents.add(version)
                     }
+                }
 
                 // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
                 // dependency is a transitive dependency, "thisPackedDep" will be null.
@@ -157,16 +143,17 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     // resolved dependency version. We know that there can only be one resolved version per
                     // configuration so by checking the configuration matches we can be sure this is it.
                     return (it.groupName == id.group) &&
-                        (it.dependencyName == id.name) &&
-                        (it.configurationMappings.any { entry ->
-                            originalConf.hierarchy.any { it.name == entry.key }
-                        })
+                            (it.dependencyName == id.name) &&
+                            (it.configurationMappings.any { entry ->
+                                originalConf.hierarchy.any { it.name == entry.key }
+                            })
                 }
 
                 // Find or create an UnpackModuleVersion instance.
                 UnpackModuleVersion unpackModuleVersion
                 if (unpackModule.versions.containsKey(id.version)) {
                     unpackModuleVersion = unpackModule.versions[id.version]
+                    unpackModuleVersion.addParents(parents)
                     // If the same module appears as both a direct packed dependency (for which the path is explicitly
                     // specified by the user) and a transitive packed dependency (for which the path is inferred from
                     // its ancestors), we want to use the explicitly specified path.  Because UnpackModuleVersion
@@ -176,26 +163,32 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         // It's possible for someone to specify the same version of the same module at two different
                         // paths, using two different packed dependencies.  However, we regard that as too complicated
                         // and confusing, and don't allow it.  If they really need it to appear to be in two places they
-                        // can create explicit symlinks.
+                        // can create explicit links.
                         final PackedDependencyHandler existingPackedDep = unpackModuleVersion.packedDependency
-                        if (existingPackedDep != null && existingPackedDep != thisPackedDep) {
-                            throw new RuntimeException(
-                                "Module version ${id} is specified by packed dependencies at both path " +
-                                "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
-                                "A single version can only be specified at one path.  If you need it to appear at " +
-                                "more than one location you can explicitly create links."
-                            )
+                        if (existingPackedDep != null) {
+                            // If the existing packed dep is the same as the one we found, we don't need to change it.
+                            // If it's different, fail.
+                            if (existingPackedDep != thisPackedDep) {
+                                throw new RuntimeException(
+                                    "Module version ${id} is specified by packed dependencies at both path " +
+                                        "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
+                                        "A single version can only be specified at one path.  If you need it to " +
+                                        "appear at " +
+                                        "more than one location you can explicitly create links."
+                                )
+                            }
+                        } else {
+                            // There was no existing packed dep, so we fill it in.
+                            unpackModuleVersion.packedDependency = thisPackedDep
                         }
-                        unpackModuleVersion.packedDependency = thisPackedDep
                     }
                 } else {
-                    unpackModuleVersion = new UnpackModuleVersion(project, id, parentUnpackModuleVersion, thisPackedDep)
+                    unpackModuleVersion = new UnpackModuleVersion(project, id, parents, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
-                        "collectUnpackModules: created version for ${id} " +
-                        "(pUMV = ${parentUnpackModuleVersion}, tPD = ${thisPackedDep?.name})"
+                            "collectUnpackModules: created version for ${id} " +
+                                    "(parents = ${parents}, tPD = ${thisPackedDep?.name})"
                     )
-
                 }
 
                 project.logger.debug("collectUnpackModules: adding ${id.module} originalConf ${originalConf.name} artifacts ${resolvedDependency.moduleArtifacts}")
@@ -253,14 +246,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 project.logger.error(
                     "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
                 )
-                versions.each { UnpackModuleVersion version ->
-                    project.logger.error("    ${version.fullCoordinate} in configurations ${version.originalConfigurations}")
-                    while (version.parent != null) {
-                        version = version.parent
-                        project.logger.error("        which is from ${version.fullCoordinate}")
-                    }
-                    project.logger.error("        which is from packed dependency ${version.packedDependency.name}")
-                }
+                versions.each { logUnpackModuleVersionAncestry(it, 1) }
             }
             return found || thisTargetHasClashes
         }
@@ -270,5 +256,19 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
 
         unpackModules = new ArrayList(unpackModulesMap.values())
         unpackModules
+    }
+
+    private void logUnpackModuleVersionAncestry(UnpackModuleVersion version, int indent) {
+        String prefix = "    " * indent
+        project.logger.error("${prefix}${version.fullCoordinate} in configurations ${version.originalConfigurations}")
+        PackedDependencyHandler packedDependency = version.packedDependency
+        if (packedDependency != null) {
+            project.logger.error("${prefix}  directly from packed dependency ${packedDependency.name}")
+        }
+        version.parents.each { parent ->
+            project.logger.error("${prefix}  indirectly from ${version.fullCoordinate}")
+            logUnpackModuleVersionAncestry(parent, indent + 1)
+        }
+
     }
 }

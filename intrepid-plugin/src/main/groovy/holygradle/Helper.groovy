@@ -14,10 +14,15 @@ import org.gradle.testfixtures.ProjectBuilder
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.security.MessageDigest
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 class Helper {
     // Recursively navigates down subprojects to gather the names of all sourceDependencies which
     // have not specified sourceControlRevisionForPublishedArtifacts.
+    public static final int MAX_VERSION_STRING_LENGTH = 50
+
     public static Collection<SourceDependencyHandler> getTransitiveSourceDependencies(Project project) {
         doGetTransitiveSourceDependencies(project.sourceDependencies as Collection<SourceDependencyHandler>)
     }
@@ -190,5 +195,20 @@ Please run the task 'fixMercurialIni'."""
             mercurialIniFile.write(iniText)
             println "Your mercurial.ini (in ${mercurialIniFile.parent}) has been modified."
         }
-    } 
+    }
+
+    /**
+     * Converts a file path to a version string, by hashing the path and prefixing "SOURCE".  A short, 4 character,
+     * hash is used because it may itself be used as part of a file path and some parts of Windows are limited to 260
+     * characters for the entire file path.
+     * @param path A file path
+     * @return A valid version string, of length at most {@link Helper#MAX_VERSION_STRING_LENGTH}.
+     */
+    public static String convertPathToVersion(String path) {
+        String canonicalPath = new File(path).canonicalPath
+
+        MessageDigest sha1 = MessageDigest.getInstance("SHA1")
+        byte[] digest = sha1.digest(canonicalPath.getBytes())
+        return "SOURCE_${digest[0..3].collect { String.format('%02x', it) }.join()}"
+    }
 }

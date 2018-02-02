@@ -9,7 +9,7 @@ This repository contains:
  - a redistribution of Gradle, including an init script which facilitates usage of the plugins
 
 # Prerequisites
- - Java JDK 1.7 - you do need the dev-kit, not just the run-time.
+ - Java JDK 1.7 - you do need the dev-kit, not just the run-time.  1.8 won't work.
  - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 15.
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
@@ -49,6 +49,7 @@ of your choice, containing a file with that name.
 ## Creating gradle.properties
 Create 'gradle.properties' in the root of your workspace add define these properties:
 ```
+chosenDevEnvVersion=VS120
 artifactoryServer=<fully qualified domain name of artifactory server, including port if necessary,
   e.g., http://artifact-server.company.com:8081/artifactory/>
 artifactoryPluginRepo=<name of the repository for obtaining dependent plugins, e.g., plugins-release>
@@ -59,6 +60,8 @@ artifactoryPluginSnapshotPublishRepo=<name of the (non-remote, non-virtual) repo
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
+
+The 'chosenDevEnvVersion' should be, e.g., "VS120" to use the C++ compiler from Visual Studio 2013.
 
 Run 'gw tasks'.  You may need to supply proxy arguments if it's the first time you've run this version of Gradle
 (e.g., 'gw -Dhttp.proxyHost=proxyserver -Dhttp.proxyPort=8080').
@@ -192,7 +195,7 @@ Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/devenv-plugin-nm2501SNAPSH
  
 # Documentation
 Documentation was previously in the wiki for this repo but has moved to
-http://holygradle.bitbucket.org/, using AsciiDoc to allow for richer diagrams, linking, etc.
+http://holygradle.bitbucket.io/, using AsciiDoc to allow for richer diagrams, linking, etc.
 
 If you're using the Holy Gradle within a company, there may be a custom local build of those web
 pages available.
@@ -231,7 +234,7 @@ with `https://bitbucket.org/holygradle/holygradle.bitbucket.org` as master.
 2. Run `gw buildPublicWebsite`.  (You can also run with `-Pquickly` to build without syntax
 colouring, which may be noticeably faster.)
 3. Run `hg addremove`, then commit and push to update the website.  The site is viewable at
-`http://holygradle.bitbucket.org/`.
+`http://holygradle.bitbucket.io/`.
 
 You can also build a custom local version for your own organisation, containing specialised or
 confidential information.  For that you need to set `publicWebsitePublishUrl` and run

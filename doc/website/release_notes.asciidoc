@@ -42,7 +42,110 @@ things for users, and also for plugin developers.
 
 === 7.x
 
+==== 7.10.x
+
+===== 7.10.3
+(62ee2a1a8eaf at 2017-09-27 12:12:57 UTC)
+
+DevEnv ::
+
+* Improve support for choosing a Visual Studio version.  See link:plugin-devenv.html#_version[] for more details.
+** For a version of Visual Studio before 2017, try to use the +VSnnnCOMNTOOLS+ environment variable before trying to run
++vswhere.exe+, because some early versions of +vswhere.exe+ don't detect older versions of Visual Studio.
+** For versions of Visual Studio from 2017 onwards, allow specifying an exact update version (such as +15.0+ or +15.35+)
+or the latest minor version (using +15.++).
+
+CustomGradleCorePlugin {br} Intrepid {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
+===== 7.10.2
+(bcbdabef989b at 2017-08-11 12:05:12 UTC)
+
+CredentialStore ::
+
+* Change +credential-store.exe+ to compare usernames case-insensitively.
+
+Stamper ::
+
+* GR #6718 Add support for reading/writing files with a non-default charset, e.g., UTF-8 on Windows 7.
++
+----
+stamping {
+    charsetName = "UTF-8" // New in 7.10.2
+
+    def commas = nextVersionNumber.replaceAll("\\.", ",")
+    files(".rc") {
+        replaceRegex ~/(FILEVERSION )[\d,]+(.*)/, commas
+        replaceRegex ~/(PRODUCTVERSION )[\d,]+(.*)/, commas
+        replaceRegex ~/(VALUE \"FileVersion\", \")[\d\.]+(\\0\")/, nextVersionNumber
+        replaceRegex ~/(VALUE \"ProductVersion\", \")[\d\.]+(\\0\")/, nextVersionNumber
+    }
+}
+----
++
+
+CustomGradleCorePlugin {br} Intrepid {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Utils::
+- No changes.
+
+===== 7.10.1
+(d61afb3c0e6d at 2017-07-20 16:18:17 UTC)
+
+CredentialStore ::
+
+* GR #6716 Fix bugs in the changes to +credential-store.exe+ in 7.10.0
+
+** +credential-store for-default+ would update _all_ credentials, not just those not associated with any basis.
+** +credential-store.exe+ would fail without an error message if environment variable +GRADLE_USER_HOME+ was not set.
+
+DevEnv ::
+
+* Support Visual Studio 2017.  (Instead of using environment variables, this version has a new mechanism for locating
++devenv.com+, namely by running +vswhere.exe+.  This allows installing multiple "flavours" of VS but needs changes to
+the Holy Gradle.)
+
+CustomGradleCorePlugin {br} Intrepid {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
+===== 7.10.0
+(238dac7222d6 at 2017-04-04 08:40:10 UTC)
+
+CustomGradleCorePlugin {br} CredentialStore {br} Intrepid {br} MyCredentials ::
+
+* GR #6715 Allow source dependency credentials to be derived from a user-named "basis" credential.  This supports
+having source dependencies on repos hosted at different sites, which need different credentials.
+
+** To use this, add +credentialBasis = "AnyStringYouLike"+ to a +sourceDependency+ block.  The default basis string is
++"Domain Credentials"+ for backward compatibility.
+** +credential-store.exe+ has been modified to allow users to separately update credentials for a given basis, or
+to update credentials not associated with any basis (for backward compatibility and for use with credentials supplied
+from +my.credentials+ to binary dependency repositories such as Artifactory).  This relies on a file
++holygradle/credential-bases.txt+ which is written into the user's Gradle Home directory by the Intrepid plugin and
+read by +credential-store.exe+.
+
+DevEnv {br} UnitTest {br} ArtifactoryManager {br} Stamper {br} Utils::
+- No changes.
+
 ==== 7.9.x
+
+===== 7.9.2
+(6de1381c9dba at 2017-03-28 10:09:55 UTC)
+
+CustomGradleCorePlugin::
+
+* GR #6714 Fix: ensure an exception is thrown to stop the build if Git/Hg/Svn processes have a non-zero exit value.
+
+Intrepid::
+
+* GR #6714 Various fixes related to Git (and Hg) source dependencies:
+** The existing Git support was specific to the now-outdated "wincred" Git credential helper.  Support was changed to
+also cover the newer "winstore" and "manager" helpers.  The Holy Gradle will always cache credentials for "http(s):"
+URLs for Git source dependencies, even if they aren't actually needed, otherwise the newer helpers may show a modal
+dialog which never times out which can cause problems on continuous integration build machines.
+** If a source dependency was not fetched correctly, Gradle would still treat the fetch task as "up to date", so running
+it again would do nothing unless you deleted your ".gradle" build state cache folder.
+
+DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
 
 ===== 7.9.1
 (3e6fe3d1f432 at 2016-07-26 13:35:49 UTC)
@@ -56,7 +159,7 @@ Intrepid::
 
 * GR #6701 Upgrade the version of 7-zip used, to avoid security vulnerability https://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2016-2335.
 
-DevEnv {br} UnitTest {br} CustomGradleCorePlugin {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
 - No changes.
 
 ===== 7.9.0

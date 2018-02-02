@@ -51,8 +51,8 @@ class SpeedyUnpackManyTask
     public void addEntry(UnpackModuleVersion versionInfo) {
         logger.debug "Adding entry for ${versionInfo}"
         addEntry(versionInfo.moduleVersion, versionInfo.unpackEntry)
-        if (versionInfo.parent != null) {
-            addEntry(versionInfo.parent)
+        versionInfo.parents.each {
+            parent -> addEntry(parent)
         }
     }
 

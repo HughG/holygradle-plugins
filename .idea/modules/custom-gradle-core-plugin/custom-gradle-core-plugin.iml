@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module external.linked.project.id=":custom-gradle-core-plugin" external.linked.project.path="$MODULE_DIR$/../../../custom-gradle-core-plugin" external.root.project.path="$MODULE_DIR$/../../.." external.system.id="GRADLE" external.system.module.group="holygradle" external.system.module.version="0.0-hughgSNAPSHOT-0" type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+<module external.linked.project.id=":custom-gradle-core-plugin" external.linked.project.path="$MODULE_DIR$/../../../custom-gradle-core-plugin" external.root.project.path="$MODULE_DIR$/../../.." external.system.id="GRADLE" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin">
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/src/main/groovy" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/src/main/resources" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/src/test/groovy" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/src/test/resources" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/.gradle" />
       <excludeFolder url="file://$MODULE_DIR$/../../../custom-gradle-core-plugin/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="gradle-1.4" level="application" />
   </component>
 </module>

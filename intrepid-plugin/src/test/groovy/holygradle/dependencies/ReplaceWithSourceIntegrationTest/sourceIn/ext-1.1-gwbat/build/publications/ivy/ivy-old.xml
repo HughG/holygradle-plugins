@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="holygradle.test" module="external-lib" revision="1.1" status="release" publication="20150820161044"/>
+</ivy-module>

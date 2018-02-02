@@ -5,6 +5,7 @@ syntax: glob
 *.suo
 *.vcxproj.user
 # Generated
+buildSrc/gradle.properties
 credential-store/project_version_info.h
 credential-store/release_version_info.h
 custom-gradle-core-plugin/src/main/resources/holygradle/gradlew.bat
@@ -35,13 +36,20 @@ syntax: regexp
 (^|/).gradle/
 (^|/)build/
 ^classes/
+# Holy Gradle
 (^|^wrapper-starter-kit/|^https-setup-kit/)gradle/(certs|cacerts|cacerts.import.log)
 # IntelliJ IDEA
 .idea/workspace.xml
 .idea/tasks.xml
+
 # Generated doc
 ^doc/website/(raw-html|output)(-local)?/
 ^doc/website/local/
+# Website examples
+^doc/website/files/examples/multi-project/(\.gradle|gradle|dep)/
+^doc/website/files/examples/multi-project/gw.bat
+^doc/website/files/examples/multi-project/([^/]+/|)(\.gradle|gradle|dep)/
+^doc/website/files/examples/multi-project/[^/]+/userHome/
 # Other
 ^[^/]+/src/test/groovy/holygradle/.*/settings.gradle
 ^credential-store/_ReSharper.credential-store/
@@ -60,9 +68,13 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesIntegrationTest/conflicting_modules2/extlib.*/.*
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/CollectDependenciesIntegrationTest/[^/]+/userHome/.*
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/CollectDependenciesIntegrationTest/[^/]+/(gradle|build_info|local_artifacts)/
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/ReplaceWithSourceIntegrationTest/source/
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/ReplaceWithSourceIntegrationTest/project[A-Z]/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/(Collect|Zip)DependenciesIntegrationTest/[^/]+/((gradle|build_info)/|local_artifacts|.*build\.gradle)
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
 ^intrepid-plugin/src/test/groovy/holygradle/unpacking/PackedDependenciesStateHandlerIntegrationTest/[^/]+/[^/]+-?(lib|framework)/
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/SummariseAllDependenciesIntegrationTest/project[A-Z]/
 ^utils/artifactory-plugins/localConf/
 ^utils/versionListChecker/gradle
 ^utils/versionListChecker/gw.bat

@@ -34,7 +34,7 @@ class SourceDependencyTaskHandler {
                     name,
                     type: SourceDependencyTask
                 ) { SourceDependencyTask it ->
-                    it.initialize(invocations.find()) // finds the first task
+                    it.initialize(invocations.first())
                 }
             } else {
                 LinkedHashMap<SourceDependencyInvocationHandler, Task> invocationsWithTasks = [:]

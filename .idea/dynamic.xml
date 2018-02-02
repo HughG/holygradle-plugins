@@ -51,6 +51,14 @@
               <option name="myProperties">
                 <set>
                   <DPropertyElement>
+                    <option name="name" value="instructions" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.credentials.InstructionsHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.credentials.InstructionsHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="instructions" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="extensions" />
                     <option name="static" value="false" />
                     <option name="type" value="org.gradle.api.plugins.ExtensionContainer" />
@@ -87,6 +95,14 @@
                     <option name="myName" value="buildScriptDependencies" />
                   </DPropertyElement>
                   <DPropertyElement>
+                    <option name="name" value="dependenciesState" />
+                    <option name="static" value="false" />
+                    <option name="type" value="holygradle.dependencies.DependenciesStateHandler" />
+                    <option name="myType" value="holygradle.dependencies.DependenciesStateHandler" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="dependenciesState" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="hgVersionInfo" />
                     <option name="static" value="false" />
                     <option name="type" value="java.lang.String" />
@@ -101,14 +117,6 @@
                     <option name="myType" value="java.io.File" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="hgVersionInfoFile" />
-                  </DPropertyElement>
-                  <DPropertyElement>
-                    <option name="name" value="packedDependencies" />
-                    <option name="static" value="false" />
-                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
-                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
-                    <option name="myStatic" value="false" />
-                    <option name="myName" value="packedDependencies" />
                   </DPropertyElement>
                   <DPropertyElement>
                     <option name="name" value="ext" />
@@ -127,6 +135,14 @@
                     <option name="myName" value="my" />
                   </DPropertyElement>
                   <DPropertyElement>
+                    <option name="name" value="usingLocalArtifacts" />
+                    <option name="static" value="false" />
+                    <option name="type" value="boolean" />
+                    <option name="myType" value="boolean" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="usingLocalArtifacts" />
+                  </DPropertyElement>
+                  <DPropertyElement>
                     <option name="name" value="packedDependenciesSettings" />
                     <option name="static" value="false" />
                     <option name="type" value="holygradle.dependencies.PackedDependencySettingsHandler" />
@@ -141,6 +157,14 @@
                     <option name="myType" value="holygradle.unpacking.PackedDependenciesStateHandler" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="packedDependenciesState" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="packedDependencies" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.PackedDependencyHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="packedDependencies" />
                   </DPropertyElement>
                   <DPropertyElement>
                     <option name="name" value="publishPackages" />
@@ -165,6 +189,14 @@
                     <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;SourceDependencyHandler&gt;" />
                     <option name="myStatic" value="false" />
                     <option name="myName" value="sourceDependencies" />
+                  </DPropertyElement>
+                  <DPropertyElement>
+                    <option name="name" value="sourceOverrides" />
+                    <option name="static" value="false" />
+                    <option name="type" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.SourceOverrideHandler&gt;" />
+                    <option name="myType" value="org.gradle.api.NamedDomainObjectContainer&lt;holygradle.dependencies.SourceOverrideHandler&gt;" />
+                    <option name="myStatic" value="false" />
+                    <option name="myName" value="sourceOverrides" />
                   </DPropertyElement>
                 </set>
               </option>

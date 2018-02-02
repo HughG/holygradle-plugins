@@ -1,0 +1,38 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+    project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
+}
+gplugins.apply()
+
+configurations {
+    foo
+    bar
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+// This tests that the transitive dependencies of a source override are correctly checked against 
+// transitive dependencies of other source overrides.
+sourceOverrides {
+    "application" {
+        dependency "holygradle.test:example-application:1.0"
+        from "../source/application-1.0"
+    }
+    "framework" {
+        dependency "holygradle.test:another-application:1.0"
+        from "../source/another-application-1.0-alt-1.1"
+    }
+}
+
+packedDependencies {
+    "application" {
+        dependency "holygradle.test:example-application:1.0"
+        configuration "bar->compileVc10Debug,compileVc10Release"
+    }
+    "framework" {
+        dependency "holygradle.test:another-application:1.0"
+        configuration "bar->compileVc10Debug,compileVc10Release"
+    }
+}
