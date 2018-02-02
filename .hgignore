@@ -35,7 +35,7 @@ syntax: regexp
 # IntelliJ IDEA
 ^\.idea/workspace.xml
 ^\.idea/tasks.xml
-^\.idea/modules/
+^\.idea/(libraries|modules)/
 # Generated doc
 ^buildSrc/gradle.properties
 ^doc/website/(raw-html|output)(-local)?/
@@ -73,9 +73,13 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesIntegrationTest/conflicting_modules2/extlib.*/.*
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/CollectDependenciesIntegrationTest/[^/]+/userHome/.*
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/CollectDependenciesIntegrationTest/[^/]+/(gradle|build_info|local_artifacts)/
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/ReplaceWithSourceIntegrationTest/source/
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/ReplaceWithSourceIntegrationTest/project[A-Z]/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/(Collect|Zip)DependenciesIntegrationTest/[^/]+/((gradle|build_info)/|local_artifacts|.*build\.gradle)
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
 ^intrepid-plugin/src/test/groovy/holygradle/unpacking/PackedDependenciesStateHandlerIntegrationTest/[^/]+/[^/]+-?(lib|framework)/
+^intrepid-plugin/src/test/groovy/holygradle/dependencies/SummariseAllDependenciesIntegrationTest/project[A-Z]/
 ^utils/artifactory-plugins/localConf/
 ^utils/versionListChecker/gradle
 ^utils/versionListChecker/gw.bat

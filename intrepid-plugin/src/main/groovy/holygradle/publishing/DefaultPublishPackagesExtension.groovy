@@ -1,6 +1,8 @@
 package holygradle.publishing
 
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.SourceOverrideHandler
+import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.*
@@ -24,7 +26,8 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.util.ConfigureUtil
 
 public class DefaultPublishPackagesExtension implements PublishPackagesExtension {
-    private final Project project
+    // Only public so it can be used in a closure.
+    public final Project project
     private boolean createDefaultPublication = true
     private boolean publishPrivateConfigurations = true
     private final LinkedHashSet<String> originalConfigurationOrder = new LinkedHashSet()
@@ -37,6 +40,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public DefaultPublishPackagesExtension(
         Project project,
         NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers,
+        Collection<SourceDependencyHandler> sourceDependencies,
         Collection<PackedDependencyHandler> packedDependencies
     ) {
         this.project = project
@@ -163,6 +167,10 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 putConfigurationsInOriginalOrder(descriptorTask.descriptor)
                 freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
                 collapseMultipleConfigurationDependencies(descriptorTask.descriptor)
+
+                if (project.hasProperty("recordAbsolutePaths")) {
+                    addDependencySourceTags(project, sourceDependencies)
+                }
             }
 
             // We call this here because it uses doFirst, and we need this to happen after
@@ -389,6 +397,24 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         }
     }
 
+    public void addDependencySourceTags(Project project, Collection<SourceDependencyHandler> sourceDependencies) {
+        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
+        //noinspection GroovyAssignabilityCheck
+        mainIvyDescriptor.withXml { xml ->
+            xml.asNode()."@xmlns:${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}" = SourceOverrideHandler.HOLY_GRADLE_NAMESPACE
+            xml.asNode().dependencies.dependency.each { depNode ->
+                // If the dependency is a source dependency, get its relative path from the
+                // gradle script's sourceDependencyHandler
+                SourceDependencyHandler sourceDep = findSourceDependencyForDependencyNode(sourceDependencies, depNode)
+
+                if (sourceDep != null) {
+                    project.logger.info "Adding sourcePath attribute to source dep node: ${depNode.@org}:${depNode.@name}:${depNode.@rev} path=${sourceDep.getFullTargetPath()}"
+                    depNode."@${SourceOverrideHandler.HOLY_GRADLE_NAMESPACE_NAME}:sourcePath" = sourceDep.getAbsolutePath().getCanonicalPath().toString()
+                }
+            }
+        }
+    }
+
     public void addConfigurationDependenciesToDefaultPublication(GenerateIvyDescriptor descriptorTask) {
         descriptorTask.descriptor.withXml { xml ->
             Node depsNode = xml.asNode().dependencies.find() as Node
@@ -414,6 +440,24 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 contents = contents.replaceAll("&gt;", ">")
                 ivyFile.text = contents
             }
+        }
+    }
+
+    // Only public because it needs to be used from wtihin a lambda.
+    public SourceDependencyHandler findSourceDependencyForDependencyNode(
+        Collection<SourceDependencyHandler> sourceDependencies,
+        depNode
+    ) {
+        return sourceDependencies.find {
+            ModuleVersionIdentifier dependencyModule = it.getDependencyId()
+            if (dependencyModule == null) {
+                project.logger.debug "Ignoring source dependency on ${it.targetName} because there are no " +
+                    "configuration mappings"
+                return false
+            }
+            return dependencyModule.getGroup() == depNode.@org &&
+                dependencyModule.getName() == depNode.@name &&
+                dependencyModule.getVersion() == depNode.@rev
         }
     }
 }

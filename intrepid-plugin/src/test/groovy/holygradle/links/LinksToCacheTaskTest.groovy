@@ -2,6 +2,7 @@ package holygradle.links
 
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.test.AbstractHolyGradleTest
 import holygradle.unpacking.DummyBuildScriptDependencies
 import holygradle.unpacking.UnpackModuleVersion
@@ -34,7 +35,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         UnpackModuleVersion version = new UnpackModuleVersion(
             project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
-            parent,
+            ((parent == null) ? [] : [parent]).toSet(),
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )
         if (addDummyArtifact) {
@@ -49,6 +50,8 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir =
             new File("theUnpackCache")
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
+        project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "rootDefault")
+        SourceOverrideHandler.createContainer(project)
         project
     }
 

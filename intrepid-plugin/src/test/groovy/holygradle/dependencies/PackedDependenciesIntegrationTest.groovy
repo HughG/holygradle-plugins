@@ -34,10 +34,12 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
                 """In root project 'unpacking_modules_to_same_location', location '${projectDir.absolutePath}\\extlib' is targeted by multiple dependencies/versions:
     holygradle.test:example-framework:1.1 in configurations [bar]
-        which is from packed dependency sub/../extlib
+      directly from packed dependency sub/../extlib
     holygradle.test:external-lib:1.1 in configurations [foo, bar]
-        which is from holygradle.test:example-framework:1.1
-        which is from packed dependency sub/../extlib
+      directly from packed dependency extlib
+      indirectly from holygradle.test:external-lib:1.1
+        holygradle.test:example-framework:1.1 in configurations [bar]
+          directly from packed dependency sub/../extlib
 
 FAILURE: Build failed with an exception.
 
@@ -53,12 +55,13 @@ Multiple different dependencies/versions are targeting the same locations."""
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-                """FAILURE: Build failed with an exception.
+                    """FAILURE: Build failed with an exception.
 
 * What went wrong:
 Module version holygradle.test:external-lib:1.1 is specified by packed dependencies at both path 'sub/extlib' and """ +
-"'extlib'.  A single version can only be specified at one path.  If you need it to appear at more than one " +
-"location you can explicitly create links."
+                            "'extlib'.  A single version can only be specified at one path.  If you need it to appear at more than one " +
+                            "location you can explicitly create links."
             ))
         }
-    }}
+    }
+}
