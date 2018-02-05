@@ -185,10 +185,9 @@ class UnpackModuleVersion {
         } else {
             // If we don't return above then this must be a transitive dependency.
             // Recursively navigate up the parent hierarchy, appending relative paths.
-            return new File(
-                parentUnpackModuleVersion.targetPathInWorkspace.parentFile,
-                targetDirName
-            )
+            return getUniqueValue("getTargetPathInWorkspace", parents) { UnpackModuleVersion it ->
+                new File(it.targetPathInWorkspace.parentFile, targetDirName).canonicalFile
+            }
         }
     }
 

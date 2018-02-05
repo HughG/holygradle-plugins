@@ -1,6 +1,5 @@
 package holygradle
 
-import bsh.This
 import holygradle.artifacts.*
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin

@@ -13,7 +13,7 @@ import org.gradle.api.artifacts.ResolutionStrategy
 import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.artifacts.result.DependencyResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
-import org.gradle.api.artifacts.result.ResolvedModuleVersionResult
+import org.gradle.api.artifacts.result.ResolvedComponentResult
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult
 import org.gradle.api.initialization.Settings
 import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
@@ -254,7 +254,7 @@ you may have to run the 'dependencies' task at multiple levels.
         SourceOverrideHandler handler,
         Map<String, Map<String, String>> deps
     ) {
-        resolvableDependencies.resolutionResult.allModuleVersions { ResolvedModuleVersionResult module ->
+        resolvableDependencies.resolutionResult.allModuleVersions { ResolvedComponentResult module ->
             deps.each { configName, config ->
                 def moduleKey = "${module.id.group.toString()}:${module.id.name.toString()}"
                 if (config.containsKey(moduleKey)) {
