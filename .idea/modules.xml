@@ -2,18 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/credential-store/credential-store.iml" filepath="$PROJECT_DIR$/.idea/modules/credential-store/credential-store.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/custom-gradle/custom-gradle.iml" filepath="$PROJECT_DIR$/.idea/modules/custom-gradle/custom-gradle.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/devenv-plugin/devenv-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/devenv-plugin/devenv-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/holy-gradle-plugins.iml" filepath="$PROJECT_DIR$/.idea/modules/holy-gradle-plugins.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/integration/integration.iml" filepath="$PROJECT_DIR$/.idea/modules/integration/integration.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/intrepid-plugin/intrepid-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/intrepid-plugin/intrepid-plugin.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/my-credentials-plugin/my-credentials-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/my-credentials-plugin/my-credentials-plugin.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/stamper-plugin/stamper-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/stamper-plugin/stamper-plugin.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/unit-test-plugin/unit-test-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/unit-test-plugin/unit-test-plugin.iml" />
     </modules>
   </component>
 </project>

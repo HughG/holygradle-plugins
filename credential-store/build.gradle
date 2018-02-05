@@ -16,14 +16,14 @@ public File getCommonToolsPathFromVSWhere(String vswhereLocation) {
         String installPath = ExecHelper.executeAndReturnResultAsString(
             project.logger,
             project.&exec,
+            { return true },
             { ExecSpec spec ->
                 spec.commandLine vswhereLocation,
                                  "-property", "installationPath",
                                  "-legacy",
                                  "-format", "value",
                                  "-version", "[${fullVersionNumber},${nextFullVersionNumber})"
-            },
-            { return true }
+            }
         )
         return new File(installPath, "Common7/Tools")
     } else {
