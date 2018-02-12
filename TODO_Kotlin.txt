@@ -1,0 +1,5 @@
+TODO: Check range end expressions.
+
+TODO: Check all public methods still accept Closure<T> where necessary, through overloads.  Maybe add tests.
+
+TODO: Check accessibility from Groovy of "static" methods on objects (companion or not).

@@ -1,12 +1,14 @@
 package holygradle.lang
 
-public class NamedParameters {
+import org.jetbrains.kotlin.utils.keysToMap
+
+object NamedParameters {
     /**
      * This object should be used as the value for a key in the {@code parameterSpecs} passed to
      * {@link #checkAndGet(java.util.Map, java.util.Map)} to specify that a named argument is allowed but has no
      * default.  This allows {@code null} to be a valid default value.
      */
-    public static final Object NO_DEFAULT = new Object()
+    val NO_DEFAULT = Object()
 
     /**
      * Given a map of named arguments, this method checks that only permitted names are used, and optionally supplies
@@ -22,31 +24,27 @@ public class NamedParameters {
      * @param parameterSpecs A list of allowed arguments, each optionally with a default.
      * @return A list of values for each of the specified parameters, optionally with defaults filled in.
      */
-    public static List checkAndGet(Map attrs, Map<String, Object> parameterSpecs) {
-        Collection<String> expectedNames = parameterSpecs.keySet()
-        Collection<String> unexpectedNames = attrs.keySet() - expectedNames
-        if (!unexpectedNames.empty) {
-            throw new IllegalArgumentException(
-                "Got unexpected named arguments: ${unexpectedNames.collectEntries { [it, attrs[it]] }}; " +
+    fun checkAndGet(attrs: Map<String, Any>, parameterSpecs: Map<String, Any>): List<Any?> {
+        val expectedNames = parameterSpecs.keys
+        val unexpectedNames = attrs.keys - expectedNames
+        if (unexpectedNames.isNotEmpty()) {
+            throw IllegalArgumentException(
+                "Got unexpected named arguments: ${unexpectedNames.keysToMap { attrs[it] }}; " +
                 "expected only ${expectedNames}"
             )
         }
-        Collection missingDefaults = null
-        Collection result = new ArrayList(parameterSpecs.size())
-        parameterSpecs.each { k, v ->
-            if (attrs.containsKey(k)) {
-                result << attrs[k]
-            } else if (v != NO_DEFAULT) {
-                result << v
-            } else {
-                if (missingDefaults == null) {
-                    missingDefaults = new ArrayList(parameterSpecs.size())
-                }
-                missingDefaults << k
+        val lazyMissingDefaults = lazy { ArrayList<String>(parameterSpecs.size) }
+        val missingDefaults: MutableList<String> by lazyMissingDefaults
+        val result = ArrayList<Any?>(parameterSpecs.size)
+        for ((k, v) in parameterSpecs) {
+            when {
+                attrs.containsKey(k) -> result.add(attrs[k])
+                v != NO_DEFAULT -> result.add(v)
+                else -> missingDefaults.add(k)
             }
         }
-        if (missingDefaults != null) {
-            throw new IllegalArgumentException(
+        if (lazyMissingDefaults.isInitialized()) {
+            throw IllegalArgumentException(
                 "Got named arguments: ${attrs}; value required but not supplied for ${missingDefaults}"
             )
         }

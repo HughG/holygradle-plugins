@@ -5,6 +5,7 @@ import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
+import org.gradle.api.Action
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.script.lang.kotlin.apply
@@ -25,10 +26,10 @@ class DevEnvPlugin : Plugin<Project> {
          * Prerequisites
          **************************************/
         val prerequisites = PrerequisitesExtension.getPrerequisites(project)
-        prerequisites?.register("VisualStudio", { checker: PrerequisitesChecker<List<String>> ->
-            checker.parameter.forEach { version ->
-                if (checker.readRegistry("HKLM\\SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null &&
-                        checker.readRegistry("HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\DevDiv\\VS\\Servicing\\" + version, "SP") == null) {
+        prerequisites?.register("VisualStudio", Action { checker: PrerequisitesChecker<List<String>> ->
+            checker.parameter?.forEach { version ->
+                if (checker.readRegistry("HKLM\\SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\${version}", "SP") == null &&
+                        checker.readRegistry("HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\DevDiv\\VS\\Servicing\\${version}", "SP") == null) {
                     checker.fail("Visual Studio version $version does not appear to be installed. Please install it. Detection was done by looking up the HKLM registry 'SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\${version}' key 'SP'.")
                 }
             }
