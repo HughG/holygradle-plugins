@@ -4,6 +4,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedConfiguration
+import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.process.ExecSpec
 
 class VersionInfo {
@@ -51,23 +52,11 @@ class VersionInfo {
     // dependencies not explicitly requested or were pulled in in some other way.
     public Map<ModuleVersionIdentifier,String> getBuildscriptDependencies() {
         if (buildscriptDependencies == null) {
-            Map<String,String> pluginUsages = project.extensions.findByName("gplugins")?.usages as Map<String,String>
-            buildscriptDependencies = [:]
-            ResolvedConfiguration classpathResolvedConfiguration =
-                project.buildscript.configurations['classpath'].resolvedConfiguration
-            classpathResolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact art ->
-                ModuleVersionIdentifier depModuleVersion = art.moduleVersion.id
-                String requestedVersion = "none"
-
-                if (pluginUsages != null) {
-                    pluginUsages.each { pluginName, pluginVersion ->
-                        if (depModuleVersion.name.startsWith(pluginName)) {
-                            requestedVersion = pluginVersion
-                        }
-                    }
-                }
-
-                buildscriptDependencies[depModuleVersion] = requestedVersion
+            PluginUsages pluginUsagesExtension = project.extensions.findByName("pluginUsages") as PluginUsages
+            buildscriptDependencies = pluginUsagesExtension.mapping.entries.collectEntries { m ->
+                String moduleName = m.key
+                PluginUsages.Versions versions = m.value
+                return [new DefaultModuleVersionIdentifier("holygradle", moduleName, versions.selected), versions.requested]
             }
         }
         buildscriptDependencies

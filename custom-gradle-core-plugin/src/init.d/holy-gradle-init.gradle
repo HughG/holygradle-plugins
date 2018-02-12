@@ -12,7 +12,7 @@ final String PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY = "holygradle.pluginsRepo
 final String PLUGINS_REPO_OVERRIDE = System.getProperty(PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY)
 
 class HolyGradlePlugins {
-    // NOTE 2013-06-07 HughG: Referenced by holygradle.custom_gradle.VersionInfo.
+    // NOTE 2017-07-28 HughG: Also referenced by wrapper-starter-kit/newWrapper/build.gradle
     public Map<String,String> usages = [:]
 
     private ScriptHandler buildscript

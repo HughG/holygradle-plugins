@@ -7,7 +7,7 @@ import org.gradle.process.ExecSpec
  * Utility methods related to executing processes.
  */
 class ExecHelper {
-    public static executeAndReturnResultAsString(
+    public static String executeAndReturnResultAsString(
         Closure<ExecResult> execMethod,
         Closure configureSpec,
         Closure throwOnError

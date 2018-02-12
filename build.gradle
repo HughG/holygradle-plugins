@@ -142,6 +142,9 @@ subprojects {
         dependencies {
             compile localGroovy()
             compile gradleApi()
+            compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
+            compile "org.gradle:gradle-script-kotlin:0.8.0"
+
             testCompile files("../buildSrc/build/classes/main/")
             testCompile group: 'junit', name: 'junit', version: '4.12'
             testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'

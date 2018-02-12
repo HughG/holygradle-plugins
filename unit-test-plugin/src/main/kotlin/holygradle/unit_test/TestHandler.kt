@@ -9,6 +9,7 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.tasks.AbstractExecTask
 import org.gradle.api.tasks.Exec
+import org.gradle.script.lang.kotlin.extra
 import org.gradle.script.lang.kotlin.getByName
 import org.gradle.script.lang.kotlin.task
 import java.io.File
@@ -52,7 +53,7 @@ internal class TestHandler(
                 val sourceDependenciesState: SourceDependenciesStateHandler? by project.extensions
                 val anyBuildDependencies =
                     (sourceDependenciesState != null) &&
-                        !sourceDependenciesState.allConfigurationsPublishingSourceDependencies.isEmpty()
+                        !sourceDependenciesState.getAllConfigurationsPublishingSourceDependencies().isEmpty()
 
                 val task: DefaultTask = project.task<DefaultTask>("unitTest${flavour}")
                 task.group = "Unit Test"
@@ -73,7 +74,7 @@ internal class TestHandler(
                     if (sourceDependenciesState != null) {
                         // For each configurations in this project which point into a source dependency, make this
                         // project's task depend on the same task in the other project (if it exists).
-                        for (conf in sourceDependenciesState.allConfigurationsPublishingSourceDependencies) {
+                        for (conf in sourceDependenciesState.getAllConfigurationsPublishingSourceDependencies()) {
                             task.dependsOn(conf.getTaskDependencyFromProjectDependency(true, task.name))
                         }
                     }
@@ -233,7 +234,7 @@ internal class TestHandler(
         val originalStandardOutput = task.standardOutput
         val originalErrorOutput = task.errorOutput
 
-        task.extensions.extraProperties[IntrepidPlugin.LAZY_CONFIGURATION_EXT_PROPERTY] = { it: Exec ->
+        task.extra[IntrepidPlugin.LAZY_CONFIGURATION_EXT_PROPERTY] = { it: Exec ->
             val testOutputStream = when {
                 standardOutputTemplate != null -> makeOutputStream(project, flavour, standardOutputTemplate!!)
                 else -> it.standardOutput

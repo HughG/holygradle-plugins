@@ -110,7 +110,7 @@ Afterwards, please start a new command prompt and re-run the same command."""
     // Specify the details for a previously registered type of prerequisite. Calling this method does not 
     // immediately perform the prerequisite check, but simply specifies that the prerequisite exists and defines
     // the parameters. Later on check() can be called on PrerequisitesExtension or on the StatedPrerequisite 
-    // returned by this method. Another way the prequisite can be checked is by calling checkAll, which is 
+    // returned by this method. Another way the prerequisite can be checked is by calling checkAll, which is
     // called by the checkPrerequisites task.
     public StatedPrerequisite specify(String prerequisiteName, Object... params) {
         if (checkers.containsKey(prerequisiteName)) {
