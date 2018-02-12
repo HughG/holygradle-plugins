@@ -26,6 +26,7 @@ class MyCredentialsPlugin : Plugin<Project> {
         val credentialStoreArtifact: ResolvedArtifact? = runtimeResolvedConfiguration.firstLevelModuleDependencies
                 .flatMap { it.allModuleArtifacts }
                 .firstOrNull { it.name.startsWith("credential-store") }
+        @Suppress("UNNECESSARY_SAFE_CALL")
         val credentialStorePath = credentialStoreArtifact?.file?.path
         if (credentialStorePath == null) {
             project.logger.error(
@@ -57,7 +58,8 @@ class MyCredentialsPlugin : Plugin<Project> {
         /**************************************
          * Tasks
          **************************************/
-        if (project == project.rootProject && !project.usingLocalArtifacts) {
+        val usingLocalArtifacts: Boolean by project.extensions
+        if (project == project.rootProject && !usingLocalArtifacts) {
             val taskName = "cacheCredentials"
             var credTask = project.tasks.findByName(taskName)
             if (credTask == null) {

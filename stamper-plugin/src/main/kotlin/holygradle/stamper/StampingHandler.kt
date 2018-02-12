@@ -1,7 +1,7 @@
 package holygradle.stamper
 
+import groovy.lang.Closure
 import holygradle.custom_gradle.plugin_apis.StampingProvider
-import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.util.ConfigureUtil
 import java.io.File
@@ -13,28 +13,24 @@ class StampingHandler(private val project: Project) : StampingProvider {
     val patternReplacers: Collection<PatternReplacer> get() = _patternReplacers
 
     val taskDescription = "Stamp things"
-    private var _taskName = "stampFiles"
     private var _runPriorToBuild = false
 
-    override fun setTaskName(taskName: String) {
-        _taskName = taskName
-    }
+    override var taskName: String = "stampFiles"
 
-    override fun getTaskName(): String = _taskName
+    override val runPriorToBuild: Boolean
+        get() = _runPriorToBuild
 
-    override fun getRunPriorToBuild(): Boolean = _runPriorToBuild
-
-    fun files(filePattern: String, config: Action<Replacer>): Replacer {
+    fun files(filePattern: String, config: Closure<Replacer>): Replacer {
         val replacer = PatternReplacer(filePattern)
         ConfigureUtil.configure(config, replacer)
         this._patternReplacers.add(replacer)
         return replacer
     }
 
-    fun file(filePath: String, config: Action<Replacer>): Replacer {
+    fun file(filePath: String, config: Closure<Replacer>): Replacer {
         val replacer = FileReplacer(File(project.projectDir, filePath))
         ConfigureUtil.configure(config, replacer)
-        this._patternReplacers.add(replacer)
+        this._fileReplacers.add(replacer)
         return replacer
     }
 }

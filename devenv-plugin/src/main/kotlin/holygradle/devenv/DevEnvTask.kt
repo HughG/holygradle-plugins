@@ -98,7 +98,7 @@ class DevEnvTask: DefaultTask() {
         }
         // For each configurations in this project which point into a source dependency, make this project's task
         // depend on the same task in the other project, and on the platform-independent task (if they exist).
-        sourceDependenciesState.allConfigurationsPublishingSourceDependencies.forEach { config: Configuration ->
+        sourceDependenciesState.getAllConfigurationsPublishingSourceDependencies().forEach { config: Configuration ->
             this.dependsOn(config.getTaskDependencyFromProjectDependency(true, this.name))
             val anyPlatformTaskName = getNameForTask(this.operation, EVERY_PLATFORM, this.configuration)
             this.dependsOn(config.getTaskDependencyFromProjectDependency(true, anyPlatformTaskName))

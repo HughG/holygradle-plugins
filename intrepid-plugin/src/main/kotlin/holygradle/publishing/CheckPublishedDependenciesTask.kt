@@ -14,8 +14,8 @@ class CheckPublishedDependenciesTask : DefaultTask() {
         doLast {
             val helper = ArtifactoryHelper(
                 repoUrl,
-                repoCredentials.username,
-                repoCredentials.password
+                requireNotNull(repoCredentials.username, { "Null username supplied" }),
+                requireNotNull(repoCredentials.password, { "Null password supplied" })
             )
             val modules = mutableMapOf<String, Boolean>()
             for (module in packedDependenciesStateSource.allUnpackModules) {

@@ -133,7 +133,8 @@ class PackageArtifactBuildScriptHandler(private val project: Project) : PackageA
     private val packedDependencies = mutableMapOf<String, Collection<String>>()
     private val textAtBottom = mutableListOf<String>()
     private val ivyRepositories = mutableListOf<String>()
-    private var republishHandler: RepublishHandler? = null
+    private val republishHandlerDelegate = lazy { RepublishHandler() }
+    private val republishHandler: RepublishHandler by republishHandlerDelegate
     private var myCredentialsConfig: String? = null
     private var publishUrl: String? = null
     private var publishCredentials: String? = null
@@ -200,9 +201,6 @@ class PackageArtifactBuildScriptHandler(private val project: Project) : PackageA
     }
 
     fun addRepublishing(action: Action<RepublishHandler>) {
-        if (republishHandler == null) {
-            republishHandler = RepublishHandler()
-        }
         action.execute(republishHandler)
     }
 
@@ -416,7 +414,9 @@ class PackageArtifactBuildScriptHandler(private val project: Project) : PackageA
                 buildScript.append("\"\n")
                 buildScript.append("    }\n")
             }
-            republishHandler?.writeScript(buildScript, 4)
+            if (republishHandlerDelegate.isInitialized()) {
+                republishHandler.writeScript(buildScript, 4)
+            }
             buildScript.append("}\n")
             buildScript.append("\n")
         }
@@ -431,6 +431,6 @@ class PackageArtifactBuildScriptHandler(private val project: Project) : PackageA
     }
 
     private fun publishInfoSpecified(): Boolean {
-        return (publishUrl != null && publishCredentials != null) || republishHandler != null
+        return (publishUrl != null && publishCredentials != null) || republishHandlerDelegate.isInitialized()
     }
 }

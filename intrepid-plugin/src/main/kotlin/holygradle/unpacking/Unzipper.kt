@@ -9,11 +9,12 @@ import java.io.File
  */
 interface Unzipper {
     /**
-     * Returns an object suitable for passing to {@link org.gradle.api.Task#dependsOn(java.lang.Object...)}.  Any task
-     * which uses this class should be set up to depend on the result of this method.
+     * Returns an object suitable for passing to {@link org.gradle.api.Task#dependsOn(java.lang.Object...)}, or null if
+     * no dependencies are required for this unzipper.  Any task which uses this class should be set up to depend on the
+     * result of this method, if it is non-null.
      * @return Dependencies required for this class to be used.
      */
-    val dependencies: Any
+    val dependencies: Any?
 
     /**
      * Unzips {@code zipFile} to directory {@code targetDirectory}.

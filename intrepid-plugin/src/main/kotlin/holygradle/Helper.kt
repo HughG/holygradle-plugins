@@ -3,6 +3,7 @@ package holygradle
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.source_dependencies.SourceDependencyHandler
+import holygradle.util.unique
 import org.gradle.api.NamedDomainObjectCollection
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -14,6 +15,7 @@ import java.io.File
 
 import java.nio.file.Paths
 import java.util.*
+
 class Helper {
     companion object {
         // Recursively navigates down subprojects to gather the names of all sourceDependencies which
@@ -31,7 +33,7 @@ class Helper {
         ): Collection<SourceDependencyHandler>  {
             // Note: Make transSourceDep be a fresh collection; previous code got ConcurrentModificationException sometimes.
             val transSourceDep = ArrayList<SourceDependencyHandler>(sourceDependencies)
-            sourceDependencies.forEach{ sourceDep ->
+            sourceDependencies.forEach { sourceDep ->
                 val projName = sourceDep.targetName
                 var proj = sourceDep.sourceDependencyProject
                 if (proj == null) {
@@ -61,7 +63,7 @@ class Helper {
         }
 
         fun getGlobalUnpackCacheLocation(project: Project, moduleVersion: ModuleVersionIdentifier): File {
-            val unpackCache = PackedDependenciesSettingsHandler.findPackedDependenciesSettings(project).unpackedDependenciesCacheDir
+            val unpackCache = PackedDependenciesSettingsHandler.getPackedDependenciesSettings(project).unpackedDependenciesCacheDir
             val groupCache = File(unpackCache, moduleVersion.group)
             return File(groupCache, "${moduleVersion.name}-${moduleVersion.version}")
         }
@@ -133,7 +135,7 @@ class Helper {
                     && contains("default.username"))
         }
 
-        fun checkHgAuth(checker: PrerequisitesChecker<*>) {
+        fun checkHgAuth(checker: PrerequisitesChecker) {
             val mercurialIniFile = File(System.getenv("USERPROFILE"), "mercurial.ini")
             if (mercurialIniFile.exists()) {
                 val iniText = mercurialIniFile.readText()

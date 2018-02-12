@@ -11,6 +11,7 @@ import org.gradle.api.tasks.AbstractExecTask
 import org.gradle.api.tasks.Exec
 import org.gradle.script.lang.kotlin.extra
 import org.gradle.script.lang.kotlin.getByName
+import org.gradle.script.lang.kotlin.getValue
 import org.gradle.script.lang.kotlin.task
 import java.io.File
 import java.io.FileOutputStream
@@ -22,7 +23,7 @@ internal class TestHandler(
         val name: String
 ) {
     companion object {
-        private val DEFAULT_FLAVOURS: Collection<String> = Collections.unmodifiableCollection(listOf("Debug", "Release"))
+        val DEFAULT_FLAVOURS: Collection<String> = Collections.unmodifiableCollection(listOf("Debug", "Release"))
 
         fun createContainer(project: Project): NamedDomainObjectContainer<TestHandler> {
             project.extensions.add("tests", project.container(TestHandler::class.java) { TestHandler(project, it) })
@@ -224,8 +225,9 @@ internal class TestHandler(
             configureTaskOutputStreams(flavour, task)
 
             // ---- Set up the workingDir.
-            if (workingDir != null) {
-                task.workingDir(workingDir)
+            val workingDirLocal = workingDir
+            if (workingDirLocal != null) {
+                task.workingDir(workingDirLocal)
             }
         }
     }

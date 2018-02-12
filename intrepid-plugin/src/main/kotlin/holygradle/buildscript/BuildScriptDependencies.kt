@@ -1,7 +1,7 @@
 package holygradle.buildscript
 
 import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.tasks.Copy
 import java.io.File
 
 class BuildScriptDependencies(
@@ -26,7 +26,7 @@ class BuildScriptDependencies(
         dependencies[dependencyName] = BuildScriptDependency(project, dependencyName, unpack, optional)
     }
     
-    fun getUnpackTask(dependencyName: String): Task? = dependencies[dependencyName]?.unpackTask
+    fun getUnpackTask(dependencyName: String): Copy? = dependencies[dependencyName]?.unpackTask
 
     fun getPath(dependencyName: String): File? = dependencies[dependencyName]?.path
 }

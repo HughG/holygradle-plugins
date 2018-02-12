@@ -3,9 +3,7 @@ package holygradle.buildscript
 import holygradle.Helper
 import holygradle.artifacts.ConfigurationHelper
 import holygradle.custom_gradle.util.CamelCase
-import org.gradle.api.DefaultTask
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.tasks.Copy
 import org.gradle.script.lang.kotlin.get
@@ -19,7 +17,7 @@ class BuildScriptDependency(
         needsUnpacked: Boolean,
         optional: Boolean
 ) {
-    var unpackTask: Task? = null
+    var unpackTask: Copy? = null
         private set
     lateinit var path: File
         private set
@@ -36,10 +34,8 @@ class BuildScriptDependency(
         }
 
         if (needsUnpacked) {
-            val task: Task
-            if (dependencyArtifact == null) {
-                task = project.task<DefaultTask>(unpackTaskName)
-            } else {
+            var task: Copy? = null
+            if (dependencyArtifact != null) {
                 val unpackCacheLocation = Helper.getGlobalUnpackCacheLocation(project, dependencyArtifact.moduleVersion.id)
                 path = unpackCacheLocation
                 task = project.task<Copy>(unpackTaskName) {
@@ -59,8 +55,8 @@ class BuildScriptDependency(
                     // Anyway, just this simple check is good enough for now.
                     !path.exists()
                 }
+                task.description = "Unpack build dependency '${dependencyName}'"
             }
-            task.description = "Unpack build dependency '${dependencyName}'"
             unpackTask = task
         } else if (dependencyArtifact != null) {
             path = dependencyArtifact.file

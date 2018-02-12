@@ -27,7 +27,7 @@ class PrerequisitesExtension(private val project: Project) {
                 }
 
                 extension.register("Java", Action { checker: PrerequisitesChecker ->
-                    val minVersion = checker.getParametersAs<String>()!!.first()
+                    val minVersion = checker.getParametersAs<String>().first()
                     val javaVersion = System.getProperty("java.version")!!
                     val javaVerComponents = javaVersion.split("\\.")
                     val minVerComponents = minVersion.split("\\.")
@@ -51,7 +51,7 @@ Afterwards, please start a new command prompt and re-run the same command.""")
                 extension.register("Windows", Action { checker: PrerequisitesChecker ->
                     val versions = checker.getParametersAs<String>()
                     val os = System.getProperty("os.name")
-                    if (versions != null && !versions.contains(os)) {
+                    if (!versions.contains(os)) {
                         checker.fail("The operating system is '${os}', which is not supported. " +
                             "The supported operating systems are: ${versions}.")
                     }
@@ -86,7 +86,7 @@ Afterwards, please start a new command prompt and re-run the same command.""")
         checkers[prerequisite] = PrerequisitesCheckerFactory(project, prerequisite, checkerAction)
     }
 
-    fun getCheckAllPrerequisitesTask(): Task = project.tasks.findByName("checkPrerequisites")
+    fun getCheckAllPrerequisitesTask(): Task = project.tasks.getByName("checkPrerequisites")
 
     private fun addStatedPrerequisite(prerequisite: StatedPrerequisite) {
         // Add this one if there isn't already any equivalent prerequisite.

@@ -1,6 +1,7 @@
 package holygradle
 
 import holygradle.io.FileHelper
+import holygradle.util.unique
 import org.apache.commons.codec.digest.DigestUtils
 import org.gradle.api.Project
 import java.io.File
@@ -36,8 +37,8 @@ ${SECTION_MARKER}${md5} END"""
 
     // Convert backslashes to slashes, then strip any trailing slash.
     fun getNormalisedIncludeFilePaths(includeFilePaths: Collection<String>): Collection<String> {
-        val slashes = "[\\/]+".toRegex()
-        val trailingSlash = "\\/$".toRegex()
+        val slashes = "[\\\\]+".toRegex()
+        val trailingSlash = "/$".toRegex()
         return includeFilePaths.map {
             it.replace(slashes, "/").replace(trailingSlash, "")
         }
@@ -141,7 +142,7 @@ ${SECTION_MARKER}${md5} END"""
 
     // Returns true if the settings have changed.
     fun writeSettingsFileAndDetectChange(settingsFile: File, includeFilePaths: Collection<String>): Boolean {
-        var previousIncludeFilePaths = mutableListOf<String>()
+        val previousIncludeFilePaths = mutableListOf<String>()
 
         val settingsSubprojectsFile = getSettingsSubprojectsFile(settingsFile)
         if (settingsSubprojectsFile.exists()) {

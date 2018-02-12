@@ -6,7 +6,6 @@ import org.gradle.api.artifacts.*
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import org.gradle.api.specs.Specs
-import org.jetbrains.kotlin.utils.addToStdlib.singletonList
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.Node
@@ -20,17 +19,18 @@ import javax.xml.parsers.DocumentBuilderFactory
  * Specifically, it provides access to the metadata (Ivy XML and Maven POM) files for the dependencies.
  */
 class DependenciesStateHandler
-/**
- * Creates an instance of {@link DependenciesStateHandler} for the given project.
- *
- * @param project The project to which this extension instance applies.
- * @param forBuildscript True if this handler is for the dependencies of a project's buildscript; false if it is for
- * the dependencies of the project itself.
- */
-constructor(
-        private val project: Project,
-        private val forBuildscript: Boolean
-) {
+    /**
+     * Creates an instance of {@link DependenciesStateHandler} for the given project.
+     *
+     * @param project The project to which this extension instance applies.
+     * @param forBuildscript True if this handler is for the dependencies of a project's buildscript; false if it is for
+     * the dependencies of the project itself.
+     */
+    constructor(
+            private val project: Project,
+            private val forBuildscript: Boolean
+    )
+{
     private class NodeListIterator(private val nodeList: NodeList): Iterator<Node> {
         private var index = 0
 
@@ -42,8 +42,6 @@ constructor(
             return nodeList.item(index++)
         }
     }
-
-    private fun NodeList.iterator() = NodeListIterator(this)
 
     private class NodeListIterable(private val nodeList: NodeList): Iterable<Node> {
         override fun iterator(): Iterator<Node> {
@@ -243,8 +241,8 @@ constructor(
      * Populates a map from module version ID to the file location (in the local Gradle cache) of the corresponding
      * {@code ivy.xml} or @{code .pom} file.
      *
-     * @param dependencies A set of resolved dependencies which are expected to have artifacts for {@code ivy.xml} or
-     * @{code .pom} files.
+     * @param allResolvedArtifacts A set of resolved artifacts for {@code ivy.xml} or @{code .pom} files.
+     * @param type The Gradle artifact type as a string, "ivy" or "pom".
      * @return The map from IDs to files.
      */
     private fun getResolvedMetadataFilesOfType(
@@ -261,12 +259,6 @@ constructor(
 
             val id = resolvedArtifact.moduleVersion.id
             val metadataFile = resolvedArtifact.file
-            if (metadataFile == null) {
-                missingMetadataFiles[id] = metadataFile
-                logger.error(
-                        "getResolvedMetadataFilesOfType: Failed to find ${type} file for ${id} in artifact ${resolvedArtifact}"
-                )
-            }
             metadataFiles[id] = metadataFile
             logger.debug("getResolvedMetadataFilesOfType: Added ${metadataFile} for ${id}")
         }
@@ -292,7 +284,7 @@ constructor(
      * @param conf
      * @return
      */
-    public fun getAncestorPomFiles(conf: Configuration): Map<ModuleVersionIdentifier, File> {
+    fun getAncestorPomFiles(conf: Configuration): Map<ModuleVersionIdentifier, File> {
         logger.debug("getAncestorPomFiles(${conf} in ${project})")
 
         // As the javadoc comment says, we don't want to treat the parent POMs as dependencies to be resolved, because
@@ -312,7 +304,7 @@ constructor(
 
             val newParentPomFiles: Map<ModuleVersionIdentifier, File> =
                 parentPomDeps.associate { parentPomDep ->
-                    val parentPomConf = copyConfigurationReplacingDependencies(conf, parentPomDep.singletonList())
+                    val parentPomConf = copyConfigurationReplacingDependencies(conf, listOf(parentPomDep))
                     val lenientConf = parentPomConf.resolvedConfiguration.lenientConfiguration
                     val allResolvedArtifacts = lenientConf.getArtifacts(Specs.satisfyAll())
                     return getResolvedMetadataFilesOfType(allResolvedArtifacts, "pom")

@@ -9,14 +9,32 @@ class PrerequisitesChecker(
         val project: Project,
         val name: String,
         private val checkAction: Action<PrerequisitesChecker>,
-        val parameter: Array<out Any>?) {
+        private val parameter: Array<out Any>?) {
     private var ok = true
 
     private fun getCheckingAllPrerequisites(): Boolean {
         return PrerequisitesExtension.getPrerequisites(project)?.checkingAllPrerequisites ?: false
     }
 
-    inline fun <reified T> getParametersAs(): Iterable<T>? = parameter?.filterIsInstance<T>()
+    fun <T> getParametersAs(clazz: Class<T>): Iterable<T> {
+        if (parameter == null) {
+            throw IllegalStateException("No parameters were supplied for prerequisite ${name} but at least one is required")
+        } else {
+            return mutableListOf<T>().apply {
+                for (element in parameter) {
+                    if (clazz.isAssignableFrom(element.javaClass)) {
+                        @Suppress("UNCHECKED_CAST")
+                        add(element as T)
+                    }
+                }
+
+            }
+        }
+    }
+
+    inline fun <reified T> getParametersAs(): Iterable<T> {
+        return getParametersAs(T::class.java)
+    }
 
     fun run(): Boolean {
         // The 'ok' variable is not really stateful. Its purpose is to determine the return value for this method.

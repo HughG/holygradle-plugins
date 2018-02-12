@@ -37,15 +37,15 @@ class SourceDependencyHandler(
         }
     }
 
-    var protocol: String? = null
-    var url: String? = null
+    lateinit var protocol: String
+    lateinit var url: String
     var branch: String? = null
     val writeVersionInfoFile: Boolean? = null
-    val export: Boolean = false
+    var export: Boolean = false
     val destinationDir: File = File(project.projectDir, depName).canonicalFile
 
-    public fun hg(hgUrl: String) {
-        if (protocol != null || url != null) {
+    fun hg(hgUrl: String) {
+        if (::protocol.isInitialized || ::url.isInitialized) {
             throw RuntimeException("Cannot call 'hg' when protocol and/or url has already been set")
         } else {
             protocol = "hg"
@@ -54,7 +54,7 @@ class SourceDependencyHandler(
     }
     
     fun svn(svnUrl: String) {
-        if (protocol != null || url != null) {
+        if (::protocol.isInitialized || ::url.isInitialized) {
             throw RuntimeException("Cannot call 'svn' when protocol and/or url has already been set")
         } else {
             protocol = "svn"
@@ -63,7 +63,7 @@ class SourceDependencyHandler(
     }
 
     fun git(gitUrl: String) {
-        if (protocol != null || url != null) {
+        if (::protocol.isInitialized || ::url.isInitialized) {
             throw RuntimeException("Cannot call 'git' when protocol and/or url has already been set")
         } else {
             protocol = "git"
@@ -72,9 +72,9 @@ class SourceDependencyHandler(
     }
 
     override fun configuration(config: String) {
-        val newConfigs = mutableMapOf<String, String>()
+        val newConfigs = mutableListOf<Map.Entry<String, String>>()
         Helper.parseConfigurationMapping(config, newConfigs, "Formatting error for '$targetName' in 'sourceDependencies'.")
-        configurationMappings.addAll(newConfigs.entries)
+        configurationMappings.addAll(newConfigs)
 
         val rootProject = project.rootProject
         val depProject = rootProject.findProject(":${targetName}")

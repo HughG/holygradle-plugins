@@ -5,6 +5,7 @@ import holygradle.dependencies.PackedDependencyHandler
 import org.gradle.api.*
 import holygradle.SettingsFileHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
+import holygradle.util.mutableUnique
 import org.gradle.api.tasks.TaskAction
 import org.gradle.script.lang.kotlin.getValue
 import java.io.File
@@ -88,7 +89,7 @@ class RecursivelyFetchSourceTask : DefaultTask() {
     private fun generateSettingsFileForPackedDependencies() {
         val packedDependenciesState: PackedDependenciesStateHandler by project.extensions
         val allUnpackModules = packedDependenciesState.allUnpackModules
-        var pathsForPackedDependencies = ArrayList<String>(allUnpackModules.size)
+        var pathsForPackedDependencies: MutableCollection<String> = ArrayList<String>(allUnpackModules.size)
         for (module in allUnpackModules) {
             for (versionInfo in module.versions.values) {
                 if (!versionInfo.hasArtifacts) {
@@ -102,7 +103,7 @@ class RecursivelyFetchSourceTask : DefaultTask() {
                 pathsForPackedDependencies.add(relativePathInWorkspace)
             }
         }
-        pathsForPackedDependencies = pathsForPackedDependencies.unique()
+        pathsForPackedDependencies = pathsForPackedDependencies.mutableUnique()
         SettingsFileHelper.writeSettingsFile(
             File(project.projectDir, "settings.gradle"),
             pathsForPackedDependencies

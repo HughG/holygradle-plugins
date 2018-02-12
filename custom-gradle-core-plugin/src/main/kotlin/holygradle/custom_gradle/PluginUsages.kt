@@ -6,7 +6,7 @@ import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.script.lang.kotlin.get
 import org.gradle.script.lang.kotlin.withType
 
-class PluginUsages(private val project: Project) {
+class PluginUsages(project: Project) {
     class Versions(val requested: String, val selected: String)
 
     private val usages: Map<String, Versions>
@@ -23,7 +23,7 @@ class PluginUsages(private val project: Project) {
         val resolvedHolyGradleDependencies: List<ResolvedDependency> =
                 classpathConfiguration.resolvedConfiguration.firstLevelModuleDependencies.filter { it.moduleGroup == "holygradle" }
         resolvedHolyGradleDependencies.forEach { dep ->
-            val requestedVersion = requestedHolyGradleDependencies.find { it.name == dep.name }!!.version
+            val requestedVersion = requestedHolyGradleDependencies.find { it.name == dep.name }!!.version!!
             pluginVersions[dep.moduleName] = Versions(requestedVersion, dep.moduleVersion)
         }
         usages = pluginVersions

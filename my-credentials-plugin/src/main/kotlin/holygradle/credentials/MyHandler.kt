@@ -50,8 +50,9 @@ class MyHandler(private val project: Project, private val credentialStorePath: S
         return credStorageValue
     }
     
-    private fun getCredentials(credentialType: String, forceAskUser: Boolean = false): Credentials? {
-        if (project.usingLocalArtifacts) {
+    private fun getCredentials(credentialType: String, forceAskUser: Boolean = false): Credentials {
+        val usingLocalArtifacts: Boolean by project.extensions
+        if (usingLocalArtifacts) {
             return Credentials("empty", "empty")
         }
         
@@ -80,15 +81,15 @@ class MyHandler(private val project: Project, private val credentialStorePath: S
     
     private fun getCredentialStorageKey(credentialType: String): String = "Intrepid - ${credentialType}"
     
-    private fun getCredentialsFromUserAndStore(credentialType: String, currentUserName: String): Credentials? {
+    private fun getCredentialsFromUserAndStore(credentialType: String, currentUserName: String): Credentials {
         val my: MyHandler by project.extensions
         val instructionsHandler = my.instructions.findByName(credentialType)
         val instructionsText = instructionsHandler?.instructions
 
-        val userCred = CredentialsForm.getCredentialsFromUser(credentialType, instructionsText, currentUserName, 60 * 3)
+        val timeoutSeconds = 60 * 3
+        val userCred = CredentialsForm.getCredentialsFromUser(credentialType, instructionsText, currentUserName, timeoutSeconds)
         if (userCred == null) {
-            println("No change to credentials '${credentialType}'.")
-            return null
+            throw RuntimeException("User did not supply credentials '${credentialType}' within ${timeoutSeconds} seconds.")
         } else {
             val credStoreExe = credentialStorePath
             val credStorageKey = getCredentialStorageKey(credentialType)
@@ -111,9 +112,11 @@ class MyHandler(private val project: Project, private val credentialStorePath: S
         }
     }
 
-    override fun getUsername(): String? = username(defaultCredentialType)
-    override fun getPassword(): String? = password(defaultCredentialType)
+    override val username: String
+        get() = username(defaultCredentialType)
+    override val password: String
+        get() = password(defaultCredentialType)
     
-    fun username(credentialType: String): String? = getCredentials(credentialType)?.userName
-    fun password(credentialType: String): String? = getCredentials(credentialType)?.password
+    fun username(credentialType: String): String = getCredentials(credentialType).userName
+    fun password(credentialType: String): String = getCredentials(credentialType).password
 }

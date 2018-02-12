@@ -30,7 +30,9 @@ object SourceControlRepositories {
 
     fun createExtension(project: Project): SourceControlRepository? {
         val repo = create(project, project.projectDir, true)
-        project.extensions.add("sourceControl", repo)
+        if (repo != null) {
+            project.extensions.add("sourceControl", repo)
+        }
         return repo
     }
 }

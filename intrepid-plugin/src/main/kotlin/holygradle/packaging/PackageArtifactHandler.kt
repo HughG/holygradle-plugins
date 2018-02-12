@@ -296,7 +296,7 @@ class PackageArtifactHandler(val project: Project, val name: String) : PackageAr
             // then just make sure that all auto-generated files are present.
             val repackageTask = project.tasks.findByName("repackageEverything")
             var republishHandler: RepublishHandler? = null
-            if (project.gradle.taskGraph.hasTask(repackageTask)) {
+            if (repackageTask != null && project.gradle.taskGraph.hasTask(repackageTask)) {
                 val publishPackages = project.extensions.findByName("publishPackages") as PublishPackagesExtension
                 republishHandler = publishPackages.republishHandler
                 zip.doFirst {

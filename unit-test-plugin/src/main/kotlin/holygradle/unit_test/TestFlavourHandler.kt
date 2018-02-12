@@ -3,6 +3,7 @@ package holygradle.unit_test
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.script.lang.kotlin.getByName
+import org.gradle.script.lang.kotlin.getValue
 
 internal class TestFlavourHandler(
         val name: String

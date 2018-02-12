@@ -19,10 +19,10 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
         val INCLUDE_ALL_BINDINGS: List<LinkedHashMap<String, String>> = listOf()
         private val UNINTIALISED_TYPE = object: ConfigurationSetType {
             override fun getMappingsTo(attrs: Map<String, Any>, source: ConfigurationSet, target: ConfigurationSet): Collection<String> = TODO()
-            override fun getMappingsTo(attrs: Map<String, Any>, source: ConfigurationSet, targetType: ConfigurationSetType): Collection<String>  = TODO()
-            override fun getMappingsFrom(attrs: Map<String, Any>, source: Configuration): Collection<String>  = TODO()
-            override fun getMappingsFrom(attrs: Map<String, Any>, source: Configuration, target: ConfigurationSet): Collection<String>  = TODO()
-            override fun getName(): String  = TODO()
+            override fun getMappingsTo(attrs: Map<String, Any>, source: ConfigurationSet, targetType: ConfigurationSetType): Collection<String> = TODO()
+            override fun getMappingsFrom(attrs: Map<String, Any>, source: Configuration): Collection<String> = TODO()
+            override fun getMappingsFrom(attrs: Map<String, Any>, source: Configuration, target: ConfigurationSet): Collection<String> = TODO()
+            override fun getName(): String = TODO()
         }
 
         private fun appendAxesForTemplate(builder: StringBuilder, axes: Map<String, List<String>>) {
@@ -207,10 +207,6 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
         get() {
             synchronized(initSync) {
                 if (_configurationNamesMap.isEmpty()) {
-                    if (type == null) {
-                        throw RuntimeException("Must set type for configuration set ${name}")
-                    }
-
                     val builder = StringBuilder()
                     if (prefix != null) {
                         builder.append(prefix)
@@ -241,10 +237,10 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
         // not work with the list type returned by LinkedHashMap#values()).
         get() = ArrayList<String>(configurationNamesMap.values)
 
-    fun getDescriptionForBinding(binding: Map<String, String>): String {
+    private fun getDescriptionForBinding(binding: Map<String, String>): String {
         val typeDescription = typeAsDefault.getDescriptionForBinding(binding)
         val addPrefixDescription = if (prefix == null) "" else ".makeSet { prefix '${prefix}' }"
-        val setDescription = "configurationSets.${type?.name ?: throw RuntimeException("type not set for ${this}")}"
+        val setDescription = "configurationSets.${type.name ?: throw RuntimeException("type not set for ${this}")}"
         val mappingDescription = "configurationSet ..., ${setDescription}${addPrefixDescription}"
         return typeDescription +
             " You can use this with the Holy Gradle by adding '${mappingDescription}' " +
@@ -280,7 +276,7 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
 
         // Build a map from bindings to configurations.
         val result: Map<Map<String, String>, Configuration> = nameMap.entries.associate { (k, v) ->
-            k to configurations.findByName(v)
+            k to configurations.getByName(v)
         }
 
         // Make the configurations with optional parts extend from the corresponding ones without those parts.
@@ -321,8 +317,8 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
     override fun toString(): String {
         return "DefaultConfigurationSet{" +
             "name='" + name + '\'' +
-            ", type=" + type?.name +
+            ", type=" + type.name +
             ", configurationNamesMap=" + configurationNamesMap +
-            '}';
+            '}'
     }
 }

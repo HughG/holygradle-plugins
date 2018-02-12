@@ -26,8 +26,8 @@ class DevEnvPlugin : Plugin<Project> {
          * Prerequisites
          **************************************/
         val prerequisites = PrerequisitesExtension.getPrerequisites(project)
-        prerequisites?.register("VisualStudio", Action { checker: PrerequisitesChecker<List<String>> ->
-            checker.parameter?.forEach { version ->
+        prerequisites?.register("VisualStudio", Action { checker: PrerequisitesChecker ->
+            checker.getParametersAs<String>().forEach { version ->
                 if (checker.readRegistry("HKLM\\SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\${version}", "SP") == null &&
                         checker.readRegistry("HKLM\\SOFTWARE\\Wow6432Node\\Microsoft\\DevDiv\\VS\\Servicing\\${version}", "SP") == null) {
                     checker.fail("Visual Studio version $version does not appear to be installed. Please install it. Detection was done by looking up the HKLM registry 'SOFTWARE\\Microsoft\\DevDiv\\VS\\Servicing\\${version}' key 'SP'.")

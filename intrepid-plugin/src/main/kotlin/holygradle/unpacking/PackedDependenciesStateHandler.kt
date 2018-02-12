@@ -239,7 +239,7 @@ class PackedDependenciesStateHandler(
         val targetLocations =
                 mutableMapOf<File, MutableCollection<UnpackModuleVersion>>().withDefault { mutableListOf<UnpackModuleVersion>() }
         for (module in modulesMap.values) {
-            for ((versionStr, versionInfo) in module.versions) {
+            for ((_, versionInfo) in module.versions) {
                 val targetPath = versionInfo.targetPathInWorkspace.canonicalFile
                 targetLocations[targetPath]!!.add(versionInfo)
             }

@@ -24,7 +24,7 @@ class VersionInfo(private val project: Project) {
 
     init {
         specify("gradle", project.gradle.gradleVersion)
-        specify("custom-gradle", project.gradle.gradleHomeDir.parentFile.parentFile.name.split("-")[-1])
+        specify("custom-gradle", project.gradle.gradleHomeDir!!.parentFile.parentFile.name.split("-")[-1])
         if (project.hasProperty("holyGradleInitScriptVersion")) {
             specify("custom-gradle (init script)", project.property("holyGradleInitScriptVersion") as String)
         }

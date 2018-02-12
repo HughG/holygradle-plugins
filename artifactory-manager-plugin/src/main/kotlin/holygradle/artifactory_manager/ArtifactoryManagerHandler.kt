@@ -78,8 +78,12 @@ class ArtifactoryManagerHandler(
             return DefaultArtifactoryAPI(
                     server ?: result.groupValues[1],
                     repository ?: result.groupValues[2],
-                    username ?: targetRepo.credentials.username,
-                    password ?: targetRepo.credentials.password,
+                    requireNotNull(username ?: targetRepo.credentials.username, {
+                        "No username supplied for Artifactory repo ${repository} and none available from target repo ${url}"
+                    }),
+                    requireNotNull(username ?: targetRepo.credentials.password, {
+                        "No password supplied for Artifactory repo ${repository} and none available from target repo ${url}"
+                    }),
                     dryRun
             )
         } else {

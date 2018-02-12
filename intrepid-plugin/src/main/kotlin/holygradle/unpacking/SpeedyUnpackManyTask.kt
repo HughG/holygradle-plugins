@@ -25,7 +25,10 @@ class SpeedyUnpackManyTask : DefaultTask() {
         unzipper: Unzipper
     ) {
         this.unzipper = unzipper
-        dependsOn(unzipper.dependencies)
+        val dependencies = unzipper.dependencies
+        if (dependencies != null) {
+            dependsOn(dependencies)
+        }
         doLast {
             for (values in entries.values) {
                 processEntry(values)

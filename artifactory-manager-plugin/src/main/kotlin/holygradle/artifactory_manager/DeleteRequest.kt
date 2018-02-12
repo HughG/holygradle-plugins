@@ -13,9 +13,17 @@ class DeleteRequest(
         private val minRequestIntervalInMillis: Long
 ) {
     companion object {
+        private fun Date.toCalendarOfDay(): Calendar = Calendar.getInstance().apply {
+            time = this@toCalendarOfDay
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
         private fun getEndOfLatestInterval(date: Date, units: String): Date {
-            val calendar = date.toCalendar().clearTime()
-            calendar.lenient = true
+            val calendar = date.toCalendarOfDay()
+            calendar.isLenient = true
 
             when (units) {
                 "day", "days" -> calendar.add(DAY_OF_MONTH, 1)
@@ -39,8 +47,8 @@ class DeleteRequest(
         }
 
         private fun subtractDate(date: Date, countUnits: Int, units: String): Date {
-            val calendar = date.toCalendar().clearTime()
-            calendar.lenient = true
+            val calendar = date.toCalendarOfDay()
+            calendar.isLenient = true
 
             when (units) {
                 "day", "days" -> calendar.add(DAY_OF_MONTH, -countUnits)
@@ -265,7 +273,7 @@ class DeleteRequest(
                 if (commonVersions != null && commonVersions.isNotEmpty()) {
                     val versionToSave = commonVersions.last()
                     logger.debug("        Saving version: ${versionToSave}")
-                    for ((module, deleteCandidate) in moduleDeleteCandidates) {
+                    for (deleteCandidate in moduleDeleteCandidates.values) {
                         deleteCandidate.filter(Predicate { it ->
                             // Filter out any versioned artifacts that we should save
                             it.version == versionToSave
@@ -313,14 +321,4 @@ class DeleteRequest(
             })
         }
     }
-}
-
-@Deprecated("Use Kotlin map instead", ReplaceWith("this.map(action)"))
-private fun <T, U> Iterable<T>.collect(action: (T) -> U): List<U> {
-    return map(action)
-}
-
-@Deprecated("Use Kotlin forEach instead", ReplaceWith("this.forEach(action)"))
-private inline fun <T> Iterable<T>.each(action: (T) -> Unit) {
-    forEach(action)
 }

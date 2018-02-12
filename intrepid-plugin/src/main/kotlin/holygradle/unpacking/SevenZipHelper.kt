@@ -1,8 +1,11 @@
 package holygradle.unpacking
 
+import holygradle.buildscript.BuildScriptDependencies
 import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.Task
+import org.gradle.api.tasks.Copy
+import org.gradle.script.lang.kotlin.getValue
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -20,16 +23,18 @@ class SevenZipHelper
  */
 constructor(private val project: Project)
 : Unzipper {
-    private val sevenZipUnpackTask: Task = project.buildScriptDependencies.getUnpackTask("sevenZip")
+    private val buildScriptDependencies: BuildScriptDependencies by project.extensions
+
+    private val sevenZipUnpackTask: Copy = buildScriptDependencies.getUnpackTask("sevenZip")
             ?: throw IllegalArgumentException("Project does not have a BuildScriptDependency for 'sevenZip'.")
 
     /**
      * Returns true if and only if 7Zip can be used, which depends on the executable having been downloaded and unpacked.
      * @return true if and only if 7Zip can be used
      */
-    val isUsable: Boolean get() = project.buildScriptDependencies.getPath("sevenZip") != null
+    val isUsable: Boolean get() = buildScriptDependencies.getPath("sevenZip") != null
 
-    override val dependencies: Any
+    override val dependencies: Any?
         get() = sevenZipUnpackTask
 
     override fun unzip(zipFile: File, targetDirectory: File) {

@@ -4,7 +4,7 @@ import org.gradle.api.Project
 import java.io.File
 
 class GradleZipHelper(private val project: Project) : Unzipper {
-    override val dependencies: Any = listOf<Any>()
+    override val dependencies: Any? = null
 
     override fun unzip(zipFile: File, targetDirectory: File) {
         val zipFileLastModified = zipFile.lastModified()

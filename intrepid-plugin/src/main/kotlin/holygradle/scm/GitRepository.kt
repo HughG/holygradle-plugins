@@ -2,6 +2,7 @@ package holygradle.scm
 
 import org.gradle.api.Action
 import java.io.File
+import java.util.function.Predicate
 
 class GitRepository(val command: Command, localDir: File) : SourceControlRepository {
     override val localDir: File = localDir.absoluteFile
@@ -17,7 +18,7 @@ class GitRepository(val command: Command, localDir: File) : SourceControlReposit
                         "--get",
                         "remote.origin.url"
                 )
-            }, { errorCode ->
+            }, Predicate { errorCode ->
                 // Error code 1 means the section or key is invalid, probably just no remote set, so don't throw.
                 (errorCode != 1)
             })

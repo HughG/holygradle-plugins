@@ -1,5 +1,6 @@
 package holygradle.source_dependencies
 
+import holygradle.util.unique
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.process.ExecResult

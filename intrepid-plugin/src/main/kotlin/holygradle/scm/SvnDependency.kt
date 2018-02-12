@@ -16,8 +16,7 @@ class SvnDependency(
         sourceDependency: SourceDependencyHandler,
         private val svnCommand: Command
 ) : SourceDependency(project, sourceDependency) {
-    public val export = false
-    public val ignoreExternals = false
+    var export = false
 
     override val fetchTaskDescription: String =
             "Retrieves an SVN Checkout for '${sourceDependency.name}' into your workspace."
@@ -30,7 +29,7 @@ class SvnDependency(
             username: String? = null,
             password: String? = null
     ): Boolean {
-        val result = svnCommand.execute(Action { spec: ExecSpec ->
+        svnCommand.execute(Action { spec: ExecSpec ->
             if (sourceDependency.export) {
                 spec.args("export", "--native-eol", "LF")
             } else {

@@ -7,9 +7,9 @@ import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.CopySpec
-import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.tasks.AbstractCopyTask
 import org.gradle.script.lang.kotlin.extra
+import org.gradle.script.lang.kotlin.getValue
 import java.io.File
 
 class CollectDependenciesHelper(private val copyTask: AbstractCopyTask) {
@@ -236,9 +236,6 @@ class CollectDependenciesHelper(private val copyTask: AbstractCopyTask) {
         ivyFiles: Map<ModuleVersionIdentifier, File>,
         pomFiles: Map<ModuleVersionIdentifier, File>
     ): Boolean {
-        // Only public because of stupid Gradle 1.4 "feature" that private members aren't visible to closures.
-        // Taking a local copy ends in a "no applicable method" error for some unknown reason.
-
         val version = artifact.moduleVersion.id
         val targetPath: String? = when {
             ivyFiles.containsKey(version) -> getIvyPath(version)
@@ -246,9 +243,9 @@ class CollectDependenciesHelper(private val copyTask: AbstractCopyTask) {
             else -> null
         }
 
-        val foundMetadataFile = (targetPath != null)
-        if (!foundMetadataFile) {
+        return if (targetPath == null) {
             copyTask.logger.error("Failed to find metadata file corresponding to ${artifact}")
+            false
         } else {
             if (copyTask.logger.isDebugEnabled) {
                 copyTask.logger.debug("configureToCopyArtifact: ${version} - ${artifact}: copying ${artifact.file} to ${targetPath}")
@@ -256,7 +253,7 @@ class CollectDependenciesHelper(private val copyTask: AbstractCopyTask) {
             copySpec.from (artifact.file) { child ->
                 child.into(targetPath)
             }
+            true
         }
-        return foundMetadataFile
     }
 }

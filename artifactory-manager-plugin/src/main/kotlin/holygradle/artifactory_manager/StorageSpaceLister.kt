@@ -2,6 +2,7 @@ package holygradle.artifactory_manager
 
 import org.gradle.api.logging.Logger
 import java.io.PrintWriter
+import java.math.BigDecimal
 
 private const val BYTES_PER_MB: Double = 1024.0 * 1024.0
 
@@ -15,6 +16,9 @@ class StorageSpaceLister(
 ) {
     fun listStorage() {
         sizesPrintWriter.println("Type\tPath\tBytes\tMB")
+
+        fun Double.trunc(decimalPlaces: Int): Double =
+                BigDecimal(this).setScale(decimalPlaces, BigDecimal.ROUND_HALF_UP).toDouble()
 
         var minTimeSinceLastLog = 0L
 
@@ -36,7 +40,7 @@ class StorageSpaceLister(
                             fileSize = artifactFileInfo.size
                             sizesPrintWriter.println("File\t${artifactPath}\t${fileSize}\t${(fileSize / BYTES_PER_MB).trunc(2)}")
                         } catch (ignored: NumberFormatException) {
-                            sizesPrintWriter.println("File\t${artifactPath}\t0\t0\tNumberFormatException: ${artifactFileInfo["size"]}")
+                            sizesPrintWriter.println("File\t${artifactPath}\t0\t0\tNumberFormatException: ${artifactFileInfo.size}")
                         }
                         versionSize += fileSize
                         if (minRequestIntervalInMillis > 0) {

@@ -105,18 +105,21 @@ class UnpackModuleVersion(
     val targetPathInWorkspace: File
         get() {
             val packedDependency1 = packedDependency
-            if (packedDependency1 != null) {
-                // If we have a packed dependency then we can directly construct the target path.
-                // We don't need to go looking through transitive dependencies.
-                val targetPath = packedDependency1.getFullTargetPathWithVersionNumber(moduleVersion.version)
-                return File(project.projectDir, targetPath)
-            } else {
-                // If we don't return above then this must be a transitive dependency.
-                // Recursively navigate up the parent hierarchy, appending relative paths.
-                return File(
-                        parent.targetPathInWorkspace.parentFile,
-                        targetDirName
-                )
+            when {
+                packedDependency1 != null -> {
+                    // If we have a packed dependency then we can directly construct the target path.
+                    // We don't need to go looking through transitive dependencies.
+                    val targetPath = packedDependency1.getFullTargetPathWithVersionNumber(moduleVersion.version)
+                    return File(project.projectDir, targetPath)
+                }
+                parent != null -> // If we don't return above then this must be a transitive dependency.
+                    // Recursively navigate up the parent hierarchy, appending relative paths.
+                    return File(
+                            parent.targetPathInWorkspace.parentFile,
+                            targetDirName
+                    )
+                else -> throw RuntimeException(
+                        "Cannot determine targetPathInWorkspace: no packedDependency and no parent for ${this}")
             }
         }
 

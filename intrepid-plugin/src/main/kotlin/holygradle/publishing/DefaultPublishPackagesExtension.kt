@@ -1,5 +1,7 @@
 package holygradle.publishing
 
+import holygradle.apache.ivy.groovy.IvyConfigurationNode
+import holygradle.apache.ivy.groovy.asIvyModule
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.unpacking.PackedDependenciesStateSource
@@ -16,21 +18,39 @@ import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
+import org.gradle.script.lang.kotlin.getValue
 import org.gradle.script.lang.kotlin.task
-import org.w3c.dom.Node
 
 class DefaultPublishPackagesExtension(
         private val project: Project,
         packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler>,
         packedDependencies: Collection<PackedDependencyHandler>
 ) : PublishPackagesExtension {
+    fun Project.publishing(configuration: PublishingExtension.(PublishingExtension) -> Unit) {
+        val publishing: PublishingExtension by this.extensions
+        publishing.configuration(publishing)
+    }
+
     companion object {
         const val DEFAULT_PUBLICATION_NAME = "ivy"
         val DEFAULT_DESCRIPTOR_TASK_NAME = "generateDescriptorFileFor${DEFAULT_PUBLICATION_NAME.capitalize()}Publication"
+
+        fun getOrCreateExtension(project: Project): PublishPackagesExtension {
+            val packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler> by project.extensions
+            val packedDependencies: NamedDomainObjectContainer<PackedDependencyHandler> by project.extensions
+            return project.extensions.create(
+                    "publishPackages",
+                    DefaultPublishPackagesExtension::class.java,
+                    project,
+                    packageArtifactHandlers,
+                    packedDependencies
+            )
+        }
     }
     override var createDefaultPublication = true
     override var publishPrivateConfigurations = true
-    override var republishHandler: RepublishHandler? = null
+    val privateRepublishHandlerDelegate = lazy { RepublishHandler() }
+    private val privateRepublishHandler: RepublishHandler by privateRepublishHandlerDelegate
     private val originalConfigurationOrder = linkedSetOf<String>()
 
     init {
@@ -39,18 +59,18 @@ class DefaultPublishPackagesExtension(
         val configurations = project.configurations
         setupRecordingOfOriginalConfigurationOrder(configurations)
 
-        val beforeGenerateDescriptorTask = project.task("beforeGenerateDescriptor") { Task t ->
-            t.group = "Publishing"
-            t.description = "Actions to run before any Ivy descriptor generation tasks"
+        val beforeGenerateDescriptorTask = project.task("beforeGenerateDescriptor") {
+            group = "Publishing"
+            description = "Actions to run before any Ivy descriptor generation tasks"
         }
-        val generateIvyModuleDescriptorTask = project.task("generateIvyModuleDescriptor") { Task t ->
-            t.group = "Publishing"
-            t.description = "Backwards-compatibility task for generating ivy.xml files for publication. " +
+        val generateIvyModuleDescriptorTask = project.task("generateIvyModuleDescriptor") {
+            group = "Publishing"
+            description = "Backwards-compatibility task for generating ivy.xml files for publication. " +
                 "This task will be removed in a future version of the Holy Gradle. It has been replaced by " +
                 "tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication."
-            t.doFirst {
-                t.logger.warn(
-                    "WARNING: Task ${t.name} will be removed in a future version of the Holy Gradle. " +
+            doFirst {
+                logger.warn(
+                    "WARNING: Task ${name} will be removed in a future version of the Holy Gradle. " +
                     "It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication."
                 )
             }
@@ -73,14 +93,14 @@ class DefaultPublishPackagesExtension(
         // Configure the publish task to deal with the version number, include source dependencies and convert
         // dynamic dependency versions to fixed version numbers.  We do this in a projectsEvaluated block so that
         // source dependency projects have been evaluated, so we can be sure their information is available.
-        project.gradle.projectsEvaluated { gradle ->
-            project.publishing { PublishingExtension it ->
+        project.gradle.projectsEvaluated {
+            project.publishing {
                 if (createDefaultPublication) {
                     createDefaultPublication(it, packageArtifactHandlers)
                     configureGenerateDescriptorTasks(
-                        beforeGenerateDescriptorTask,
-                        generateIvyModuleDescriptorTask,
-                        project
+                            beforeGenerateDescriptorTask,
+                            generateIvyModuleDescriptorTask,
+                            project
                     )
                     configureRepublishTaskDependencies(republishTask)
                 }
@@ -151,7 +171,7 @@ class DefaultPublishPackagesExtension(
 
             descriptorTask.doFirst {
                 // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
-                descriptorTask.descriptor.status = project.status
+                descriptorTask.descriptor.status = project.status.toString()
                 putConfigurationsInOriginalOrder(descriptorTask.descriptor)
                 freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
                 collapseMultipleConfigurationDependencies(descriptorTask.descriptor)
@@ -172,8 +192,7 @@ class DefaultPublishPackagesExtension(
         }
     }
 
-    // Public for use from closure.
-    fun configureRepublishTaskDependencies(republishTask: Task?) {
+    private fun configureRepublishTaskDependencies(republishTask: Task?) {
         project.tasks.withType(PublishToIvyRepository::class.java).whenTaskAdded { publishTask ->
             if (republishTask != null) {
                 republishTask.dependsOn(publishTask)
@@ -181,14 +200,13 @@ class DefaultPublishPackagesExtension(
         }
     }
 
-    // This is public only so that it can be called from within a closure.
-    fun includeConfiguration(conf: Configuration): Boolean {
-        return conf.visible ||
+    private fun includeConfiguration(conf: Configuration): Boolean {
+        return conf.isVisible ||
             this.publishPrivateConfigurations ||
-            project.configurations.any { it.extendsFrom conf }
+            project.configurations.any { it.hierarchy.contains(conf) }
     }
 
-    fun defineCheckTask(packedDependenciesStateSource: PackedDependenciesStateSource) {
+    override fun defineCheckTask(packedDependenciesStateSource: PackedDependenciesStateSource) {
         val repubHandler = republishHandler
         if (repubHandler != null) {
             val repoUrl = repubHandler.toRepository
@@ -216,36 +234,33 @@ class DefaultPublishPackagesExtension(
 
     override fun repositories(configure: Action<RepositoryHandler>) {
         project.publishing {
-            repositories { RepositoryHandler handler ->
-                configure.execute(handler)
+            repositories {
+                configure.execute(it)
             }
         }
     }
 
     override fun defaultPublication(configure: Action<Publication>) {
-        project.publishing { PublishingExtension publishing ->
+        project.publishing {
             if (!createDefaultPublication) {
                 throw RuntimeException(
                     "Cannot configure the default publication because it will not be created, " +
                     "because createDefaultPublication is false."
                 )
             }
-            configure.execute(publishing.publications.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication))
+            configure.execute(it.publications.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication::class.java))
         }
     }
 
     override fun republish(closure: Action<RepublishHandler>) {
-        if (republishHandler == null) {
-            republishHandler = RepublishHandler()
-        }
-        closure.execute(republishHandler)
+        closure.execute(privateRepublishHandler)
     }
 
-    public RepublishHandler getRepublishHandler() {
-        if (project != project.rootProject && republishHandler == null) {
-            return project.rootProject.publishPackages.republishHandler
+    override val republishHandler: RepublishHandler? get() {
+        if (project != project.rootProject && !privateRepublishHandlerDelegate.isInitialized()) {
+            return getOrCreateExtension(project.rootProject).republishHandler
         }
-        return republishHandler
+        return privateRepublishHandler
     }
     
     // Throw an exception if any packed dependencies are marked with noCreateLinkToCache()
@@ -261,33 +276,32 @@ class DefaultPublishPackagesExtension(
         }
     }
 
+    private fun XmlProvider.asIvyModule() = asNode().asIvyModule()
+
     // Re-writes the "configurations" element so that its children appear in the same order that the configurations were
     // defined in the project.
     fun putConfigurationsInOriginalOrder(descriptor: IvyModuleDescriptorSpec) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
-            xml.asNode().configurations.each { confsNode: Node ->
-                val confNodes = linkedMapOf<String, Node>()
-                originalConfigurationOrder.forEach { confName ->
-                    val confNode: Node = confsNode.childNodes.find { it.attribute("name") == confName } as Node
-                    // Private configurations will have been removed, and so return null.
-                    if (confNode != null) {
-                        confsNode.remove(confNode)
-                        confNodes[confName] = confNode
-                    }
-                }
-                confNodes.values.forEach { confNode ->
-                    confsNode.append(confNode)
+            val configurations = xml.asIvyModule().configurations
+            val confNodesInOrder = linkedMapOf<String, IvyConfigurationNode>()
+            originalConfigurationOrder.forEach { confName ->
+                val confNode = configurations.find { it.name == confName }
+                // Private configurations will have been removed, and so return null.
+                if (confNode != null) {
+                    confNodesInOrder[confName] = confNode
+                    configurations.remove(confNode)
                 }
             }
+            confNodesInOrder.values.forEach { configurations.add(it) }
         }
     }
 
     // TODO 2016-07-03 HughG: This should use the source configurations from the dependency XML node
     // instead of searching all configurations.  Otherwise we may get the wrong answer if there's
     // more than one version of the same dependency, in different configurations.
-    private /*static*/ fun getDependencyVersion(project: Project, group: String, module: String): String? {
+    private /*static*/ fun getDependencyVersion(project: Project, group: String, module: String): String {
         var version: String? = null
         project.configurations.forEach { conf ->
             conf.resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
@@ -298,6 +312,7 @@ class DefaultPublishPackagesExtension(
             }
         }
         return version
+                ?: throw RuntimeException("Failed to find resolved version for dependency ${group}:${module}")
     }
 
     // Replace the version of any dependencies which were specified with dynamic version numbers, so they have fixed
@@ -306,9 +321,9 @@ class DefaultPublishPackagesExtension(
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
-            xml.asNode().dependencies.dependency.each { depNode ->
-                if (depNode.@rev.endsWith("+")) {
-                    depNode.@rev = getDependencyVersion(project, depNode.@org as String, depNode.@name as String)
+            xml.asIvyModule().dependencies.forEach { depNode ->
+                if (depNode.rev.endsWith("+")) {
+                    depNode.rev = getDependencyVersion(project, depNode.org, depNode.name)
                 }
             }
         }
@@ -330,42 +345,42 @@ class DefaultPublishPackagesExtension(
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
-            val configsByCoord = linkedMapOf<String, List<String>>().withDefault { mutableListOf() }
-            xml.asNode().dependencies.forEach { depsNode ->
-                depsNode.dependency.forEach { depNode ->
-                    val coord = "${depNode.@org}:${depNode.@name}:${depNode.@rev}"
-                    configsByCoord[coord].add(((String)depNode.@conf))
-                }
-                depsNode.children().clear()
-                configsByCoord.forEach { coord, configs ->
-                    val c = coord.split(":")
-                    val sortedConfigs = configs.sortedWith(Comparator { a: String, b: String ->
-                        val aIndex = configIndices[a.split("->")[0]]!!
-                        val bIndex = configIndices[b.split("->")[0]]!!
-                        aIndex.compareTo(bIndex)
-                    })
-                    depsNode.appendNode("dependency", mapOf(
+            val configsByCoord = linkedMapOf<String, MutableList<String>>().withDefault { mutableListOf() }
+            val dependencies = xml.asIvyModule().dependencies
+            dependencies.forEach { depNode ->
+                val coord = "${depNode.org}:${depNode.name}:${depNode.rev}"
+                configsByCoord[coord]!!.add(depNode.conf)
+            }
+            dependencies.clear()
+            configsByCoord.forEach { coord, configs ->
+                val c = coord.split(":")
+                val sortedConfigs = configs.sortedWith(Comparator { a: String, b: String ->
+                    val aIndex = configIndices[a.split("->")[0]]!!
+                    val bIndex = configIndices[b.split("->")[0]]!!
+                    aIndex.compareTo(bIndex)
+                })
+                dependencies.appendNode("dependency", mapOf(
                         "org" to c[0],
                         "name" to c[1],
                         "rev" to c[2],
                         "conf" to sortedConfigs.joinToString(";")
-                    ))
-                }
+                ))
             }
         }
     }
 
     fun addConfigurationDependenciesToDefaultPublication(descriptorTask: GenerateIvyDescriptor) {
         descriptorTask.descriptor.withXml { xml ->
-            val depsNode = xml.asNode().dependencies.find() as Node
-            descriptorTask.project.configurations.each { conf ->
+            val dependencies = xml.asIvyModule().dependencies
+            descriptorTask.project.configurations.forEach { conf ->
                 conf.dependencies.withType(ModuleDependency::class.java).forEach { dep ->
-                    depsNode.appendNode("dependency", mapOf(
-                        "org" to dep.group,
+                    dependencies.appendNode("dependency", mapOf(
+                        "org" to (dep.group ?: "unknown"),
                         "name" to dep.name,
-                        "rev" to dep.version,
+                        "rev" to (dep.version ?: "unknown"),
                         "conf" to "${conf.name}->${dep.targetConfiguration}"
                     ))
+                    Unit
                 }
             }
         }

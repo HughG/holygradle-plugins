@@ -8,11 +8,11 @@ interface CredentialSource {
      * Returns a username for authentication.
      * @return A username for authentication.
      */
-    fun getUsername(): String
+    val username: String
 
     /**
      * Returns a password for authentication.
      * @return A password for authentication.
      */
-    fun getPassword(): String
+    val password: String
 }

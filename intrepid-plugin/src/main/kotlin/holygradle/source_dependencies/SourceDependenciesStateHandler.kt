@@ -1,5 +1,6 @@
 package holygradle.source_dependencies
 
+import holygradle.util.unique
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.script.lang.kotlin.getValue

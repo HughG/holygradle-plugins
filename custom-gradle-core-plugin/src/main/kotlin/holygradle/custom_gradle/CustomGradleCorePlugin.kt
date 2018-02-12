@@ -116,7 +116,7 @@ class CustomGradleCorePlugin : Plugin<Project> {
                     val doskeyFile = File("gwdoskey.bat")
                     doskeyFile.writeText(
                         "@echo off\r\n" +
-                        "doskey gw=${project.gradle.gradleHomeDir.path}/bin/gradlew.bat \$*\r\n" +
+                        "doskey gw=${project.gradle.gradleHomeDir?.path}/bin/gradlew.bat \$*\r\n" +
                         "echo You can now use the command 'gw' from any directory for the lifetime of this command prompt."
                     )
                     println("-".repeat(80))
@@ -132,7 +132,7 @@ class CustomGradleCorePlugin : Plugin<Project> {
                 description = "Outputs version information about this instance of Gradle."
                 doLast {
                     println("Gradle home: ")
-                    println("  ${project.gradle.gradleHomeDir.path}\n")
+                    println("  ${project.gradle.gradleHomeDir?.path}\n")
                     println("Init script location: ")
                     println(" ${getInitScriptLocation(project)}\n")
                     val pluginsRepo = if (project.hasProperty("holyGradlePluginsRepository")) {

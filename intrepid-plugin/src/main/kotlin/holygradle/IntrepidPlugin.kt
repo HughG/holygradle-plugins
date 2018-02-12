@@ -123,13 +123,13 @@ class IntrepidPlugin : Plugin<Project> {
         }
 
         // Define the 'packedDependency' DSL for the project.
-        val packedDependencies = PackedDependencyHandler.createContainer(project)
+        /*val packedDependencies =*/ PackedDependencyHandler.createContainer(project)
 
         // Define the 'dependenciesState' DSL for the project.
-        /*DependenciesStateHandler dependenciesState =*/ DependenciesStateHandler.createExtension(project)
+        /*val dependenciesState =*/ DependenciesStateHandler.createExtension(project)
 
         // Define the 'dependenciesState' DSL for the project's build script.
-        /*DependenciesStateHandler buildscriptDependenciesState =*/ DependenciesStateHandler.createExtension(project, true)
+        /*val buildscriptDependenciesState =*/ DependenciesStateHandler.createExtension(project, true)
 
         // Define the 'packedDependenciesState' DSL for the project.
         val packedDependenciesState = PackedDependenciesStateHandler.createExtension(project)
@@ -141,17 +141,11 @@ class IntrepidPlugin : Plugin<Project> {
         val sourceDependenciesState = SourceDependenciesStateHandler.createExtension(project)
 
         // Define 'packageArtifacts' DSL for the project.
-        val packageArtifactHandlers = PackageArtifactHandler.createContainer(project)
+        /*val packageArtifactHandlers =*/ PackageArtifactHandler.createContainer(project)
 
         // Define 'publishPackages' DSL block.
-        project.extensions.create(
-            "publishPackages",
-            DefaultPublishPackagesExtension::class.java,
-            project,
-            packageArtifactHandlers,
-            packedDependencies
-        )
-        
+        /*val publishPackagesExtension =*/ DefaultPublishPackagesExtension.getOrCreateExtension(project)
+
         // Define 'sourceControl' DSL.
         SourceControlRepositories.createExtension(project)
         
@@ -239,6 +233,9 @@ class IntrepidPlugin : Plugin<Project> {
         // intrepid-plugin is applied in a build script, this is available to all plugins.
         project.rootProject.gradle.taskGraph.beforeTask { task ->
             if (task.hasProperty(LAZY_CONFIGURATION_EXT_PROPERTY)) {
+                // In the unlikely event that someone set the lazyConfiguration property to an Action<SomethingElse>,
+                // we'll get ClassCastException later.  Should never happen.
+                @Suppress("UNCHECKED_CAST")
                 val lazyConfig = task.extra["lazyConfiguration"] as? Action<Task>
                 if (lazyConfig != null) {
                     task.logger.info("Applying lazyConfiguration for task ${task.name}.")
