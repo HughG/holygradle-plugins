@@ -40,7 +40,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public DefaultPublishPackagesExtension(
         Project project,
         NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers,
-        Collection<SourceDependencyHandler> sourceDependencies,
         Collection<PackedDependencyHandler> packedDependencies
     ) {
         this.project = project
