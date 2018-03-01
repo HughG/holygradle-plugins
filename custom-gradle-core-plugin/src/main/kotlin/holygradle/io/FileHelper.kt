@@ -12,6 +12,8 @@ import java.nio.file.Files
  * Utility methods related to files.
  */
 object FileHelper {
+    @JvmStatic
+    @JvmOverloads
     fun ensureDeleteFile(file: File, purpose: String? = null) {
         if (!file.exists()) {
             return
@@ -27,6 +29,8 @@ object FileHelper {
         }
     }
 
+    @JvmStatic
+    @JvmOverloads
     fun ensureDeleteDirRecursive(dir: File, purpose: String? = null) {
         if (!dir.exists()) {
             return
@@ -59,6 +63,8 @@ object FileHelper {
         }
     }
 
+    @JvmStatic
+    @JvmOverloads
     fun ensureMkdir(dir: File, purpose: String? = null) {
         if (!dir.parentFile.exists()) {
             throw IOException("Failed to make ${dir}${formatPurpose(purpose)} because the parent directory does not exist")
@@ -66,6 +72,8 @@ object FileHelper {
         ensureMkdirs(dir, purpose)
     }
 
+    @JvmStatic
+    @JvmOverloads
     fun ensureMkdirs(dir: File, purpose: String? = null) {
         try {
             Files.createDirectories(dir.toPath())

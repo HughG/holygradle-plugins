@@ -28,6 +28,7 @@ ${SECTION_MARKER}${md5} END"""
     }
 
     // We don't just use a fixed filename because we need it to be different for tests.
+    @JvmStatic
     fun getSettingsSubprojectsFile(settingsFile: File): File {
         return File(
                 settingsFile.parentFile,
@@ -36,7 +37,7 @@ ${SECTION_MARKER}${md5} END"""
     }
 
     // Convert backslashes to slashes, then strip any trailing slash.
-    fun getNormalisedIncludeFilePaths(includeFilePaths: Collection<String>): Collection<String> {
+    private fun getNormalisedIncludeFilePaths(includeFilePaths: Collection<String>): Collection<String> {
         val slashes = "[\\\\]+".toRegex()
         val trailingSlash = "/$".toRegex()
         return includeFilePaths.map {
@@ -44,10 +45,12 @@ ${SECTION_MARKER}${md5} END"""
         }
     }
 
+    @JvmStatic
     fun writeSettingsFile(settingsFile: File, includeFilePaths: Collection<String>): Collection<String> {
         return writeSettingsFile(settingsFile, getSettingsSubprojectsFile(settingsFile), includeFilePaths)
     }
 
+    @JvmStatic
     fun writeSettingsFile(
         settingsFile: File,
         settingsSubprojectsFile: File,
@@ -87,7 +90,7 @@ ${SECTION_MARKER}${md5} END"""
         return normalisedIncludeFilePaths
     }
 
-    fun appendSettingsFileContent(settingsFile: File) {
+    private fun appendSettingsFileContent(settingsFile: File) {
         settingsFile.bufferedWriter().use { bw ->
             PrintWriter(bw).use { w ->
                 /*
@@ -105,7 +108,7 @@ ${SECTION_MARKER}${md5} END"""
         }
     }
 
-    fun replaceSettingsFileContent(settingsFile: File, lines: List<String>): Boolean {
+    private fun replaceSettingsFileContent(settingsFile: File, lines: List<String>): Boolean {
         val newLines = ArrayList<String>(lines.size * 2) // extra capacity in case new version is larger
         var replaced = false
         var replacing = false
@@ -141,7 +144,7 @@ ${SECTION_MARKER}${md5} END"""
     }
 
     // Returns true if the settings have changed.
-    fun writeSettingsFileAndDetectChange(settingsFile: File, includeFilePaths: Collection<String>): Boolean {
+    private fun writeSettingsFileAndDetectChange(settingsFile: File, includeFilePaths: Collection<String>): Boolean {
         val previousIncludeFilePaths = mutableListOf<String>()
 
         val settingsSubprojectsFile = getSettingsSubprojectsFile(settingsFile)
@@ -159,6 +162,7 @@ ${SECTION_MARKER}${md5} END"""
     }
     
     // Returns true if the settings have changed.
+    @JvmStatic
     fun writeSettingsFileAndDetectChange(project: Project): Boolean {
         val settingsFile = File(project.projectDir, "settings.gradle")
         val transitiveSubprojects = Helper.getTransitiveSourceDependencies(project)

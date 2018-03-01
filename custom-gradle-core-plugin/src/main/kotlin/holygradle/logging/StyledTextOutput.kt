@@ -1,5 +1,6 @@
 package holygradle.logging
 
+import holygradle.gradle.api.FunctionAction
 import org.gradle.api.Action
 
 /**
@@ -13,11 +14,7 @@ interface StyledTextOutput {
 
     fun withStyle(style: StyledTextOutput.Style, action: StyledTextOutput.() -> Unit)
 
-    fun withStyle(style: StyledTextOutput.Style, action: Action<StyledTextOutput>) {
-        withStyle(style) {
-            action.execute(this)
-        }
-    }
+    fun withStyle(style: StyledTextOutput.Style, action: Action<StyledTextOutput>)
 
     enum class Style(val asString: String) {
         Normal("     "),

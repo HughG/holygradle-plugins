@@ -2,14 +2,10 @@ package holygradle.io
 
 import com.sun.jna.Memory
 import com.sun.jna.ptr.IntByReference
-import holygradle.io.Junction.DO_NOT_PARSE_FILENAME_PREFIX
-import holygradle.io.Junction.IGNORE_MAX_PATH_PREFIX
-import holygradle.io.Junction.NOT_A_REPARSE_POINT
 import holygradle.jna.platform.win32.Kernel32
 import holygradle.jna.platform.win32.Ntifs
 import holygradle.jna.platform.win32.Win32Exception
 import holygradle.jna.platform.win32.WinNT
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import java.io.File
 import java.io.IOException
 
@@ -40,9 +36,9 @@ object Junction {
             SIZEOF_USHORT // PrintNameLength
             ).toByte()
 
-    const val NOT_A_REPARSE_POINT: Int = 0x00001126
-    const val IGNORE_MAX_PATH_PREFIX = "\\\\?\\"
-    const val DO_NOT_PARSE_FILENAME_PREFIX = "\\??\\"
+    private const val NOT_A_REPARSE_POINT: Int = 0x00001126
+    private const val IGNORE_MAX_PATH_PREFIX = "\\\\?\\"
+    private const val DO_NOT_PARSE_FILENAME_PREFIX = "\\??\\"
 
     /**
      * Returns true if the file is a directory junction.  This does not guarantee that it has a valid target; for
@@ -50,6 +46,7 @@ object Junction {
      * @param file The file to check
      * @return true if the file is a directory junction; otherwise false
      */
+    @JvmStatic
     fun isJunction(file: File): Boolean {
         // For simplicity in any error reporting, use canonical path for the link.
         val canonicalFile = file.canonicalFile
@@ -65,7 +62,8 @@ object Junction {
      * Throws an exception if {@code link} exists and is not a directory junction.
      * @param link The potential link to check.
      */
-    fun checkIsJunctionOrMissing(link: File) {
+    @JvmStatic
+    fun checkIsLinkOrMissing(link: File) {
         // For simplicity in any error reporting, use canonical path for the link.
         val canonicalLink = link.canonicalFile
 
@@ -82,11 +80,12 @@ object Junction {
      * it is empty.  Does nothing if the {@code link} does not exist or is not a directory junction.
      * @param link The directory junction to delete
      */
+    @JvmStatic
     fun delete(link: File) {
         // For simplicity in any error reporting, use canonical path for the link.
         val canonicalLink = link.canonicalFile
 
-        checkIsJunctionOrMissing(canonicalLink)
+        checkIsLinkOrMissing(canonicalLink)
 
         if (isJunction(canonicalLink)) {
             removeMountPoint(canonicalLink.canonicalPath)
@@ -105,13 +104,14 @@ object Junction {
      * @param link The directory junction to (re-)create
      * @param target The target of the new directory junction
      */
+    @JvmStatic
     fun rebuild(link: File, target: File) {
         // For simplicity in any error reporting, use canonical paths for the link and target.
         // Also, directory junction targets must be absolute paths.
         val canonicalLink = link.canonicalFile
         val canonicalTarget = getCanonicalTarget(canonicalLink, target)
 
-        checkIsJunctionOrMissing(canonicalLink)
+        checkIsLinkOrMissing(canonicalLink)
 
         // Directory junctions can be created to non-existent targets but it breaks stuff so disallow it
         if (!canonicalTarget.exists()) {
@@ -192,6 +192,7 @@ object Junction {
      * @throws Exception if the target cannot be read from the directory junction (including if the {@code link} is not
      * a directory junction).
      */
+    @JvmStatic
     fun getTarget(link: File): File {
         // For simplicity in any error reporting, use canonical path for the link.
         val canonicalLink = link.canonicalFile

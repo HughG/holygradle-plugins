@@ -1,12 +1,15 @@
 package holygradle.logging
 
 import holygradle.logging.StyledTextOutput.Style
+import org.gradle.api.Action
 import org.junit.Test
+
+import java.util.regex.Pattern
 
 import static org.junit.Assert.assertEquals
 
 class ErrorHighlightingOutputStreamTest {
-    private class SpyStyledTextOutput implements StyledTextOutput {
+    private class SpyStyledTextOutput extends AbstractStyledTextOutput {
         public final List<String> recording = new LinkedList<String>()
 
         @Override
@@ -20,9 +23,9 @@ class ErrorHighlightingOutputStreamTest {
         }
 
         @Override
-        void withStyle(Style style, Closure action) {
+        void withStyle(Style style, Action<StyledTextOutput> action) {
             recording.add("withStyle: ${style}".toString())
-            action(this)
+            action.execute(this)
         }
     }
 
@@ -37,8 +40,8 @@ class ErrorHighlightingOutputStreamTest {
     @Test
     public void testColouredOutput() {
         def spy = new SpyStyledTextOutput()
-        List<String> warningRegexes = [/.* warning \w+\d{2,5}:.*/]
-        List<String> errorRegexes = [/\d+>Build FAILED/, /.* [error|fatal error]+ \w+\d{2,5}:.*/]
+        List<Pattern> warningRegexes = [~/.* warning \w+\d{2,5}:.*/]
+        List<Pattern> errorRegexes = [~/\d+>Build FAILED/, ~/.* (error|fatal error)+ \w+\d{2,5}:.*/]
         OutputStream outputStream = new ErrorHighlightingOutputStream(
             "Test", spy, warningRegexes, errorRegexes
         )

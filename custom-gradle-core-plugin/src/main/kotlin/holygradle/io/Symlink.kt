@@ -6,18 +6,21 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 object Symlink {
+    @JvmStatic
     fun isSymlink(file: File): Boolean = Files.isSymbolicLink(Paths.get(file.path))
 
+    @JvmStatic
     fun delete(link: File) {
-        checkIsSymlinkOrMissing(link)
+        checkIsLinkOrMissing(link)
 
         if (isSymlink(link)) {
             link.delete()
         }
     }
-    
+
+    @JvmStatic
     fun rebuild(link: File, target: File) {
-        checkIsSymlinkOrMissing(link)
+        checkIsLinkOrMissing(link)
 
         val canonicalLink = link.canonicalFile
 
@@ -59,7 +62,8 @@ object Symlink {
      * Throws an exception if {@code link} exists and is not a symlink.
      * @param link The potential link to check.
      */
-    fun checkIsSymlinkOrMissing(link: File) {
+    @JvmStatic
+    fun checkIsLinkOrMissing(link: File) {
         if (link.exists() && !isSymlink(link)) {
             throw RuntimeException(
                 "Cannot not delete or create a symlink at '${link.path}' " +
@@ -68,6 +72,7 @@ object Symlink {
         }
     }
 
+    @JvmStatic
     fun getTarget(link: File): File {
         return Files.readSymbolicLink(link.toPath()).toFile()
     }

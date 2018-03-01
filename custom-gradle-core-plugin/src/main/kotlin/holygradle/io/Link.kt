@@ -10,17 +10,20 @@ import java.io.File
 object Link {
     private val LOGGER = Logging.getLogger(Link.javaClass)
 
+    @JvmStatic
     fun isLink(link: File): Boolean {
         return Files.isSymbolicLink(link.toPath()) ||
             Junction.isJunction(link)
     }
 
+    @JvmStatic
     fun delete(link: File) {
         if (link.exists()) {
             linkTypeHelper(link, Symlink::delete, Junction::delete)
         }
     }
 
+    @JvmStatic
     fun rebuild(link: File, target: File) {
         // Delete the link first in case it already exists as the wrong type.  The Junction.rebuild and Symlink.rebuild
         // methods will also do this check themselves in case they are called directly, but we need to do it here also
@@ -48,6 +51,7 @@ object Link {
         }
     }
 
+    @JvmStatic
     fun getTarget(link: File): File {
         return linkTypeHelper(link, Symlink::getTarget, Junction::getTarget)
     }

@@ -3,6 +3,7 @@ package holygradle.custom_gradle.util
 import org.gradle.api.logging.Logger
 
 object RetryHelper {
+    @JvmStatic
     fun retry(times: Int, delayInMillis: Long, logger00: Logger?, description: String, action: () -> Unit) {
         var lastException00: Exception? = null
         for (i in times downTo 0) {

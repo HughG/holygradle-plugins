@@ -173,10 +173,8 @@ class CustomGradleCorePlugin : Plugin<Project> {
                 description = "Opens all build-scripts in this workspace using the default program for '.gradle' files."
                 doLast {
                     project.rootProject.allprojects.forEach { p ->
-                        if (p.buildFile != null) {
-                            project.exec {
-                                it.commandLine("cmd", "/c", "start", p.buildFile.path)
-                            }
+                        project.exec {
+                            it.commandLine("cmd", "/c", "start", p.buildFile.path)
                         }
                     }
                 }
