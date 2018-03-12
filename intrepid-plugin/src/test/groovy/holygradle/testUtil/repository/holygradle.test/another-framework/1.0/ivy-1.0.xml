@@ -14,7 +14,7 @@
     <artifact name="another-framework-source" type="zip" ext="zip" conf="source"/>
   </publications>
   <dependencies>
-    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="compileVc10Debug-&gt;compile" relativePath="../extlib"/>
-    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="compileVc10Release-&gt;compile" relativePath="../extlib"/>
+    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="compileVc10Debug-&gt;compile"/>
+    <dependency org="holygradle.test" name="external-lib" rev="1.0" conf="compileVc10Release-&gt;compile"/>
   </dependencies>
 </ivy-module>

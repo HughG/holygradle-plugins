@@ -93,7 +93,7 @@ class SourceOverrideHandler {
         }
 
         final File defaultIvyXmlFile = new File(from, "build/holygradle/flat-ivy.xml")
-        final File gradleWrapperScript = new File(from, "gw.bat")
+        final File gradleWrapperScript = new File(from, "gradlew.bat")
         final File generateSourceOverrideDetailsScript = new File(from, "generateSourceOverrideDetails.bat")
 
         if (project.hasProperty("useCachedSourceOverrideFiles")) {
@@ -127,21 +127,21 @@ class SourceOverrideHandler {
             }
             sourceOverrideIvyFile = defaultIvyXmlFile
         } else if (gradleWrapperScript.exists()) {
-            // Otherwise try to run gw.bat, if it exists.
-            project.logger.info("Using gw.bat ivy file generation for ${dependencyCoordinate}")
+            // Otherwise try to run gradlew.bat, if it exists.
+            project.logger.info("Using gradlew.bat ivy file generation for ${dependencyCoordinate}")
             project.logger.info("${generateSourceOverrideDetailsScript.canonicalPath} not found")
 
             ExecHelper.execute(project.logger, project.&exec) { ExecSpec spec ->
                 spec.workingDir from
                 spec.executable gradleWrapperScript.canonicalPath
-                spec.args "-PrecordAbsolutePaths", "generateIvyModuleDescriptor", "summariseAllDependencies"
+                spec.args "-PrecordAbsolutePaths", "generateDescriptorFileForIvyPublication", "summariseAllDependencies"
             }
             sourceOverrideIvyFile = defaultIvyXmlFile
         } else {
             throw new RuntimeException(
                 "No Ivy file generation available for '${name}'. " +
                 "Please ensure your source override contains a generateSourceOverrideDetails.bat, " +
-                "or a compatible gw.bat, or else provide a custom generation method in your build.gradle."
+                "or a compatible gradlew.bat, or else provide a custom generation method in your build.gradle."
             )
         }
 

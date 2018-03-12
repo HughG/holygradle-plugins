@@ -1,1 +1,0 @@
-echo FAIL > gw

@@ -145,13 +145,13 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-                    """Failed to notify dependency resolution listener.
-> Failed to notify dependency resolution listener.
-   > Failed to notify dependency resolution listener.
-      > Could not resolve all dependencies for configuration ':bar'.
-         > A conflict was found between the following modules:
-            - holygradle.test:external-lib:${expectedDummyVersion}
-            - holygradle.test:external-lib:1.1
+                    """FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all dependencies for configuration ':bar'.
+> A conflict was found between the following modules:
+   - holygradle.test:external-lib:${expectedDummyVersion}
+   - holygradle.test:external-lib:1.1
 """
             ))
         }
@@ -183,13 +183,13 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-"""Failed to notify dependency resolution listener.
-> Failed to notify dependency resolution listener.
-   > Failed to notify dependency resolution listener.
-      > Could not resolve all dependencies for configuration ':bar'.
-         > A conflict was found between the following modules:
-            - holygradle.test:external-lib:1.1
-            - holygradle.test:external-lib:1.0
+"""FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all dependencies for configuration ':bar'.
+> A conflict was found between the following modules:
+   - holygradle.test:external-lib:1.1
+   - holygradle.test:external-lib:1.0
 """
             ))
         }
@@ -221,13 +221,13 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-               """Failed to notify dependency resolution listener.
-> Failed to notify dependency resolution listener.
-   > Failed to notify dependency resolution listener.
-      > Could not resolve all dependencies for configuration ':bar'.
-         > A conflict was found between the following modules:
-            - holygradle.test:external-lib:1.1
-            - holygradle.test:external-lib:1.0
+               """FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all dependencies for configuration ':bar'.
+> A conflict was found between the following modules:
+   - holygradle.test:external-lib:1.1
+   - holygradle.test:external-lib:1.0
 """
             ))
         }
@@ -241,12 +241,12 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         File customFile = new File(externalDirectory, "custom")
         File sourceOverrideFile = new File(externalDirectory, "generateSourceOverrideDetails")
-        File gwFile = new File(externalDirectory, "gw")
+        File gradlewFile = new File(externalDirectory, "gradlew")
 
         if (projectDir.exists()) {
             customFile.delete()
             sourceOverrideFile.delete()
-            gwFile.delete()
+            gradlewFile.delete()
 
             Link.delete(externalDirectory)
             FileHelper.ensureDeleteDirRecursive(projectDir)
@@ -261,18 +261,18 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         assertTrue(customFile.exists())
         assertFalse(sourceOverrideFile.exists())
-        assertFalse(gwFile.exists())
+        assertFalse(gradlewFile.exists())
     }
 
     @Test
-    public void gwBatIvyFileGeneratorFallback() {
+    public void gradlewBatIvyFileGeneratorFallback() {
         File templateDir = new File(getTestDir(), "projectGIn")
         File projectDir = new File(getTestDir(), "projectG")
         File externalDirectory = new File(projectDir, "ext_11")
-        File gwFile = new File(externalDirectory, "gw")
+        File gradlewFile = new File(externalDirectory, "gradlew")
 
         if (projectDir.exists()) {
-            gwFile.delete()
+            gradlewFile.delete()
 
             Link.delete(externalDirectory)
             FileHelper.ensureDeleteDirRecursive(projectDir)
@@ -285,9 +285,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             launcher.forTasks("fetchAllDependencies")
         }
 
-        assertTrue(gwFile.exists())
-        assertTrue(gwFile.text.contains("generateIvyModuleDescriptor"))
-        assertTrue(gwFile.text.contains("summariseAllDependencies"))
+        assertTrue(gradlewFile.exists())
+        assertTrue(gradlewFile.text.contains("generateIvyModuleDescriptor"))
+        assertTrue(gradlewFile.text.contains("summariseAllDependencies"))
     }
 
     @Test
@@ -308,7 +308,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
                 "No Ivy file generation available for 'ext_11'. Please ensure your source override contains " +
-                "a generateSourceOverrideDetails.bat, or a compatible gw.bat, " +
+                "a generateSourceOverrideDetails.bat, or a compatible gradlew.bat, " +
                 "or else provide a custom generation method in your build.gradle"
             )
         }

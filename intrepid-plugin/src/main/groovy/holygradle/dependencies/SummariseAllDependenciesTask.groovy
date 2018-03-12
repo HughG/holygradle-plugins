@@ -8,12 +8,31 @@ import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 
 class SummariseAllDependenciesTask extends DefaultTask {
+    // Only public so it can be used in a closure.
+    public LinkedList<GenerateIvyDescriptor> ivyDescriptorTasks = new LinkedList()
+
     public void initialize() {
-        GenerateIvyDescriptor generateDescriptorTask =
-            project.tasks.findByName("generateIvyModuleDescriptor") as GenerateIvyDescriptor
-        dependsOn generateDescriptorTask
+
+        DefaultTask summariseDependenciesTask = this
+
+        GenerateIvyDescriptor generateDescriptorTask
+        project.tasks.withType(GenerateIvyDescriptor).whenTaskAdded { GenerateIvyDescriptor descriptorTask ->
+            generateDescriptorTask = descriptorTask
+            ivyDescriptorTasks.add(generateDescriptorTask)
+            if (ivyDescriptorTasks.size() > 1) {
+                project.logger.warn(
+                        "WARNING: More than one Ivy file. This is not currently supported."
+                )
+            }
+            summariseDependenciesTask.dependsOn generateDescriptorTask
+        }
 
         doLast {
+            if (ivyDescriptorTasks.size() > 1) {
+                throw new RuntimeException(
+                        "More than one Ivy file. This is not currently supported."
+                )
+            }
             File file = new File(project.buildDir, "holygradle/flat-ivy.xml")
             FileHelper.ensureMkdirs(file.parentFile, "for flat-ivy.xml used by source overrides")
             file.createNewFile()
