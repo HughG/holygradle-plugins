@@ -45,7 +45,7 @@ things for users, and also for plugin developers.
 ==== 7.12.x
 
 ===== 7.12.1
-(TODO)
+(13f535d08101 at 2018-03-27 14:52:01 UTC)
 
 Intrepid::
 
