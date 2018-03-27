@@ -1914,7 +1914,7 @@ will result in links (by default, directory junctions) as follows:
     +---common  <-----------------------|
 ----
 
-Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this block was called +links+.
+Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this block was called +symlinks+.
 
 ==== to
 
