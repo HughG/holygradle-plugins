@@ -189,7 +189,7 @@ http://holygradle.bitbucket.io/, using AsciiDoc to allow for richer diagrams, li
 If you're using the Holy Gradle within a company, there may be a custom local build of those web
 pages available.
 
-## Installing Cygwin utilities.
+## Installing document generation utilities.
 
 To install AsciiDoc under Cygwin in Windows, follow these steps.
 
@@ -202,17 +202,12 @@ setup-x86_64.exe -q -p proxy-server.company.com:8080
 ```
 
 To install GraphViz for diagrams, and Pygments for syntax highlighting, you have to install packages from
-`cygwinports.org`, with the following steps.
+the Python Package Index, with the following steps.
 
-1. Follow the instructions at `http://cygwinports.org/` to register their public key and add their site to your list of
-mirrors.
-2. Run `setup_x86_64.exe` again as described above, without the `-P` option, and install the packages "graphviz" and
-"python-pygments".  If you get the following error, add the `-X` command line option.
-```
-Mirror Error:  Setup.ini signature ftp://ftp.cygwinports.org/pub/cygwinports/x86_64/setup.bz2.sig from
-ftp://ftp.cygwinports.org/pub/cygwinports/ failed to verify.
-Possible corrupt mirror?  Setup.ini rejected.
-```
+1. Download Python 3.5 (https://www.python.org/downloads/release/python-350/). This version is
+required to avoid conflicts with Vitrea.
+2. Add the Python installation directory and the Scripts subdirectory to your PATH.
+3. Run `pip install Pygments graphvis`
 
 ## Building the documentation
 

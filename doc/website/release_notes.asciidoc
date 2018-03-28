@@ -114,7 +114,7 @@ CredentialStore::
 ** Instead of correctly rebuilding symlinks Holy Gradle would leave behind an empty directory at a link source location, causing
 failures to re-create either directory junctions or symlinks to the unpack cache.
 
-Intrepid (br) CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Stamper {br} Utils::
+Intrepid {br} CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Stamper {br} Utils::
 - No changes.
 
 ===== 7.10.3
@@ -756,7 +756,7 @@ documentation for details.  For example, you could write
 [source, groovy]
 ----
 rootProject.name = "MyModule"
-----
+---- 
 +
 Currently you can only change the name of the root project.  Changing the name of subprojects causes
 problems with the part of intrepid which handles source dependencies.  This could be fixed easily
