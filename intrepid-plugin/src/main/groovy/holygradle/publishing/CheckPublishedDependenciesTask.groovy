@@ -28,22 +28,28 @@ class CheckPublishedDependenciesTask extends DefaultTask {
                 repoCredentials.getUsername(),
                 repoCredentials.getPassword()
             )
-            Map<String, Boolean> modules = [:]
-            packedDependenciesStateSource.allUnpackModules.each { module ->
-                module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                    // Add a trailing slash because, if we request without one, Artifactory will just respond with a
-                    // "302 Found" redirect whcih adds a trailing slash; so this saves us time.
-                    String coord = versionInfo.getFullCoordinate().replace(":", "/") + '/'
-                    modules[versionInfo.getFullCoordinate()] = helper.artifactExists(coord)
+            // Build a set of all URLs first, because the same module might appear more than once, and we don't want to
+            // waste time making the same HTTP request more than once.
+            Set<String> allModuleUrls = new HashSet()
+            packedDependenciesStateSource.allUnpackModules.values().each { Collection<UnpackModule> modules ->
+                modules.each { module ->
+                    module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
+                        // Add a trailing slash because, if we request without one, Artifactory will just respond with a
+                        // "302 Found" redirect which adds a trailing slash; so this saves us time.
+                        allModuleUrls.add(versionInfo.getFullCoordinate().replace(":", "/") + '/')
+                    }
                 }
             }
+            Map<String, Boolean> moduleAvailability = allModuleUrls.collectEntries {
+                [it, helper.artifactExists(it)]
+            }
             int tab = 0
-            modules.each { String moduleVersion, Boolean available ->
+            moduleAvailability.each { String moduleVersion, Boolean available ->
                 int thisTab = (moduleVersion.length() + 8)
                 tab = (thisTab > tab) ? thisTab : tab
             }
             localOutput.println "The following artifacts are available at '${repoUrl}':"
-            modules.each { String moduleVersion, Boolean available ->
+            moduleAvailability.each { String moduleVersion, Boolean available ->
                 String line = "   ${moduleVersion}" + (" "*(tab-moduleVersion.length()))
                 if (available) {
                     line += "[OK]"

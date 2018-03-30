@@ -86,11 +86,26 @@ class UnpackModuleVersion {
     }
 
     /**
-     * Returns an {@link UnpackEntry} object which describes how to unpack this module version in the context of the
-     * given {@code project}.  This is suitable for passing to
+     * Returns an {@link UnpackDirEntry} object which describes how and where to unpack this module version in the
+     * context of the given {@code project}.
+     * @param project
+     * @return An {@link UnpackDirEntry} object which describes how and where to unpack this module version.
+     */
+    public UnpackDirEntry getUnpackDirEntry(Project project) {
+        return new UnpackDirEntry(
+            getUnpackDir(project),
+            (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
+            (boolean)getPackedDependency()?.shouldMakeReadonly()
+        )
+    }
+
+    /**
+     * Returns an {@link UnpackEntry} object which describes what files to unpack, and how and where, for this module
+     * version in the context of the given {@code project}.  This is suitable for passing to
      * {@link SpeedyUnpackManyTask#addEntry(ModuleVersionIdentifier,UnpackEntry)}
      * @param project
-     * @return An {@link UnpackEntry} object which describes how to unpack this module version
+     * @return An {@link UnpackEntry} object which describes what files to unpack, and how and where, for this module
+     * version
      */
     public UnpackEntry getUnpackEntry() {
         return new UnpackEntry(
@@ -124,14 +139,14 @@ class UnpackModuleVersion {
         Collection<TSource> sources,
         Closure<TValue> getValue
     ) {
-        Collection<TValue> values = sources.collect(getValue)
-        Collection<TValue> uniqueValues = values.unique()
+        Map<TSource, TValue> values = sources.collectEntries { [it, getValue(it)] }
+        Collection<TValue> uniqueValues = values.values().toSet()
 
         // If there is not exactly one result, throw an error
         if (uniqueValues.size() != 1) {
-            throw new RuntimeException("Error - module '${getFullCoordinate()}' has different parent results for ${methodName}: ${values}")
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has different parent results for ${methodName}: ${values.collect { "${it.value} from ${it.key}" }}")
         }
-        return uniqueValues.first()
+        return uniqueValues.iterator().next()
     }
 
     private String getParentRelativePath(UnpackModuleVersion module) {
@@ -250,7 +265,7 @@ class UnpackModuleVersion {
                 "n/a" :
                 packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             ) +
-            "', parentUnpackModuleVersion={" + getParentModuleVersions() +
+            "', parentUnpackModuleVersions={" + parents + // getParentModuleVersions() +
             '}';
     }
 }

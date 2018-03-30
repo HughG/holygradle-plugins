@@ -40,8 +40,7 @@ import org.gradle.api.artifacts.*
 class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
     private final Project project
     private final DependenciesStateHandler dependenciesStateHandler
-    private Map<ModuleIdentifier, UnpackModule> unpackModulesMap = null
-    private Collection<UnpackModule> unpackModules = null
+    private Map<Configuration, Collection<UnpackModule>> unpackModules = null
 
     public static PackedDependenciesStateHandler createExtension(Project project) {
         project.extensions.packedDependenciesState = new PackedDependenciesStateHandler(project)
@@ -202,19 +201,27 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
      *
      * @return The transitive set of unpacked modules used by the project.
      */
-    public Collection<UnpackModule> getAllUnpackModules() {
-        if (unpackModulesMap == null) {
+    public Map<Configuration, Collection<UnpackModule>> getAllUnpackModules() {
+        if (unpackModules == null) {
             unpackModules = initializeAllUnpackModules()
         }
         unpackModules
     }
 
-    private ArrayList initializeAllUnpackModules() {
+    private Map<Configuration, Collection<UnpackModule>> initializeAllUnpackModules() {
         project.logger.debug("getAllUnpackModules for ${project}")
 
         final packedDependencies = project.packedDependencies as Collection<PackedDependencyHandler>
+        // Build a map of all unpack modules per configuration.  This allows us to force an unpack module to have only
+        // one location per configuration (by setting its packedDependency or its parents) but allow different locations
+        // for different configurations.  (A different configuration may have some, but not all, module versions
+        // different.  If the same version of a transitive dependency appears in more that one configuration, we want to
+        // link it next to its originating packed dependency/-ies in *all* configurations, not only in the first one we
+        // happen to process.)
+        Map<Configuration, Map<ModuleIdentifier, UnpackModule>> configurationUnpackModulesMap =
+            [:].withDefault { new HashMap<ModuleIdentifier, UnpackModule>() }
+
         // Build a list (without duplicates) of all artifacts the project depends on.
-        unpackModulesMap = [:]
         project.configurations.each((Closure){ Configuration conf ->
             Set<ResolvedDependency> firstLevelDeps =
                 ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
@@ -222,31 +229,38 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 conf,
                 firstLevelDeps,
                 packedDependencies,
-                unpackModulesMap
+                configurationUnpackModulesMap[conf]
             )
         })
 
         // Build a map of target locations to module versions
+        List<UnpackModule> flattenedUnpackModules = configurationUnpackModulesMap.values().collect { it.values() }.flatten()
         Map<File, Collection<UnpackModuleVersion>> targetLocations =
             [:].withDefault { new ArrayList<UnpackModuleVersion>() }
-        unpackModulesMap.values().each { UnpackModule module ->
+        flattenedUnpackModules.each { UnpackModule module ->
             module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
                 File targetPath = versionInfo.targetPathInWorkspace.canonicalFile
                 targetLocations[targetPath].add(versionInfo)
             }
         }
 
-        // Check if any target locations are used by more than one module/version.  (We use "inject", instead of "any",
+        // Check if any target locations are used by more than one module/version with different unpack entries.  It's
+        // okay if there are multiple but they all unpack to the same thing/place.  (We use "inject", instead of "any",
         // because we want to keep checking even after we find a problem, so we can log them all.)
         boolean foundTargetClash = targetLocations.inject(false) {
             boolean found, File target, Collection<UnpackModuleVersion> versions
              ->
-            final boolean thisTargetHasClashes = versions.size() > 1
+            final Set<UnpackDirEntry> uniqueUnpackDirEntries = versions.collect { it.getUnpackDirEntry(project) }.toSet()
+            final boolean thisTargetHasClashes = uniqueUnpackDirEntries.size() > 1
             if (thisTargetHasClashes) {
                 project.logger.error(
                     "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
                 )
-                versions.each { logUnpackModuleVersionAncestry(it, 1) }
+                versions.each {
+                    logUnpackModuleVersionAncestry(it, 1)
+                    project.logger.debug("    "+ it.getUnpackEntry(project).toString())
+                }
+                project.logger.debug("  Unique unpack dir entries: " + uniqueUnpackDirEntries)
             }
             return found || thisTargetHasClashes
         }
@@ -254,7 +268,8 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             throw new RuntimeException("Multiple different dependencies/versions are targeting the same locations.")
         }
 
-        unpackModules = new ArrayList(unpackModulesMap.values())
+        def map = new HashMap<Configuration, Collection<UnpackModule>>()
+        unpackModules = configurationUnpackModulesMap.collectEntries(map) { [it.key, it.value.values()] }
         unpackModules
     }
 
