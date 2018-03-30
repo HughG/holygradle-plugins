@@ -176,6 +176,58 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
        rebuild(link, missingDir)
     }
 
+
+    /**
+     * Test that you can rebuild a "link" which is originally an empty directory.
+     */
+    @Test
+    public void testRebuildEmptyDirectoryAsLink() {
+        // Arrange
+        File link = new File(testDir, "empty_dir").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        FileHelper.ensureDeleteDirRecursive(link, "for test setup")
+        FileHelper.ensureMkdir(link, "for test setup")
+        File existingDir = new File(testDir, "existing_folder").canonicalFile
+        Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
+
+        // Act
+        rebuild(link, existingDir)
+
+        // Assert
+        File target = getTarget(link)
+        Assert.assertEquals("Target of '$link'", existingDir.canonicalFile, target.canonicalFile)
+    }
+
+    /**
+     * Test that you can't rebulid a "link" which is originally a directory, if the directory is not empty.
+     */
+    @Test
+    public void testRebuildNonEmptyDirectoryAsLinkFails() {
+        // Arrange
+        File link = new File(testDir, "non_empty_dir").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        FileHelper.ensureDeleteDirRecursive(link, "for test setup")
+        FileHelper.ensureMkdir(link, "for test setup")
+        File file = new File(link, "dummy.txt")
+        file.text = "dummy file"
+        File existingDir = new File(testDir, "existing_folder").canonicalFile
+        Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
+
+        // Act
+        try {
+            rebuild(link, existingDir)
+            // Assert
+            Assert.fail("Rebuild of link at source location '${link}', which is a non-empty folder, should fail")
+        } catch (Exception ignored) {
+        }
+
+        // We have these asserts outside the catch block in case we introduce a bug where delete() deletes the folder or
+        // contents and doesn't throw an exception.
+        Assert.assertTrue("Non-empty folder in link location '${link}' should still exist", link.exists())
+        Assert.assertTrue("Link location '${link}' should still be a directory", link.isDirectory())
+        Assert.assertTrue("Folder contents under '${link}' should still exist", file.exists())
+    }
+
     /**
      * Test that you can delete a link whose target exists, and then the target still exists.
      */
@@ -240,6 +292,52 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         if (existingDir.exists()) {
             Assert.fail("Link '${link}' target '${existingDir}' should still not exist")
         }
+    }
+
+    /**
+     * Test that you can delete a "link" which is actually an empty directory.
+     */
+    @Test
+    public void testDeleteEmptyDirectoryAsLink() {
+        // Arrange
+        File link = new File(testDir, "empty_dir").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        FileHelper.ensureDeleteDirRecursive(link, "for test setup")
+        FileHelper.ensureMkdir(link, "for test setup")
+
+        // Act
+        delete(link)
+
+        // Assert
+        Assert.assertFalse("Empty folder in link location '${link}' should be deleted", link.exists())
+    }
+
+    /**
+     * Test that you can't delete a "link" which is actually a directory, if the directory is not empty.
+     */
+    @Test
+    public void testDeleteNonEmptyDirectoryAsLinkFails() {
+        // Arrange
+        File link = new File(testDir, "non_empty_dir").canonicalFile
+        Assert.assertTrue("link '$link' is absolute", link.absolute)
+        FileHelper.ensureDeleteDirRecursive(link, "for test setup")
+        FileHelper.ensureMkdir(link, "for test setup")
+        File file = new File(link, "dummy.txt")
+        file.text = "dummy file"
+
+        // Act
+        try {
+            delete(link)
+            // Assert
+            Assert.fail("Deletion of non-empty folder in link location '${link}' should fail")
+        } catch (Exception ignored) {
+        }
+
+        // We have these asserts outside the catch block in case we introduce a bug where delete() deletes the folder or
+        // contents and doesn't throw an exception.
+        Assert.assertTrue("Non-empty folder in link location '${link}' should still exist", link.exists())
+        Assert.assertTrue("Link location '${link}' should still be a directory", link.isDirectory())
+        Assert.assertTrue("Folder contents under '${link}' should still exist", file.exists())
     }
 
     /**

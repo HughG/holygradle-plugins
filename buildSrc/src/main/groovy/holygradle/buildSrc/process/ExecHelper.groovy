@@ -12,8 +12,8 @@ class ExecHelper {
     public static executeAndReturnResultAsString(
         Logger logger,
         Closure<ExecResult> execMethod,
-        Closure configureSpec,
-        Closure throwForExitValue
+        Closure throwForExitValue,
+        Closure configureSpec
     ) {
         String commandLine = null
 

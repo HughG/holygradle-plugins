@@ -50,6 +50,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
         buildScriptHandler.include project.buildFile.name
         buildScriptHandler.include project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
+        buildScriptHandler.include Project.GRADLE_PROPERTIES
         buildScriptHandler.configuration = "buildScript"
         packageArtifactHandlers.all { packArt ->
             Task packageTask = packArt.definePackageTask(createPublishNotesTask)

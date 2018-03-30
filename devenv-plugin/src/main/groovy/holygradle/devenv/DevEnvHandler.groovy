@@ -155,14 +155,14 @@ class DevEnvHandler {
         final String installPath = ExecHelper.executeAndReturnResultAsString(
             project.logger,
             project.&exec,
+            { return true },
             { ExecSpec spec ->
                 spec.commandLine this.vswhereLocation,
                                  "-property", "installationPath",
                                  "-legacy",
                                  "-format", "value",
                                  "-version", versionRange
-            },
-            { return true }
+            }
         )
         if (installPath == null || installPath.trim().empty) {
             throw new RuntimeException("vswhere.exe could not find a Visual Studio version in range ${versionRange}")

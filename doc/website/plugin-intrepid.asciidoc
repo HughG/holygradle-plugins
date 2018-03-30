@@ -303,7 +303,7 @@ Testing::
 Subcomponent::
     This axis indicates that your module contains several separate parts, for example matching +client+ and +server+
 libraries.  There are no suggested standard values--you can use any word which describes the subcomponent.  If you
-need more than one work, use +camelCase+.
+need more than one word, use +camelCase+.
 Stage::
     This refers to stages of the software lifecycle.
 +
@@ -783,7 +783,7 @@ This method takes one parameter, the configuration set type for this configurati
 the names of the configurations in the set will be those from the type, with the <<_configurationSets_prefix>> added at
 the beginning.
 
--> You must call this method exacly once.
+-> You must call this method exactly once.
 
 
 [[_configurationSets_prefix]]
@@ -868,7 +868,6 @@ sourceDependencies {
 
 declares that there are two source-code dependencies and they should be retrieved to the directories '<workspace>/foo' and '<workspace>/bar' respectively.
 
-[[_relative_paths]]
 [[_relative_paths_and_subprojects]]
 ==== Relative Paths and Subprojects
 
@@ -898,7 +897,7 @@ Mercurial and Subversion repositories.  If cloning, checking out, or exporting a
 already cached, the plugin will initialise the cached username and password for that repository based on a value stored
 under "Intrepid - _type_" for some string "_type_".
 
-Before link:release_notes.html#_7.10.0[7.10.0] this type was always the default username and password managed by
+Before link:release_notes.html#_7_10_0[7.10.0] this type was always the default username and password managed by
 link:plugin-my-credentials.html[], "Domain Credentials".  Since 7.10.0 you can override the credential used as a basis
 for the source repository with the +link:plugin-intrepid.html#_credentialBasis[]+ property.
 
@@ -1339,19 +1338,105 @@ packedDependencies {
 }
 ----
 
-declares two dependencies:
+declares two dependencies.  The value in quotes is used as the path where the dependency should
+appear in the workspace.
 
 * +RenderingLib+ packages belonging to the configurations defined by the +LIB_64+ configuration type
 should be unpacked to the central cache, and a link should be created at
-+<workspace>/my-rendering-lib+. When this module is published, the +RenderingLib+ dependency will be
++<workspace>/RenderingLib+. When this module is published, the +RenderingLib+ dependency will be
 included in the module descriptor. 
 * +NUnit+ packages belonging to the configuration +bin+ should be unpacked directly to the workspace
 in folder called +<workspace>/NUnit 2.5.10+ (assuming that 2.5.10 is the most recent version with
 the prefix "2.5").
 
-==== Relative Paths
+==== Dependency Locations
 
-Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate subdirectories of the workspace. See <<_relative_paths>>.
+Source dependencies and packed dependencies are now specified as relative paths rather than always being immediate
+subdirectories of the workspace. See <<_relative_paths_and_subprojects>>.
+
+Since link:release_notes.html#_7_12_0[7.12.0], all packed dependencies which share a configuration must appear under
+the same parent folder, or an exception is thrown.  Another simpler way to think of this is that every configuration
+must have exactly one folder where all its dependencies appear.  Multiple configurations can share the same folder,
+and indeed usually will do when they are part of a configuration set.
+
+Without this restriction, it would be possible for different versions of the same transitive dependency (from different
+packed dependencies) to target the same folder on disk.  With this restriction, that can't happen, because core Gradle
+ensures that there can be only one version of any dependency per configuration.
+
+For example, the following declarations are okay, because the relative paths are the same wherever the configurations
+are the same.
+
+[source,groovy]
+----
+packedDependencies {
+    "dep/RenderingLib" {
+        dependency "com.example-corp.rendering:RenderingLib:2012a2"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+    "dep/OtherLib" {
+        dependency "com.example-corp.teamA:OtherLib:2.5.2"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+    "dep_test/TestLib" {
+        dependency "com.example:TestLib:4.6"
+        configurationSet "test", configurationSetTypes.LIB_64
+    }
+}
+----
+
+However, the following declarations will fail, because the "build" configuration is part of the +main+ configuration
+set, so all three dependencies share the "build" configuration, but +TestLib+ is declared to appear under a different
+parent.
+
+[source,groovy]
+----
+packedDependencies {
+    "dep/RenderingLib" {
+        dependency "com.example-corp.rendering:RenderingLib:2012a2"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+    "dep/OtherLib" {
+        dependency "com.example-corp.teamA:OtherLib:2.5.2"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+    "dep_test/TestLib" {
+        dependency "com.example:TestLib:4.6"
+        configurationSet "build", configurationSetTypes.LIB_64
+    }
+}
+----
+
+===== Transitive Dependency Locations
+
+By default, when a packed dependency has further transitive dependencies, the unpacked directories or links for those
+will appear next to the packed dependency.  If a transitive dependency is also specified as a direct dependency, and
+the path specified for it as a direct dependency is different from this default path, then the transitive dependency
+will also appear at the specified other path.  For example, suppose you have the following script.
+
+[source,groovy]
+----
+packedDependencies {
+    "libA" {
+        dependency "com.example-corp.common:libA:1.0"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+    "subdir/libB" {
+        dependency "com.example-corp.common:libB:1.0"
+        configurationSet configurationSets.main, configurationSetTypes.LIB_64
+    }
+}
+----
+
+If +libA+ (with path +_rootDir_/libB+) depends on +libB+ then the default path for +libB+ would be +_rootDir_/libB+;
+but instead path +_rootDir_/subdir/libB+ will be used.
+
+Similarly, a transitive dependency can appear in multiple locations if is a dependency of two or more packed
+dependencies which are configured to appear in different locations.
+
+Before link:release_notes.html#_7_12_0[7.12.0], each transitive dependency would have only one link or unpack location,
+even if it should have appeared at multiple locations.  The Holy Gradle did not guarantee which location would be
+chosen.
+
 
 ==== Using +<version>+
 
@@ -1462,9 +1547,63 @@ This property determine whether +fetchAllDependencies+ should perform full up-to
 
 -> Default value: **false**
 
+=== packedDependenciesSettings
+
+This DSL block contains settings which control how packed dependencies are unpacked.
+
+==== Unpack cache
+
+The default location for the unpacked dependency cache is +<Gradle User Home dir>/unpackCache+.
+You can change the location of your link:first_steps.html#gradle_user_home[Gradle User Home]
+directory.  If you want more specific control then that can be achieved with the following piece
+of DSL.
+
+[source,groovy]
+----
+packedDependenciesSettings {
+    unpackedDependenciesCacheDir = "d:/dep_cache"
+}
+----
+
+If this value is set in the root project, it will affect all sub-projects unless they override it.
+
+Since this specifies a machine-specific location you should probably avoid including the path in a build script that
+will be shared with other developers. You may wish to use a link:custom-gradle.html#user_gradle[user.gradle] file or
+link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the
+path.
+
+If you set this to point to a network share, the Holy Gradle will use a gloss:symlink[].  If your user account has local
+Administrator rights, then this requires the Gradle process to run with Administrator privileges on Windows 8 and above.
+Putting your cache on a share is not recommended, for performance reasons.
+
+[[useRelativePathFromIvyXml]]
+==== Published relative paths for transitive dependencies
+
+Older versions of the Holy Gradle allowed published modules to specify the relative location where each transitive
+packed dependency should appear.  This design caused various problems, as follows.
+
+* If a packed dependency is used in multiple places in the dependency graph, it would require extra effort to create a
+link at each location, and waste space if +unpackToCache = false+ is used.
+* If relative paths points to child folders of dependencies, arbitrarily long paths may be created, causing problems
+with Windows' maximum path length of 260 characters.
+* If relative paths points to child folders of dependencies, and the same dependencies are used in separate projects,
+and at least one of those projects forces a dependency to resolve to a different version, there is no way to create a
+correct set of links (in the default case where +unpackToCache = true+).
+
+In practice, all uses had a relative path of +"../_module_name_"+, so this is now the default.  Since
+link:release_notes.html#_7_12_0[7.12.0] the previous behaviour has been removed.  Attempting to use the following
+DSL will now cause an exception.
+
+[source,groovy]
+----
+packedDependenciesSettings {
+    useRelativePathFromIvyXml = true
+}
+----
+
 === sourceOverrides
 
-+WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
+WARNING: This feature is "incubating": the syntax and behaviour may change in future releases.
 
 This container allows you to override the handling of specific packed dependencies to instead point to existing source
 on a local disk. This is intended for testing changes to dependencies without having to first package and publish those
@@ -1705,89 +1844,6 @@ sourceOverrides {
 
 -> Calling this method is optional.
 
-=== packedDependenciesSettings
-
-This DSL block contains settings which control how packed dependencies are unpacked.
-
-==== Unpack cache
-
-The default location for the unpacked dependency cache is +<Gradle User Home dir>/unpackCache+.
-You can change the location of your link:first_steps.html#gradle_user_home[Gradle User Home]
-directory.  If you want more specific control then that can be achieved with the following piece
-of DSL.
-
-[source,groovy]
-----
-packedDependenciesSettings {
-    unpackedDependenciesCacheDir = "d:/dep_cache"
-}
-----
-
-If this value is set in the root project, it will affect all sub-projects unless they override it.
-
-Since this specifies a machine-specific location you should probably avoid including the path in a build script that
-will be shared with other developers. You may wish to use a link:custom-gradle.html#user_gradle[user.gradle] file or
-link:http://www.gradle.org/docs/1.4/userguide/userguide_single.html#properties[gradle.properties] file to configure the
-path.
-
-If you set this to point to a network share, the Holy Gradle will use a gloss:symlink[].  If your user account has local
-Administrator rights, then this requires the Gradle process to run with Administrator privileges on Windows 8 and above.
-Putting your cache on a share is not recommended, for performance reasons.
-
-[[useRelativePathFromIvyXml]]
-==== Relative paths for transitive dependencies
-
-By default, when a packed dependency has further transitive dependencies, the unpacked directories/links for those
-will appear next to the packed dependency.  If a transitive dependency is also specified as a direct dependency, and the
-path specified for it as a direct dependency is different from this default path, then the specified path is used.  For
-example, suppose you have the following script.
-
-[source,groovy]
-----
-packedDependencies {
-    "libA" {
-        dependency "com.example-corp.common:libA:1.0"
-        configurationSet configurationSets.main, configurationSetTypes.LIB_64
-    }
-    "subdir/libB" {
-        dependency "com.example-corp.common:libB:1.0"
-        configurationSet configurationSets.main, configurationSetTypes.LIB_64
-    }
-}
-----
-
-If +libA+ (with path +_rootDir_/libB+) depends on +libB+ then the default path for +libB+ would be +_rootDir_/libB+; but
-instead path +_rootDir_/subdir/libB+ will be used.
-
-WARNING: It is recommended to put all dependencies paths under a single folder.  If you do not, then the location of
-the links for transitive dependencies may be unpredictable.  In the above example, if both +libA+ and +libB+ depend on
-+libC+, then the path for +libC+ may be either +_rootDir_/libC+ or +_rootDir_/subdir/libC+, and the Holy Gradle does not
-guarantee which will be used.
-
-Previous versions of the Holy Gradle allowed published modules to specify the relative location where each transitive
-packed dependency should appear.  This design caused various problems, as follows.
-
-* If a packed dependency is used in multiple places in the dependency graph, it would require extra effort to create a
-link at each location, and waste space if +unpackToCache = false+ is used.
-* If relative paths points to child folders of dependencies, arbitrarily long paths may be created, causing problems
-with Windows' maximum path length of 260 characters.
-* If relative paths points to child folders of dependencies, and the same dependencies are used in separate projects,
-and at least one of those projects forces a dependency to resolve to a different version, there is no way to create a
-correct set of links (in the default case where +unpackToCache = true+).
-
-In practice, all uses had a relative path of +"../_module_name_"+, so this is now the default, and the previous
-behaviour will be removed in a future version, provided no problems are found with this approach.
-For now, the previous behaviour can be re-activated with the following bit of DSL.
-
-[source,groovy]
-----
-packedDependenciesSettings {
-    useRelativePathFromIvyXml = true
-}
-----
-
-If this value is set in the root project, it will affect all sub-projects unless they override it.
-
 [[_symlinks]]
 [[_links]]
 === links
@@ -1824,7 +1880,7 @@ will result in links (by default, directory junctions) as follows:
     +---common  <-----------------------|
 ----
 
-Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this block was called +links+.
+Note that, before Holy Gradle link:release_notes.html#_7_8_0[], this block was called +symlinks+.
 
 ==== to
 

@@ -9,6 +9,10 @@ import java.nio.file.Files
  * Utility methods related to files.
  */
 class FileHelper {
+    public static boolean isEmptyDirectory(File file) {
+        return file.isDirectory() && file.list().length == 0
+    }
+
     public static void ensureDeleteFile(File file, String purpose = null) {
         if (!file.exists()) {
             return

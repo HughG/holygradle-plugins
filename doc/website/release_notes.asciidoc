@@ -42,12 +42,85 @@ things for users, and also for plugin developers.
 
 === 7.x
 
+==== 7.12.x
+
+===== 7.12.1
+(13f535d08101 at 2018-03-27 14:52:01 UTC)
+
+Intrepid::
+
+* GR 6727 The gradle.properies file is now zipped along with +build.gradle+ and +settings.gradle+ in the
++buildScript+ configuration/artifact.  This provides a more complete picture of the build scripts by default.
+
+DevEnv::
+
+* GR 6728 Fixed bug (introduced in <<_7_11_0>>) which prevented all +DevEnv+ build tasks (+buildRelease+,
++buildDebug+, etc.) from working.
+
+CustomGradleCorePlugin {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
+===== 7.12.0
+(01356a342715 at 2017-12-01 16:21:13 UTC)
+
+Intrepid::
+
+* Transitive packed dependencies can now appear in the workspace (as links or unpack folders) in more than one
+location.  Previously, if a transitive dependency was expected to appear in multiple locations (because it came from
+multiple packed dependencies which were configured to appear in different folders) it would only appear in one of those
+locations, and the location was not predictable.
+** To prevent multiple versions of the same transitive dependency targeting the same location, this change introduces
+the restriction that any packed dependency can only appear in one location per configuration.  In other words, each
+configuration must all its dependencies in one folder.  This may require breaking changes to the dependency paths in
+your +packedDependencies+ block.  See link:plugin-intrepid.html#_dependency_locations[] for more details.
+** Also as part of this, removed support for +packedDependenciesSettings.useRelativePathFromIvyXmle+, which was
+introduced in <<_7_4_0>> as a temporary way to re-enable that deprecated feature.
+
+
+CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
+
+==== 7.11.x
+
+===== 7.11.0
+(4ec3faf09545 at 2017-10-12 15:56:06 UTC)
+
+Intrepid::
+
+* Major new feature: added support for "source overrides", which allow developers to replace the links for packed
+dependencies with links to a local checkout of corresponding source code.  This allows you to modify the source, for
+example to help debug a problem.  See link:plugin-intrepid.html#_sourceoverrides[] for more details.
+** Multiple packed dependencies can be replaced.
+** If the source of the replaced dependencies itself uses a new enough version of the Holy Gradle, then multiple levels
+of source override are possible.
+** The Holy Gradle can ensure that the transitive dependencies of the replaced source are consistent with the
+dependencies of the main build and any other source overrides.
+** A module with source overrides cannot be published, because Gradle cannot know the published version of the
+overridden dependency.
+
+
+CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} CredentialStore {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
+
 ==== 7.10.x
+
+===== 7.10.4
+
+CredentialStore::
+
+* GR #6725 Fixed intermittent failures to create links to the unpack cache
+
+** Instead of correctly rebuilding symlinks Holy Gradle would leave behind an empty directory at a link source location, causing
+failures to re-create either directory junctions or symlinks to the unpack cache.
+
+Intrepid {br} CustomGradleCorePlugin {br} DevEnv {br} UnitTest {br} ArtifactoryManager {br} MyCredentials {br} Stamper {br} Utils::
+- No changes.
 
 ===== 7.10.3
 (62ee2a1a8eaf at 2017-09-27 12:12:57 UTC)
 
-DevEnv ::
+DevEnv::
 
 * Improve support for choosing a Visual Studio version.  See link:plugin-devenv.html#_version[] for more details.
 ** For a version of Visual Studio before 2017, try to use the +VSnnnCOMNTOOLS+ environment variable before trying to run
@@ -61,11 +134,11 @@ CustomGradleCorePlugin {br} Intrepid {br} UnitTest {br} ArtifactoryManager {br} 
 ===== 7.10.2
 (bcbdabef989b at 2017-08-11 12:05:12 UTC)
 
-CredentialStore ::
+CredentialStore::
 
 * Change +credential-store.exe+ to compare usernames case-insensitively.
 
-Stamper ::
+Stamper::
 
 * GR #6718 Add support for reading/writing files with a non-default charset, e.g., UTF-8 on Windows 7.
 +
@@ -90,14 +163,14 @@ CustomGradleCorePlugin {br} Intrepid {br} DevEnv {br} UnitTest {br} ArtifactoryM
 ===== 7.10.1
 (d61afb3c0e6d at 2017-07-20 16:18:17 UTC)
 
-CredentialStore ::
+CredentialStore::
 
 * GR #6716 Fix bugs in the changes to +credential-store.exe+ in 7.10.0
 
 ** +credential-store for-default+ would update _all_ credentials, not just those not associated with any basis.
 ** +credential-store.exe+ would fail without an error message if environment variable +GRADLE_USER_HOME+ was not set.
 
-DevEnv ::
+DevEnv::
 
 * Support Visual Studio 2017.  (Instead of using environment variables, this version has a new mechanism for locating
 +devenv.com+, namely by running +vswhere.exe+.  This allows installing multiple "flavours" of VS but needs changes to
@@ -109,7 +182,7 @@ CustomGradleCorePlugin {br} Intrepid {br} UnitTest {br} ArtifactoryManager {br} 
 ===== 7.10.0
 (238dac7222d6 at 2017-04-04 08:40:10 UTC)
 
-CustomGradleCorePlugin {br} CredentialStore {br} Intrepid {br} MyCredentials ::
+CustomGradleCorePlugin {br} CredentialStore {br} Intrepid {br} MyCredentials::
 
 * GR #6715 Allow source dependency credentials to be derived from a user-named "basis" credential.  This supports
 having source dependencies on repos hosted at different sites, which need different credentials.
@@ -683,7 +756,7 @@ documentation for details.  For example, you could write
 [source, groovy]
 ----
 rootProject.name = "MyModule"
-----
+---- 
 +
 Currently you can only change the name of the root project.  Changing the name of subprojects causes
 problems with the part of intrepid which handles source dependencies.  This could be fixed easily
