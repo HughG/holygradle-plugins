@@ -216,7 +216,7 @@ class UnpackModuleVersion {
         }.booleanValue() && hasArtifacts()
     }
 
-    public File getLinkDir(Project project) {
+    public File getLinkDir() {
         def sourceOverrideHandler = project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
             handler.dummyDependencyCoordinate == fullCoordinate
         }

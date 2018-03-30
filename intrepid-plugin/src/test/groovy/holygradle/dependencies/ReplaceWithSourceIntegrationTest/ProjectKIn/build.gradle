@@ -18,7 +18,7 @@ repositories.ivy {
 sourceOverrides {
     "framework" {
         dependency "holygradle.test:another-application:1.0"
-        from "../source/another-application-1.0-alt-1.1"
+        from "../projectKsource/another-application-1.0-alt-1.1"
     }
 }
 

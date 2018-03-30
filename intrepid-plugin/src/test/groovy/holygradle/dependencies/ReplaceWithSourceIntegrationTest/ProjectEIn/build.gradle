@@ -19,11 +19,11 @@ repositories.ivy {
 sourceOverrides {
     "application" {
         dependency "holygradle.test:example-application:1.0"
-        from "../source/application-1.0"
+        from "../projectEsource/application-1.0"
     }
     "ext_11" {
         dependency "holygradle.test:external-lib:1.0"
-        from "../source/ext-1.1"
+        from "../projectEsource/ext-1.1"
     }
 }
 

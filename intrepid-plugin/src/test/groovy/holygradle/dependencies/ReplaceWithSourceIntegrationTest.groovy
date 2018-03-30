@@ -15,8 +15,9 @@ import static org.junit.Assert.assertTrue
 class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void twoLevels() {
-        File templateDir = new File(getTestDir(), "projectAIn")
-        File projectDir = new File(getTestDir(), "projectA")
+        String projectName = "projectA"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "external-lib")
 
@@ -27,7 +28,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -43,8 +44,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void oneLevelWithNestedSourceDependencies() {
-        File templateDir = new File(getTestDir(), "projectBIn")
-        File projectDir = new File(getTestDir(), "projectB")
+        String projectName = "projectB"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File anotherDirectory = new File(projectDir, "another-lib")
         File externalDirectory = new File(projectDir, "external-lib")
@@ -56,7 +58,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -71,8 +73,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void oneLevelWithNestedSourceVersionConflict() {
-        File templateDir = new File(getTestDir(), "projectCIn")
-        File projectDir = new File(getTestDir(), "projectC")
+        String projectName = "projectC"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
 
@@ -83,7 +86,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -98,8 +101,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void oneLevelWithNestedSourceVersionConflictMultipleConfigurations() {
-        File templateDir = new File(getTestDir(), "projectDIn")
-        File projectDir = new File(getTestDir(), "projectD")
+        String projectName = "projectD"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
         File externalLibDirectory = new File(projectDir, "external-lib")
@@ -112,7 +116,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -125,8 +129,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
      */
     @Test
     public void incompatibleTransitiveDependencies() {
-        File templateDir = new File(getTestDir(), "projectEIn")
-        File projectDir = new File(getTestDir(), "projectE")
+        String projectName = "projectE"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File applicationDirectory = new File(projectDir, "application")
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
@@ -139,9 +144,10 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
-        String expectedDummyVersion = Helper.convertPathToVersion(new File(projectDir, "../source/ext-1.1").toString())
+        String expectedDummyVersion =
+            Helper.convertPathToVersion(new File(projectDir, "../" + projectName + "source/ext-1.1").toString())
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
@@ -164,8 +170,9 @@ Could not resolve all dependencies for configuration ':bar'.
      */
     @Test
     public void incompatibleSourceOverrideTransitiveDependencies() {
-        File templateDir = new File(getTestDir(), "projectJIn")
-        File projectDir = new File(getTestDir(), "projectJ")
+        String projectName = "projectJ"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File applicationDirectory = new File(projectDir, "application")
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
@@ -178,7 +185,7 @@ Could not resolve all dependencies for configuration ':bar'.
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -202,8 +209,9 @@ Could not resolve all dependencies for configuration ':bar'.
      */
     @Test
     public void incompatibleDirectVsSourceOverrideTransitiveDependencies() {
-        File templateDir = new File(getTestDir(), "projectKIn")
-        File projectDir = new File(getTestDir(), "projectK")
+        String projectName = "projectK"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File applicationDirectory = new File(projectDir, "application")
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
@@ -216,7 +224,7 @@ Could not resolve all dependencies for configuration ':bar'.
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -235,8 +243,9 @@ Could not resolve all dependencies for configuration ':bar'.
 
     @Test
     public void customIvyFileGenerator() {
-        File templateDir = new File(getTestDir(), "projectFIn")
-        File projectDir = new File(getTestDir(), "projectF")
+        String projectName = "projectF"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
 
         File customFile = new File(externalDirectory, "custom")
@@ -253,7 +262,7 @@ Could not resolve all dependencies for configuration ':bar'.
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -266,8 +275,9 @@ Could not resolve all dependencies for configuration ':bar'.
 
     @Test
     public void gradlewBatIvyFileGeneratorFallback() {
-        File templateDir = new File(getTestDir(), "projectGIn")
-        File projectDir = new File(getTestDir(), "projectG")
+        String projectName = "projectG"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
         File gradlewFile = new File(externalDirectory, "gradlew")
 
@@ -279,21 +289,22 @@ Could not resolve all dependencies for configuration ':bar'.
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
         }
 
         assertTrue(gradlewFile.exists())
-        assertTrue(gradlewFile.text.contains("generateIvyModuleDescriptor"))
+        assertTrue(gradlewFile.text.contains("generateDescriptorFileForIvyPublication"))
         assertTrue(gradlewFile.text.contains("summariseAllDependencies"))
     }
 
     @Test
     public void noIvyFileGeneration() {
-        File templateDir = new File(getTestDir(), "projectHIn")
-        File projectDir = new File(getTestDir(), "projectH")
+        String projectName = "projectH"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
 
         if (projectDir.exists()) {
@@ -302,7 +313,7 @@ Could not resolve all dependencies for configuration ':bar'.
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -316,8 +327,9 @@ Could not resolve all dependencies for configuration ':bar'.
 
     @Test
     public void failsWithNoUnpackToCache() {
-        File templateDir = new File(getTestDir(), "projectIIn")
-        File projectDir = new File(getTestDir(), "projectI")
+        String projectName = "projectI"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
 
         if (projectDir.exists()) {
@@ -327,7 +339,7 @@ Could not resolve all dependencies for configuration ':bar'.
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -345,9 +357,9 @@ Could not resolve all dependencies for configuration ':bar'.
         // Todo: Decide what to do in this case
     }
 
-    private void copySourceFiles() {
+    private void copySourceFiles(String project) {
         File templateDir = new File(getTestDir(), "sourceIn")
-        File sourceDir = new File(getTestDir(), "source")
+        File sourceDir = new File(getTestDir(), project + "source")
 
         if (sourceDir.exists()) {
             FileHelper.ensureDeleteDirRecursive(sourceDir)

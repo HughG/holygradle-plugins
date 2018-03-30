@@ -39,7 +39,7 @@ fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildLinks - Rebuild all links. [fetchAllSourceDependencies, rebuildLinksToCache]
 rebuildLinksToCache - Rebuild all links to the unpack cache [extractPackedDependencies]
-summariseAllDependencies - Create an XML file listing all direct and transitive dependencies
+summariseAllDependencies - Create an XML file listing all direct and transitive dependencies [generateDescriptorFileForIvyPublication]
 zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP. [createPublishNotes]
 
 DevEnv tasks
