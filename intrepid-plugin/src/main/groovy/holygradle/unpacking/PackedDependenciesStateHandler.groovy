@@ -250,7 +250,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         boolean foundTargetClash = targetLocations.inject(false) {
             boolean found, File target, Collection<UnpackModuleVersion> versions
              ->
-            final Set<UnpackDirEntry> uniqueUnpackDirEntries = versions.collect { it.getUnpackDirEntry(project) }.toSet()
+            final Set<UnpackDirEntry> uniqueUnpackDirEntries = versions.collect { it.getUnpackDirEntry() }.toSet()
             final boolean thisTargetHasClashes = uniqueUnpackDirEntries.size() > 1
             if (thisTargetHasClashes) {
                 project.logger.error(
@@ -258,7 +258,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 )
                 versions.each {
                     logUnpackModuleVersionAncestry(it, 1)
-                    project.logger.debug("    "+ it.getUnpackEntry(project).toString())
+                    project.logger.debug("    "+ it.getUnpackEntry().toString())
                 }
                 project.logger.debug("  Unique unpack dir entries: " + uniqueUnpackDirEntries)
             }
