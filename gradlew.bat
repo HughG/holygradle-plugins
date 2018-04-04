@@ -28,7 +28,7 @@ set DEFAULT_JVM_OPTS=
 SET GRADLE_DISTRIBUTION_URL=https\://services.gradle.org/distributions/
 
 @rem Allow use of Holy Gradle specific options to override system Java settings
-if defined HOLY_GRADLE_JAVA_HOME set JAVA_HOME=%HOLY_GRADLE_JAVA_HOME%
+if defined HOLY_GRADLE_JAVA_8_HOME set JAVA_HOME=%HOLY_GRADLE_JAVA_8_HOME%
 if defined HOLY_GRADLE_GRADLE_HOME set GRADLE_HOME=%HOLY_GRADLE_GRADLE_HOME%
 
 @rem Find java.exe
