@@ -43,6 +43,12 @@ ensureHgHook(
             include "init.d/**"
         }
     }
+    copy {
+        into("${otherProjectDir}/gradle/wrapper")
+		from("${projectDir}/gradle/wrapper") {
+			include "gradle-wrapper.*"
+		}
+    }
 }
 
 // Force-copy LOCAL build bootstrap files to independent sub-projects, so they stay up to date.
@@ -52,7 +58,7 @@ ensureHgHook(
 // task because they're not packed into the plugin, because they're site-local and private.
 ["https-setup-kit", "wrapper-starter-kit"].each {
     File otherProjectDir = new File(projectDir, it)
-    ["gradle/base-url-lookup.txt", "gradle/proxy-lookup.txt", "gradle/certs/**"].each { String copyPattern ->
+    ["gradle/wrapper/base-url-lookup.txt", "gradle/wrapper/proxy-lookup.txt", "gradle/wrapper/certs/**"].each { String copyPattern ->
         copy {
             into(otherProjectDir)
             from(projectDir) {

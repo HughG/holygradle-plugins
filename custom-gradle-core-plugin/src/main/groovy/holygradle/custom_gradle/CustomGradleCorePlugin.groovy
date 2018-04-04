@@ -85,22 +85,6 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 holyGradleInitScriptFile.withOutputStream { os ->
                     os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/init.d/holy-gradle-init.gradle")
                 }
-
-                // We move the default ".properties" file to ".properties.in", removing the "distributionUrl=" line.
-                // The "gradlew.bat" script will concatenate it with the distribution server URL (from the
-                // HOLY_GRADLE_REPOSITORY_BASE_URL environment variable) and the rest of the distribution path (which
-                // we write to a text file below).  This allows the same custom wrapper to be used from multiple sites
-                // which don't share a single server for the distribution.
-                final File propertiesInputFile = new File(wrapper.propertiesFile.toString() + ".in")
-                propertiesInputFile.withWriter { w ->
-                    wrapper.propertiesFile.withInputStream { is ->
-                        is.filterLine(w) { String line -> !line.startsWith("distributionUrl") }
-                    }
-                }
-                Files.delete(wrapper.propertiesFile.toPath())
-
-                File distributionPathFile = new File(project.projectDir, "/gradle/wrapper/distributionPath.txt")
-                distributionPathFile.text = "gradle-${project.gradle.gradleVersion}-bin.zip"
             }
         }
     
@@ -148,7 +132,8 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35
-                    print "Custom distribution version: ".padRight(pad)
+                    print "Gradle version: ".padRight(pad)
+                    println project.gradle.gradleVersion
                     String latestCustomGradle = VersionNumber.getLatestUsingBuildscriptRepositories(project, "holygradle", "custom-gradle")
                     println versionInfoExtension.getVersion("custom-gradle") + " (latest: $latestCustomGradle)"
                     println "Init script version: ".padRight(pad) + project.holyGradleInitScriptVersion
