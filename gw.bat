@@ -220,7 +220,7 @@ set TRUST_STORE_OPTS="-Djavax.net.ssl.trustStore=%APP_HOME%gradle\cacerts" "-Dja
 set CLASSPATH=%APP_HOME%gradle\gradle-wrapper.jar
 
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% %TRUST_STORE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% %TRUST_STORE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION% %HOLY_GRADLE_OPTS%
 
 :end
 @rem End local scope for the variables with windows NT shell
