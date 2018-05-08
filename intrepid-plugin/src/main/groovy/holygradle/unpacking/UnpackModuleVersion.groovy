@@ -97,8 +97,8 @@ class UnpackModuleVersion {
     public UnpackDirEntry getUnpackDirEntry(Project project) {
         return new UnpackDirEntry(
             getUnpackDir(project),
-            (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
-            (boolean)getPackedDependency()?.shouldMakeReadonly()
+            ShouldApplyUpToDateChecks(),
+            ShouldMakeReadonly()
         )
     }
 
@@ -114,9 +114,21 @@ class UnpackModuleVersion {
         return new UnpackEntry(
             artifacts.keySet()*.file,
             getUnpackDir(project),
-            (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
-            (boolean)getPackedDependency()?.shouldMakeReadonly()
+            ShouldApplyUpToDateChecks(),
+            ShouldMakeReadonly()
         )
+    }
+
+    private boolean ShouldApplyUpToDateChecks() {
+        // If the packed dependency is null (ie if this is a transitive dependency), we should return the default
+        // value: false
+        return getPackedDependency() ? getPackedDependency().shouldApplyUpToDateChecks() : false
+    }
+
+    private boolean ShouldMakeReadonly() {
+        // If the packed dependency is null (ie if this is a transitive dependency), we should return the default
+        // value: true
+        return getPackedDependency() ? getPackedDependency().shouldMakeReadonly() : true
     }
 
     // This returns the packedDependencies entry which configures some aspects of this module.
