@@ -15,7 +15,7 @@ This repository contains:
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
     - If you normally need JAVA_HOME to point to another version of Java such as JDK 1.8, you can set
-    HOLY_GRADLE_JAVA_HOME to your JDK 1.8 location, and the "gw.bat" in this repo will use that instead.
+    HOLY_GRADLE_JAVA_HOME to your JDK 1.8 location, and the "gradlew.bat" in this repo will use that instead.
  - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  
    - It will tell you about this in the "Event Log" window. You can open the "Event Log" window by clicking on the 
     icon in the bottom right corner of the window. The event log will show a message like the following.
@@ -31,7 +31,7 @@ This repository contains:
     For this open File > Settings > Appearance & Behavior > Path Variables here you should add a setting for
     GRADLE_USER_HOME with the path to your gradle cache. 
  - You may also need to configure IntelliJ to point to your installed JDK, in the "Project Structure" dialog.
- - An Artifactory server configured with:
+ - Optionally, an Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
    - a remote repo pointing to Maven Central 
    - one for publishing plugin snapshots for testing modifications to plugins without affecting existing plugin users.
@@ -60,8 +60,10 @@ artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
 
-Run 'gw tasks'.  You may need to supply proxy arguments if it's the first time you've run this version of Gradle
-(e.g., 'gw -Dhttp.proxyHost=proxyserver -Dhttp.proxyPort=8080').
+If you don't want to use an Artifactory server, don't define the `artifactoryServer` variable.
+
+Run 'gradlew tasks'.  You may need to supply proxy arguments if it's the first time you've run this version of Gradle
+(e.g., 'gradlew -Dhttp.proxyHost=proxyserver -Dhttp.proxyPort=8080').
 
 Note that IntelliJ IDEA will fail to open the project until you've created this file (because it parses the
 "build.gradle" files, and some of them depend on these properties).
@@ -74,47 +76,43 @@ because symlinks / soft links in Windows require special permissions in some cas
 ## IntelliJ IDEA
 
 Before opening the project in IntelliJ, make sure you have GRADLE_USER_HOME set as desired,
-and then run `gw tasks` in this folder, to make sure the base Gradle distribution is
+and then run `gradlew tasks` in this folder, to make sure the base Gradle distribution is
 downloaded to your cache, so you can point IntelliJ to it.
 
 If you open the project with IntelliJ IDEA, it will complain that GRADLE_USER_HOME isn't set.
 You need to set it to the same value as your GRADLE_USER_HOME environment variable.
 
-After loading, it will prompt you (in the Event Log) to "Import Gradle Project".  You will
-have to manually select "Use local Gradle distribution" and point to
-
-  <your GRADLE_USER_HOME>\wrapper\dists\gradle-1.4-bin\47n6g3pbi5plc7n8fn58nkinje\gradle-1.4
-
 ## Initial Publishing
 If the plugins have never been published before within your organisation, run the following commands.
 
- - `gw -PpublishVersion=1.0.0 publishCustomGradleReally`
- - `gw -PpublishVersion=1.0.0 publishPluginsReally`
+ - `gradlew -PpublishVersion=1.0.0 publishCustomGradleReally`
+ - `gradlew -PpublishVersion=1.0.0 publishPluginsReally`
  - `cd wrapper-starter-kit`
  - `set WRAPPER_STARTER_KIT_VERSION=1.0.0`
- - `gw -PwrapperVersion=1.0.0 publish`
+ - `gradlew -PwrapperVersion=1.0.0 publish`
 
 You can replace "Really" with "Locally" to publish to a folder called "local_repo", to check the contents before really
 publishing, if you want.  See the section on publishing below for more details.
 
 # Testing
 
-> NOTE: On Windows 8 and above, the SymlinkTest subclass needs to be run with Administrator privileges if the current
-> user is a member of the Administrators group.  If you run these tests from a non-admin command prompt, you'll get
-> an exception like the following.
+> NOTE: On Windows 8 and above, up till Windows 10 2017 Fall Creators Update (with Developer Mode enabled), the
+> SymlinkTest subclass needs to be run with Administrator privileges if the current user is a member of the
+> Administrators group.  If you run these tests from a non-admin command prompt, you'll get an exception like the
+> following.
 > 
 >     java.nio.file.FileSystemException: <filename>: A required privilege is not held by the client
 > 
 > We may remove symlink support, and hence this test, once directory junction creation has been fully tested.
 
-Run tests with `gw test` for unit tests, and `gw integTest` for integration tests.  These use JUnit, so you can do the
+Run tests with `gradlew test` for unit tests, and `gradlew integTest` for integration tests.  These use JUnit, so you can do the
 usual Gradle JUnit tricks, such as running a single test class (which is especially useful for integration tests, as
 these can't be run within a normal JUnit test runner).  You can't run just one test method, though.  You need to include
 the subproject in the task name, or Gradle will try to run the same test in all subprojects, whereas it probably only 
 exists in one of them.
 
-  - `gw subproject:test -Dtest.single=SomeTest`
-  - `gw subproject:integTest -DintegTest.single=SomeIntegrationTest`
+  - `gradlew subproject:test -Dtest.single=SomeTest`
+  - `gradlew subproject:integTest -DintegTest.single=SomeIntegrationTest`
 
 ## Unit tests
 Unit tests (if any) will be automatically run prior to any publish operation, so you can't publish unless the tests
@@ -122,7 +120,7 @@ pass. That said, the unit tests are very sparse or non-existent depending on the
 
 ## Integration tests
 Integration tests are those whose class names end in `IntegrationTest`, extending `AbstractHolyGradleIntegrationTest`.
-They can be run directly using `gw integTest`, and are run before every `publishPluginsReally` task.  They work by
+They can be run directly using `gradlew integTest`, and are run before every `publishPluginsReally` task.  They work by
 launching a Gradle build which fetches the custom-gradle distribution and the plugins from a `local_repo` directory
 created at the top level of the source tree.  These versions are those produced by the `publishCustomGradleLocally` and
 `publishPluginsLocally` tasks.
@@ -133,7 +131,7 @@ dependency between them, so they can be published separately.  The plugins can o
 
 Each of these can be published as a user-specific snapshot or as a numbered release.  Publishing user-specific snapshots
 lets you test a new version of the plugins on a real project, without causing problems for other users.  Use
-`gw publishCustomGradleReally` and/or `gw publishPluginsReally` to publish the custom-gradle distribution, and/or the
+`gradlew publishCustomGradleReally` and/or `gradlew publishPluginsReally` to publish the custom-gradle distribution, and/or the
 whole set of plugins.
 
  - Without any other arguments, the version used will be `<user>SNAPSHOT-0`, where `<user>` is your system username (not
@@ -147,7 +145,7 @@ You can't publish a release version unless the working copy has no uncommitted c
 parent of the working copy has been pushed (i.e., is in the "public" phase).
 
 The main sequence of tasks when publishing is as follows.  This is a summary of the output of
-`gw --dry-run publishCustomGradleReally publishPluginsReally`.  The `credential-store` project is published with the
+`gradlew --dry-run publishCustomGradleReally publishPluginsReally`.  The `credential-store` project is published with the
 plugins.  The output below is not exactly true, because the `artifactory-manager-plugin` doesn't depend on
 `custom-gradle`, so it's done earlier, but it's mostly true.
 
@@ -179,14 +177,14 @@ whenever artifacts are downloaded e.g.
 Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/ivy-nm2501SNAPSHOT-0.xml
 Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/devenv-plugin-nm2501SNAPSHOT-0.jar
 ```
- - You can also run `gw versionInfo` to get a complete list of version numbers.
+ - You can also run `gradlew versionInfo` to get a complete list of version numbers.
 
 # Diagnosing suspected plugin problems found in gradle scripts 
 
 ## clone/update the plugins
 ## if necessary, follow the "getting started" steps detailed above
 ## add your println/log entries to the plugins for helping to diagnosing the problem
-## use "gw -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>SNAPSHOT-0
+## use "gradlew -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>SNAPSHOT-0
 ## now to force the user's build script to use the snapshots you've just published, set the property "systemProp.holygradle.pluginsSnapshotsUser=<user>" in your %GRADLE_USER_HOME%/gradle.properties file.
 ## before fixing, try to add a new integration test that replicates the issue, to help verify the fix and prevent future regression
  
@@ -228,14 +226,14 @@ To publish the public documentation, follow these steps.
 
 1. Set `publicWebsitePublishUrl` in your `gradle.properties` to a file URL which contains a repo
 with `https://bitbucket.org/holygradle/holygradle.bitbucket.org` as master.
-2. Run `gw buildPublicWebsite`.  (You can also run with `-Pquickly` to build without syntax
+2. Run `gradlew buildPublicWebsite`.  (You can also run with `-Pquickly` to build without syntax
 colouring, which may be noticeably faster.)
 3. Run `hg addremove`, then commit and push to update the website.  The site is viewable at
 `http://holygradle.bitbucket.org/`.
 
 You can also build a custom local version for your own organisation, containing specialised or
 confidential information.  For that you need to set `publicWebsitePublishUrl` and run
-`gw buildLocalWebsite` to build the website.  If you want to publish it to IIS, a simple approach
+`gradlew buildLocalWebsite` to build the website.  If you want to publish it to IIS, a simple approach
 is to publish to a `file:` URL which is a Windows share on the IIS server.  You will also need to
 set up extra MIME-type mappings for the example source code (e.g., `.gradle` as `text/plain`).
 
