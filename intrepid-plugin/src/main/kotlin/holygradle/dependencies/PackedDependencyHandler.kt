@@ -12,6 +12,7 @@ class PackedDependencyHandler(
         project: Project
 ) : DependencyHandler(depName, project) {
     companion object {
+        @JvmStatic
         fun createContainer(project: Project): Collection<PackedDependencyHandler> {
             if (project == project.rootProject) {
                 project.extensions.create("packedDependenciesDefault", PackedDependencyHandler::class.java, "rootDefault")

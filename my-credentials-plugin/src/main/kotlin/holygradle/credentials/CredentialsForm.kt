@@ -5,7 +5,7 @@ import java.awt.*
 import java.awt.event.*
 import java.util.Timer
 
-class CredentialsForm {
+internal class CredentialsForm {
     companion object {
         fun getCredentialsFromUser(
                 frameTitle: String, instructions: Collection<String>?, initialUserName: String, timeoutSeconds: Int

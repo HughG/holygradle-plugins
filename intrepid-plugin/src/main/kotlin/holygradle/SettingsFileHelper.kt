@@ -10,10 +10,10 @@ import java.io.PrintWriter
 object SettingsFileHelper {
     private class SettingsContent {
         companion object {
-            val SECTION_MARKER = "// holygradle source dependencies V"
+            const val SECTION_MARKER = "// holygradle source dependencies V"
             val BEGIN_PATTERN = "${SECTION_MARKER}[0-9a-f]+ BEGIN".toRegex()
             val END_PATTERN = "${SECTION_MARKER}[0-9a-f]+ END".toRegex()
-            val SETTINGS_FILE_METHOD_1_MARKER =
+            const val SETTINGS_FILE_METHOD_1_MARKER =
                     "// This allows subprojects to name the gradle script the same as the directory"
             fun getContent(): String {
                 val baseContent = IntrepidPlugin::class.java
@@ -144,7 +144,9 @@ ${SECTION_MARKER}${md5} END"""
     }
 
     // Returns true if the settings have changed.
-    private fun writeSettingsFileAndDetectChange(settingsFile: File, includeFilePaths: Collection<String>): Boolean {
+    // Only public for testing.
+    @JvmStatic
+    fun writeSettingsFileAndDetectChange(settingsFile: File, includeFilePaths: Collection<String>): Boolean {
         val previousIncludeFilePaths = mutableListOf<String>()
 
         val settingsSubprojectsFile = getSettingsSubprojectsFile(settingsFile)

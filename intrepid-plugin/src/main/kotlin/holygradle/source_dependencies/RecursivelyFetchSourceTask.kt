@@ -11,9 +11,9 @@ import holygradle.kotlin.dsl.getValue
 import java.io.File
 import java.util.*
 
-class RecursivelyFetchSourceTask : DefaultTask() {
+open class RecursivelyFetchSourceTask : DefaultTask() {
     companion object {
-        val NEW_SUBPROJECTS_MESSAGE =
+        private const val NEW_SUBPROJECTS_MESSAGE =
                 "Additional subprojects may exist now, and their dependencies might not be satisfied."
     }
     val generateSettingsFileForSubprojects = true

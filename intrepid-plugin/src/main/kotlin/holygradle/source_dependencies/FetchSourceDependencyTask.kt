@@ -4,7 +4,7 @@ import org.gradle.api.*
 import org.gradle.api.tasks.*
 import java.io.File
 
-class FetchSourceDependencyTask : DefaultTask() {
+open class FetchSourceDependencyTask : DefaultTask() {
     lateinit var sourceDependency: SourceDependency
         private set
 

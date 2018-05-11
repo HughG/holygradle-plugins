@@ -56,12 +56,14 @@ class Helper {
             return transSourceDep.unique()
         }
 
+        @JvmStatic
         fun relativizePath(targetPath: File, basePath: File): String {
             val target = Paths.get(targetPath.canonicalPath)
             val base = Paths.get(basePath.canonicalPath)
             return base.relativize(target).toString()
         }
 
+        @JvmStatic
         fun getGlobalUnpackCacheLocation(project: Project, moduleVersion: ModuleVersionIdentifier): File {
             val unpackCache = PackedDependenciesSettingsHandler.getPackedDependenciesSettings(project).unpackedDependenciesCacheDir
             val groupCache = File(unpackCache, moduleVersion.group)
@@ -76,18 +78,6 @@ class Helper {
                 buildTasks.addAll(tasks.filter { BUILD_TASK_REGEX.matches(it.name) })
             }
             return buildTasks.associate { it.name to it }
-        }
-
-        fun configurationExists(project: Project, group: String, moduleName: String, version: String, config: String): Boolean {
-            val externalDependency = DefaultExternalModuleDependency(group, moduleName, version, config)
-            val dependencyConf = project.configurations.detachedConfiguration(externalDependency)
-            try {
-                dependencyConf.resolvedConfiguration.firstLevelModuleDependencies.forEach { it.moduleVersion }
-            } catch (_: Exception) {
-                return false
-            }
-
-            return true
         }
 
         // TODO 2013-06-13 HughG: This should maybe manage a Map<String, Collection<String>> instead.

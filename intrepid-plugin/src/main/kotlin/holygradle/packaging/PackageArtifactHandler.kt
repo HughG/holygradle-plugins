@@ -25,6 +25,7 @@ class PackageArtifactHandler(val project: Project, val name: String) : PackageAr
     private val lazyConfigurations = mutableListOf<Action<PackageArtifactDescriptor>>()
 
     companion object {
+        @JvmStatic
         fun createContainer(project: Project): NamedDomainObjectContainer<PackageArtifactHandler> {
             val packageArtifactHandlers = project.container(PackageArtifactHandler::class.java, { name ->
                 PackageArtifactHandler(project, name)

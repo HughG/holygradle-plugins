@@ -187,7 +187,14 @@ Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/devenv-plugin-nm2501SNAPSH
 ## use "gradlew -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>SNAPSHOT-0
 ## now to force the user's build script to use the snapshots you've just published, set the property "systemProp.holygradle.pluginsSnapshotsUser=<user>" in your %GRADLE_USER_HOME%/gradle.properties file.
 ## before fixing, try to add a new integration test that replicates the issue, to help verify the fix and prevent future regression
- 
+
+# Kotlin Development Notes
+
+Gradle requires `Task` subclasses to be open, but Kotlin creates final classes by default, so we have to
+mark them all open explicitly.  See https://github.com/gradle/kotlin-dsl/issues/731 which describes this
+and https://github.com/gradle/kotlin-dsl/issues/390 which describes why we can't just use the
+`kotlin-allopen` plugin yet.
+
 # Documentation
 Documentation was previously in the wiki for this repo but has moved to
 http://holygradle.bitbucket.org/, using AsciiDoc to allow for richer diagrams, linking, etc.

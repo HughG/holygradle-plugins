@@ -10,6 +10,7 @@ class VersionInfo(private val project: Project) {
     private val mutableVersions: MutableMap<String, String> = linkedMapOf()
 
     companion object {
+        @JvmStatic
         fun defineExtension(project: Project): VersionInfo {
             return when (project) {
                 project.rootProject -> project.extensions.create("versionInfo", VersionInfo::class.java, project)

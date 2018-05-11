@@ -8,19 +8,22 @@ import java.io.File
  */
 class PackedDependenciesSettingsHandler(private val project: Project) {
     companion object {
-        const val PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME = "packedDependenciesSettings"
+        private const val PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME = "packedDependenciesSettings"
         private const val DEFAULT_UNPACK_CACHE_DIR = "unpackCache"
 
+        @JvmStatic
         fun findPackedDependenciesSettings(project: Project): PackedDependenciesSettingsHandler? {
             return project.extensions.findByName(PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME) as? PackedDependenciesSettingsHandler
         }
 
+        @JvmStatic
         fun findOrCreatePackedDependenciesSettings(project: Project): PackedDependenciesSettingsHandler  {
             return findPackedDependenciesSettings(project) ?:
                     (project.extensions.create(PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME, PackedDependenciesSettingsHandler::class.java, project)
                             as PackedDependenciesSettingsHandler)
         }
 
+        @JvmStatic
         fun getPackedDependenciesSettings(project: Project): PackedDependenciesSettingsHandler {
             return findPackedDependenciesSettings(project)
                     ?: throw RuntimeException("Failed to find ${PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME} extension on " + project)

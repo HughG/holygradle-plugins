@@ -12,7 +12,7 @@ import java.util.*
  * used to be done with one task per link, but that required all dependencies to be resolved -- which can be very
  * slow -- before the list of tasks cn be known -- which needs to happen every time you run Gradle.)
  */
-class LinksToCacheTask : DefaultTask() {
+open class LinksToCacheTask : DefaultTask() {
     private var initialized = false
     // The versions in this set have been considered for being added to the list of versions to make links for, but
     // may not have been added to the list.  If a version is to be added but is already in this list, we don't need to

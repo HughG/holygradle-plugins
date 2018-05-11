@@ -14,8 +14,8 @@ import java.io.File
 
 class CollectDependenciesHelper(private val copyTask: AbstractCopyTask) {
     companion object {
-        val LOCAL_ARTIFACTS_DIR_NAME = "local_artifacts"
-        private val CREATE_PUBLISH_NOTES_TASK_NAME = "createPublishNotes"
+        const val LOCAL_ARTIFACTS_DIR_NAME = "local_artifacts"
+        private const val CREATE_PUBLISH_NOTES_TASK_NAME = "createPublishNotes"
     }
     private val createPublishNotesTask: Task =
             copyTask.project.tasks.findByName(CREATE_PUBLISH_NOTES_TASK_NAME)

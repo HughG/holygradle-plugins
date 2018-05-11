@@ -22,11 +22,13 @@ class SourceDependencyHandler(
         project: Project
 ) : DependencyHandler(depName, project) {
     companion object {
+        @JvmStatic
         val EVERYTHING_CONFIGURATION_MAPPING: Map.Entry<String, String> =
                 java.util.AbstractMap.SimpleEntry<String, String>(
                         IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME, IntrepidPlugin.EVERYTHING_CONFIGURATION_NAME
                 )
 
+        @JvmStatic
         fun createContainer(project: Project): Collection<SourceDependencyHandler> {
             val sourceDependencies =
                     project.container(SourceDependencyHandler::class.java, { sourceDepName: String ->

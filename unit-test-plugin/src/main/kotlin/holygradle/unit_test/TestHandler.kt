@@ -23,8 +23,10 @@ internal class TestHandler(
         val name: String
 ) {
     companion object {
+        @JvmStatic
         val DEFAULT_FLAVOURS: Collection<String> = Collections.unmodifiableCollection(listOf("Debug", "Release"))
 
+        @JvmStatic
         fun createContainer(project: Project): NamedDomainObjectContainer<TestHandler> {
             project.extensions.add("tests", project.container(TestHandler::class.java) { TestHandler(project, it) })
             return project.extensions.getByName<NamedDomainObjectContainer<TestHandler>>("tests")
@@ -48,7 +50,7 @@ internal class TestHandler(
             return FileOutputStream(flavouredOutputFile)
         }
 
-        fun defineTasks(project: Project) {
+        internal fun defineTasks(project: Project) {
             val allFlavours = TestFlavourHandler.getAllFlavours(project)
             for (flavour in allFlavours) {
                 val sourceDependenciesState: SourceDependenciesStateHandler? by project.extensions

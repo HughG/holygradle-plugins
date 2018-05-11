@@ -5,6 +5,7 @@ import org.gradle.api.Project
 
 class LinkHandler(val fromLocation: String = ".") {
     companion object {
+        @JvmStatic
         fun createExtension(project: Project): LinkHandler {
             return project.extensions.create("links", LinkHandler::class.java)
         }

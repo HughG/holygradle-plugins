@@ -77,6 +77,7 @@ Afterwards, please start a new command prompt and re-run the same command.""")
             return getPrerequisites(project)!!
         }
 
+        @JvmStatic
         fun getPrerequisites(project: Project): PrerequisitesExtension? =
             project.rootProject.extensions.findByName("prerequisites") as? PrerequisitesExtension
     }

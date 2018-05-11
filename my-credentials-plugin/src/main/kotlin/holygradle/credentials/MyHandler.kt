@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream
 
 class MyHandler(private val project: Project, private val credentialStorePath: String) : CredentialSource {
     companion object {
+        @JvmStatic
         fun defineExtension(project: Project, credentialStorePath: String): MyHandler {
             return if (project == project.rootProject) {
                 project.extensions.create("my", MyHandler::class.java, project, credentialStorePath)

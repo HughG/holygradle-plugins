@@ -13,7 +13,7 @@ import java.util.*
  */
 class ProfilingHelper(private val logger: Logger) {
     companion object {
-        val ELAPSED_TIME_TO_MILLIS_FORMAT: DateFormat = SimpleDateFormat("HH:mm:ss.SSS")
+        private val ELAPSED_TIME_TO_MILLIS_FORMAT: DateFormat = SimpleDateFormat("HH:mm:ss.SSS")
     }
 
     class TimedBlock(private val logger: Logger, private val name: String) {

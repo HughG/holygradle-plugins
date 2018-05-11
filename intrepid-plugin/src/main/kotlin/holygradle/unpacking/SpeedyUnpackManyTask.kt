@@ -17,7 +17,7 @@ import java.io.File
  * just checks to see if the ZIP file name is in the "version_info.txt" file.  (External changes to that file may
  * break this mechanism, obviously.)
  */
-class SpeedyUnpackManyTask : DefaultTask() {
+open class SpeedyUnpackManyTask : DefaultTask() {
     private lateinit var unzipper: Unzipper
     private val entries = mutableMapOf<ModuleVersionIdentifier, UnpackEntry>()
 

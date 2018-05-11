@@ -10,6 +10,7 @@ import holygradle.kotlin.dsl.getValue
  */
 class SourceDependenciesStateHandler(private val project: Project) {
     companion object {
+        @JvmStatic
         fun createExtension(project: Project): SourceDependenciesStateHandler {
             val sourceDependenciesStateHandler = holygradle.source_dependencies.SourceDependenciesStateHandler(project)
             project.extensions.add("sourceDependenciesState", sourceDependenciesStateHandler)

@@ -7,22 +7,19 @@ import org.gradle.api.Project
  */
 class DependenciesSettingsHandler(private val project: Project) {
     companion object {
-        const val DEPENDENCIES_SETTINGS_HANDLER_NAME = "dependenciesSettings"
+        private const val DEPENDENCIES_SETTINGS_HANDLER_NAME = "dependenciesSettings"
         private const val DEFAULT_FAIL_ON_VERSION_CONFLICT_DEFAULT = true
 
+        @JvmStatic
         fun findDependenciesSettings(project: Project): DependenciesSettingsHandler? {
             return project.extensions.findByName(DEPENDENCIES_SETTINGS_HANDLER_NAME) as? DependenciesSettingsHandler
         }
 
+        @JvmStatic
         fun findOrCreateDependenciesSettings(project: Project): DependenciesSettingsHandler {
             return findDependenciesSettings(project) ?:
                     (project.extensions.create(DEPENDENCIES_SETTINGS_HANDLER_NAME, DependenciesSettingsHandler::class.java, project)
                             as DependenciesSettingsHandler)
-        }
-
-        fun getDependenciesSettings(project: Project): DependenciesSettingsHandler {
-            return findDependenciesSettings(project)
-                    ?: throw RuntimeException("Failed to find ${DEPENDENCIES_SETTINGS_HANDLER_NAME} extension on " + project)
         }
     }
 

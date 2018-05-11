@@ -61,6 +61,7 @@ class DependenciesStateHandler
          * case it is added as "dependenciesState".
          * @return The created handler
          */
+        @JvmStatic
         fun createExtension(project: Project, forBuildscript: Boolean = false): DependenciesStateHandler  {
             val handler = DependenciesStateHandler(project, forBuildscript)
             val handlerName = if (forBuildscript) "buildscriptDependenciesState" else "dependenciesState"
@@ -76,7 +77,7 @@ class DependenciesStateHandler
          * @param dependencies
          * @return A copy of the configuration with replaced dependencies (and ignoring the original's super-configurations).
          */
-        fun copyConfigurationReplacingDependencies(
+        private fun copyConfigurationReplacingDependencies(
                 configuration: Configuration,
                 dependencies: Collection<Dependency>
         ): Configuration {

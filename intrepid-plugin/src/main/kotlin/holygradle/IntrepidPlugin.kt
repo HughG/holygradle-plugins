@@ -38,8 +38,11 @@ private inline fun ProfilingHelper.timing(blockName: String, block: () -> Unit) 
 }
 class IntrepidPlugin : Plugin<Project> {
     companion object {
+        @JvmStatic
         val EVERYTHING_CONFIGURATION_NAME = "everything"
+        @JvmStatic
         val EVERYTHING_CONFIGURATION_PROPERTY = "createEverythingConfiguration"
+        @JvmStatic
         val LAZY_CONFIGURATION_EXT_PROPERTY = "lazyConfiguration"
     }
 

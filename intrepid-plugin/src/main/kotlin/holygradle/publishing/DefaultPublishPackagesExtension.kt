@@ -33,8 +33,10 @@ class DefaultPublishPackagesExtension(
 
     companion object {
         const val DEFAULT_PUBLICATION_NAME = "ivy"
+        @JvmStatic
         val DEFAULT_DESCRIPTOR_TASK_NAME = "generateDescriptorFileFor${DEFAULT_PUBLICATION_NAME.capitalize()}Publication"
 
+        @JvmStatic
         fun getOrCreateExtension(project: Project): PublishPackagesExtension {
             val packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler> by project.extensions
             val packedDependencies: NamedDomainObjectContainer<PackedDependencyHandler> by project.extensions

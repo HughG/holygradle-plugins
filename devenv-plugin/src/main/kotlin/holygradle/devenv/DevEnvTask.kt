@@ -15,7 +15,7 @@ import java.util.regex.Pattern
 /**
  * Copyright (c) 2016 Hugh Greene (githugh@tameter.org).
  */
-class DevEnvTask: DefaultTask() {
+open class DevEnvTask: DefaultTask() {
     // What operation (e.g. build/clean) are we running?
     lateinit var operation: Operation
 
@@ -28,7 +28,7 @@ class DevEnvTask: DefaultTask() {
     private val output: StyledTextOutput = DefaultStyledTextOutput(System.out)
 
     companion object {
-        const val EVERY_PLATFORM = ""
+        internal const val EVERY_PLATFORM = ""
 
         /**
          * Returns the appropriate name for a {@link DevEnvTask}.

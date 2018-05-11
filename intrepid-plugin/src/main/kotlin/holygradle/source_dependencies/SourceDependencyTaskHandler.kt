@@ -7,6 +7,7 @@ import holygradle.kotlin.dsl.task
 
 class SourceDependencyTaskHandler(val name: String) {
     companion object {
+        @JvmStatic
         fun createContainer(project: Project): Collection<SourceDependencyTaskHandler> {
             val container = project.container(SourceDependencyTaskHandler::class.java)
             project.extensions.add("sourceDependencyTasks", container)

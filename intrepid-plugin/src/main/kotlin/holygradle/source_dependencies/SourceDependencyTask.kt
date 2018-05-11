@@ -20,7 +20,7 @@ import org.gradle.process.ExecSpec
  * @see SourceDependencyTaskHandler
  * @see SourceDependencyInvocationHandler
  */
-class SourceDependencyTask : DefaultTask() {
+open class SourceDependencyTask : DefaultTask() {
     /**
      * True if and only if this task has no other {@link SourceDependencyTask}s which depend on it.  This property is
      * only correctly maintained if dependent {@link SourceDependencyTask}s are added by calling

@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.reflect.jvm.jvmName
 
-class ZipDependenciesTask : Zip() {
+open class ZipDependenciesTask : Zip() {
     fun initialize() {
         if (project != project.rootProject) {
             throw RuntimeException("${this::class.jvmName} can only be used in the root project.")

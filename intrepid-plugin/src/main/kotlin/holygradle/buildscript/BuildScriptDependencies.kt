@@ -8,7 +8,7 @@ class BuildScriptDependencies(
         private val project: Project
 ) {
     companion object {
-        fun initialize(project: Project): BuildScriptDependencies {
+        internal fun initialize(project: Project): BuildScriptDependencies {
             val deps: BuildScriptDependencies = if (project == project.rootProject) {
                 BuildScriptDependencies(project)
             } else {

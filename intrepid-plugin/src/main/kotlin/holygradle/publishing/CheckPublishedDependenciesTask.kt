@@ -5,7 +5,7 @@ import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.repositories.PasswordCredentials
 
-class CheckPublishedDependenciesTask : DefaultTask() {
+open class CheckPublishedDependenciesTask : DefaultTask() {
     fun initialize(
         packedDependenciesStateSource: PackedDependenciesStateSource,
         repoUrl: String,

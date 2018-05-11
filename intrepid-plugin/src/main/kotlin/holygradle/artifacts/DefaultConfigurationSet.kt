@@ -16,6 +16,7 @@ import kotlin.reflect.jvm.jvmName
  */
 open class DefaultConfigurationSet(private val name: String) : ConfigurationSet {
     companion object {
+        @JvmStatic
         val INCLUDE_ALL_BINDINGS: List<LinkedHashMap<String, String>> = listOf()
         private val UNINTIALISED_TYPE = object: ConfigurationSetType {
             override fun getMappingsTo(attrs: Map<String, Any>, source: ConfigurationSet, target: ConfigurationSet): Collection<String> = TODO()
@@ -131,7 +132,7 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
 
     fun prefix(prefix: String) {
         synchronized (initSync) {
-            if (!_configurationNamesMap.isEmpty()) {
+            if (this::_configurationNamesMap.isInitialized) {
                 throw RuntimeException(
                     "Cannot change prefix for configuration set ${name} after configuration names have been generated"
                 )
@@ -142,15 +143,7 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
     }
 
     override fun type(type: ConfigurationSetType) {
-        synchronized (initSync) {
-            if (!_configurationNamesMap.isEmpty()) {
-                throw RuntimeException(
-                    "Cannot change type for configuration set ${name} after configuration names have been generated"
-                )
-            }
-
-            this.type = type
-        }
+        this.type = type
     }
 
     override var type: ConfigurationSetType = UNINTIALISED_TYPE
@@ -161,24 +154,36 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
             }
         }
         set(type) {
-            val defaultType = typeAsDefault
-            if (defaultType.requiredAxes.isEmpty()) {
-                throw IllegalArgumentException(
-                    "Type ${defaultType.name} must provide at least one required axis for configuration set ${name}"
+            synchronized(initSync) {
+                if (this::_configurationNamesMap.isInitialized) {
+                    throw RuntimeException(
+                            "Cannot change type for configuration set ${name} after configuration names have been generated"
+                    )
+                }
+
+                val defaultType = type as? DefaultConfigurationSetType
+                        ?: throw UnsupportedOperationException(
+                                "${this.javaClass} only supports configuration set types which are ${DefaultConfigurationSetType.javaClass}"
+                            )
+                if (defaultType.requiredAxes.isEmpty()) {
+                    throw IllegalArgumentException(
+                            "Type ${defaultType.name} must provide at least one required axis for configuration set ${name}"
+                    )
+                }
+
+                field = defaultType
+
+                // Calculate the number of configurations we'll end up with.  We'll have the Cartesian product of all the
+                // required and optional axis values, plus the Cartesian product of just the required parts with "_common".
+                fun <K, V> Map<K, Collection<V>>.getCombinationCount() =
+                        values.fold(1) { acc, value -> acc * value.size }
+
+                val requiredAxesCombinationCount = defaultType.requiredAxes.getCombinationCount()
+                val optionalAxesCombinationCount = defaultType.optionalAxes.getCombinationCount()
+                _configurationNamesMap = LinkedHashMap(
+                        requiredAxesCombinationCount * (optionalAxesCombinationCount + 1)
                 )
             }
-
-            field = defaultType
-
-            // Calculate the number of configurations we'll end up with.  We'll have the Cartesian product of all the
-            // required and optional axis values, plus the Cartesian product of just the required parts with "_common".
-            fun <K, V> Map<K, Collection<V>>.getCombinationCount() =
-                    values.fold(1) { acc, value -> acc * value.size }
-            val requiredAxesCombinationCount = defaultType.requiredAxes.getCombinationCount()
-            val optionalAxesCombinationCount = defaultType.optionalAxes.getCombinationCount()
-            _configurationNamesMap = LinkedHashMap<Map<String, String>, String>(
-                requiredAxesCombinationCount * (optionalAxesCombinationCount + 1)
-            )
         }
 
     val typeAsDefault: DefaultConfigurationSetType
@@ -206,6 +211,9 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
     val configurationNamesMap: Map<Map<String, String>, String>
         get() {
             synchronized(initSync) {
+                if (!this::_configurationNamesMap.isInitialized) {
+                    throw RuntimeException("Must set type for configuration set ${name}")
+                }
                 if (_configurationNamesMap.isEmpty()) {
                     val builder = StringBuilder()
                     if (prefix != null) {

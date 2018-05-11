@@ -47,6 +47,7 @@ class PackedDependenciesStateHandler(
         private val project: Project
 ) : PackedDependenciesStateSource {
     companion object {
+        @JvmStatic
         fun createExtension(project: Project): PackedDependenciesStateHandler {
             project.extensions.add("packedDependenciesState", PackedDependenciesStateHandler(project))
             return project.extensions["packedDependenciesState"] as PackedDependenciesStateHandler

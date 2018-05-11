@@ -4,7 +4,7 @@ import holygradle.io.Link
 import org.gradle.api.DefaultTask
 import java.io.File
 
-class LinkTask : DefaultTask() {
+open class LinkTask : DefaultTask() {
     private val entries = mutableMapOf<File, File>()
 
     fun initialize() {
