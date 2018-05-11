@@ -31,7 +31,7 @@ class FileInfo(map: Map<String, Any>) : ItemInfo(map) {
 class FolderInfo(map: Map<String, Any>) : ItemInfo(map) {
     @Suppress("UNCHECKED_CAST")
     val children: List<FolderChildInfo>
-        get() = (map["children"] as Array<Map<String, Any>>).map(::FolderChildInfo)
+        get() = (map["children"] as List<Map<String, Any>>?)?.map(::FolderChildInfo) ?: listOf()
 }
 
 class FolderChildInfo(map: Map<String, Any>) {

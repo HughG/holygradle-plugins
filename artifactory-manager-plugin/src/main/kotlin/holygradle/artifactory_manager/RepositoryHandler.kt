@@ -12,8 +12,8 @@ class RepositoryHandler(
         private val outputDir: File,
         private val minRequestIntervalInMillis: Long
 ) {
-    private lateinit var username: String
-    private lateinit var password: String
+    private var username: String? = null
+    private var password: String? = null
     private val deleteRequests = mutableListOf<DeleteRequest>()
 
     fun username(username: String) {

@@ -7,8 +7,8 @@ import static org.mockito.Mockito.*
 import groovy.json.JsonSlurper
 
 class PathInfoTest {
-    public static Map folderInfo(String date) {
-        new JsonSlurper().parseText("{\"created\": \"${date}\"}") as Map
+    public static FolderInfo folderInfo(String date) {
+        new FolderInfo(new JsonSlurper().parseText("{\"created\": \"${date}\"}") as Map)
     }
 
     private static ArtifactoryAPI getMockArtifactory() {
@@ -22,8 +22,8 @@ class PathInfoTest {
         // Construct dates to be parsed, and mock objects that will pass them to the PathInfo objects under test.
         final String winterDateString = "2013-02-26T15:45:23.516Z"
         final String summerDateString = "2013-06-01T15:32:02.611+01:00"
-        when(artifactory.getFolderInfoJson("org/foo/winter")).thenReturn(folderInfo(winterDateString))
-        when(artifactory.getFolderInfoJson("org/foo/summer")).thenReturn(folderInfo(summerDateString))
+        when(artifactory.getFolderInfo("org/foo/winter")).thenReturn(folderInfo(winterDateString))
+        when(artifactory.getFolderInfo("org/foo/summer")).thenReturn(folderInfo(summerDateString))
 
         // Construct the objects under test.
         PathInfo winterArtifactInfo = new PathInfo(artifactory, "org/foo/winter")

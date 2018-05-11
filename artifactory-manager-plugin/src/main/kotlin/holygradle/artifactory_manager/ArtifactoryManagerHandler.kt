@@ -17,8 +17,8 @@ class ArtifactoryManagerHandler(
     }
     private var artifactoryApiFactory: ((String?, String?, String?, Boolean) -> ArtifactoryAPI)? = null
     private var server: String? = null
-    private lateinit var username: String
-    private lateinit var password: String
+    private var username: String? = null
+    private var password: String? = null
     private var minRequestIntervalInMillis: Long = 10
     private val repositoryHandlers = mutableListOf<RepositoryHandler>()
     val outputDir: File
@@ -94,8 +94,12 @@ class ArtifactoryManagerHandler(
     fun repository(repository: String, closure: Action<RepositoryHandler>) {
         val repositoryHandler =
             RepositoryHandler(project.logger, repository, this, outputDir, minRequestIntervalInMillis)
-        repositoryHandler.username(username)
-        repositoryHandler.password(password)
+        if (username != null) {
+            repositoryHandler.username(username!!)
+        }
+        if (password != null) {
+            repositoryHandler.password(password!!)
+        }
         closure.execute(repositoryHandler)
         repositoryHandlers.add(repositoryHandler)
     }
