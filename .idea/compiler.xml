@@ -24,6 +24,8 @@
       <module name="devenv-plugin_test" target="1.8" />
       <module name="holy-gradle-plugins_main" target="1.8" />
       <module name="holy-gradle-plugins_test" target="1.8" />
+      <module name="holygradle-kotlin-dsl_main" target="1.8" />
+      <module name="holygradle-kotlin-dsl_test" target="1.8" />
       <module name="integration_main" target="1.8" />
       <module name="integration_test" target="1.8" />
       <module name="intrepid-plugin_main" target="1.8" />

@@ -9,10 +9,10 @@ import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.tasks.AbstractExecTask
 import org.gradle.api.tasks.Exec
-import org.gradle.script.lang.kotlin.extra
-import org.gradle.script.lang.kotlin.getByName
-import org.gradle.script.lang.kotlin.getValue
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.extra
+import holygradle.kotlin.dsl.getByName
+import holygradle.kotlin.dsl.getValue
+import holygradle.kotlin.dsl.task
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream

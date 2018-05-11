@@ -3,6 +3,7 @@ package holygradle.custom_gradle
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.VersionNumber
 import holygradle.io.FileHelper
+import holygradle.kotlin.dsl.task
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -11,7 +12,6 @@ import org.gradle.api.tasks.wrapper.Wrapper
 import java.io.File
 
 import java.nio.file.Files
-import org.gradle.script.lang.kotlin.task
 
 class CustomGradleCorePlugin : Plugin<Project> {
     /**

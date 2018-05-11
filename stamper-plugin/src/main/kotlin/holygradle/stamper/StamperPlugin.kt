@@ -4,7 +4,7 @@ import holygradle.custom_gradle.util.ProfilingHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Plugin
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.task
 
 class StamperPlugin : Plugin<Project> {
     override fun apply(project: Project) {

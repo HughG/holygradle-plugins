@@ -8,7 +8,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ModuleIdentifier
 import org.gradle.api.artifacts.ResolvedDependency
-import org.gradle.script.lang.kotlin.get
+import holygradle.kotlin.dsl.get
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import java.io.File
 

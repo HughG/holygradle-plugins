@@ -8,7 +8,7 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.process.ExecSpec
-import org.gradle.script.lang.kotlin.getValue
+import holygradle.kotlin.dsl.getValue
 import java.io.File
 
 class SvnDependency(

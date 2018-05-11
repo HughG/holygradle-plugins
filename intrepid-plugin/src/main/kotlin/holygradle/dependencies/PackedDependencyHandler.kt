@@ -5,7 +5,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import org.gradle.script.lang.kotlin.getValue
+import holygradle.kotlin.dsl.getValue
 
 class PackedDependencyHandler(
         depName: String,

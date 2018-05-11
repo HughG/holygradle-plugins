@@ -4,7 +4,7 @@ import holygradle.IntrepidPlugin
 import holygradle.custom_gradle.util.ProfilingHelper
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.script.lang.kotlin.apply
+import holygradle.kotlin.dsl.apply
 
 class UnitTestPlugin : Plugin<Project> {
     override fun apply(project: Project) {

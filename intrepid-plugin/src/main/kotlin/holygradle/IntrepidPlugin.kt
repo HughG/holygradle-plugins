@@ -24,10 +24,10 @@ import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
 import org.gradle.api.*
 import org.gradle.api.publish.ivy.plugins.IvyPublishPlugin
-import org.gradle.script.lang.kotlin.apply
-import org.gradle.script.lang.kotlin.extra
-import org.gradle.script.lang.kotlin.get
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.apply
+import holygradle.kotlin.dsl.extra
+import holygradle.kotlin.dsl.get
+import holygradle.kotlin.dsl.task
 import java.io.File
 
 private inline fun ProfilingHelper.timing(blockName: String, block: () -> Unit) {

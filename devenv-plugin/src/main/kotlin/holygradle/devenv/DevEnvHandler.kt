@@ -1,7 +1,7 @@
 package holygradle.devenv
 
 import org.gradle.api.Project
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.task
 import java.io.File
 import java.util.regex.Pattern
 

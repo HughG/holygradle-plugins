@@ -2,6 +2,7 @@ package holygradle
 
 import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.dependencies.PackedDependenciesSettingsHandler
+import holygradle.kotlin.dsl.getValue
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.util.unique
 import org.gradle.api.NamedDomainObjectCollection
@@ -9,7 +10,6 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import org.gradle.script.lang.kotlin.getValue
 import org.gradle.testfixtures.ProjectBuilder
 import java.io.File
 

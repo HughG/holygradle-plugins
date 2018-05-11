@@ -5,9 +5,9 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.script.lang.kotlin.get
-import org.gradle.script.lang.kotlin.getValue
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.get
+import holygradle.kotlin.dsl.getValue
+import holygradle.kotlin.dsl.task
 import java.io.File
 
 class MyCredentialsPlugin : Plugin<Project> {

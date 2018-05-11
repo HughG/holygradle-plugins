@@ -18,8 +18,8 @@ import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import org.gradle.script.lang.kotlin.getValue
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.getValue
+import holygradle.kotlin.dsl.task
 
 class DefaultPublishPackagesExtension(
         private val project: Project,

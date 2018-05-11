@@ -6,7 +6,7 @@ import holygradle.io.Link
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
-import org.gradle.script.lang.kotlin.extra
+import holygradle.kotlin.dsl.extra
 import java.io.File
 
 /**

@@ -13,6 +13,7 @@
             <option value="$PROJECT_DIR$/credential-store" />
             <option value="$PROJECT_DIR$/custom-gradle-core-plugin" />
             <option value="$PROJECT_DIR$/devenv-plugin" />
+            <option value="$PROJECT_DIR$/holygradle-kotlin-dsl" />
             <option value="$PROJECT_DIR$/integration" />
             <option value="$PROJECT_DIR$/intrepid-plugin" />
             <option value="$PROJECT_DIR$/my-credentials-plugin" />

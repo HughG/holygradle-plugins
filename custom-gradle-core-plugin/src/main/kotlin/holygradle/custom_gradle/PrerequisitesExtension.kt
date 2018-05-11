@@ -1,10 +1,11 @@
 package holygradle.custom_gradle
 
+import holygradle.kotlin.dsl.apply
+import holygradle.kotlin.dsl.task
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.script.lang.kotlin.*
 
 class PrerequisitesExtension(private val project: Project) {
     private val checkers: MutableMap<String, PrerequisitesCheckerFactory> = linkedMapOf()

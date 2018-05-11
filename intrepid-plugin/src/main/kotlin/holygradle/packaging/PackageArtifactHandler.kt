@@ -15,8 +15,8 @@ import org.gradle.api.initialization.Settings
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.bundling.Zip
-import org.gradle.script.lang.kotlin.extra
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.extra
+import holygradle.kotlin.dsl.task
 import java.io.File
 
 class PackageArtifactHandler(val project: Project, val name: String) : PackageArtifactDSL {

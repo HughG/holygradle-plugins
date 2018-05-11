@@ -1,10 +1,10 @@
 package holygradle.custom_gradle
 
+import holygradle.kotlin.dsl.get
+import holygradle.kotlin.dsl.withType
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.ResolvedDependency
-import org.gradle.script.lang.kotlin.get
-import org.gradle.script.lang.kotlin.withType
 
 class PluginUsages(project: Project) {
     class Versions(val requested: String, val selected: String)

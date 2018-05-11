@@ -3,7 +3,7 @@ package holygradle.source_dependencies
 
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.task
 
 class SourceDependencyTaskHandler(val name: String) {
     companion object {

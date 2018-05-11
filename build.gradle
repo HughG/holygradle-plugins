@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.2.10'
+    ext.kotlin_version = '1.2.30'
 
     repositories {
         mavenCentral()
@@ -123,9 +123,11 @@ subprojects {
 }
 
 subprojects {
-    if (project.name.endsWith("plugin") || project.name == "integration") {
+    if (project.name.endsWith("plugin")
+            || project.name == "integration"
+            || project.name == "holygradle-kotlin-dsl"
+    ) {
         apply plugin: "groovy"
-
         apply plugin: 'kotlin'
         sourceCompatibility = 1.8
 
@@ -140,7 +142,6 @@ subprojects {
             compile "org.jetbrains.kotlin:kotlin-stdlib-jre8:$kotlin_version"
             compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
             compile "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlin_version"
-            compile "org.gradle:gradle-script-kotlin:0.9.1"
 
             testCompile files("../buildSrc/build/classes/main/")
             testCompile group: 'junit', name: 'junit', version: '4.12'
@@ -151,6 +152,13 @@ subprojects {
             kotlinOptions {
                 languageVersion = "1.2"
             }
+        }
+    }
+    if (project.name.endsWith("plugin")
+            || project.name == "integration"
+    ) {
+        dependencies {
+            compile project(':holygradle-kotlin-dsl')
         }
     }
 }

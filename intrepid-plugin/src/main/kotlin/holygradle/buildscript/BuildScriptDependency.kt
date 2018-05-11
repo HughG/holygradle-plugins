@@ -6,8 +6,8 @@ import holygradle.custom_gradle.util.CamelCase
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.tasks.Copy
-import org.gradle.script.lang.kotlin.get
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.get
+import holygradle.kotlin.dsl.task
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import java.io.File
 

@@ -13,8 +13,8 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
-import org.gradle.script.lang.kotlin.project
-import org.gradle.script.lang.kotlin.task
+import holygradle.kotlin.dsl.project
+import holygradle.kotlin.dsl.task
 import java.io.File
 
 class SourceDependencyHandler(

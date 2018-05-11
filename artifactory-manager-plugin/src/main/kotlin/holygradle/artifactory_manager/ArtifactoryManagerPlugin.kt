@@ -1,9 +1,9 @@
 package holygradle.artifactory_manager
 
+import holygradle.kotlin.dsl.task
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.script.lang.kotlin.task
 import java.io.File
 
 class ArtifactoryManagerPlugin : Plugin<Project> {

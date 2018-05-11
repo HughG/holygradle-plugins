@@ -2,7 +2,7 @@ package holygradle.custom_gradle.util
 
 import groovy.lang.Closure
 import org.gradle.api.logging.Logger
-import org.gradle.script.lang.kotlin.invoke
+import holygradle.kotlin.dsl.invoke
 
 import java.text.DateFormat
 import java.text.SimpleDateFormat

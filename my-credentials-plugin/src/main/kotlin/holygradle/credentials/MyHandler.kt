@@ -3,7 +3,7 @@ package holygradle.credentials
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
-import org.gradle.script.lang.kotlin.getValue
+import holygradle.kotlin.dsl.getValue
 import java.io.ByteArrayOutputStream
 
 class MyHandler(private val project: Project, private val credentialStorePath: String) : CredentialSource {

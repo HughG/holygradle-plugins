@@ -1,9 +1,9 @@
 package holygradle.custom_gradle
 
 import holygradle.custom_gradle.util.CamelCase
+import holygradle.kotlin.dsl.task
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
-import org.gradle.script.lang.kotlin.task
 
 class StatedPrerequisite(
         private val checkerFactory: PrerequisitesCheckerFactory,

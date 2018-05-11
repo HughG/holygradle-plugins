@@ -7,7 +7,7 @@ import holygradle.SettingsFileHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.util.mutableUnique
 import org.gradle.api.tasks.TaskAction
-import org.gradle.script.lang.kotlin.getValue
+import holygradle.kotlin.dsl.getValue
 import java.io.File
 import java.util.*
 

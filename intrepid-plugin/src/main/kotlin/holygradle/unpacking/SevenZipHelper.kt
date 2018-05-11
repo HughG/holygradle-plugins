@@ -5,7 +5,7 @@ import org.gradle.api.Project
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.Task
 import org.gradle.api.tasks.Copy
-import org.gradle.script.lang.kotlin.getValue
+import holygradle.kotlin.dsl.getValue
 import java.io.ByteArrayOutputStream
 import java.io.File
 

@@ -8,8 +8,8 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.CopySpec
 import org.gradle.api.tasks.AbstractCopyTask
-import org.gradle.script.lang.kotlin.extra
-import org.gradle.script.lang.kotlin.getValue
+import holygradle.kotlin.dsl.extra
+import holygradle.kotlin.dsl.getValue
 import java.io.File
 
 class CollectDependenciesHelper(private val copyTask: AbstractCopyTask) {

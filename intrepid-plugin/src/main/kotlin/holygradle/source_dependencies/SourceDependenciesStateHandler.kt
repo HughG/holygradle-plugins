@@ -3,7 +3,7 @@ package holygradle.source_dependencies
 import holygradle.util.unique
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.gradle.script.lang.kotlin.getValue
+import holygradle.kotlin.dsl.getValue
 
 /**
  * This project extension provides information about the state of source dependencies.
