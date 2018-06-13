@@ -113,19 +113,17 @@ object Junction {
         val canonicalTarget = getCanonicalTarget(canonicalLink, target)
         // Directory junctions can be created to non-existent targets but it breaks stuff so disallow it
         if (!canonicalTarget.exists()) {
-            throw IOException("Cannot create link to non-existent target: from '${canonicalLink}' to '${target}'")
+            throw IOException("Cannot create link to non-existent target: from '${canonicalLink}' to '${canonicalTarget}'")
         }
 
-        FileHelper.ensureMkdirs(canonicalLink, "for directory junction to '${target}'")
+        FileHelper.ensureMkdirs(canonicalLink, "for directory junction to '${canonicalTarget}'")
 
         try {
-            createMountPoint(canonicalLink.path, target.path)
+            createMountPoint(canonicalLink.path, canonicalTarget.path)
         } catch (e: Win32Exception) {
             // If we failed to create the mount point, we should delete the folder we just created, so that we can fall
             // back to symlink creation.  If we leave the folder, we'll fail to create a symlink from that location.
-            println("Failed to make link from ${canonicalLink.path} to ${target.path}; cleaning up ...")
             delete(canonicalLink)
-            println("... deleted ${canonicalLink.path}")
             throw e
         }
 
@@ -138,7 +136,7 @@ object Junction {
             // This will be immediately caught by the outer "catch" block.  Junction.rebuild might also throw for
             // other reasons, which is why we don't just factor this out to another method returning "false" or
             // something.
-            throw IOException("Failed to create directory junction from '${canonicalLink}' to '${target}'.")
+            throw IOException("Failed to create directory junction from '${canonicalLink}' to '${canonicalTarget}'.")
         }
     }
 
@@ -161,7 +159,7 @@ object Junction {
     }
 
     @Suppress("unused") // unused receiver
-    private val Byte.Companion.SIZE: Byte get() = 1
+    private inline val Byte.Companion.SIZE: Int get() = java.lang.Byte.SIZE
 
     private fun ByteBuffer.putString(s: String): ByteBuffer = also {
         val size = s.length

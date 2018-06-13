@@ -320,9 +320,10 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         // Arrange
         File link = new File(testDir, "non_empty_dir").canonicalFile
         Assert.assertTrue("link '$link' is absolute", link.absolute)
+        File file = new File(link, "dummy.txt")
+        FileHelper.ensureDeleteFile(file, "for test setup")
         FileHelper.ensureDeleteDirRecursive(link, "for test setup")
         FileHelper.ensureMkdirs(link, "for test setup")
-        File file = new File(link, "dummy.txt")
         file.text = "dummy file"
 
         // Act
