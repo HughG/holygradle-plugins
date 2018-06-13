@@ -13,6 +13,9 @@ import java.nio.file.Files
  */
 object FileHelper {
     @JvmStatic
+    fun isEmptyDirectory(file: File): Boolean = file.isDirectory && file.list().isEmpty()
+
+    @JvmStatic
     @JvmOverloads
     fun ensureDeleteFile(file: File, purpose: String? = null) {
         if (!file.exists()) {

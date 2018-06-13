@@ -1,5 +1,6 @@
 package holygradle.io
 
+import holygradle.custom_gradle.util.RetryHelper
 import java.nio.file.Files
 import org.gradle.api.logging.Logging
 import java.io.File
@@ -18,25 +19,37 @@ object Link {
 
     @JvmStatic
     fun delete(link: File) {
-        if (link.exists()) {
-            linkTypeHelper(link, Symlink::delete, Junction::delete)
+        RetryHelper.retry(10, 1000, LOGGER, "delete link at ${link}") {
+            if (link.exists()) {
+                LOGGER.debug("Deleting link at ${link}")
+                linkTypeHelper(link, Symlink::delete, Junction::delete)
+            } else {
+                LOGGER.debug("Skipping delete link because there is no file at ${link}")
+            }
         }
     }
 
     @JvmStatic
     fun rebuild(link: File, target: File) {
-        // Delete the link first in case it already exists as the wrong type.  The Junction.rebuild and Symlink.rebuild
-        // methods will also do this check themselves in case they are called directly, but we need to do it here also
-        // in case we are deleting a symlink to replace it with a directory junction, or vice versa.
-        if (isLink(link)) {
-            delete(link)
-        }
+        RetryHelper.retry(10, 1000, LOGGER, "delete link at ${link}") {
+            // Delete the link first in case it already exists as the wrong type.  The Junction.rebuild and
+            // Symlink.rebuild methods will also do this check themselves in case they are called directly, but we need
+            // to do it here also in case we are deleting a symlink to replace it with a directory junction, or vice
+            // versa.
+            if (isLink(link)) {
+                delete(link)
+            }
 
-        try {
-            Junction.rebuild(link, target)
-        } catch (e: Exception) {
-            LOGGER.debug("Failed to create a directory junction from '${link}' to '${target}'. Falling back to symlinks.", e)
-            rebuildAsSymlink(link, target)
+            try {
+                LOGGER.debug("Creating link from ${link} to ${target}")
+                Junction.rebuild(link, target)
+            } catch (e: Exception) {
+                LOGGER.debug(
+                    "Failed to create a directory junction from '${link}' to '${target}'. Falling back to symlinks.",
+                    e
+                )
+                rebuildAsSymlink(link, target)
+            }
         }
     }
 

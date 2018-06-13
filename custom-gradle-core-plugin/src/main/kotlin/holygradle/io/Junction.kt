@@ -59,23 +59,6 @@ object Junction {
     }
 
     /**
-     * Throws an exception if {@code link} exists and is not a directory junction.
-     * @param link The potential link to check.
-     */
-    @JvmStatic
-    fun checkIsLinkOrMissing(link: File) {
-        // For simplicity in any error reporting, use canonical path for the link.
-        val canonicalLink = link.canonicalFile
-
-        if (canonicalLink.exists() && !isJunction(canonicalLink)) {
-            throw RuntimeException(
-                "Cannot not delete or create a directory junction at '${canonicalLink.path}' " +
-                "because a folder or file already exists there and is not a directory junction."
-            )
-        }
-    }
-
-    /**
      * Deletes the {@code link} if it exists and is a directory junction, then also deletes the underlying directory if
      * it is empty.  Does nothing if the {@code link} does not exist or is not a directory junction.
      * @param link The directory junction to delete
@@ -85,15 +68,30 @@ object Junction {
         // For simplicity in any error reporting, use canonical path for the link.
         val canonicalLink = link.canonicalFile
 
-        checkIsLinkOrMissing(canonicalLink)
-
-        if (isJunction(canonicalLink)) {
-            removeMountPoint(canonicalLink.canonicalPath)
-
-            // Delete the mount point if the directory is empty
-            if (canonicalLink.isDirectory && canonicalLink.list().isEmpty()) {
-                canonicalLink.delete()
+        fun ensureDeleteJunction() {
+            try {
+                removeMountPoint(canonicalLink.path)
+            } finally {
+                // Delete the mount point if the directory is empty.  We do this even if the mount point removal throws
+                // an exception, in case it sort-of worked.
+                if (FileHelper.isEmptyDirectory(canonicalLink)) {
+                    canonicalLink.delete()
+                }
             }
+        }
+
+        when {
+            FileHelper.isEmptyDirectory(canonicalLink) ->
+                // Delete the existing "link" if it's actually an empty directory, because it may be a left-over from a
+                // previous failed attempt to delete a directory junction.  This has been observed occasionally and we
+                // suspect it's due to some background process temporarily having a lock on the folder -- for example, a
+                // virus scanner, or the Windows Indexing Service.
+                canonicalLink.delete()
+            isJunction(canonicalLink) -> ensureDeleteJunction()
+            canonicalLink.exists() -> throw RuntimeException(
+                "Cannot not delete or create a directory junction at '${canonicalLink.path}' " +
+                "because a folder or file already exists there and is not a directory junction or an empty folder."
+            )
         }
     }
 
@@ -109,29 +107,38 @@ object Junction {
         // For simplicity in any error reporting, use canonical paths for the link and target.
         // Also, directory junction targets must be absolute paths.
         val canonicalLink = link.canonicalFile
+
+        delete(canonicalLink)
+
         val canonicalTarget = getCanonicalTarget(canonicalLink, target)
-
-        checkIsLinkOrMissing(canonicalLink)
-
         // Directory junctions can be created to non-existent targets but it breaks stuff so disallow it
         if (!canonicalTarget.exists()) {
-            throw IOException("Cannot create link to non-existent target: from '${canonicalLink}' to '${canonicalTarget}'")
+            throw IOException("Cannot create link to non-existent target: from '${canonicalLink}' to '${target}'")
         }
 
-        FileHelper.ensureMkdirs(canonicalLink, "for directory junction to '${canonicalTarget}'")
+        FileHelper.ensureMkdirs(canonicalLink, "for directory junction to '${target}'")
 
-        createMountPoint(canonicalLink.path, canonicalTarget.path)
+        try {
+            createMountPoint(canonicalLink.path, target.path)
+        } catch (e: Win32Exception) {
+            // If we failed to create the mount point, we should delete the folder we just created, so that we can fall
+            // back to symlink creation.  If we leave the folder, we'll fail to create a symlink from that location.
+            println("Failed to make link from ${canonicalLink.path} to ${target.path}; cleaning up ...")
+            delete(canonicalLink)
+            println("... deleted ${canonicalLink.path}")
+            throw e
+        }
 
-        // createMountPoint will blindly create links to stuff that won't work, like network shares or non-existent
-        // targets. The only way I can see to detect this is to check if the resulting file exists. This will return
-        // false if the target is invalid even if the link has been successfully created.
+        // Even if createMountPoint doesn't throw, it will blindly create links to stuff that won't work, like network
+        // shares or non-existent targets. The only way I can see to detect this is to check if the resulting file
+        // exists. This will return false if the target is invalid even if the link has been successfully created.
         if (!canonicalLink.exists()) {
             // Remove the link before continuing.
             delete(canonicalLink)
             // This will be immediately caught by the outer "catch" block.  Junction.rebuild might also throw for
             // other reasons, which is why we don't just factor this out to another method returning "false" or
             // something.
-            throw IOException("Failed to create directory junction from '${canonicalLink}' to '${canonicalTarget}'.")
+            throw IOException("Failed to create directory junction from '${canonicalLink}' to '${target}'.")
         }
     }
 
