@@ -59,7 +59,8 @@ open class SpeedyUnpackManyTask : DefaultTask() {
         }
     }
 
-    private fun addEntry(id: ModuleVersionIdentifier, entry: UnpackEntry) {
+    // Only public for testing
+    fun addEntry(id: ModuleVersionIdentifier, entry: UnpackEntry) {
         if (entries.containsKey(id)) {
             if (entries[id] != entry) {
                 throw RuntimeException("Attempted to add inconsistent ${entry} to replace ${entries[id]} for ${id}")

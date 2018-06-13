@@ -6,7 +6,7 @@ import java.io.File
 /**
  * Extension to hold project-wide settings which affect how packed dependencies are handled.
  */
-class PackedDependenciesSettingsHandler(private val project: Project) {
+open class PackedDependenciesSettingsHandler(private val project: Project) {
     companion object {
         private const val PACKED_DEPENDENCIES_SETTINGS_HANDLER_NAME = "packedDependenciesSettings"
         private const val DEFAULT_UNPACK_CACHE_DIR = "unpackCache"

@@ -43,7 +43,18 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
     // This class uses LinkedHashMap so that the iteration order is predictable and the same as the init order.
     private lateinit var _configurationNamesMap: LinkedHashMap<Map<String, String>, String>
 
-    var prefix: String? = null
+    var prefix: String = ""
+        set(value) {
+            synchronized (initSync) {
+                if (this::_configurationNamesMap.isInitialized) {
+                    throw RuntimeException(
+                        "Cannot change prefix for configuration set ${name} after configuration names have been generated"
+                    )
+                }
+
+                field = value
+            }
+        }
 
     private fun addConfigurationNames(
         axes: LinkedHashMap<String, List<String>>,
@@ -131,15 +142,7 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
     override fun getName(): String = name
 
     fun prefix(prefix: String) {
-        synchronized (initSync) {
-            if (this::_configurationNamesMap.isInitialized) {
-                throw RuntimeException(
-                    "Cannot change prefix for configuration set ${name} after configuration names have been generated"
-                )
-            }
-
-            this.prefix = prefix
-        }
+        this.prefix = prefix
     }
 
     override fun type(type: ConfigurationSetType) {
@@ -163,7 +166,7 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
 
                 val defaultType = type as? DefaultConfigurationSetType
                         ?: throw UnsupportedOperationException(
-                                "${this.javaClass} only supports configuration set types which are ${DefaultConfigurationSetType.javaClass}"
+                                "${this::class.java} only supports configuration set types which are ${DefaultConfigurationSetType::class.java}"
                             )
                 if (defaultType.requiredAxes.isEmpty()) {
                     throw IllegalArgumentException(
@@ -172,17 +175,6 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
                 }
 
                 field = defaultType
-
-                // Calculate the number of configurations we'll end up with.  We'll have the Cartesian product of all the
-                // required and optional axis values, plus the Cartesian product of just the required parts with "_common".
-                fun <K, V> Map<K, Collection<V>>.getCombinationCount() =
-                        values.fold(1) { acc, value -> acc * value.size }
-
-                val requiredAxesCombinationCount = defaultType.requiredAxes.getCombinationCount()
-                val optionalAxesCombinationCount = defaultType.optionalAxes.getCombinationCount()
-                _configurationNamesMap = LinkedHashMap(
-                        requiredAxesCombinationCount * (optionalAxesCombinationCount + 1)
-                )
             }
         }
 
@@ -212,11 +204,21 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
         get() {
             synchronized(initSync) {
                 if (!this::_configurationNamesMap.isInitialized) {
-                    throw RuntimeException("Must set type for configuration set ${name}")
+                    // Calculate the number of configurations we'll end up with.  We'll have the Cartesian product of all the
+                    // required and optional axis values, plus the Cartesian product of just the required parts with "_common".
+                    fun <K, V> Map<K, Collection<V>>.getCombinationCount() =
+                            values.fold(1) { acc, value -> acc * value.size }
+
+                    val defaultType = typeAsDefault
+                    val requiredAxesCombinationCount = defaultType.requiredAxes.getCombinationCount()
+                    val optionalAxesCombinationCount = defaultType.optionalAxes.getCombinationCount()
+                    _configurationNamesMap = LinkedHashMap(
+                            requiredAxesCombinationCount * (optionalAxesCombinationCount + 1)
+                    )
                 }
                 if (_configurationNamesMap.isEmpty()) {
                     val builder = StringBuilder()
-                    if (prefix != null) {
+                    if (prefix != "") {
                         builder.append(prefix)
                         builder.append("_")
                     }
@@ -247,7 +249,7 @@ open class DefaultConfigurationSet(private val name: String) : ConfigurationSet 
 
     private fun getDescriptionForBinding(binding: Map<String, String>): String {
         val typeDescription = typeAsDefault.getDescriptionForBinding(binding)
-        val addPrefixDescription = if (prefix == null) "" else ".makeSet { prefix '${prefix}' }"
+        val addPrefixDescription = if (prefix == "") "" else ".makeSet { prefix '${prefix}' }"
         val setDescription = "configurationSets.${type.name ?: throw RuntimeException("type not set for ${this}")}"
         val mappingDescription = "configurationSet ..., ${setDescription}${addPrefixDescription}"
         return typeDescription +

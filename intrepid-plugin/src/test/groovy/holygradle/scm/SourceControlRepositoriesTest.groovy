@@ -24,14 +24,14 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         
         assertTrue(sourceControl instanceof SvnRepository)
         assertEquals("1", sourceControl.getRevision())
-        assertFalse(sourceControl.hasLocalChanges())
+        assertFalse(sourceControl.hasLocalChanges)
         assertEquals("file:///C:/Projects/DependencyManagement/Project/test_svn_repo/trunk", sourceControl.getUrl())
         assertEquals("svn", sourceControl.getProtocol())
         assertEquals(svnDir.getCanonicalFile(), sourceControl.getLocalDir())
         
         File helloFile = new File(svnDir, "hello.txt")
         helloFile.write("bonjour")
-        assertTrue(sourceControl.hasLocalChanges())
+        assertTrue(sourceControl.hasLocalChanges)
     }
 
     /**
@@ -77,7 +77,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             "30c86257cd03bde0acb2e22f91512e589df605e9",
             sourceControl.getRevision()
         )
-        assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
+        assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges)
         assertEquals("The master repo is 'unknown'", "unknown", sourceControl.getUrl())
         assertEquals(
             "The SourceControlRepository reports its protocol correctly",
@@ -94,7 +94,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             PrintWriter w -> w.println("two")
         }
 
-        assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges())
+        assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges)
     }
 
     /**
@@ -130,7 +130,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
                 "A GitRepository instance has been created for the project",
                 sourceControl instanceof GitRepository
         )
-        assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
+        assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges)
         assertEquals("The master repo is ''", "", sourceControl.getUrl())
         assertEquals(
                 "The SourceControlRepository reports its protocol correctly",
@@ -147,7 +147,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             PrintWriter w -> w.println("two")
         }
 
-        assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges())
+        assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges)
     }
 
     /**
@@ -200,7 +200,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
             "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
             sourceControl.getRevision()
         )
-        assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
+        assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges)
 
         // Add another file.
         (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
@@ -243,7 +243,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         assertNotNull(sourceControl)
         assertTrue(sourceControl instanceof DummySourceControl)
         assertEquals(null, sourceControl.getRevision())
-        assertFalse(sourceControl.hasLocalChanges())
+        assertFalse(sourceControl.hasLocalChanges)
         assertEquals(null, sourceControl.getUrl())
         assertEquals("n/a", sourceControl.getProtocol())
         assertEquals(null, sourceControl.getLocalDir())

@@ -1,12 +1,12 @@
 package holygradle.unpacking
 
-import groovy.mock.interceptor.StubFor
 import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleTest
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.testfixtures.ProjectBuilder
+import org.jetbrains.annotations.NotNull
 import org.junit.Assert
 import org.junit.Test
 
@@ -38,6 +38,20 @@ class SpeedyUnpackManyTaskTest extends AbstractHolyGradleTest {
 
     private static final String TEST_UNPACK_DIR = "testUnpackDir"
 
+    private static class SpyUnzipper implements Unzipper {
+        boolean ran = false
+
+        @Override
+        Object getDependencies() {
+            return []
+        }
+
+        @Override
+        void unzip(@NotNull File zipFile, @NotNull File targetDirectory) {
+            ran = true
+        }
+    }
+
     /**
      * Check that repeatedly running a task to unpack multiple artifacts does nothing after the first run (assuming
      * that it worked the first time).
@@ -58,17 +72,7 @@ class SpeedyUnpackManyTaskTest extends AbstractHolyGradleTest {
             .withProjectDir(testDir)
             .build()
 
-        // Add dummy BuildScriptDependencies to the project so that the SevenZipHelper class will work.
-        project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
-
-        // Stub the SevenZipHelper so that it doesn't really call 7zip, it just sets a flag to say it was asked to.
-        // (If I still had patience today, I would use Groovy's mocking properly instead of handling the flag myself,
-        // but I don't.)
-        boolean ranSevenZip
-        StubFor stubForSZH = new StubFor(SevenZipHelper)
-        stubForSZH.ignore("getDependencies") { [] }
-        stubForSZH.ignore("unzip") { File zipFile, File targetDirectory -> ranSevenZip = true }
-        SevenZipHelper dummySZH = (SevenZipHelper)stubForSZH.proxyInstance([project] as Object[])
+        SpyUnzipper spyUnzipper = new SpyUnzipper()
 
         List<File> files = (1..3).collect { new File("file${it}") }
 
@@ -85,24 +89,24 @@ class SpeedyUnpackManyTaskTest extends AbstractHolyGradleTest {
 
         // Set up the first task to test.
         SpeedyUnpackManyTask task1 = (SpeedyUnpackManyTask)project.task([type: SpeedyUnpackManyTask], "speedyUnpack1")
-        task1.initialize(dummySZH)
+        task1.initialize(spyUnzipper)
         task1.addEntry(id, new UnpackEntry(files, testUnpackDir, false, true))
 
         // Run the task's action once and check that the unzipping happens (i.e., that the task tries to run 7zip)
-        ranSevenZip = false
+        spyUnzipper.ran = false
         task1.execute()
-        Assert.assertTrue("On first run, unzipping happened", ranSevenZip)
+        Assert.assertTrue("On first run, unzipping happened", spyUnzipper.ran)
 
         // Set a second task to test.  (The first task will have internally recorded that it has already run, and will
         // do nothing if we try to execute it again.)
         SpeedyUnpackManyTask task2 = (SpeedyUnpackManyTask)project.task([type: SpeedyUnpackManyTask], "speedyUnpack2")
-        task2.initialize(dummySZH)
+        task2.initialize(spyUnzipper)
         task2.addEntry(id, new UnpackEntry(files, testUnpackDir, false, true))
 
         // Now run it again and check that it does nothing.
-        ranSevenZip = false
+        spyUnzipper.ran = false
         task2.execute()
-        Assert.assertFalse("On second run, no unzipping happened", ranSevenZip)
+        Assert.assertFalse("On second run, no unzipping happened", spyUnzipper.ran)
 
         ////////////////////////////////////////////////////////////////////////////////////////
         // Test cleanup.

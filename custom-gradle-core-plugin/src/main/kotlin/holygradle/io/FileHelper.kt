@@ -32,6 +32,7 @@ object FileHelper {
         }
     }
 
+
     @JvmStatic
     @JvmOverloads
     fun ensureDeleteDirRecursive(dir: File, purpose: String? = null) {
@@ -46,14 +47,12 @@ object FileHelper {
                 // If it still exists, we delete it now.
                 if (d.exists()) {
                     d.setWritable(true)
-                    RetryHelper.retry(10, 1000, null, "delete ${d}${formatPurpose(purpose)}") {
+                    RetryHelper.retry(10, 1000, null, "delete ${dir}${formatPurpose(purpose)}") {
                         Files.delete(d.toPath())
                     }
                 }
             }.forEach { f ->
-                // If this dir was a *symlink* to a directory, then then main traverse closure will have deleted it.
-                // If it still exists, we delete it now.
-                if (f.exists()) {
+                if (Link.isLink(f) || !f.isDirectory) {
                     f.setWritable(true)
                     RetryHelper.retry(10, 1000, null, "delete ${dir}${formatPurpose(purpose)}") {
                         Files.delete(f.toPath())

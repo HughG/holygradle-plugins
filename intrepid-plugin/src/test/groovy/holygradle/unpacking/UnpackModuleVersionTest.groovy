@@ -41,7 +41,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
             project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             parent,
-            (parent == null) ? new PackedDependencyHandler(moduleName) : null
+            (parent == null) ? new PackedDependencyHandler(moduleName, makeProject()) : null
         )
     }
     
@@ -49,6 +49,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         Project project = ProjectBuilder.builder().build()
         PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir =
             new File("theUnpackCache")
+        PackedDependencyHandler.createContainer(project)
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
     }
@@ -93,7 +94,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
     public void testSingleModuleIncludeVersionNumberInPath() {
         Project project = makeProject()
 
-        PackedDependencyHandler eggfruitPackedDep = new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty")
+        PackedDependencyHandler eggfruitPackedDep =
+                new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty", project)
         UnpackModuleVersion eggfruit = new UnpackModuleVersion(
             project,
             new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),

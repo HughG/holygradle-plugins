@@ -3,6 +3,7 @@ package holygradle.artifacts
 import holygradle.lang.NamedParameters
 import org.gradle.api.Action
 import org.gradle.api.artifacts.Configuration
+import org.jetbrains.kotlin.incremental.dumpMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.component1
 
@@ -157,14 +158,14 @@ open class DefaultConfigurationSetType(
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @Suppress("unused")
-    fun requiredAxes(requiredAxes: LinkedHashMap<String, List<String>>) {
-        requiredAxes.putAll(requiredAxes)
+    fun requiredAxes(requiredAxes: Map<String, List<String>>) {
+        this.requiredAxes.putAll(requiredAxes)
     }
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @Suppress("unused")
-    fun optionalAxes(optionalAxes: LinkedHashMap<String, List<String>>) {
-        optionalAxes.putAll(optionalAxes)
+    fun optionalAxes(optionalAxes: Map<String, List<String>>) {
+        this.optionalAxes.putAll(optionalAxes)
     }
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
@@ -245,10 +246,14 @@ open class DefaultConfigurationSetType(
     fun getDescriptionForBinding(binding: Map<String, String>): String {
         val stage = binding[STAGE_AXIS_NAME]
         val bindingWithoutStage = binding.filter { (k, _) -> k != STAGE_AXIS_NAME }
+        fun getBindingMapDescription(binding: Map<String, String>): String =
+                binding.asIterable().joinToString(",", "[", "]") {
+                    "${it.key}:${it.value}"
+                }
         val restOfBindingDescription = if (bindingWithoutStage.isEmpty()) {
             ", common to all values of ${optionalAxes.keys}"
         } else {
-            ", with ${bindingWithoutStage}"
+            ", with ${getBindingMapDescription(bindingWithoutStage)}"
         }
         return "Files for the ${stage} stage of development${restOfBindingDescription}."
     }

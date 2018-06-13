@@ -35,7 +35,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
             project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             parent,
-            (parent == null) ? new PackedDependencyHandler(moduleName) : null
+            (parent == null) ? new PackedDependencyHandler(moduleName, getProject()) : null
         )
         if (addDummyArtifact) {
             // Add a dummy artifact, otherwise the link won't be created (because no artifacts exist to be unpacked).
@@ -48,6 +48,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         Project project = ProjectBuilder.builder().build()
         PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir =
             new File("theUnpackCache")
+        PackedDependencyHandler.createContainer(project)
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
         project
     }

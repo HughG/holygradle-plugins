@@ -2,6 +2,7 @@ package holygradle.scm
 
 import holygradle.test.AbstractHolyGradleTest
 import holygradle.testUtil.ExecUtil
+import org.gradle.api.Action
 import org.gradle.process.ExecSpec
 import org.junit.Test
 
@@ -17,12 +18,17 @@ class HgRepositoryTest extends AbstractHolyGradleTest {
         final List<String> expectedArgs  = ["log", "-r", "12345abcdefg", "-l", "1", "--template", "\"{node}\""]
         final ExecSpec stubSpec = ExecUtil.makeStubExecSpec()
 
-        final Command hgCommand = [ execute : { Closure configure -> configure(stubSpec); "12345abcdefg"} ] as Command
+        final Command hgCommand = [
+                execute : { Action<ExecSpec> configure ->
+                    configure.execute(stubSpec)
+                    "12345abcdefg"
+                }
+        ] as Command
         final File workingDir = getTestDir()
         final HgRepository repo = new HgRepository(hgCommand, workingDir)
         final String actualRevision = repo.revision
 
-        assertEquals("Working dir", workingDir, stubSpec.workingDir)
+        assertEquals("Working dir", workingDir.absoluteFile, stubSpec.workingDir)
         assertEquals("Hg args", expectedArgs, stubSpec.args)
         assertEquals("Revision", expectedRevision, actualRevision)
     }
@@ -33,8 +39,8 @@ class HgRepositoryTest extends AbstractHolyGradleTest {
         Object[] changedFileList = null
         final ExecSpec stubSpec = ExecUtil.makeStubExecSpec()
         final Command hgCommand = [
-            execute : { Closure configure ->
-                configure(stubSpec)
+            execute : { Action<ExecSpec> configure ->
+                configure.execute(stubSpec)
                 changedFileList.join("\n")
             }
         ] as Command
@@ -44,12 +50,12 @@ class HgRepositoryTest extends AbstractHolyGradleTest {
 
         changedFileList = ["M some_modified_file.txt","A some_added_file.foo"]
         assertTrue(repo.hasLocalChanges)
-        assertEquals("Working dir", workingDir, stubSpec.workingDir)
+        assertEquals("Working dir", workingDir.absoluteFile, stubSpec.workingDir)
         assertEquals("Hg args", expectedArgs, stubSpec.args)
 
         changedFileList = []
         assertFalse(repo.hasLocalChanges)
-        assertEquals("Working dir", workingDir, stubSpec.workingDir)
+        assertEquals("Working dir", workingDir.absoluteFile, stubSpec.workingDir)
         assertEquals("Hg args", expectedArgs, stubSpec.args)
     }
 }

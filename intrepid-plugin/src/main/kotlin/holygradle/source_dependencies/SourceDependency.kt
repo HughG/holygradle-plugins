@@ -11,7 +11,7 @@ abstract class SourceDependency(
 ) {
     companion object {
         @JvmStatic
-        protected fun deleteEmptyDir(dir: File) {
+        fun deleteEmptyDir(dir: File) {
             if (dir.exists()) {
                 if (dir.list().isEmpty()) {
                     FileHelper.ensureDeleteDirRecursive(dir)

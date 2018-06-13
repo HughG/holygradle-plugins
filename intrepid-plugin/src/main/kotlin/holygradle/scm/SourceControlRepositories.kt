@@ -4,6 +4,8 @@ import org.gradle.api.Project
 import java.io.File
 
 object SourceControlRepositories {
+    @JvmStatic
+    @JvmOverloads
     fun create(
         rootProject: Project,
         location: File,
@@ -28,6 +30,7 @@ object SourceControlRepositories {
         }
     }
 
+    @JvmStatic
     fun createExtension(project: Project): SourceControlRepository? {
         val repo = create(project, project.projectDir, true)
         if (repo != null) {

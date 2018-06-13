@@ -1,6 +1,7 @@
 package holygradle.artifacts
 
 import holygradle.test.AbstractHolyGradleTest
+import holygradle.test.AssertHelper
 import org.gradle.api.artifacts.Configuration
 import org.junit.Assert
 import org.junit.Rule
@@ -74,13 +75,13 @@ class DefaultConfigurationSetTest extends AbstractHolyGradleTest {
         DefaultConfigurationSet set = new DefaultConfigurationSet("testConfSet")
         Assert.assertEquals("Check name is initialised", "testConfSet", set.name)
 
-        Assert.assertNull("Check type is not initialised", set.type)
+        AssertHelper.assertThrows("Check type is not initialised", Exception.class) { set.type }
         set.type(type)
         Assert.assertEquals("Check type is initialised", type, set.type)
         Assert.assertEquals("Check type is available as DefaultConfigurationSetType", type, set.typeAsDefault)
         Assert.assertEquals("Check axes match type axes", type.axes, set.axes)
 
-        Assert.assertNull("Check prefix is not initialised", set.prefix)
+        Assert.assertEquals("Check prefix is not initialised", "", set.prefix)
         set.prefix("prefix")
         Assert.assertEquals("Check prefix is initialised", "prefix", set.prefix)
     }

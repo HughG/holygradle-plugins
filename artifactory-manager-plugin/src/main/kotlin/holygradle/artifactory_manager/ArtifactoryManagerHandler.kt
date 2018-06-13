@@ -4,7 +4,6 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.AuthenticationSupported
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
-import org.gradle.api.logging.Logger
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*

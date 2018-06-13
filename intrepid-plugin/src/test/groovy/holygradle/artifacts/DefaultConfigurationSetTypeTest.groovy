@@ -106,10 +106,10 @@ class DefaultConfigurationSetTypeTest extends AbstractHolyGradleTest {
     public void testSetAxesWithMethods() {
         ConfigurationSetType type = new DefaultConfigurationSetType("type")
         type.with {
-            requiredAxes(
+            requiredAxes([
                 aspect: ASPECTS,
                 lifecycleStage: ["make", "use"]
-            )
+            ])
             optionalAxes = [
                 colour: COLOURS,
                 size: ["medium", "large"]
