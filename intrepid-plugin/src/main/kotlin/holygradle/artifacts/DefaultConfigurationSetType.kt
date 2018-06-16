@@ -247,7 +247,7 @@ open class DefaultConfigurationSetType(
         val stage = binding[STAGE_AXIS_NAME]
         val bindingWithoutStage = binding.filter { (k, _) -> k != STAGE_AXIS_NAME }
         fun getBindingMapDescription(binding: Map<String, String>): String =
-                binding.asIterable().joinToString(",", "[", "]") {
+                binding.asIterable().joinToString(", ", "[", "]") {
                     "${it.key}:${it.value}"
                 }
         val restOfBindingDescription = if (bindingWithoutStage.isEmpty()) {

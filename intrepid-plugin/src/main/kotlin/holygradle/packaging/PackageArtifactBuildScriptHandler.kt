@@ -9,6 +9,7 @@ import holygradle.links.LinkHandler
 import holygradle.publishing.RepublishHandler
 import holygradle.scm.SourceControlRepositories
 import holygradle.source_dependencies.SourceDependencyHandler
+import holygradle.util.addingDefault
 import org.gradle.api.Action
 import org.gradle.api.Project
 import java.io.File
@@ -54,7 +55,7 @@ class PackageArtifactBuildScriptHandler(private val project: Project) : PackageA
                 throwIfAnyMissing: Boolean,
                 sourceDepNames: Iterable<String>
         ): Map<String, SourceDependencyHandler> {
-            val allSourceDeps = mutableMapOf<String, MutableList<SourceDependencyHandler>>().withDefault { ArrayList<SourceDependencyHandler>() }
+            val allSourceDeps = mutableMapOf<String, MutableList<SourceDependencyHandler>>().addingDefault { ArrayList<SourceDependencyHandler>() }
             for (sourceDepName in sourceDepNames) {
                 for (sourceDep in findSourceDependencies(project.rootProject, sourceDepName)) {
                     allSourceDeps[sourceDepName]!!.add(sourceDep)

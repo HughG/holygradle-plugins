@@ -20,6 +20,7 @@ import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import holygradle.kotlin.dsl.getValue
 import holygradle.kotlin.dsl.task
+import holygradle.util.addingDefault
 
 class DefaultPublishPackagesExtension(
         private val project: Project,
@@ -347,7 +348,7 @@ class DefaultPublishPackagesExtension(
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
-            val configsByCoord = linkedMapOf<String, MutableList<String>>().withDefault { mutableListOf() }
+            val configsByCoord = linkedMapOf<String, MutableList<String>>().addingDefault { mutableListOf() }
             val dependencies = xml.asIvyModule().dependencies
             dependencies.forEach { depNode ->
                 val coord = "${depNode.org}:${depNode.name}:${depNode.rev}"

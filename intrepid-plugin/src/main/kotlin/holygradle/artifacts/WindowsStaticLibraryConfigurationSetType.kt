@@ -43,7 +43,7 @@ class WindowsStaticLibraryConfigurationSetType(
                     }
                     is WindowsStaticLibraryConfigurationSetType -> {
                         // Link import, regardless of the value of export, because the LIB will be needed down-stream.
-                        mappings.add(makeMapping(PRIVATE_BUILD_CONFIGURATION_NAME, targetConfigurationName))
+                        mappings.add(makeMapping(sourceConfigurationName, targetConfigurationName))
                     }
                     is WindowsExecutableConfigurationSetType -> {
                         // Don't link import because the target, being an executable or plugin DLL, should have empty

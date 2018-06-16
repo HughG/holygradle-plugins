@@ -1,23 +1,25 @@
 package holygradle.dependencies
 
 import holygradle.Helper
+import holygradle.kotlin.dsl.getValue
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import holygradle.kotlin.dsl.getValue
 
-open class PackedDependencyHandler(
+open class PackedDependencyHandler @JvmOverloads constructor (
         depName: String,
-        project: Project
-) : DependencyHandler(depName, project) {
+        project: Project,
+        options: PackedDependencyOptionsHandler = PackedDependencyOptionsHandler()
+) :
+        DependencyHandler(depName, project),
+        PackedDependencyOptions by options
+{
     companion object {
         @JvmStatic
         fun createContainer(project: Project): Collection<PackedDependencyHandler> {
             if (project == project.rootProject) {
-                project.extensions.create("packedDependenciesDefault", PackedDependencyHandler::class.java, "rootDefault")
-            } else {
-                project.extensions.create("packedDependenciesDefault", PackedDependencyHandler::class.java, "default", project.rootProject)
+                project.extensions.create("packedDependenciesDefault", PackedDependencyOptionsHandler::class.java)
             }
             val packedDependencies = project.container(PackedDependencyHandler::class.java) { name: String ->
                 PackedDependencyHandler(name, project)
@@ -29,61 +31,33 @@ open class PackedDependencyHandler(
 
     private val projectForHandler: Project get() = project
     private var dependencyId: ModuleVersionIdentifier? = null
-    var applyUpToDateChecks: Boolean? = null
-    var readonly: Boolean? = null
-    var unpackToCache: Boolean? = null
-    var createLinkToCache: Boolean? = null
-        private set
-    var createSettingsFile: Boolean? = null
 
-    constructor(
-        depName: String,
-        projectForHandler: Project,
-        dependencyCoordinate: String ,
-        configurations: Collection<Map.Entry<String, String>>
-    ): this(depName, projectForHandler) {
-        initialiseDependencyId(dependencyCoordinate)
-        this.configurationMappings.addAll(configurations)
-    }
-    
-    constructor(
-        depName: String,
-        projectForHandler: Project,
-        dependencyCoordinate: ModuleVersionIdentifier
-    ): this(depName, projectForHandler) {
-        dependencyId = dependencyCoordinate
-    }
-    
-    private val parentHandler: PackedDependencyHandler? get() {
-        val packedDependenciesDefault: PackedDependencyHandler? by projectForHandler.extensions
+    private val defaultOptions: PackedDependencyOptions get() {
+        val packedDependenciesDefault: PackedDependencyOptions by projectForHandler.rootProject.extensions
         return packedDependenciesDefault
     }
 
-    val shouldUnpackToCache: Boolean get() {
-        return unpackToCache ?: (parentHandler?.shouldUnpackToCache ?: true)
-    }
-
-    fun noCreateLinkToCache() {
-        createLinkToCache = false
+    override val shouldUnpackToCache: Boolean get() {
+        return unpackToCache ?: (defaultOptions.shouldUnpackToCache)
     }
 
     val shouldCreateLinkToCache: Boolean get() {
         // This property is different from the others: we only use the parent (default) value if it has been
         // explicitly set.  If we were to call p.shouldCreateLinkToCache(), it would always have a fallback value
         // (of p.shouldUnpackToCache()), so we'd never get to the fallback value we want, this.shouldUnpackToCache().
-        return createLinkToCache ?: (parentHandler?.createLinkToCache ?: shouldUnpackToCache)
+        return createLinkToCache ?: (defaultOptions.createLinkToCache ?: shouldUnpackToCache)
     }
 
-    val shouldCreateSettingsFile: Boolean get() {
-        return createSettingsFile ?: (parentHandler?.shouldCreateSettingsFile ?: false)
+    override val shouldCreateSettingsFile: Boolean get() {
+        return createSettingsFile ?: defaultOptions.shouldCreateSettingsFile
     }
     
-    val shouldMakeReadonly: Boolean get() {
-        return readonly ?: (parentHandler?.shouldMakeReadonly ?: !shouldApplyUpToDateChecks)
+    override val shouldMakeReadonly: Boolean get() {
+        return readonly ?: defaultOptions.shouldMakeReadonly
     }
 
-    val shouldApplyUpToDateChecks: Boolean get() {
-        return applyUpToDateChecks ?: (parentHandler?.shouldApplyUpToDateChecks ?: false)
+    override val shouldApplyUpToDateChecks: Boolean get() {
+        return applyUpToDateChecks ?: defaultOptions.shouldApplyUpToDateChecks
     }
     
     fun initialiseDependencyId(dependencyCoordinate: String) {

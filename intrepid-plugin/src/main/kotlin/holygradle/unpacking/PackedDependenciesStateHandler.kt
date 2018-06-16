@@ -9,6 +9,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ModuleIdentifier
 import org.gradle.api.artifacts.ResolvedDependency
 import holygradle.kotlin.dsl.get
+import holygradle.util.addingDefault
 import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import java.io.File
 
@@ -238,7 +239,7 @@ class PackedDependenciesStateHandler(
 
         // Build a map of target locations to module versions
         val targetLocations =
-                mutableMapOf<File, MutableCollection<UnpackModuleVersion>>().withDefault { mutableListOf<UnpackModuleVersion>() }
+                mutableMapOf<File, MutableCollection<UnpackModuleVersion>>().addingDefault { mutableListOf<UnpackModuleVersion>() }
         for (module in modulesMap.values) {
             for ((_, versionInfo) in module.versions) {
                 val targetPath = versionInfo.targetPathInWorkspace.canonicalFile

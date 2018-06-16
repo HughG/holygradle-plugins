@@ -2,6 +2,7 @@ package holygradle.unpacking
 
 import holygradle.Helper
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.util.addingDefault
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -20,7 +21,7 @@ class UnpackModuleVersion(
 ) {
     val includeVersionNumberInPath: Boolean = packedDependency?.pathIncludesVersionNumber ?: false
     // A map from artifacts to sets of configurations that include the artifacts.
-    val artifacts = mutableMapOf<ResolvedArtifact, MutableSet<String>>().withDefault { HashSet<String>() }
+    val artifacts = mutableMapOf<ResolvedArtifact, MutableSet<String>>().addingDefault { HashSet<String>() }
     // The set of configurations in the containing project which lead to this module being included.
     val originalConfigurations: MutableSet<String> = mutableSetOf()
 

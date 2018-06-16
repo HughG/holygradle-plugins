@@ -244,9 +244,9 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         assertTrue(sourceControl instanceof DummySourceControl)
         assertEquals(null, sourceControl.getRevision())
         assertFalse(sourceControl.hasLocalChanges)
-        assertEquals(null, sourceControl.getUrl())
+        assertEquals("dummy:url", sourceControl.getUrl())
         assertEquals("n/a", sourceControl.getProtocol())
-        assertEquals(null, sourceControl.getLocalDir())
+        assertEquals(new File("__dummy__file__"), sourceControl.getLocalDir())
     }
 
     @Test
