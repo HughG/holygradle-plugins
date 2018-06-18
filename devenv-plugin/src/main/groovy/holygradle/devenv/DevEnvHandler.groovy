@@ -7,6 +7,10 @@ import holygradle.process.ExecHelper
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 
+/*
+    NOTE: If you change the Visual Studio location code in this class, also change it in credential-store/build.gradle.
+ */
+
 class DevEnvHandler {
     private Project project
     private DevEnvHandler parentHandler
