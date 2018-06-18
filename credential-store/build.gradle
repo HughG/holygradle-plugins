@@ -1,10 +1,87 @@
-public File getDevEnvPath() {
-    if (!project.hasProperty('chosenDevEnvVersion')) {
-        throw new RuntimeException(
-            'Cannot configure ${project.name} to build because property chosenDevEnvVersion is not set. ' +
-            'The value should be something like "VS120".'
-        )
+import java.util.regex.Pattern
+import java.util.regex.Matcher
+
+import holygradle.buildSrc.process.ExecHelper
+
+class VSVersion {
+    private static final Pattern VERSION_PATTERN =
+            Pattern.compile(
+                /VS([0-9]+)(0)|/ + // "VSnnnCOMNTOOLS" environment variable
+                /([0-9]+)\.([0-9]+|\+)/, // "nn.n" vswhere version string, also allowing "nn.+"
+                Pattern.CASE_INSENSITIVE
+            )
+
+    private final String asString
+
+    public final String major
+    public final String minor
+    public final String rangeStart
+    public final String rangeEnd
+    public final String envVarName
+
+    public VSVersion(final String version) {
+        asString = version
+        Matcher versionMatcher = match(version)
+        if (versionMatcher.group(1) != null) {
+            // Matched "VSnnn"
+            major = versionMatcher.group(1)
+            minor = versionMatcher.group(2)
+        } else {
+            // Matched "nn.x"
+            major = versionMatcher.group(3)
+            minor = versionMatcher.group(4)
+        }
+
+        final char firstChar = version.charAt(0)
+        final boolean isEnvVarStyle = (Character.toLowerCase(firstChar) == ('v' as char))
+        final boolean isWildcardMinorVersion = isEnvVarStyle || (this.minor == '+')
+        envVarName = "VS${major}0COMNTOOLS"
+        if (isWildcardMinorVersion) {
+            rangeStart = "${major}.0"
+            rangeEnd = "${major.toInteger() + 1}.0"
+        } else {
+            rangeStart = "${major}.${this.minor}"
+            rangeEnd = "${major}.${minor.toInteger() + 1}"
+        }
     }
+
+    // Pulled out as a static method because IntelliJ gives "field may be uninitialised" warnings otherwise.
+    private static Matcher match(String version) {
+        final Matcher versionMatcher = VERSION_PATTERN.matcher(version)
+        if (!versionMatcher.find()) {
+            throw new RuntimeException("Failed to parse chosenDevEnvVersion '${version}'")
+        }
+        return versionMatcher
+    }
+
+    @Override
+    public String toString() {
+        return asString
+    }
+}
+
+public File getCommonToolsPathFromVSWhere(String vswhereLocation) {
+    VSVersion version = new VSVersion(chosenDevEnvVersion)
+    final String versionRange = "[${version.rangeStart},${version.rangeEnd})"
+    final String installPath = ExecHelper.executeAndReturnResultAsString(
+        project.logger,
+        project.&exec,
+        { return true },
+        { ExecSpec spec ->
+            spec.commandLine vswhereLocation,
+                            "-property", "installationPath",
+                            "-legacy",
+                            "-format", "value",
+                            "-version", versionRange
+        }
+    )
+    if (installPath == null || installPath.trim().empty) {
+        throw new RuntimeException("vswhere.exe could not find a Visual Studio version in range ${versionRange}")
+    }
+    return new File(installPath, "Common7/Tools")
+}
+
+public File getCommonToolsPathFromEnvironment() {
     String envVarComnTools = System.getenv("${chosenDevEnvVersion}COMNTOOLS")
     if (envVarComnTools == null || envVarComnTools == "") {
         throw new RuntimeException("'chosenDevEnvVersion' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
@@ -15,6 +92,28 @@ public File getDevEnvPath() {
         throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
     }
     devEnvPath
+}
+
+public File getCommonToolsPath() {
+    // Check for the existence of vswhere.exe
+    final String vswhereLocation = ["ProgramFiles", "ProgramFiles(x86)"] // look at 64-bit then 32-bit environment variables
+        .findResults { System.getenv(it) } // collect all non-null environment variable values
+        .collect { "${it}\\Microsoft Visual Studio\\Installer\\vswhere.exe" } // map to filenames
+        .find { new File(it).exists() } // return the first filename for which a file exists
+    if (vswhereLocation != null) {
+        return getCommonToolsPathFromVSWhere(vswhereLocation)
+    } else {
+        return getCommonToolsPathFromEnvironment()
+    }
+}
+
+public File getDevEnvPath() {
+    File commonToolsPath = getCommonToolsPath()
+    File devEnvPath = new File(commonToolsPath, "../IDE/devenv.com")
+    if (!devEnvPath.exists()) {
+        throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
+    }
+    return devEnvPath
 }
 
 String releaseVersionInfoFileName = 'release_version_info.h'

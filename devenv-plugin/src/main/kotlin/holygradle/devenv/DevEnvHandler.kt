@@ -7,6 +7,8 @@ import java.util.regex.Pattern
 
 /**
  * Copyright (c) 2016 Hugh Greene (githugh@tameter.org).
+ *
+ *  NOTE: If you change the Visual Studio location code in this class, also change it in credential-store/build.gradle. 
  */
 open class DevEnvHandler(
         val project: Project,
