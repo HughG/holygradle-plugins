@@ -2,8 +2,6 @@ package holygradle.scm
 
 import org.gradle.process.ExecSpec
 
-import java.util.regex.Matcher
-
 class HgRepository implements SourceControlRepository {
     private final File workingCopyDir
     private final Command hgCommand
@@ -22,21 +20,36 @@ class HgRepository implements SourceControlRepository {
     }
     
     public String getUrl() {
-        // TODO 2016-04-15 HughG: Instead of this, run "hg paths default" and capture the output.
-        // May need to strip "username[:password]@" from URL.
-        File hgrc = new File(workingCopyDir, "/.hg/hgrc")
-        String url = "unknown"
-        if (hgrc.exists()) {
-            hgrc.text.eachLine {
-                Matcher match = it =~ /default = (.+)/
-                if (match.size() != 0) {
-                    final List<String> matches = match[0] as List<String>
-                    url = matches[1]
-                }
-                return
+        File localWorkingCopyDir = workingCopyDir // capture private for closure
+        ExecSpec savedSpec = null
+        String defaultPath = hgCommand.execute(
+            { ExecSpec spec ->
+                savedSpec = spec // so we can access the configured error stream
+                spec.workingDir = localWorkingCopyDir
+                spec.args(
+                        "paths", // Execute the "paths" command,
+                        "default" // asking for the default push target
+                )
+            },
+            { int exitValue ->
+                String errorString = savedSpec.errorOutput.toString().replaceAll('[\\r\\n]', '')
+                boolean defaultRemoteNotFound = (exitValue == 1) && (errorString == 'not found!')
+                // Throw if there's a non-zero exit value, unless it's just because there's no default remote,
+                // which is perfectly valid for a new, never-pushed repo.
+                return (exitValue == 0) || !defaultRemoteNotFound
             }
+        )
+        if (defaultPath.trim().isEmpty()) {
+            return "unknown"
         }
-        url
+        URL defaultUrl = new URL(defaultPath)
+        URL defaultUrlWithoutUserInfo = new URL(
+            defaultUrl.protocol,
+            defaultUrl.host,
+            defaultUrl.port,
+            defaultUrl.file
+        )
+        return defaultUrlWithoutUserInfo.toString()
     }
 
     public String getRevision() {

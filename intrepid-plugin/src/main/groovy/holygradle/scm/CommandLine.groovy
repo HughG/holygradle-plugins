@@ -20,7 +20,6 @@ class CommandLine implements Command {
     String execute(Closure configureExecSpec, Closure throwForExitValue) {
         String localHgPath = hgPath
         ExecHelper.executeAndReturnResultAsString(logger, exec, throwForExitValue) { ExecSpec spec ->
-            println "Setting exe to ${localHgPath}"
             spec.executable localHgPath
             configureExecSpec(spec)
         }
