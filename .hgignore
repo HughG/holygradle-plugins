@@ -39,8 +39,7 @@ syntax: regexp
 # Holy Gradle
 (^|^wrapper-starter-kit/|^https-setup-kit/)gradle/(certs|cacerts|cacerts.import.log)
 # IntelliJ IDEA
-^\.idea/workspace.xml
-^\.idea/tasks.xml
+^\.idea/(tasks|modules|workspace).xml
 ^\.idea/(libraries|modules)/
 # Generated doc
 ^doc/website/(raw-html|output)(-local)?/
