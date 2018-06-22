@@ -47,6 +47,10 @@ class PackedDependenciesSettingsHandler {
         }
     }
 
+    public void setUseRelativePathFromIvyXml(boolean defaultFail) {
+        throw new UnsupportedOperationException("Using the relative path from ivy.xml files is no longer supported.")
+    }
+
     public void setUnpackedDependenciesCacheDir(File unpackCacheDir) {
         unpackedDependenciesCacheDir = unpackCacheDir
     }

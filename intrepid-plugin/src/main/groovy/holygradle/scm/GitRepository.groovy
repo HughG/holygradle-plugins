@@ -21,19 +21,7 @@ class GitRepository implements SourceControlRepository {
 
     public String getUrl() {
         // May need to strip "username[:password]@" from URL.
-        File localWorkingCopyDir = workingCopyDir // capture private for closure
-        String command_result = gitCommand.execute({ ExecSpec spec ->
-            spec.workingDir = localWorkingCopyDir
-            spec.args(
-                    "config",
-                    "--get",
-                    "remote.origin.url"
-            )
-        }, {int error_code ->
-            // Error code 1 means the section or key is invalid, probably just no remote set, so don't throw.
-            return (error_code != 1)
-        })
-        return command_result
+        return ScmHelper.getGitConfigValue(gitCommand, workingCopyDir, "remote.origin.url")
     }
 
     public String getRevision() {

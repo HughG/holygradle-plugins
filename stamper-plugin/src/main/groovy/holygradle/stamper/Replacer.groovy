@@ -14,14 +14,17 @@ class Replacer {
 
     private String filePattern
     private File file
+    private String charsetName
     private Collection<Pair> regexFindAndReplace = []
     
-    Replacer(String filePattern) {
+    Replacer(String filePattern, String charsetName) {
         this.filePattern = filePattern
+        this.charsetName = charsetName
     }
 
-    Replacer(File file) {
+    Replacer(File file, String charsetName) {
         this.file = file
+        this.charsetName = charsetName
     }
     
     void replaceRegex(Pattern regex, String replacementString) {
@@ -39,7 +42,7 @@ class Replacer {
     }
     
     void doStringReplacementInFile(File file) {
-        String origRcText = file.text
+        String origRcText = file.getText(charsetName)
         String rcText = origRcText
         for (replacement in regexFindAndReplace) {
             if (replacement.replacement) {
@@ -49,7 +52,7 @@ class Replacer {
             }
         }
         if (origRcText != rcText) {
-            file.write(rcText)
+            file.write(rcText, charsetName)
         }    
     }
 }

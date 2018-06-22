@@ -5,7 +5,7 @@ import org.gradle.api.*
 import holygradle.Helper
 
 abstract class SourceDependency {
-    public final SourceDependencyHandler sourceDependency
+    protected final SourceDependencyHandler sourceDependency
     public final Project project
 
     public SourceDependency(Project project, SourceDependencyHandler sourceDependency) {
@@ -36,9 +36,9 @@ abstract class SourceDependency {
 
     protected abstract String getCommandName()
     
-    protected abstract boolean DoCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch)
+    protected abstract boolean doCheckout(File destinationDir, String repoUrl, String repoRevision, String repoBranch)
     
-    public void Checkout() {
+    public void checkout() {
         String[] urlSplit = url.split("@")
         String urlOnly = url
         String revision = null // meaning trunk
@@ -57,7 +57,7 @@ abstract class SourceDependency {
         String revText = (revision == null) ? "head" : "rev: $revision"
         println "${commandName} from '${urlOnly}' ($branchText, $revText) to '<workspace>/${relativePath}'..."
         
-        boolean result = DoCheckout(destinationDir, urlOnly, revision, branchName)
+        boolean result = doCheckout(destinationDir, urlOnly, revision, branchName)
         
         if (result) {
             println "  ${commandName} succeeded."

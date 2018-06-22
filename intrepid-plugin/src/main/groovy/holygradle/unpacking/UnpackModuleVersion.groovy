@@ -2,6 +2,8 @@ package holygradle.unpacking
 
 import holygradle.Helper
 import holygradle.dependencies.PackedDependencyHandler
+
+import holygradle.dependencies.SourceOverrideHandler
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -14,18 +16,18 @@ class UnpackModuleVersion {
     public final Map<ResolvedArtifact, Set<String>> artifacts = [:].withDefault { new HashSet<String>() }
     // The set of configurations in the containing project which lead to this module being included.
     public final Set<String> originalConfigurations = new HashSet<String>()
-    private UnpackModuleVersion parentUnpackModuleVersion
     private PackedDependencyHandler packedDependency00 = null
+    private Set<UnpackModuleVersion> parents = new HashSet<>()
 
     UnpackModuleVersion(
         Project project,
         ModuleVersionIdentifier moduleVersion,
-        UnpackModuleVersion parentUnpackModuleVersion,
+        Set<UnpackModuleVersion> parents,
         PackedDependencyHandler packedDependency00
     ) {
         this.project = project
         this.moduleVersion = moduleVersion
-        this.parentUnpackModuleVersion = parentUnpackModuleVersion
+        this.parents = parents
         this.packedDependency00 = packedDependency00
         if (packedDependency00 == null) {
             this.includeVersionNumberInPath = false
@@ -34,7 +36,7 @@ class UnpackModuleVersion {
         }
 
         // Therefore we must have a parent. Not having a parent is an error.
-        if (packedDependency00 == null && parentUnpackModuleVersion == null) {
+        if (packedDependency00 == null && this.parents.size() == 0) {
             throw new RuntimeException("Module '${moduleVersion}' has no parent module.")
         }
     }
@@ -62,7 +64,10 @@ class UnpackModuleVersion {
         "${moduleVersion.getGroup()}:${moduleVersion.getName()}:${moduleVersion.getVersion()}"
     }
 
-
+    public void addParents(Collection<UnpackModuleVersion> parents) {
+        this.parents.addAll(parents)
+    }
+    
     // This returns the packedDependencies entry corresponding to this dependency. This will
     // return null if no such entry exists, which would be the case if this is a transitive
     // dependency.
@@ -76,43 +81,108 @@ class UnpackModuleVersion {
 
     // TODO: will need to track all parents because each one (unpacked to a different location in
     // the central cache) will need to create a link to this module in the cache.
-    public UnpackModuleVersion getParent() {
-        parentUnpackModuleVersion
+    public Collection<UnpackModuleVersion> getParents() {
+        parents
     }
 
     /**
-     * Returns an {@link UnpackEntry} object which describes how to unpack this module version in the context of the
-     * given {@code project}.  This is suitable for passing to
+     * Returns an {@link UnpackDirEntry} object which describes how and where to unpack this module version in the
+     * context of the given {@code project}.
+     * @return An {@link UnpackDirEntry} object which describes how and where to unpack this module version.
+     */
+    public UnpackDirEntry getUnpackDirEntry() {
+        return new UnpackDirEntry(
+            getUnpackDir(),
+            ShouldApplyUpToDateChecks(),
+            ShouldMakeReadonly()
+        )
+    }
+
+    /**
+     * Returns an {@link UnpackEntry} object which describes what files to unpack, and how and where, for this module
+     * version in the context of the given {@code project}.  This is suitable for passing to
      * {@link SpeedyUnpackManyTask#addEntry(ModuleVersionIdentifier,UnpackEntry)}
-     * @param project
-     * @return An {@link UnpackEntry} object which describes how to unpack this module version
+     * @return An {@link UnpackEntry} object which describes what files to unpack, and how and where, for this module
+     * version
      */
     public UnpackEntry getUnpackEntry() {
         return new UnpackEntry(
             artifacts.keySet()*.file,
             getUnpackDir(),
-            (boolean)getPackedDependency()?.shouldApplyUpToDateChecks(),
-            (boolean)getPackedDependency()?.shouldMakeReadonly()
+            ShouldApplyUpToDateChecks(),
+            ShouldMakeReadonly()
         )
+    }
+
+    private boolean ShouldApplyUpToDateChecks() {
+        // If the packed dependency is null (ie if this is a transitive dependency), we should return the default
+        // value: false
+        return getPackedDependency() ? getPackedDependency().shouldApplyUpToDateChecks() : false
+    }
+
+    private boolean ShouldMakeReadonly() {
+        // If the packed dependency is null (ie if this is a transitive dependency), we should return the default
+        // value: true
+        return getPackedDependency() ? getPackedDependency().shouldMakeReadonly() : true
     }
 
     // This returns the packedDependencies entry which configures some aspects of this module.
     // The entry could be specifically for this module, in the case where a project directly
     // specifies a dependency. Or this entry could be for a 'parent' packedDependency entry 
     // i.e. one which causes this module to be pulled in as a transitive dependency.
-    public PackedDependencyHandler getSelfOrAncestorPackedDependency() {
+    public Collection<PackedDependencyHandler> getSelfOrAncestorPackedDependencies() {
         if (packedDependency00 != null) {
-            return packedDependency00
+            return [packedDependency00]
         }
-        
+
         // If we don't return packedDependency00 above then this must be a transitive dependency.
         // Therefore we must have a parent. Not having a parent is an error.
-        if (parentUnpackModuleVersion == null) {
+        if (parents.size() == 0) {
             throw new RuntimeException("Error - module '${getFullCoordinate()}' has no parent module.")
         }
-        return parentUnpackModuleVersion.getSelfOrAncestorPackedDependency()
+
+        return parents.collectMany { p -> p.getSelfOrAncestorPackedDependencies()}
     }
-    
+
+    private <TSource, TValue> TValue getUniqueValue(
+        String methodName,
+        Collection<TSource> sources,
+        Closure<TValue> getValue
+    ) {
+        Map<TSource, TValue> values = sources.collectEntries { [it, getValue(it)] }
+        Collection<TValue> uniqueValues = values.values().toSet()
+
+        // If there is not exactly one result, throw an error
+        if (uniqueValues.size() != 1) {
+            throw new RuntimeException("Error - module '${getFullCoordinate()}' has different parent results for ${methodName}: ${values.collect { "${it.value} from ${it.key}" }}")
+        }
+        return uniqueValues.iterator().next()
+    }
+
+    private String getParentRelativePath(UnpackModuleVersion module) {
+        getUniqueValue("getParentRelativePath", parents) { UnpackModuleVersion it ->
+            it.getRelativePathForDependency(module)
+        }
+    }
+
+    private String getParentTargetPath(Project project) {
+        getUniqueValue("getParentTargetPath", parents) { UnpackModuleVersion it ->
+            it.getTargetPathInWorkspace()
+        }.toString()
+    }
+
+    private String getParentModuleVersion() {
+        getUniqueValue("getParentModuleVersion", parents) { UnpackModuleVersion it ->
+            it.moduleVersion
+        }.toString()
+    }
+
+    private String getParentModuleVersions() {
+        parents.collect {
+            it.moduleVersion
+        }.join(", ")
+    }
+
     // Return the name of the directory that should be constructed in the workspace for the unpacked artifacts. 
     // Depending on some other configuration, this directory name could be used for a link or a real directory.
     public String getTargetDirName() {
@@ -140,17 +210,18 @@ class UnpackModuleVersion {
         } else {
             // If we don't return above then this must be a transitive dependency.
             // Recursively navigate up the parent hierarchy, appending relative paths.
-            return new File(
-                parentUnpackModuleVersion.targetPathInWorkspace.parentFile,
-                targetDirName
-            )
+            return getUniqueValue("getTargetPathInWorkspace", parents) { UnpackModuleVersion it ->
+                new File(it.targetPathInWorkspace.parentFile, targetDirName).canonicalFile
+            }
         }
     }
 
     // If true this module should be unpacked to the central cache, otherwise it should be unpacked
     // directly to the workspace.
     private boolean shouldUnpackToCache() {
-        getSelfOrAncestorPackedDependency().shouldUnpackToCache()
+        getUniqueValue("shouldUnpackToCache", getSelfOrAncestorPackedDependencies()) { PackedDependencyHandler it ->
+            it.shouldUnpackToCache()
+        }.booleanValue()
     }
 
     /**
@@ -158,15 +229,30 @@ class UnpackModuleVersion {
      * A link should be created if
      * <ul>
      *     <li>the relevant {@code packedDependencies} entry has {@code unpackToCache = true} (the default);</li>
-     *     <li>that entry has not had {@code noCreateLinkToCache() called on it; and</li>
+     *     <li>that entry has not had {@code noCreateSymlinkToCache() called on it; and</li>
      *     <li>this module version actually has any artifacts -- if not, nothing will be unpacked in the cache, so there
-     *     will be no folder to which to make a link.</li>
- *     </ul>
-     * @return A flag indicating whether to create a link to the unpack cache for this version.
+     *     will be no folder to which to make a symlink.</li>
+     * </ul>
+     * @return A flag indicating whether to create a symlink to the unpack cache for this version.
      */
     public boolean shouldCreateLinkToCache() {
-        getSelfOrAncestorPackedDependency().shouldCreateLinkToCache() && hasArtifacts()
+        getUniqueValue("shouldCreateLinkToCache", getSelfOrAncestorPackedDependencies()) { PackedDependencyHandler it ->
+            it.shouldCreateLinkToCache()
+        }.booleanValue() && hasArtifacts()
     }
+
+    public File getLinkDir() {
+        def sourceOverrideHandler = project.rootProject.sourceOverrides.find { SourceOverrideHandler handler ->
+            handler.dummyDependencyCoordinate == fullCoordinate
+        }
+
+        if (sourceOverrideHandler != null) {
+            new File(sourceOverrideHandler.from)
+        } else {
+            getUnpackDir()
+        }
+    }
+
 
     // Return the location to which the artifacts will be unpacked. This could be to the global unpack 
     // cache or it could be to somewhere in the workspace.
@@ -189,7 +275,7 @@ class UnpackModuleVersion {
                 "n/a" :
                 packedDependency00.getFullTargetPathWithVersionNumber(moduleVersion.getVersion())
             ) +
-            "', parentUnpackModuleVersion=" + parentUnpackModuleVersion?.moduleVersion +
+            "', parentUnpackModuleVersions={" + parents + // getParentModuleVersions() +
             '}';
     }
 }

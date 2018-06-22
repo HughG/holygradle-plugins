@@ -17,18 +17,18 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
     @Test
     public void testSvn() {
         File svnDir = ZipUtil.extractZip(getTestDir(), "test_svn")
-        
+
         Project project = ProjectBuilder.builder().withProjectDir(svnDir).build()
         SourceControlRepositories.createExtension(project)
         SourceControlRepository sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
-        
+
         assertTrue(sourceControl instanceof SvnRepository)
         assertEquals("1", sourceControl.getRevision())
         assertFalse(sourceControl.hasLocalChanges())
         assertEquals("file:///C:/Projects/DependencyManagement/Project/test_svn_repo/trunk", sourceControl.getUrl())
         assertEquals("svn", sourceControl.getProtocol())
         assertEquals(svnDir.getCanonicalFile(), sourceControl.getLocalDir())
-        
+
         File helloFile = new File(svnDir, "hello.txt")
         helloFile.write("bonjour")
         assertTrue(sourceControl.hasLocalChanges())
@@ -57,10 +57,10 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         HgUtil.hgExec(project, "add", EXAMPLE_FILE)
         // Set the commit message, user, and date, so that the hash will be the same every time.
         HgUtil.hgExec(project,
-           "commit",
-           "-m", "Added another file.",
-           "-u", "TestUser",
-           "-d", "2000-01-01"
+                "commit",
+                "-m", "Added another file.",
+                "-u", "TestUser",
+                "-d", "2000-01-01"
         )
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -68,26 +68,26 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         def sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
 
         assertTrue(
-            "An HgRepository instance has been created for the project",
-            sourceControl instanceof HgRepository
+                "An HgRepository instance has been created for the project",
+                sourceControl instanceof HgRepository
         )
 
         assertEquals(
-            "First commit hash is as expected",
-            "30c86257cd03bde0acb2e22f91512e589df605e9",
-            sourceControl.getRevision()
+                "First commit hash is as expected",
+                "30c86257cd03bde0acb2e22f91512e589df605e9",
+                sourceControl.getRevision()
         )
         assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
         assertEquals("The master repo is 'unknown'", "unknown", sourceControl.getUrl())
         assertEquals(
-            "The SourceControlRepository reports its protocol correctly",
-            "hg",
-            sourceControl.getProtocol()
+                "The SourceControlRepository reports its protocol correctly",
+                "hg",
+                sourceControl.getProtocol()
         )
         assertEquals(
-            "The SourceControlRepository reports its directory correctly",
-            project.projectDir.getCanonicalFile(),
-            sourceControl.getLocalDir()
+                "The SourceControlRepository reports its directory correctly",
+                project.projectDir.getCanonicalFile(),
+                sourceControl.getLocalDir()
         )
 
         new File(project.projectDir, EXAMPLE_FILE as String).withPrintWriter {
@@ -177,8 +177,8 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         def sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
 
         assertTrue(
-            "An HgRepository instance has been created for the project",
-            sourceControl instanceof HgRepository
+                "An HgRepository instance has been created for the project",
+                sourceControl instanceof HgRepository
         )
 
         // Add a file.
@@ -189,16 +189,16 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         HgUtil.hgExec(project, "add", ".hgignore")
         // Set the commit message, user, and date, so that the hash will be the same every time.
         HgUtil.hgExec(project,
-           "commit",
-           "-m", "Initial test state.",
-           "-u", "TestUser",
-           "-d", "2000-01-01"
+                "commit",
+                "-m", "Initial test state.",
+                "-u", "TestUser",
+                "-d", "2000-01-01"
         )
 
         assertEquals(
-            "First commit hash is as expected",
-            "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
-            sourceControl.getRevision()
+                "First commit hash is as expected",
+                "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
+                sourceControl.getRevision()
         )
         assertFalse("Initially there are no local changes", sourceControl.hasLocalChanges())
 
@@ -207,27 +207,27 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         HgUtil.hgExec(project, "add", EXAMPLE_FILE)
         // Set the commit message, user, and date, so that the hash will be the same every time.
         HgUtil.hgExec(project,
-           "commit",
-           "-m", "Added another file.",
-           "-u", "TestUser",
-           "-d", "2000-01-02"
+                "commit",
+                "-m", "Added another file.",
+                "-u", "TestUser",
+                "-d", "2000-01-02"
         )
 
         assertEquals(
-            "Second commit hash is as expected",
-            "2fbc9b5207fda8a526ce38d6bb1ae208b175cd64",
-            sourceControl.getRevision()
+                "Second commit hash is as expected",
+                "2fbc9b5207fda8a526ce38d6bb1ae208b175cd64",
+                sourceControl.getRevision()
         )
 
         HgUtil.hgExec(project,
-           "update",
-           "-r", "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
-       )
+                "update",
+                "-r", "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
+        )
 
         assertEquals(
-            "Updating to first commit hash is detected as expected",
-            "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
-            sourceControl.getRevision()
+                "Updating to first commit hash is detected as expected",
+                "cd7b5c688d1504b029a7286c2c0124c86b1d39a2",
+                sourceControl.getRevision()
         )
 
     }

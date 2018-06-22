@@ -14,13 +14,9 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
  */
 class LinksToCacheTask extends DefaultTask {
     private boolean initialized = false
-    // The versions in this set have been considered for being added to the list of versions to make links for, but
-    // may not have been added to the list.  If a version is to be added but is already in this list, we don't need to
-    // consider it or its ancestors again.
-    private final Set<ModuleVersionIdentifier> versionsSeen = new HashSet<ModuleVersionIdentifier>()
-    // This list will be processed in order.
-    private final LinkedList<UnpackModuleVersion> versionList = new LinkedList<UnpackModuleVersion>()
     private Mode mode
+    // A map from the location of a link to the target location for that link.
+    private final Map<File, File> links = new HashMap<>()
 
     /**
      * Specifies what this task should do with each link it has to consider.
@@ -37,19 +33,18 @@ class LinksToCacheTask extends DefaultTask {
             throw new IllegalStateException("LinksToCacheTask is already initialized")
         }
         this.mode = mode
-        LinkedList<UnpackModuleVersion> localVersionList = versionList // capture private for closure
+        Map<File, File> localLinks = links // capture private for closure
         doLast {
-            localVersionList.each { UnpackModuleVersion version ->
-                File linkDir = version.targetPathInWorkspace
-                File targetDir = version.unpackDir
+            localLinks.each { File linkDir, File targetDir ->
+                LinkTask.checkIsLinkOrMissing(linkDir, targetDir)
 
                 switch (mode) {
                     case Mode.BUILD:
                         Link.rebuild(linkDir, targetDir)
-                        break;
+                        break
                     case Mode.CLEAN:
                         Link.delete(linkDir)
-                        break;
+                        break
                     default:
                         throw new IllegalStateException("Unknown LinksToCacheTask mode ${mode}")
                 }
@@ -65,9 +60,11 @@ class LinksToCacheTask extends DefaultTask {
      */
     public void addUnpackModuleVersions(PackedDependenciesStateSource source) {
         doFirst {
-            source.allUnpackModules.each { UnpackModule module ->
-                module.versions.values().each { UnpackModuleVersion versionInfo ->
-                    addUnpackModuleVersionWithAncestors(versionInfo)
+            source.allUnpackModules.values().each { Collection<UnpackModule> modules ->
+                modules.each { UnpackModule module ->
+                    module.versions.values().each { UnpackModuleVersion version ->
+                        addUnpackModuleVersion(version)
+                    }
                 }
             }
         }
@@ -77,48 +74,14 @@ class LinksToCacheTask extends DefaultTask {
      * Adds {@code version} to the list of versions for which this task will create links.  If the version is
      * already present, this method does nothing.
      */
-    public void addUnpackModuleVersionWithAncestors(UnpackModuleVersion version) {
-        logger.debug "LinksToCacheTask#addUnpackModuleVersionWithAncestors: adding ${version}"
-        if (!maybeAddSingleUnpackModuleVersion(version)) {
-            return
-        }
-        // Now we recursively travel up the parent chain, re-adding each parent.  This means that each ancestor will
-        // appear before its descendants, which ensures that links exist before any attempts to create links
-        // *inside* those linked folders.  We remove the parent first, in case it is already in the list, so that we
-        // don't process it twice.
-        final UnpackModuleVersion parent = version.parent
-        if (parent != null) {
-            removeUnpackModuleVersionIfPresent(parent)
-            addUnpackModuleVersionWithAncestors(parent)
-        }
-    }
-
-    /**
-     * Adds {@code version} to the list of versions for which this task will create links, unless the version has
-     * already been seen, or it doesn't want a link.
-     * @return true if the version hasn't been seen before, otherwise false
-     */
-    private boolean maybeAddSingleUnpackModuleVersion(UnpackModuleVersion version) {
-        final boolean versionNotSeenYet = versionsSeen.add(version.moduleVersion)
-        if (versionNotSeenYet) {
-            if (version.shouldCreateLinkToCache()) {
-                versionList.addFirst(version)
-            } else {
-                logger.debug "LinksToCacheTask#maybeAddSingleUnpackModuleVersion: not creating link for ${version.moduleVersion}"
-            }
+    public void addUnpackModuleVersion(UnpackModuleVersion version) {
+        if (version.shouldCreateLinkToCache()) {
+            logger.debug "LinksToCacheTask#addUnpackModuleVersion: adding ${version}"
+            final File linkDir = version.getTargetPathInWorkspace()
+            final File targetDir = version.getLinkDir()
+            links[linkDir] = targetDir
         } else {
-            logger.debug "LinksToCacheTask#maybeAddSingleUnpackModuleVersion: skipping already-present ${version.moduleVersion}"
-        }
-        return versionNotSeenYet
-    }
-
-    /**
-     * Removes {@code version} from the list of versions for which this task will create links.  If the version is
-     * NOT already present, this method does nothing.
-     */
-    private void removeUnpackModuleVersionIfPresent(UnpackModuleVersion version) {
-        if (versionsSeen.remove(version.moduleVersion)) {
-            versionList.remove(version)
+            logger.debug "LinksToCacheTask#addUnpackModuleVersion: skipping ${version}"
         }
     }
 
@@ -128,7 +91,7 @@ class LinksToCacheTask extends DefaultTask {
      * injecting a spy version, but that seems unnecessary effort for now.)
      * @return
      */
-    public Collection<UnpackModuleVersion> getOrderedVersions() {
-        return versionList.clone() as Collection<UnpackModuleVersion>
+    public Map<File, File> getLinks() {
+        return links.asImmutable()
     }
 }

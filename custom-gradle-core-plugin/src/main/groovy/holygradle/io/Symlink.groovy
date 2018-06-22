@@ -9,16 +9,27 @@ public class Symlink {
     }
 
     public static void delete(File link) {
-        checkIsSymlinkOrMissing(link)
+        // For simplicity in any error reporting, use canonical path for the link.
+        File canonicalLink = link.canonicalFile
 
-        if (isSymlink(link)) {
-            link.delete()
+        if (FileHelper.isEmptyDirectory(canonicalLink)) {
+            // Delete the existing "link" if it's actually an empty directory, because it may be a left-over from a
+            // previous failed attempt to delete a directory junction.  This has been observed occasionally and we
+            // suspect it's due to some background process temporarily having a lock on the folder -- for example, a
+            // virus scanner, or the Windows Indexing Service.
+            canonicalLink.delete()
+        } else if (isSymlink(canonicalLink)) {
+            canonicalLink.delete()
+        } else if (canonicalLink.exists()) {
+            throw new RuntimeException(
+                "Cannot not delete or create a symlink at '${canonicalLink.path}' " +
+                "because a folder or file already exists there and is not a symlink or an empty folder."
+            )
         }
     }
     
     public static void rebuild(File link, File target) {
-        checkIsSymlinkOrMissing(link)
-
+        // For simplicity in any error reporting, use canonical path for the link.
         File canonicalLink = link.canonicalFile
 
         // Delete the symlink if it exists
@@ -54,19 +65,6 @@ public class Symlink {
             // If [target] is relative, we want createSymbolicLink to create a link relative to [link] (as opposed to
             // relative to the current working directory) so we have to calculate this.
             canonicalLink.parentFile.toPath().relativize(canonicalTarget.toPath()).toFile()
-        }
-    }
-
-    /**
-     * Throws an exception if {@code link} exists and is not a symlink.
-     * @param link The potential link to check.
-     */
-    public static void checkIsSymlinkOrMissing(File link) {
-        if (link.exists() && !isSymlink(link)) {
-            throw new RuntimeException(
-                "Cannot not delete or create a symlink at '${link.path}' " +
-                "because a folder or file already exists there and is not a symlink."
-            )
         }
     }
 
