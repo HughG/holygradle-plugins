@@ -3,6 +3,8 @@ package holygradle.scm
 import org.gradle.process.ExecSpec
 
 class HgRepository implements SourceControlRepository {
+    public static SourceControlType TYPE = new Type()
+
     private final File workingCopyDir
     private final Command hgCommand
 
@@ -88,5 +90,22 @@ class HgRepository implements SourceControlRepository {
             spec.args "status", "-amrdC"
         }
         changes.trim().length() > 0
+    }
+
+    private static class Type implements SourceControlType {
+        @Override
+        String getStateDirName() {
+            return ".hg"
+        }
+
+        @Override
+        String getExecutableName() {
+            return "hg"
+        }
+
+        @Override
+        Class<SourceControlRepository> getRepositoryClass() {
+            return HgRepository.class
+        }
     }
 }

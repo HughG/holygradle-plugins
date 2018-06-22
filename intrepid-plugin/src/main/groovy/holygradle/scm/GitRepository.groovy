@@ -3,6 +3,8 @@ package holygradle.scm
 import org.gradle.process.ExecSpec
 
 class GitRepository implements SourceControlRepository {
+    public static SourceControlType TYPE = new Type()
+
     private final File workingCopyDir
     private final Command gitCommand
 
@@ -43,5 +45,22 @@ class GitRepository implements SourceControlRepository {
             spec.args "status", "--porcelain", "--untracked-files=no"
         }
         changes.trim().length() > 0
+    }
+
+    private static class Type implements SourceControlType {
+        @Override
+        String getStateDirName() {
+            return ".git"
+        }
+
+        @Override
+        String getExecutableName() {
+            return "git"
+        }
+
+        @Override
+        Class<SourceControlRepository> getRepositoryClass() {
+            return GitRepository.class
+        }
     }
 }
