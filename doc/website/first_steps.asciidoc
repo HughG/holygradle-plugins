@@ -15,7 +15,7 @@ web interface is mainly useful for investigating problems.
 The Holy Gradle is a set of plugins for the gloss:gradle[] tool, which is a Java application.
 They have only been tested on the following platforms.
 
-* Windows 7 (and Windows Server 2008 R2), Windows 8.1
+* Windows 7 (and Windows Server 2008 R2), Windows 8.1, Windows 10
 * Java 7 (JRE or JDK)
 
 == Preparation

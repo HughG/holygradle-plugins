@@ -339,12 +339,19 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
             Map<String, SourceDependencyHandler> sourceDeps = collectSourceDependencies(project, false, packedDependencies.keySet())
             for (sourceDepName in sourceDeps.keySet()) {
                 SourceDependencyHandler sourceDep = sourceDeps[sourceDepName]
-                writePackedDependency(
-                    buildScript,
-                    sourceDep.getFullTargetPathRelativeToRootProject(),
-                    sourceDep.getDependencyCoordinate(),
-                    packedDependencies[sourceDepName]
-                )
+                final String dependencyCoordinate = sourceDep.getDependencyCoordinate()
+                // The dependency coordinate may be null, if there are no configuration mappings to this source
+                // dependency and it is not a Gradle project -- that is, if it's just pulled in as arbitrary source code
+                // rather than as another project in a multi-project build.  In that case, we shouldn't and can't
+                // state a dependency on it, because it's not published.
+                if (dependencyCoordinate != null) {
+                    writePackedDependency(
+                        buildScript,
+                        sourceDep.getFullTargetPathRelativeToRootProject(),
+                        dependencyCoordinate,
+                        packedDependencies[sourceDepName]
+                    )
+                }
             }
             missingPackedDepNames.removeAll(sourceDeps.keySet())
             Map<String, PackedDependencyHandler> packedDeps = collectPackedDependencies(project, packedDependencies.keySet())

@@ -1,4 +1,5 @@
 Using pluginsRepoOverride=[active]
+Updated: Intrepid - holygradle_test
 :tasks
 
 ------------------------------------------------------------
@@ -37,6 +38,7 @@ fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildLinks - Rebuild all links.
 rebuildLinksToCache - Rebuild all links to the unpack cache
+summariseAllDependencies - Create an XML file listing all direct and transitive dependencies
 zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
 
 DevEnv tasks

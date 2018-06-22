@@ -1,12 +1,8 @@
 package holygradle.scm
 
-import org.gradle.api.DefaultTask
 import org.gradle.api.Project
-import org.gradle.api.Task
 
 public class SourceControlRepositories {
-    private static final String TOOL_SETUP_TASK_NAME = "setUpSourceControlTools"
-
     public static SourceControlRepository create(
         Project rootProject,
         File location,
@@ -23,11 +19,11 @@ public class SourceControlRepositories {
         }
 
         if (svnFile.exists()) {
-            new SvnRepository(new CommandLine("svn.exe", rootProject.&exec), location)
+            new SvnRepository(new CommandLine(rootProject.logger, "svn.exe", rootProject.&exec), location)
         } else if (hgFile.exists()) {
-            new HgRepository(new CommandLine("hg.exe", rootProject.&exec), location)
+            new HgRepository(new CommandLine(rootProject.logger, "hg.exe", rootProject.&exec), location)
         } else if (gitFile.exists()) {
-            new GitRepository(new CommandLine("git.exe", rootProject.&exec), location)
+            new GitRepository(new CommandLine(rootProject.logger, "git.exe", rootProject.&exec), location)
         } else if (useDummyIfNecessary) {
             new DummySourceControl()
         } else {

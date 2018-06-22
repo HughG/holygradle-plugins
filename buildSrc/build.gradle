@@ -1,19 +1,5 @@
 apply plugin: 'groovy'
 
-def javaVersion = System.getProperty('java.specification.version')
-if (javaVersion != '1.7') {
-    throw new RuntimeException(
-        "The Holy Gradle can only be built with JDK 1.7.  If you need to set JAVA_HOME to a different version, " +
-        "please set HOLY_GRADLE_JAVA_HOME to a 1.7 JDK."
-    )
-    /*
-        If you try to build with JDK 8, you'll get the following error, for which there is no solution.
-
-        > BUG! exception in phase 'semantic analysis' in source unit
-        '...\holy-gradle-plugins\buildSrc\src\main\groovy\holygradle\buildHelpers\LinkTextFiller.groovy' null
-    */
-}
-
 repositories {
     if (project.hasProperty('artifactoryServer')) {
         maven {

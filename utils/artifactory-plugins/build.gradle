@@ -1,8 +1,11 @@
 /**
- * Note: This project doesn't need to be built or deployed, because Artifactory loads plugins from source.  This
- * build.gradle file is just here to help IntelliJ fond all the dependencies, to get syntax highlighting correct.
+ * Note: This project doesn't need to be built to a JAR, because Artifactory loads plugins from source.  However, it
+ * does have a "deploy" task which prepares all the plugins for deployment onto the server (but doesn't actually deploy
+ * them).
+ *
+ * TODO: Put the dependencies which need to be deployed into a separate configuration (from the ones which are built in
+ * to the Artifactory WAR) and automatically copy them into the deploy folder under "plugins/lib".
  */
-
 group = "holygradle"
 
 apply plugin: "groovy"
@@ -10,12 +13,23 @@ apply plugin: "groovy"
 dependencies {
     compile localGroovy()
 
-    // These libraries can be found in // from http://repo.jfrog.org/artifactory/libs-releases/org/artifactory/artifactory-papi/
-    compile "org.slf4j:slf4j-api:1.7.5" // (also from repo1)
+    // ----------------------------------------------------------------------------------------------------------------
+    // These modules do not need to be deployed to Artifactory, because they're included in the Artifactory WAR.  They
+    // are just here to allow IntelliJ etc. to find references.
+
+    // These libraries can be found in http://repo.jfrog.org/artifactory/libs-releases/org/artifactory/artifactory-papi/
+    // (or Maven Central).
+    compile "org.slf4j:slf4j-api:1.7.5"
     compile "org.artifactory:artifactory-papi:4.7.7"
 
-    compile "org.codehaus.groovy.modules.http-builder:http-builder:0.6"
+    // These modules can be found on Maven Central
     compile "javax.mail:mail:1.4.3"
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // These libraries are not included as part of Artifactory, so you need to manually deploy them to the "plugins/lib"
+    // folder under the Artifactory root.
+    compile "org.codehaus.groovy.modules.http-builder:http-builder:0.6"
+    compile "xml-resolver:xml-resolver:1.2" // Included in Artifactory 4.x, but not 5.x.
 }
 
 repositories {
@@ -31,7 +45,7 @@ repositories {
 }
 
 project.ext.localConfDir = "${projectDir}/localConf"
-if (!new File(localConfDir).exists()) {
+if (!new File((String)localConfDir).exists()) {
     "cmd /c mklink /j \"${localConfDir}\" \"${projectDir}\\..\\..\\local\\local-artifactory-plugins\\conf\"".execute().waitFor()
 }
 
@@ -41,7 +55,7 @@ project.ext.contentPackageSubdir = "content"
 if (!project.hasProperty("pluginsDeployDir")) {
     project.ext.pluginsDeployDir = new File(buildDir, "deploy/artifactory-etc-plugins")
 }
-project.ext.pluginsConfDeployDir = new File(pluginsDeployDir, "conf")
+project.ext.pluginsConfDeployDir = new File((File)pluginsDeployDir, "conf")
 if (!project.hasProperty("contentDeployDir")) {
     project.ext.contentDeployDir = new File(buildDir, "deploy/webserver")
 }
@@ -66,12 +80,23 @@ task packageRepositoryGraph(type: Copy) {
     }
 }
 
-// Annoyingly, the task outputs for a Copy are the single root destinationDir, so we have to just magically know
-// what to deploy from the package dir.
-//
-// This isn't a Copy task because we expect some network cost to checking up-to-date-ness, and the set of files to copy
-// is small.
-task deploy {
+task prepareDeploy {
+    description = """
+This task collects files in the correct layout for deployment, but doesn't actually deploy them.
+
+The contents of the plugins deploy dir (by default, "deploy/artifactory-etc-plugins") should be copied into the
+"<ARTIFACTORY_ROOT>/etc/plugins" folder.
+
+The contents of the static content deploy dir (by default, "deploy/webserver") should be copied into an appropriate
+static content folder for your web server.
+"""
+
+    // Annoyingly, the task outputs for a Copy are the single root destinationDir, so we have to just magically know
+    // what to deploy from the package dir, instead of being able to declare a dependency on the packageRepositoryGraph
+    // task.
+    //
+    // This isn't a Copy task because we expect some network cost to checking up-to-date-ness, and the set of files to
+    // copy is small.
     dependsOn packageRepositoryGraph
     doLast {
         project.copy {

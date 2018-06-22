@@ -2,11 +2,15 @@ package holygradle.custom_gradle
 
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.custom_gradle.util.VersionNumber
+import org.gradle.BuildListener
+import org.gradle.BuildResult
 import holygradle.io.FileHelper
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
+import org.gradle.api.initialization.Settings
+import org.gradle.api.invocation.Gradle
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.wrapper.Wrapper
 import org.gradle.process.ExecSpec
@@ -81,22 +85,6 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                 holyGradleInitScriptFile.withOutputStream { os ->
                     os << CustomGradleCorePlugin.class.getResourceAsStream("/holygradle/init.d/holy-gradle-init.gradle")
                 }
-
-                // We move the default ".properties" file to ".properties.in", removing the "distributionUrl=" line.
-                // The "gradlew.bat" script will concatenate it with the distribution server URL (from the
-                // HOLY_GRADLE_REPOSITORY_BASE_URL environment variable) and the rest of the distribution path (which
-                // we write to a text file below).  This allows the same custom wrapper to be used from multiple sites
-                // which don't share a single server for the distribution.
-                final File propertiesInputFile = new File(wrapper.propertiesFile.toString() + ".in")
-                propertiesInputFile.withWriter { w ->
-                    wrapper.propertiesFile.withInputStream { is ->
-                        is.filterLine(w) { String line -> !line.startsWith("distributionUrl") }
-                    }
-                }
-                Files.delete(wrapper.propertiesFile.toPath())
-
-                File distributionPathFile = new File(project.projectDir, "/gradle/wrapper/distributionPath.txt")
-                distributionPathFile.text = "gradle-${project.gradle.gradleVersion}-bin.zip"
             }
         }
     
@@ -144,7 +132,8 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                     println "Gradle properties location: "
                     println "  ${gradlePropsFile.path}\n"
                     int pad = 35
-                    print "Custom distribution version: ".padRight(pad)
+                    print "Gradle version: ".padRight(pad)
+                    println project.gradle.gradleVersion
                     String latestCustomGradle = VersionNumber.getLatestUsingBuildscriptRepositories(project, "holygradle", "custom-gradle")
                     println versionInfoExtension.getVersion("custom-gradle") + " (latest: $latestCustomGradle)"
                     println "Init script version: ".padRight(pad) + project.holyGradleInitScriptVersion
@@ -207,6 +196,39 @@ class CustomGradleCorePlugin implements Plugin<Project> {
                     }
                 }
             }
+
+            project.gradle.addBuildListener(new BuildListener() {
+                void buildFinished(BuildResult result) {
+                    if (BuildHelper.buildFailedDueToVersionConflict(result)) {
+//2345678901234567890123456789012345678901234567890123456789012345678901234567890 <-- 80-column ruler
+                        project.logger.error("""
+
+Run the 'dependencies' task to see a tree of dependencies for each configuration
+in your project(s).  Any dependency which has two versions separated by an arrow
+("group:name:version1 -> version2") will cause a conflict.  The error message
+for this build will only report one version conflict but your project may have
+more, so check for any such arrows.
+
+There are two main ways to resolve such a conflict.
+
+1. Change the versions of some dependencies so that there is no conflict.  You
+may have to do this by changing the versions of other dependencies nearer the
+root of the dependency graph.
+
+2. Move one conflicting dependency version to a different configuration.  You
+may have to do this by changing the configurations of other dependencies nearer
+the root of the dependency graph.  In that case you may also need to change the
+target folder of that dependency, so that you are not trying to put two
+different versions in the same location.
+
+""")
+                    }
+                }
+                void buildStarted(Gradle gradle) {}
+                void projectsEvaluated(Gradle gradle) {}
+                void projectsLoaded(Gradle gradle) {}
+                void settingsEvaluated(Settings settings) {}
+            })
         }
 
         timer.endBlock()

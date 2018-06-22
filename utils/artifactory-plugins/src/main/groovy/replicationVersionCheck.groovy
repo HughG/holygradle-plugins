@@ -15,8 +15,9 @@ import javax.mail.Transport
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 /**
- * This plugin is a guard against the possibility that replication will behave incorrectly if the source and destination
- * servers are running different versions of Artifactory.
+ * This plugin is a guard against the possibility that pull replication will behave incorrectly if the source and
+ * destination servers are running different versions of Artifactory.  In email, JFrog stated that they only test
+ * pull replication from older versions to newer versions, within the same major version.
  *
  * This plugin requires the following JARs to be manually copied to the ".../plugins/lib" folder of Artifactory.  They
  * can be copied from your Gradle cache under the paths given, once you have run "gw build" for this project.  (All
@@ -315,10 +316,18 @@ class VersionMatchChecker {
         )
         def remoteVersion = remoteApi.getVersionWithRevision()
         // log.debug("Remote version is ${remoteVersion}, local version is ${localVersion}, ${description}")
-        if (versionIsGreaterThan(remoteVersion, localVersion)) {
-            final String errorMessage = "Server version mismatch during replication ${description}: " +
-                "remote = ${remoteVersion} is greater than local = ${localVersion}"
 
+        // JFrog don't test -- and so we fail -- if the major versions don't match, or if the source server is on a
+        // newer version than this server (the destination).
+        String errorMessage = null
+        if (remoteVersion.get(0) != localVersion.get(0)) {
+            errorMessage = "Server version mismatch during replication ${description}: " +
+                "remote = ${remoteVersion} major version part does not match local = ${localVersion}"
+        } else if (versionIsGreaterThan(remoteVersion, localVersion)) {
+            errorMessage = "Server version mismatch during replication ${description}: " +
+                "remote = ${remoteVersion} is greater than local = ${localVersion}"
+        }
+        if (errorMessage != null) {
             new EmailNotifier(log, security, asSystem).sendNotifications(
                 "Server version mismatch during replication",
                 errorMessage

@@ -76,8 +76,8 @@ class DevEnvTask extends DefaultTask {
             }
 
             doConfigureBuildTask(
-                project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(),
-                devEnvHandler.useIncredibuild(), platform, configuration, 
+                project, devEnvHandler.&getBuildToolPath, devEnvHandler.getVsSolutionFile(),
+                devEnvHandler.useIncredibuild(), platform, configuration,
                 devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
             )
         }
@@ -110,15 +110,15 @@ class DevEnvTask extends DefaultTask {
         
         if (devEnvHandler.getVsSolutionFile() != null) {
              doConfigureCleanTask(
-                project, devEnvHandler.getBuildToolPath(true), devEnvHandler.getVsSolutionFile(), 
-                platform, configuration,
-                devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
+                 project, devEnvHandler.&getBuildToolPath, devEnvHandler.getVsSolutionFile(),
+                 platform, configuration,
+                 devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
             ) 
         }
     }
     
     private void doConfigureBuildTask(
-        Project project, File buildToolPath, File solutionFile, boolean useIncredibuild, 
+        Project project, Closure getBuildToolPath, File solutionFile, boolean useIncredibuild,
         String platform, String configuration, Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
         String targetSwitch = useIncredibuild ? "/Build" : "/build"
@@ -130,13 +130,13 @@ class DevEnvTask extends DefaultTask {
         description = "Builds the solution '${solutionFile.name}' with ${buildToolName} in $configuration mode, " +
             "first building all dependent projects. Run 'gw -a ...' to build for this project only."
         configureTask(
-            project, title, buildToolPath, solutionFile, targetSwitch, 
+            project, title, getBuildToolPath, solutionFile, targetSwitch,
             configSwitch, outputFile, warningRegexes, errorRegexes
         ) 
     }
     
     private void doConfigureCleanTask(
-        Project project, File buildToolPath, File solutionFile,
+        Project project, Closure getBuildToolPath, File solutionFile,
         String platform, String configuration, Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
         String targetSwitch = "/Clean"
@@ -147,13 +147,13 @@ class DevEnvTask extends DefaultTask {
         description = "Cleans the solution '${solutionFile.name}' with DevEnv in $configuration mode, " +
             "first building all dependent projects. Run 'gw -a ...' to build for this project only."
         configureTask(
-            project, title, buildToolPath, solutionFile, targetSwitch, 
+            project, title, getBuildToolPath, solutionFile, targetSwitch,
             configSwitch, outputFile, warningRegexes, errorRegexes
         )
     }
     
     private void configureTask(
-        Project project, String title, File buildToolPath, File solutionFile, 
+        Project project, String title, Closure getBuildToolPath, File solutionFile,
         String targetSwitch, String configSwitch, File outputFile, 
         Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
@@ -163,6 +163,7 @@ class DevEnvTask extends DefaultTask {
                 title, styledOutput, warningRegexes, errorRegexes
             )
 
+            File buildToolPath = getBuildToolPath()
             ExecResult result = project.exec { ExecSpec spec ->
                 spec.workingDir project.projectDir.path
                 spec.commandLine buildToolPath.path, solutionFile.path, targetSwitch, configSwitch
