@@ -52,7 +52,9 @@ class FileHelper {
             ) { File f ->
                 if (Link.isLink(f) || !f.isDirectory()) {
                     f.writable = true
-                    Files.delete(f.toPath())
+                    RetryHelper.retry(10, 1000, null, "delete ${dir}${formatPurpose(purpose)}") {
+                        Files.delete(f.toPath())
+                    }
                 }
                 return FileVisitResult.CONTINUE
             }

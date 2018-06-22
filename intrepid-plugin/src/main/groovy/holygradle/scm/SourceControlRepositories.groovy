@@ -35,7 +35,7 @@ public class SourceControlRepositories {
      */
     private static File findSourceControlDir(File location) {
         for (File d = location; d.parentFile != null; d = d.parentFile) {
-            if (!getRepositoryTypesAtLocation(location).isEmpty()) {
+            if (!getRepositoryTypesAtLocation(d).isEmpty()) {
                 return d
             }
         }
@@ -54,7 +54,7 @@ public class SourceControlRepositories {
         File repoLocation
     ) {
         return type.repositoryClass
-            .getConstructor(CommandLine, File)
+            .getConstructor(Command, File)
             .newInstance(new CommandLine(project.logger, type.executableName, project.&exec), repoLocation)
     }
 

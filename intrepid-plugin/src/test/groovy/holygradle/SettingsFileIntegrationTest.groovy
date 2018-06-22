@@ -4,7 +4,7 @@ import holygradle.io.FileHelper
 import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
-import holygradle.testUtil.HgUtil
+import holygradle.testUtil.ScmUtil
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
@@ -82,14 +82,14 @@ class SettingsFileIntegrationTest extends AbstractHolyGradleIntegrationTest {
 
     private void initRepo(File src1Dir) {
         Project project1 = ProjectBuilder.builder().withProjectDir(src1Dir).build()
-        HgUtil.hgExec(project1, "init")
-        HgUtil.hgExec(project1, "add", "build.gradle")
-        HgUtil.hgExec(
+        ScmUtil.hgExec(project1, "init")
+        ScmUtil.hgExec(project1, "add", "build.gradle")
+        ScmUtil.hgExec(
             project1,
             "commit",
             "-m", "Initial test state.",
             "-u", "TestUser"
         )
-        HgUtil.hgExec(project1, "phase", "--public", "tip")
+        ScmUtil.hgExec(project1, "phase", "--public", "tip")
     }
 }
