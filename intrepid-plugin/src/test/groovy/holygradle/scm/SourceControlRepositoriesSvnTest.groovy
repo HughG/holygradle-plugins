@@ -30,12 +30,12 @@ class SourceControlRepositoriesSvnTest extends SourceControlRepositoriesTestBase
         FileHelper.ensureDeleteDirRecursive(repoServerDir)
         ScmUtil.exec(repoDir, 'svnadmin', 'create', repoServerDir.toString())
 
-        Object repoServerUrl = getAsServerUrl(repoServerDir)
+        String repoServerUrl = getAsServerUrl(repoServerDir)
         ScmUtil.svnExec(repoDir, "checkout", repoServerUrl, ".")
     }
 
     @Override
-    protected void checkInitialState(Project project, SourceControlRepository sourceControl) {
+    protected void checkInitialState(Project project, File repoDir, SourceControlRepository sourceControl) {
         // Add a file.
         (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
         ScmUtil.svnExec(project, "add", EXAMPLE_FILE)
@@ -44,16 +44,34 @@ class SourceControlRepositoriesSvnTest extends SourceControlRepositoriesTestBase
                 "commit",
                 "-m", "Added another file."
         )
-        ScmUtil.svnExec(project, "update") // so we don't have a mixed-revision working copy
+        // Update repo root so it isn't a mixed-revision working copy.
+        ScmUtil.svnExec(project, "update", repoDir.absolutePath)
 
         assertTrue(
                 "An SvnRepository instance has been created for ${project}",
                 sourceControl instanceof SvnRepository
         )
-        assertEquals("The initial revision is as expected", "1", sourceControl.getRevision())
+
+        String expectedRevision
+        String projectDirName = project.projectDir.name
+        switch (projectDirName) {
+            case "testSvnBU":
+                expectedRevision = "1"
+                break
+            case "sub":
+                expectedRevision = "2"
+                break
+            case "ignored":
+                expectedRevision = null
+                break
+            default:
+                throw new RuntimeException("Unsupported project dir ${projectDirName}")
+        }
+        assertEquals("The initial revision is as expected", expectedRevision, sourceControl.getRevision())
+
         assertEquals(
                 "The repo URL is as expected",
-                getAsServerUrl(getRepoServerDir(project.projectDir)),
+                getAsServerUrl(getRepoServerDir(repoDir)),
                 sourceControl.getUrl() + "/"
         )
         assertEquals(
@@ -75,6 +93,14 @@ class SourceControlRepositoriesSvnTest extends SourceControlRepositoriesTestBase
         SourceControlRepository sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
 
         assertTrue(sourceControl.hasLocalChanges())
+    }
+
+    @Override
+    protected void addDir(File repoDir, File dir) {
+        ScmUtil.svnExec(dir, "add", ".")
+        ScmUtil.svnExec(dir, "commit", ".", "-m", "'Add ${dir}'")
+        // Update repo root so it isn't a mixed-revision working copy.
+        ScmUtil.svnExec(dir, "update", repoDir.absolutePath)
     }
 
     @Override

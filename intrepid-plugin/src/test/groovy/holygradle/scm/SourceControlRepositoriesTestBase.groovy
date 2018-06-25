@@ -32,6 +32,7 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
         File projectDir = new File(repoDir, "sub")
         FileHelper.ensureMkdirs(projectDir)
         prepareRepoDir(repoDir)
+        addDir(repoDir, projectDir)
         Project project = prepareProjectDir(projectDir)
 
         checkInitialState(project, repoDir)
@@ -70,12 +71,14 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
             sourceControl.getLocalDir()
         )
 
-        checkInitialState(project, sourceControl)
+        checkInitialState(project, repoDir, sourceControl)
     }
 
-    protected abstract void checkInitialState(Project project, SourceControlRepository sourceControl)
+    protected abstract void checkInitialState(Project project, File repoDir, SourceControlRepository sourceControl)
     protected abstract void modifyWorkingCopy(Project project)
     protected abstract void checkStateWithAddedFile(Project project)
+
+    protected abstract void addDir(File repoDir, File dir)
 
     protected abstract void ignoreDir(Project project, File repoDir, File dirToIgnore)
 

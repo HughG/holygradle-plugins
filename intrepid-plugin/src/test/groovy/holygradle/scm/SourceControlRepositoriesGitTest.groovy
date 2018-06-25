@@ -20,7 +20,7 @@ class SourceControlRepositoriesGitTest extends SourceControlRepositoriesTestBase
     }
 
     @Override
-    protected void checkInitialState(Project project, SourceControlRepository sourceControl) {
+    protected void checkInitialState(Project project, File repoDir, SourceControlRepository sourceControl) {
         // Add a file.
         (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
         ScmUtil.gitExec(project, "add", EXAMPLE_FILE)
@@ -55,6 +55,13 @@ class SourceControlRepositoriesGitTest extends SourceControlRepositoriesTestBase
 
         assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges())
 
+    }
+
+    @Override
+    protected void addDir(File repoDir, File dir) {
+        new File(dir, "dummy.txt").text = "Dummy file so this folder can be committed."
+        ScmUtil.gitExec(dir, "add", ".")
+        ScmUtil.gitExec(dir, "commit", ".", "-m", "'Add ${dir}'")
     }
 
     @Override

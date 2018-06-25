@@ -27,16 +27,16 @@ class SourceControlRepositoriesHgTest extends SourceControlRepositoriesTestBase 
     }
 
     @Override
-    protected void checkInitialState(Project project, SourceControlRepository sourceControl) {
+    protected void checkInitialState(Project project, File repoDir, SourceControlRepository sourceControl) {
         // Add a file.
         (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
         ScmUtil.hgExec(project, "add", EXAMPLE_FILE)
-        // Set the commit message, user, and date, so that the hash will be the same every time.
+        // Set the commit message, user and date, so that the hash will be the same every time.
         ScmUtil.hgExec(project,
-                       "commit",
-                       "-m", "Added another file.",
-                       "-u", "TestUser",
-                       "-d", "2000-01-01"
+                "commit",
+                "-m", "Added another file.",
+                "-u", "TestUser",
+                "-d", "2000-01-01"
         )
 
         assertTrue(
@@ -51,7 +51,7 @@ class SourceControlRepositoriesHgTest extends SourceControlRepositoriesTestBase 
                 expectedHash = "30c86257cd03bde0acb2e22f91512e589df605e9"
                 break
             case "sub":
-                expectedHash = "c9b8d008d11c503f4f7e7ca47c5b7ac6f503cefa"
+                expectedHash = "c00b05e262a46c28648da50f19d23014672353bf"
                 break
             case "ignored":
                 expectedHash = null
@@ -84,6 +84,19 @@ class SourceControlRepositoriesHgTest extends SourceControlRepositoriesTestBase 
         def sourceControl = project.extensions.findByName("sourceControl") as SourceControlRepository
 
         assertTrue("Local changes are detected correctly", sourceControl.hasLocalChanges())
+    }
+
+    @Override
+    protected void addDir(File repoDir, File dir) {
+        new File(dir, "dummy.txt").text = "Dummy file so this folder can be committed."
+        ScmUtil.hgExec(dir, "add", ".")
+        // Set the commit message, user and date, so that the hash will be the same every time.
+        ScmUtil.hgExec(dir,
+                "commit", ".",
+                "-m", "'Add ${dir}'",
+                "-u", "TestUser",
+                "-d", "2000-01-01"
+        )
     }
 
     @Override
