@@ -7,7 +7,7 @@ import org.gradle.process.ExecSpec
  * Test helper related to Mercurial.
  */
 class ScmUtil {
-    private static void exec(Project project, String executable, String ... args) {
+    public static void exec(Project project, String executable, String ... args) {
         println "exec for ${project} in ${project.projectDir}: ${executable} ${args}"
         project.exec { ExecSpec spec ->
             spec.workingDir = project.projectDir
@@ -16,12 +16,15 @@ class ScmUtil {
         }
     }
 
-    private static void exec(File workingDir, String executable, String ... args) {
+    public static void exec(File workingDir, String executable, String ... args) {
         println "exec in ${workingDir}: ${executable} ${args}"
-        new ProcessBuilder([executable] + args.toList())
+        int exitCode = new ProcessBuilder([executable] + args.toList())
             .directory(workingDir)
             .start()
             .waitFor()
+        if (exitCode != 0) {
+            throw new RuntimeException("Process '${executable}' exited with code '${exitCode}'")
+        }
     }
 
     public static void svnExec(Project project, String ... args) {

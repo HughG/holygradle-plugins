@@ -43,7 +43,7 @@ class SourceControlRepositoriesGitTest extends SourceControlRepositoriesTestBase
     }
 
     @Override
-    protected void addFile(Project project) {
+    protected void modifyWorkingCopy(Project project) {
         new File(project.projectDir, EXAMPLE_FILE as String).withPrintWriter {
             PrintWriter w -> w.println("two")
         }

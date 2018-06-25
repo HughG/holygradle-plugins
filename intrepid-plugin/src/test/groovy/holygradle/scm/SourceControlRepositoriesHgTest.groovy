@@ -7,10 +7,8 @@ import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
 import java.nio.file.Path
-import java.nio.file.Paths
 
 import static org.junit.Assert.*
-
 /**
  * Integration test of the HgRepository class.  Most of this test is actually in the "build.gradle" script which is
  * launched.  This is because the test needs to run the version of Mercurial which the intrepid depends on, and the
@@ -75,7 +73,7 @@ class SourceControlRepositoriesHgTest extends SourceControlRepositoriesTestBase 
     }
 
     @Override
-    protected void addFile(Project project) {
+    protected void modifyWorkingCopy(Project project) {
         new File(project.projectDir, EXAMPLE_FILE as String).withPrintWriter {
             PrintWriter w -> w.println("two")
         }

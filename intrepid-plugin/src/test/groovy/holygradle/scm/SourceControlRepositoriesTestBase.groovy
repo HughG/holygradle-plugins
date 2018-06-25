@@ -21,7 +21,7 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
         Project project = prepareProjectDir(projectDir)
 
         checkInitialState(project, repoDir)
-        addFile(project)
+        modifyWorkingCopy(project)
         checkStateWithAddedFile(project)
     }
 
@@ -35,7 +35,7 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
         Project project = prepareProjectDir(projectDir)
 
         checkInitialState(project, repoDir)
-        addFile(project)
+        modifyWorkingCopy(project)
         checkStateWithAddedFile(project)
     }
 
@@ -74,7 +74,7 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
     }
 
     protected abstract void checkInitialState(Project project, SourceControlRepository sourceControl)
-    protected abstract void addFile(Project project)
+    protected abstract void modifyWorkingCopy(Project project)
     protected abstract void checkStateWithAddedFile(Project project)
 
     protected abstract void ignoreDir(Project project, File repoDir, File dirToIgnore)

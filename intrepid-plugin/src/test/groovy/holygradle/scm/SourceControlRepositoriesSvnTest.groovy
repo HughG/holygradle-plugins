@@ -1,12 +1,24 @@
 package holygradle.scm
 
+import holygradle.io.FileHelper
 import holygradle.testUtil.ScmUtil
-import net.lingala.zip4j.core.ZipFile
 import org.gradle.api.Project
 
-import static org.junit.Assert.*
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertTrue
 
 class SourceControlRepositoriesSvnTest extends SourceControlRepositoriesTestBase {
+    private static File getRepoServerDir(File repoDir) {
+        new File(repoDir.parentFile, repoDir.name + "_repo")
+    }
+
+    private static String getAsServerUrl(File dir) {
+        // On Windows, "svn checkout" requires the file URL to start with "file:///C:/..." for a repo on drive C, for
+        // example.  Java just turns file paths into "file:/C:/..." so we need to adjust that.
+        return dir.toURI().toString()
+                .replaceFirst("^file:/([a-zA-Z]:)", "file:///\$1")
+    }
+
     @Override
     protected File getRepoDir(String testName) {
         return new File(getTestDir(), "testSvn" + testName)
@@ -14,23 +26,48 @@ class SourceControlRepositoriesSvnTest extends SourceControlRepositoriesTestBase
 
     @Override
     protected void prepareRepoDir(File repoDir) {
-        File zipFile = new File(getTestDir().parentFile, "test_svn.zip")
-        println "unzipping ${zipFile}"
-        new ZipFile(zipFile).extractAll(repoDir.path)
+        File repoServerDir = getRepoServerDir(repoDir.absoluteFile)
+        FileHelper.ensureDeleteDirRecursive(repoServerDir)
+        ScmUtil.exec(repoDir, 'svnadmin', 'create', repoServerDir.toString())
+
+        Object repoServerUrl = getAsServerUrl(repoServerDir)
+        ScmUtil.svnExec(repoDir, "checkout", repoServerUrl, ".")
     }
 
     @Override
     protected void checkInitialState(Project project, SourceControlRepository sourceControl) {
-        assertTrue(sourceControl instanceof SvnRepository)
-        assertEquals("1", sourceControl.getRevision())
-        assertEquals("file:///C:/Projects/DependencyManagement/Project/test_svn_repo/trunk", sourceControl.getUrl())
-        assertEquals("svn", sourceControl.getProtocol())
+        // Add a file.
+        (new File(project.projectDir, EXAMPLE_FILE)).text = "ahoy"
+        ScmUtil.svnExec(project, "add", EXAMPLE_FILE)
+        // Set the commit message, user, and date, so that the hash will be the same every time.
+        ScmUtil.svnExec(project,
+                "commit",
+                "-m", "Added another file."
+        )
+        ScmUtil.svnExec(project, "update") // so we don't have a mixed-revision working copy
+
+        assertTrue(
+                "An SvnRepository instance has been created for ${project}",
+                sourceControl instanceof SvnRepository
+        )
+        assertEquals("The initial revision is as expected", "1", sourceControl.getRevision())
+        assertEquals(
+                "The repo URL is as expected",
+                getAsServerUrl(getRepoServerDir(project.projectDir)),
+                sourceControl.getUrl() + "/"
+        )
+        assertEquals(
+                "The SourceControlRepository reports its protocol correctly",
+                "svn",
+                sourceControl.getProtocol()
+        )
     }
 
     @Override
-    protected void addFile(Project project) {
-        File helloFile = new File(project.projectDir, "hello.txt")
-        helloFile.write("bonjour")
+    protected void modifyWorkingCopy(Project project) {
+        new File(project.projectDir, EXAMPLE_FILE as String).withPrintWriter {
+            PrintWriter w -> w.println("two")
+        }
     }
 
     @Override
