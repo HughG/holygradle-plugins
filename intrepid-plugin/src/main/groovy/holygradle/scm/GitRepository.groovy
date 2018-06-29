@@ -47,6 +47,11 @@ class GitRepository implements SourceControlRepository {
         changes.trim().length() > 0
     }
 
+    @Override
+    boolean ignoresFile(File file) {
+        return true
+    }
+
     private static class Type implements SourceControlType {
         @Override
         String getStateDirName() {

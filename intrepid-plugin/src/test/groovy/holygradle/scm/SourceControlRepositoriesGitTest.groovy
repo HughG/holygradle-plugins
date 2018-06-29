@@ -65,7 +65,7 @@ class SourceControlRepositoriesGitTest extends SourceControlRepositoriesTestBase
     }
 
     @Override
-    protected void ignoreDir(Project project, File repoDir, File dirToIgnore) {
+    protected void ignoreDir(File repoDir, File dirToIgnore) {
         Path relativePathToIgnore = repoDir.toPath().relativize(dirToIgnore.toPath())
         new File(repoDir, ".gitignore").text = "/${relativePathToIgnore}/"
     }

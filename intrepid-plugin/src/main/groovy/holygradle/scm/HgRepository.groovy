@@ -2,6 +2,8 @@ package holygradle.scm
 
 import org.gradle.process.ExecSpec
 
+import java.nio.file.Files
+
 class HgRepository implements SourceControlRepository {
     public static SourceControlType TYPE = new Type()
 
@@ -90,6 +92,29 @@ class HgRepository implements SourceControlRepository {
             spec.args "status", "-amrdC"
         }
         changes.trim().length() > 0
+    }
+
+    @Override
+    public boolean ignoresFile(File file) {
+        if (!file.exists()) {
+            throw new IllegalArgumentException("Cannot check whether repo ignores file ${file} because it does not exist")
+        }
+        if (!Files.isRegularFile(file.toPath())) {
+            throw new IllegalArgumentException("Cannot check whether repo ignores file ${file} because it is not a regular file")
+        }
+
+        List<String> ignoredFileLines = hgCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
+            spec.args "status", "-i", file.absolutePath
+        }.readLines()
+        if (ignoredFileLines.isEmpty()) {
+            return false
+        }
+        String line = ignoredFileLines[0]
+        String fileRelativePath = workingCopyDir.toPath().relativize(file.toPath())
+        // We do a startsWith check (instead of ==) because "file" might be a directory, in which case we'll get the
+        // filename of the first file in the folder.
+        return (line == "I " + fileRelativePath)
     }
 
     private static class Type implements SourceControlType {

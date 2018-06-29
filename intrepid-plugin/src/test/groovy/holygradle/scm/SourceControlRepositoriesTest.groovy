@@ -1,6 +1,9 @@
 package holygradle.scm
 
+import holygradle.io.FileHelper
+import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.test.AbstractHolyGradleTest
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
@@ -29,7 +32,15 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
     public void testGetWithoutDummy() {
         File dummyDir = new File(getTestDir(), "dummy")
         Project project = ProjectBuilder.builder().withProjectDir(dummyDir).build()
-        SourceControlRepository repo = SourceControlRepositories.create(project, dummyDir)
-        assertNull(repo)
+
+        // Make a dummy source dependency pointing to an already-existing folder.
+        NamedDomainObjectContainer<SourceDependencyHandler> sourceDependencies =
+            project.sourceDependencies as NamedDomainObjectContainer<SourceDependencyHandler>
+        final SourceDependencyHandler handler = sourceDependencies.create("dummySourceDep")
+        //handler.hg('http://dummySourceDep')
+        FileHelper.ensureMkdirs(handler.destinationDir)
+
+        SourceControlRepository repo = SourceControlRepositories.create(handler)
+        assertNull("Expect no repo for an empty source dependency directory", repo)
     }
 }

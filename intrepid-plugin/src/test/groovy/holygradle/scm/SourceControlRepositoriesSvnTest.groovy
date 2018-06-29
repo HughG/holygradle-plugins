@@ -104,7 +104,7 @@ class SourceControlRepositoriesSvnTest extends SourceControlRepositoriesTestBase
     }
 
     @Override
-    protected void ignoreDir(Project project, File repoDir, File dirToIgnore) {
-        ScmUtil.svnExec(project, "propset", "svn:ignore", dirToIgnore.name, dirToIgnore.parentFile.absolutePath)
+    protected void ignoreDir(File repoDir, File dirToIgnore) {
+        ScmUtil.svnExec(repoDir, "propset", "svn:ignore", dirToIgnore.name, dirToIgnore.parentFile.absolutePath)
     }
 }

@@ -275,7 +275,7 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
                 // extension from the sourceDep.project, because that project itself may not have the intrepid plugin
                 // applied, in which case it won't have that extension.  We need to create the SourceControlRepository
                 // object, instead of just using the SourceDependencyHandler, to create the actual revision.
-                SourceControlRepository repo = SourceControlRepositories.create(project.rootProject, sourceDep.absolutePath)
+                SourceControlRepository repo = SourceControlRepositories.create(sourceDep)
                 if (repo != null) {
                     buildScript.append(" "*4)
                     buildScript.append("\"")

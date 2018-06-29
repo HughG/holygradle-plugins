@@ -47,9 +47,10 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
         File projectDir = new File(repoDir, "ignored")
         FileHelper.ensureMkdirs(projectDir)
         prepareRepoDir(repoDir)
+        new File(repoDir, "dummy.txt").text = "Dummy file so this folder can be ignored."
+        ignoreDir(repoDir, projectDir)
         Project project = prepareProjectDir(projectDir)
 
-        ignoreDir(project, repoDir, projectDir)
         checkNoSourceRepository(project)
     }
 
@@ -80,7 +81,7 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
 
     protected abstract void addDir(File repoDir, File dir)
 
-    protected abstract void ignoreDir(Project project, File repoDir, File dirToIgnore)
+    protected abstract void ignoreDir(File repoDir, File dirToIgnore)
 
     private static void checkNoSourceRepository(Project project) {
         SourceControlRepository sourceControl =
