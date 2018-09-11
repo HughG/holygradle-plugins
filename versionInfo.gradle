@@ -2,18 +2,30 @@ import java.text.SimpleDateFormat
 
 
 project.ext.writeRepoInfo = { File repoDir, OutputStream os ->
-    exec {
+    // As long as we're not really publishing (and maybe just publishing locally for integration tests),
+    // allow repos (most likely, the local repo) to have no ".hg" folder.
+    boolean allowUnknown = !project.ext.getIsReallyPublishing()
+    ExecResult result
+    result = exec {
         executable = "hg"
         args = ["paths", "default"]
         standardOutput = os
         workingDir = repoDir
+        ignoreExitValue = allowUnknown
+    }
+    if (result.exitValue != 0) {
+        os.println("unknown_remote")
     }
     (new PrintStream(os)).withStream { it.print(" ") }
-    exec {
+    result = exec {
         executable = "hg"
         args = ["id", "-ibt"]
         standardOutput = os
         workingDir = repoDir
+        ignoreExitValue = allowUnknown
+    }
+    if (result.exitValue != 0) {
+        os.println("unknown_id")
     }
 }
 

@@ -43,6 +43,9 @@ project.ext.publishReallyTasks = []
 project.ext.getIsPublishing = {
     project.publishTasks.any { project.gradle.taskGraph.hasTask(it) }
 }
+project.ext.getIsReallyPublishing = {
+    project.publishReallyTasks.any { project.gradle.taskGraph.hasTask(it) }
+}
 Task publishReally = project.task("publishPluginsReally") { Task t ->
     setPublishTaskDescription(t, PUBLISH_SNAPSHOT_TARGET_URI, PUBLISH_RELEASE_TARGET_URI)
 
