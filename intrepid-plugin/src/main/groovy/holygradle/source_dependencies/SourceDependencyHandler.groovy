@@ -36,7 +36,7 @@ class SourceDependencyHandler extends DependencyHandler {
 
     public SourceDependencyHandler(String depName, Project project) {
         super(depName, project)
-        destinationDir = new File(project.projectDir, depName).getCanonicalFile()
+        destinationDir = absolutePath.canonicalFile
         project.afterEvaluate { validate() }
     }
 
