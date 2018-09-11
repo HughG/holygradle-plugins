@@ -163,25 +163,21 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         SourceDependencyHandler handler = null
     ) {
         Project project = createPublishNotesTask.project
-        // For the originating project we will be passed a null handler (because we're looking at it as the root which
-        // has source dependencies, not a source dependency itself), in which case we want that originating project,
-        // which we can get from the task.
-        File sourceRepoDir
-        if (handler == null) {
-            sourceRepoDir = project.projectDir
-        } else {
-            // We don't use handler..getSourceDependencyProject(...).projectDir, because source dependencies don't have
-            // to contain a Gradle project.
-            sourceRepoDir = handler.destinationDir
-        }
 
         // We create a new SourceControlRepository instead of trying to get the "sourceControl" extension from the
         // project, because we don't want a DummySourceControl if there's no SCM info here.  Also, some source
         // dependencies may not have a project.
-        SourceControlRepository sourceRepo = SourceControlRepositories.create(
-            project.rootProject,
-            sourceRepoDir
-        )
+        //
+        // For the originating project we will be passed a null handler (because we're looking at it as the root which
+        // has source dependencies, not a source dependency itself), in which case we want that originating project,
+        // which we have from the task.
+        SourceControlRepository sourceRepo
+        if (handler == null) {
+            sourceRepo = SourceControlRepositories.create(project)
+        } else {
+            sourceRepo = SourceControlRepositories.create(handler)
+        }
+
         if (sourceRepo != null) {
             File sourceDepInfoDir
             if (handler == null) {
