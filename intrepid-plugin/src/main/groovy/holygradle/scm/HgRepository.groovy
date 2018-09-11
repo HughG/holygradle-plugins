@@ -2,9 +2,11 @@ package holygradle.scm
 
 import org.gradle.process.ExecSpec
 
-import java.util.regex.Matcher
+import java.nio.file.Files
 
 class HgRepository implements SourceControlRepository {
+    public static SourceControlType TYPE = new Type()
+
     private final File workingCopyDir
     private final Command hgCommand
 
@@ -22,21 +24,36 @@ class HgRepository implements SourceControlRepository {
     }
     
     public String getUrl() {
-        // TODO 2016-04-15 HughG: Instead of this, run "hg paths default" and capture the output.
-        // May need to strip "username[:password]@" from URL.
-        File hgrc = new File(workingCopyDir, "/.hg/hgrc")
-        String url = "unknown"
-        if (hgrc.exists()) {
-            hgrc.text.eachLine {
-                Matcher match = it =~ /default = (.+)/
-                if (match.size() != 0) {
-                    final List<String> matches = match[0] as List<String>
-                    url = matches[1]
-                }
-                return
+        File localWorkingCopyDir = workingCopyDir // capture private for closure
+        ExecSpec savedSpec = null
+        String defaultPath = hgCommand.execute(
+            { ExecSpec spec ->
+                savedSpec = spec // so we can access the configured error stream
+                spec.workingDir = localWorkingCopyDir
+                spec.args(
+                        "paths", // Execute the "paths" command,
+                        "default" // asking for the default push target
+                )
+            },
+            { int exitValue ->
+                String errorString = savedSpec.errorOutput.toString().replaceAll('[\\r\\n]', '')
+                boolean defaultRemoteNotFound = (exitValue == 1) && (errorString == 'not found!')
+                // Throw if there's a non-zero exit value, unless it's just because there's no default remote,
+                // which is perfectly valid for a new, never-pushed repo.
+                return (exitValue == 0) || !defaultRemoteNotFound
             }
+        )
+        if (defaultPath.trim().isEmpty()) {
+            return "unknown"
         }
-        url
+        URL defaultUrl = new URL(defaultPath)
+        URL defaultUrlWithoutUserInfo = new URL(
+            defaultUrl.protocol,
+            defaultUrl.host,
+            defaultUrl.port,
+            defaultUrl.file
+        )
+        return defaultUrlWithoutUserInfo.toString()
     }
 
     public String getRevision() {
@@ -75,5 +92,45 @@ class HgRepository implements SourceControlRepository {
             spec.args "status", "-amrdC"
         }
         changes.trim().length() > 0
+    }
+
+    @Override
+    public boolean ignoresFile(File file) {
+        if (!file.exists()) {
+            throw new IllegalArgumentException("Cannot check whether repo ignores file ${file} because it does not exist")
+        }
+        if (!Files.isRegularFile(file.toPath())) {
+            throw new IllegalArgumentException("Cannot check whether repo ignores file ${file} because it is not a regular file")
+        }
+
+        List<String> ignoredFileLines = hgCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
+            spec.args "status", "-i", file.absolutePath
+        }.readLines()
+        if (ignoredFileLines.isEmpty()) {
+            return false
+        }
+        String line = ignoredFileLines[0]
+        String fileRelativePath = workingCopyDir.toPath().relativize(file.toPath())
+        // We do a startsWith check (instead of ==) because "file" might be a directory, in which case we'll get the
+        // filename of the first file in the folder.
+        return (line == "I " + fileRelativePath)
+    }
+
+    private static class Type implements SourceControlType {
+        @Override
+        String getStateDirName() {
+            return ".hg"
+        }
+
+        @Override
+        String getExecutableName() {
+            return "hg"
+        }
+
+        @Override
+        Class<SourceControlRepository> getRepositoryClass() {
+            return HgRepository.class
+        }
     }
 }

@@ -4,7 +4,7 @@ import holygradle.io.FileHelper
 import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
-import holygradle.testUtil.HgUtil
+import holygradle.testUtil.ScmUtil
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Rule
@@ -84,12 +84,12 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         // Set up the project dir as a Mercurial repo.
         Project project = ProjectBuilder.builder().withProjectDir(projectADir).build()
         // Make the project dir into a repo, then add the extension.
-        HgUtil.hgExec(project, "init")
+        ScmUtil.hgExec(project, "init")
 
         // Add a file.
-        HgUtil.hgExec(project, "add", "build.gradle")
+        ScmUtil.hgExec(project, "add", "build.gradle")
         // Set the commit message, user, and date, so that the hash will be the same every time.
-        HgUtil.hgExec(
+        ScmUtil.hgExec(
             project,
             "commit",
             "-m", "Initial test state.",

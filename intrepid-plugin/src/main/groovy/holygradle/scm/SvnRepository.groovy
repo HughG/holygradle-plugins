@@ -5,6 +5,8 @@ import org.gradle.process.ExecSpec
 import java.util.regex.Matcher
 
 class SvnRepository implements SourceControlRepository {
+    public static SourceControlType TYPE = new Type()
+
     private final File workingCopyDir
     private final Command svnCommand
 
@@ -56,4 +58,27 @@ class SvnRepository implements SourceControlRepository {
         }
         changes.trim().length() > 0
     }
+
+    @Override
+    boolean ignoresFile(File file) {
+        return true
+    }
+
+    private static class Type implements SourceControlType {
+        @Override
+        String getStateDirName() {
+            return ".svn"
+        }
+
+        @Override
+        String getExecutableName() {
+            return "svn"
+        }
+
+        @Override
+        Class<SourceControlRepository> getRepositoryClass() {
+            return SvnRepository.class
+        }
+    }
+
 }

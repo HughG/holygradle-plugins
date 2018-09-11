@@ -10,7 +10,7 @@ This repository contains:
 
 # Prerequisites
  - Java JDK 1.7 - you do need the dev-kit, not just the run-time.  1.8 won't work.
- - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 15.
+ - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 2018.
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
@@ -31,7 +31,11 @@ This repository contains:
     For this open File > Settings > Appearance & Behavior > Path Variables here you should add a setting for
     GRADLE_USER_HOME with the path to your gradle cache. 
  - You may also need to configure IntelliJ to point to your installed JDK, in the "Project Structure" dialog.
- - An Artifactory server configured with:
+ - Visual Studio 2017 with C++ support, and the Windows 8.1 SDK, to build credential-store.
+   - In the Visual Studio 2017 installer, on the "Individual Components" tab, you need to select "Compilers, build
+   tools, and runtimes > Windows Universal CRT SDK" or you'll get an error about being unable to find `stdio.h` when
+   compiling `stdafx.h`.
+ - For publishing, an Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
    - a remote repo pointing to Maven Central 
    - one for publishing plugin snapshots for testing modifications to plugins without affecting existing plugin users.
@@ -61,7 +65,7 @@ artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
 
-The 'chosenDevEnvVersion' should be, e.g., "VS120" to use the C++ compiler from Visual Studio 2013.
+The 'chosenDevEnvVersion' should be, e.g., "VS150" to use the C++ compiler from Visual Studio 2017.
 
 Run 'gw tasks'.  You may need to supply proxy arguments if it's the first time you've run this version of Gradle
 (e.g., 'gw -Dhttp.proxyHost=proxyserver -Dhttp.proxyPort=8080').
