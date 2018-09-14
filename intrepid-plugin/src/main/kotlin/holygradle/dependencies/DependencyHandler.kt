@@ -28,7 +28,7 @@ abstract class DependencyHandler(
 
     val fullTargetPath: String = name
 
-    val fullTargetPathRelativeToRootProject: String =
+    val fullTargetPathRelativeToRootProject: String get() =
         Helper.relativizePath(File(project.projectDir, name), project.rootProject.projectDir)
 
     val absolutePath = File(project.projectDir, name)
