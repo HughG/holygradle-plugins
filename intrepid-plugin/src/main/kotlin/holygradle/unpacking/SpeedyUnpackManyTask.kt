@@ -127,9 +127,7 @@ open class SpeedyUnpackManyTask : DefaultTask() {
 
             if (!entry.applyUpToDateChecks) {
                 // If we're not using the normal Gradle mechanism, update the info file.
-                infoFile.printWriter().use { writer ->
-                    writer.println("Unpacked from: " + file.name)
-                }
+                infoFile.appendText("Unpacked from: " + file.name + System.getProperty("line.separator"))
 
                 logger.info("SpeedyUnpackManyTask: updated info file ${infoFile}, adding ${file.name}")
 
@@ -146,15 +144,15 @@ open class SpeedyUnpackManyTask : DefaultTask() {
     private fun getInfoFile(entry: UnpackEntry): File = File(entry.unpackDir, "version_info.txt")
 
     private fun getZipFilesToUnpack(infoFile: File, entry: UnpackEntry): Collection<File> {
-        if (infoFile.exists()) {
+        return if (infoFile.exists()) {
             val infoText = infoFile.readText()
             logger.info("SpeedyUnpackManyTask: existing info file ${infoFile} contents: >>>\n${infoText}<<<")
             val toUnpack = entry.zipFiles.filter { !infoText.contains(it.name) }
             logger.info("SpeedyUnpackManyTask: info file ${infoFile} doesn't contain ${toUnpack.map { it.name }}")
-            return toUnpack
+            toUnpack
         } else {
             logger.info("SpeedyUnpackManyTask: didn't find info file ${infoFile}")
-            return entry.zipFiles
+            entry.zipFiles
         }
     }
 }

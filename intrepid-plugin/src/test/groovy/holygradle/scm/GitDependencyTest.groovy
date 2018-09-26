@@ -4,13 +4,14 @@ import holygradle.buildscript.BuildScriptDependencies
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.test.AbstractHolyGradleTest
 import holygradle.testUtil.ExecUtil
+import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.process.ExecSpec
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
 import static org.junit.Assert.*
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.*
 
 /**
  * Unit tests for {@link holygradle.scm.GitDependency}
@@ -32,10 +33,10 @@ class GitDependencyTest extends AbstractHolyGradleTest {
         // Set up a stub GitCommand which just records what calls were made.
         List<ExecSpec> stubSpecs = []
         final Command gitCommand = [
-            execute : { Closure configure ->
+            execute : { Action<ExecSpec> configure ->
                 ExecSpec stubSpec = ExecUtil.makeStubExecSpec()
                 stubSpecs.add(stubSpec)
-                configure(stubSpec)
+                configure.execute(stubSpec)
                 return ""
             }
         ] as Command
