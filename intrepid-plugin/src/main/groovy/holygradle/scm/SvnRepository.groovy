@@ -4,19 +4,11 @@ import org.gradle.process.ExecSpec
 
 import java.util.regex.Matcher
 
-class SvnRepository implements SourceControlRepository {
+class SvnRepository extends SourceControlRepositoryBase {
     public static SourceControlType TYPE = new Type()
 
-    private final File workingCopyDir
-    private final Command svnCommand
-
-    public SvnRepository(Command hgCommand, File localPath) {
-        this.svnCommand = hgCommand
-        workingCopyDir = localPath
-    }
-
-    public File getLocalDir() {
-        workingCopyDir
+    public SvnRepository(Command scmCommand, File workingCopyDir) {
+        super(scmCommand, workingCopyDir)
     }
     
     public String getProtocol() {
@@ -25,7 +17,7 @@ class SvnRepository implements SourceControlRepository {
     
     public String getUrl() {
         String url = "unknown"
-        String info = svnCommand.execute { ExecSpec spec ->
+        String info = scmCommand.execute { ExecSpec spec ->
             spec.workingDir = workingCopyDir
             spec.args "info"
         }
@@ -39,7 +31,7 @@ class SvnRepository implements SourceControlRepository {
     
     public String getRevision() {
         String revision = "unknown"
-        String info = svnCommand.execute { ExecSpec spec ->
+        String info = scmCommand.execute { ExecSpec spec ->
             spec.workingDir = workingCopyDir
             spec.args "info"
         }
@@ -52,16 +44,19 @@ class SvnRepository implements SourceControlRepository {
     }
     
     public boolean hasLocalChanges() {
-        String changes = svnCommand.execute { ExecSpec spec ->
+        String changes = scmCommand.execute { ExecSpec spec ->
             spec.workingDir = workingCopyDir
             spec.args "status", "--quiet", "--ignore-externals"
         }
         changes.trim().length() > 0
     }
 
-    @Override
-    boolean ignoresFile(File file) {
-        return true
+    protected boolean ignoresFileInternal(File file) {
+        String status = scmCommand.execute { ExecSpec spec ->
+            spec.workingDir = workingCopyDir
+            spec.args "status", file.absolutePath
+        }
+        return status.startsWith("I")
     }
 
     private static class Type implements SourceControlType {
