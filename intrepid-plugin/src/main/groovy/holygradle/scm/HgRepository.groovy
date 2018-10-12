@@ -4,19 +4,11 @@ import org.gradle.process.ExecSpec
 
 import java.nio.file.Files
 
-class HgRepository implements SourceControlRepository {
+class HgRepository extends SourceControlRepositoryBase {
     public static SourceControlType TYPE = new Type()
 
-    private final File workingCopyDir
-    private final Command hgCommand
-
-    public HgRepository(Command hgCommand, File workingCopyDir) {
-        this.hgCommand = hgCommand
-        this.workingCopyDir = workingCopyDir
-    }
-
-    public File getLocalDir() {
-        workingCopyDir.absoluteFile
+    public HgRepository(Command scmCommand, File workingCopyDir) {
+        super(scmCommand, workingCopyDir)
     }
     
     public String getProtocol() {
@@ -26,7 +18,7 @@ class HgRepository implements SourceControlRepository {
     public String getUrl() {
         File localWorkingCopyDir = workingCopyDir // capture private for closure
         ExecSpec savedSpec = null
-        String defaultPath = hgCommand.execute(
+        String defaultPath = scmCommand.execute(
             { ExecSpec spec ->
                 savedSpec = spec // so we can access the configured error stream
                 spec.workingDir = localWorkingCopyDir
@@ -62,7 +54,7 @@ class HgRepository implements SourceControlRepository {
         // copy is modified, which we will remove.
 
         File localWorkingCopyDir = workingCopyDir // capture private for closure
-        String minimalNode = hgCommand.execute { ExecSpec spec ->
+        String minimalNode = scmCommand.execute { ExecSpec spec ->
                 spec.workingDir = localWorkingCopyDir
                 spec.args(
                     "id", // Execute the "id" command,
@@ -73,7 +65,7 @@ class HgRepository implements SourceControlRepository {
             minimalNode = minimalNode[0..-2] // Drop the last character.
         }
 
-        return hgCommand.execute { ExecSpec spec ->
+        return scmCommand.execute { ExecSpec spec ->
             spec.workingDir = localWorkingCopyDir
             spec.args(
                 "log",                      // Execute log command,
@@ -87,23 +79,15 @@ class HgRepository implements SourceControlRepository {
     public boolean hasLocalChanges() {
         // Execute hg status with added, removed or modified files
         File localWorkingCopyDir = workingCopyDir // capture private for closure
-        String changes = hgCommand.execute { ExecSpec spec ->
+        String changes = scmCommand.execute { ExecSpec spec ->
             spec.workingDir = localWorkingCopyDir
             spec.args "status", "-amrdC"
         }
         changes.trim().length() > 0
     }
 
-    @Override
-    public boolean ignoresFile(File file) {
-        if (!file.exists()) {
-            throw new IllegalArgumentException("Cannot check whether repo ignores file ${file} because it does not exist")
-        }
-        if (!Files.isRegularFile(file.toPath())) {
-            throw new IllegalArgumentException("Cannot check whether repo ignores file ${file} because it is not a regular file")
-        }
-
-        List<String> ignoredFileLines = hgCommand.execute { ExecSpec spec ->
+    protected boolean ignoresFileInternal(File file) {
+        List<String> ignoredFileLines = scmCommand.execute { ExecSpec spec ->
             spec.workingDir = workingCopyDir
             spec.args "status", "-i", file.absolutePath
         }.readLines()

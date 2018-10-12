@@ -58,6 +58,7 @@ abstract class SourceControlRepositoriesTestBase extends AbstractHolyGradleTest 
     protected abstract void prepareRepoDir(File repoDir)
     private static Project prepareProjectDir(File projectDir) {
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
+        new File(projectDir, "build.gradle").text = "/* Dummy Gradle build file. */"
         SourceControlRepositories.createExtension(project)
         return project
     }
