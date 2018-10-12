@@ -33,7 +33,7 @@ public class SourceControlRepositories {
                 // (settings and/or build script) in the location folder.  This is relevant because some source
                 // control systems (Git and Mercurial) don't let you find the ignored status of folders, so we need
                 // to ask about a normal file.
-                if (repo.ignoresFile(project.gradle.startParameter.buildFile)) {
+                if (repo.ignoresFile(project.buildFile)) {
                     return new DummySourceControl()
                 } else {
                     return repo

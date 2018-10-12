@@ -2,19 +2,13 @@ package holygradle.scm
 
 import org.gradle.process.ExecSpec
 
-class GitRepository implements SourceControlRepository {
+import java.nio.file.Files
+
+class GitRepository extends SourceControlRepositoryBase {
     public static SourceControlType TYPE = new Type()
 
-    private final File workingCopyDir
-    private final Command gitCommand
-
-    public GitRepository(Command gitCommand, File workingCopyDir) {
-        this.gitCommand = gitCommand
-        this.workingCopyDir = workingCopyDir
-    }
-
-    public File getLocalDir() {
-        workingCopyDir.absoluteFile
+    public GitRepository(Command scmCommand, File workingCopyDir) {
+        super(scmCommand, workingCopyDir)
     }
 
     public String getProtocol() {
@@ -23,12 +17,12 @@ class GitRepository implements SourceControlRepository {
 
     public String getUrl() {
         // May need to strip "username[:password]@" from URL.
-        return ScmHelper.getGitConfigValue(gitCommand, workingCopyDir, "remote.origin.url")
+        return ScmHelper.getGitConfigValue(scmCommand, workingCopyDir, "remote.origin.url")
     }
 
     public String getRevision() {
         File localWorkingCopyDir = workingCopyDir // capture private for closure
-        return gitCommand.execute { ExecSpec spec ->
+        return scmCommand.execute { ExecSpec spec ->
             spec.workingDir = localWorkingCopyDir
             spec.args(
                 "rev-parse", // Execute the "rev-parse" command,
@@ -40,16 +34,23 @@ class GitRepository implements SourceControlRepository {
     public boolean hasLocalChanges() {
         // Execute git status with added, removed or modified files
         File localWorkingCopyDir = workingCopyDir // capture private for closure
-        String changes = gitCommand.execute { ExecSpec spec ->
+        String changes = scmCommand.execute { ExecSpec spec ->
             spec.workingDir = localWorkingCopyDir
             spec.args "status", "--porcelain", "--untracked-files=no"
         }
         changes.trim().length() > 0
     }
 
-    @Override
-    boolean ignoresFile(File file) {
-        return true
+    protected boolean ignoresFileInternal(File file) {
+        int exitValue = 0
+        scmCommand.execute({ ExecSpec spec ->
+            spec.workingDir = workingCopyDir
+            spec.args "check-ignore", "-q", file.absolutePath
+        }, {
+            exitValue = it
+            return (it != 0 && it != 1) // 0 = is ignored, 1 = is NOT ignored, 128 (or other) = error
+        })
+        return (exitValue == 0)
     }
 
     private static class Type implements SourceControlType {
