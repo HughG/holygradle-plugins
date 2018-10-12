@@ -193,7 +193,8 @@ set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 :end
 @rem End local scope for the variables with windows NT shell
-if "%ERRORLEVEL%"=="123456" goto execute
+@rem if "%ERRORLEVEL%"=="123456" goto execute
+if exists .restartDepRes goto execute
 if "%ERRORLEVEL%"=="0" goto mainEnd
 
 :fail

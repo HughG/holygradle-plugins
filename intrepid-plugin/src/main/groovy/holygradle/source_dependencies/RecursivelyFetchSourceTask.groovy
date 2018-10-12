@@ -76,7 +76,9 @@ class RecursivelyFetchSourceTask extends DefaultTask {
                 println NEW_SUBPROJECTS_MESSAGE
                 println "Rerunning this task..."
                 println "-"*80
-                System.exit(123456)
+                //System.exit(123456)
+		def newFile = new File(project.projectDir + "/.restartDepRes")
+                newFile.createNewFile()
             }
         }
     }
