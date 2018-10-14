@@ -5,26 +5,25 @@ import holygradle.util.unique
 import org.apache.commons.codec.digest.DigestUtils
 import org.gradle.api.Project
 import java.io.File
+import java.io.FileOutputStream
 import java.io.PrintWriter
 
 object SettingsFileHelper {
-    private class SettingsContent {
-        companion object {
-            const val SECTION_MARKER = "// holygradle source dependencies V"
-            val BEGIN_PATTERN = "${SECTION_MARKER}[0-9a-f]+ BEGIN".toRegex()
-            val END_PATTERN = "${SECTION_MARKER}[0-9a-f]+ END".toRegex()
-            const val SETTINGS_FILE_METHOD_1_MARKER =
-                    "// This allows subprojects to name the gradle script the same as the directory"
-            fun getContent(): String {
-                val baseContent = IntrepidPlugin::class.java
-                        .getResourceAsStream("/holygradle/settings-content.gradle")
-                        .bufferedReader().use { it.readText() }
-                val md5 = DigestUtils.md5Hex(baseContent)
-                return """${SECTION_MARKER}${md5} BEGIN
+    private object SettingsContent {
+        const val SECTION_MARKER = "// holygradle source dependencies V"
+        val BEGIN_PATTERN = "${SECTION_MARKER}[0-9a-f]+ BEGIN".toRegex()
+        val END_PATTERN = "${SECTION_MARKER}[0-9a-f]+ END".toRegex()
+        const val SETTINGS_FILE_METHOD_1_MARKER =
+                "// This allows subprojects to name the gradle script the same as the directory"
+        val content: String by lazy {
+            val baseContent = IntrepidPlugin::class.java
+                    .getResourceAsStream("/holygradle/settings-content.gradle")
+                    .bufferedReader().use { it.readText() }
+            val md5 = DigestUtils.md5Hex(baseContent)
+            """${SECTION_MARKER}${md5} BEGIN
 ${baseContent}
 ${SECTION_MARKER}${md5} END"""
             }
-        }
     }
 
     // We don't just use a fixed filename because we need it to be different for tests.
@@ -91,7 +90,7 @@ ${SECTION_MARKER}${md5} END"""
     }
 
     private fun appendSettingsFileContent(settingsFile: File) {
-        settingsFile.bufferedWriter().use { bw ->
+        FileOutputStream(settingsFile, true).bufferedWriter().use { bw ->
             PrintWriter(bw).use { w ->
                 /*
                  * This intentionally starts with a blank line, in case the file didn't end with a line ending.
@@ -101,7 +100,7 @@ ${SECTION_MARKER}${md5} END"""
                 w.println()
                 // We pull the lines out of the string and write them individually to be sure we get platform-specific
                 // line endings right.
-                for (line in SettingsContent.getContent().lines()) {
+                for (line in SettingsContent.content.lines()) {
                     w.println(line)
                 }
             }
@@ -124,7 +123,7 @@ ${SECTION_MARKER}${md5} END"""
             } else { // we are replacing this section
                 if (line.matches(SettingsContent.END_PATTERN)) {
                     // Insert the new content, and stop skipping.
-                    newLines.addAll(SettingsContent.getContent().lines())
+                    newLines.addAll(SettingsContent.content.lines())
                     replacing = false
                     replaced = true
                 } else {

@@ -127,7 +127,7 @@ open class SpeedyUnpackManyTask : DefaultTask() {
 
             if (!entry.applyUpToDateChecks) {
                 // If we're not using the normal Gradle mechanism, update the info file.
-                infoFile.appendText("Unpacked from: " + file.name + System.getProperty("line.separator"))
+                infoFile.appendText("Unpacked from: " + file.name + System.lineSeparator())
 
                 logger.info("SpeedyUnpackManyTask: updated info file ${infoFile}, adding ${file.name}")
 
