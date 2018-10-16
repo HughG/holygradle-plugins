@@ -51,12 +51,24 @@ class SvnRepository extends SourceControlRepositoryBase {
         changes.trim().length() > 0
     }
 
-    protected boolean ignoresFileInternal(File file) {
-        String status = scmCommand.execute { ExecSpec spec ->
-            spec.workingDir = workingCopyDir
-            spec.args "status", file.absolutePath
+    protected boolean ignoresFileInternal(final File file) {
+        // If the file is explicitly ignored, "svn status" will output a line starting with "I".  However, if it's
+        // somewhere under an ignored folder, then "svn status" for any file under that folder will output nothing on
+        // standard output (and a warning on standard error: "svn: warning: W155010: The node 'filename' was not found"),
+        // in which case we keep looking upward until we hit the working copy root (which we don't check, because a repo
+        // which ignores its root folder seems like madness!).
+        File maybeIgnoredFile = file.absoluteFile
+        while (maybeIgnoredFile != workingCopyDir) {
+            String status = scmCommand.execute { ExecSpec spec ->
+                spec.workingDir = workingCopyDir
+                spec.args "status", maybeIgnoredFile.toString()
+            }
+            if (status == "") {
+                maybeIgnoredFile = maybeIgnoredFile.parentFile
+            } else {
+                return status.startsWith("I")
+            }
         }
-        return status.startsWith("I")
     }
 
     private static class Type implements SourceControlType {
