@@ -3,7 +3,6 @@ package holygradle.scm
 import holygradle.io.FileHelper
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.test.AbstractHolyGradleTest
-import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
@@ -39,7 +38,7 @@ class SourceControlRepositoriesTest extends AbstractHolyGradleTest {
         FileHelper.ensureMkdirs(handler.destinationDir)
 
         SourceControlRepository repo = SourceControlRepositories.create(handler)
-        assertNull("Expect no repo for an empty source dependency directory", repo)
+        assertTrue("Expect no repo for an empty source dependency directory; got ${repo}", repo instanceof DummySourceControl)
     }
 
     private Project prepareRepoDir(File repoDir) {

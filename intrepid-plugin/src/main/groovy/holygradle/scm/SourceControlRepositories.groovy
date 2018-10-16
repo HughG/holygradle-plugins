@@ -58,7 +58,7 @@ public class SourceControlRepositories {
         List<SourceControlType> repoTypesAtLocation = getRepositoryTypesAtLocation(repoLocation)
         switch (repoTypesAtLocation.size()) {
             case 0:
-                return null
+                return new DummySourceControl()
             case 1:
                 return getRepositoryOfType(repoTypesAtLocation[0], makeCommandLineFactory(handler.project), repoLocation)
             default:

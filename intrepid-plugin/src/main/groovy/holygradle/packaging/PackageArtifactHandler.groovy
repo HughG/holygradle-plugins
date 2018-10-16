@@ -6,6 +6,7 @@ import holygradle.custom_gradle.util.CamelCase
 import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.publishing.RepublishHandler
+import holygradle.scm.DummySourceControl
 import holygradle.scm.SourceControlRepositories
 import holygradle.scm.SourceControlRepository
 import holygradle.source_dependencies.SourceDependencyHandler
@@ -178,7 +179,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             sourceRepo = SourceControlRepositories.create(handler)
         }
 
-        if (sourceRepo != null) {
+        if (!(sourceRepo instanceof DummySourceControl)) {
             File sourceDepInfoDir
             if (handler == null) {
                 // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
