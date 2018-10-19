@@ -48,16 +48,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
         List<Map<String,String>> axisValueInclusionFilters,
         Template template
     ) {
-        // This uses collect instead of "*.toSet" because toSet() creates a HashSet which doesn't guarantee order over
-        // time (or between versions of Java). It is desirable for the configuration set order to remain the same (and
-        // tests will fail if they don't). This produces reasonable grouping of configurations while preserving order
-        // across Java versions.
-        List<Set<String>> axesSets = axes.values().collect {
-            def set = new LinkedHashSet<String>(it.size())
-            set.addAll(it)
-            return set
-        }
-        Set<List<String>> allValueCombinations = Sets.cartesianProduct(axesSets)
+        List<List<String>> allValueCombinations = getSortedValueCombinations(axes)
         List<String> axesKeys = axes.keySet().toList()
         int axesSize = axes.size()
         for (List<String> values in allValueCombinations) {
@@ -76,6 +67,54 @@ class DefaultConfigurationSet implements ConfigurationSet {
             String nameForValues = template.make(binding).toString()
             configurationNamesMap[bindingForValues] = nameForValues
         }
+    }
+
+    private List<List<String>> getSortedValueCombinations(
+        LinkedHashMap<String, List<String>> axes
+    ) {
+        final int axisCount = axes.size()
+        // This uses collect instead of "*.toSet" because toSet() creates a HashSet which doesn't guarantee order over
+        // time (or between versions of Java). It is desirable for the configuration set order to remain the same (and
+        // tests will fail if they don't). This produces reasonable grouping of configurations while preserving order
+        // across Java versions.
+        List<Set<String>> axesSets = axes.values().collect {
+            def set = new LinkedHashSet<String>(it.size())
+            set.addAll(it)
+            return set
+        }
+        // This will be in the same order as axesSets because axes is a LinkedHashMap.
+        List<String> axisNames = axes.keySet().toList()
+
+        List<List<String>> allValueCombinations = Sets.cartesianProduct(axesSets).toList()
+
+        // Sort allValueCombinations into a stable order: for each combination, map each value to its index in the list
+        // of values for its axis, then do a vector ordering.  For the vector ordering part, we choose to reverse the
+        // significance of the values from what you might expect, treating them as more significant, the further down
+        // the list you go.  This is just for backward compatibility.
+
+        // First we map all the combinations (lists of values) to a "sort key" (list of the index in the corresponding
+        // axis).  We do this as an advance step to avoid doing it repeatedly when sorting.
+        Map<List<String>, List<Integer>> sortKeys = allValueCombinations.collectEntries { List<String> values ->
+            int[] sortKey = new int[axisCount]
+            values.eachWithIndex { String value, int axisIndex ->
+                String axisName = axisNames[axisIndex]
+                final int reverseIndex = axisCount - 1 - axisIndex
+                sortKey[reverseIndex] = axes[axisName].indexOf(value)
+            }
+            [values, sortKey]
+        }
+
+        // Now we actually do the sort.  Lists (sortKeys) are not directly comparable, so we compare the indices
+        // pairwise and use a combination of "?:", "<=>" and "inject" to use the first non-zero result we get from the
+        // pairwise comparisons.
+        allValueCombinations = allValueCombinations.sort { List<String> values1, List<String> values2 ->
+            List<Integer> sortKey1 = sortKeys[values1]
+            List<Integer> sortKey2 = sortKeys[values2]
+            List<List<Integer>> pairedKeys = [sortKey1, sortKey2].transpose()
+            Integer result = (Integer) pairedKeys.inject(0) { acc, val -> acc ?: (val[0] <=> val[1]) }
+            result
+        }
+        return allValueCombinations
     }
 
     // Check whether the binding matches at least one of the inclusion filters.
@@ -223,7 +262,7 @@ class DefaultConfigurationSet implements ConfigurationSet {
     /**
      * Returns a map from axis-value bindings (as defined by this set's {@link DefaultConfigurationSetType}) to the
      * actual configurations in this set (which may add a prefix string to their names).  The elements of this list will
-     * be the same as, and in the same order as, the return value of {@link #getConfigurations()}.
+     * be the same as, and in the same order as, the return value of {@link #getConfigurations(Project)}.
      *
      * @return A map from axis-value bindings to the actual configurations in this set
      */
@@ -233,12 +272,12 @@ class DefaultConfigurationSet implements ConfigurationSet {
         def nameMap = getConfigurationNamesMap()
         // Create all the configurations for the axis bindings.
         nameMap.each { binding, name ->
-            Configuration conf = configurations.findByName(name) ?: configurations.add(name)
+            Configuration conf = configurations.findByName(name) ?: configurations.create(name)
             conf.description = getDescriptionForBinding(binding)
         }
         // Also "secretly" create the non-visible configurations, if they don't already exist -- but don't return them.
         type.nonVisibleConfigurations.each { name ->
-            Configuration conf = configurations.findByName(name) ?: configurations.add(name)
+            Configuration conf = configurations.findByName(name) ?: configurations.create(name)
             conf.visible = false
             if (conf.description == null) {
                 conf.description = type.getDescriptionForNonVisibleConfiguration(name)

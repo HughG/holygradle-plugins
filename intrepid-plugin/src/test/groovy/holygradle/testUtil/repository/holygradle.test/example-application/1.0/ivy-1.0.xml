@@ -14,7 +14,7 @@
     <artifact name="example-application-source" type="zip" ext="zip" conf="source"/>
   </publications>
   <dependencies>
-    <dependency org="holygradle.test" name="example-framework" rev="1.0" conf="compileVc10Debug-&gt;compileVc10Debug" relativePath="../framework"/>
-    <dependency org="holygradle.test" name="example-framework" rev="1.0" conf="compileVc10Release-&gt;compileVc10Release" relativePath="../framework"/>
+    <dependency org="holygradle.test" name="example-framework" rev="1.0" conf="compileVc10Debug-&gt;compileVc10Debug"/>
+    <dependency org="holygradle.test" name="example-framework" rev="1.0" conf="compileVc10Release-&gt;compileVc10Release"/>
   </dependencies>
 </ivy-module>

@@ -9,8 +9,10 @@ configurations {
     preBuiltArtifactsBad
 }
 
-repositories.ivy {
-    url "..\\..\\..\\testUtil\\repository\\"
+repositories {
+    ivy {
+        url "..\\..\\..\\testUtil\\repository\\"
+    }
 }
 
 packedDependencies {

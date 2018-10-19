@@ -8,6 +8,6 @@
     <artifact name="stuff" type="zip" ext="zip" conf="default"/>
   </publications>
   <dependencies>
-    <dependency org="org" name="eggfruit" rev="1.5" conf="default-&gt;default" relativePath="../eggfruit"/>
+    <dependency org="org" name="eggfruit" rev="1.5" conf="default-&gt;default"/>
   </dependencies>
 </ivy-module>

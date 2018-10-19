@@ -16,7 +16,7 @@ repositories.ivy {
 sourceOverrides {
     "framework" {
         dependency "holygradle.test:example-framework:1.1"
-        from "../source/framework-1.1-extlib-1.0"
+        from "../projectCsource/framework-1.1-extlib-1.0"
     }
 }
 

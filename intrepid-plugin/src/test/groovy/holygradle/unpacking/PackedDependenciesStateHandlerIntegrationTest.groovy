@@ -1,19 +1,15 @@
 package holygradle.unpacking
 
-import holygradle.io.Link
-import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.io.FileHelper
+import holygradle.io.Link
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
-import org.gradle.api.Project
-import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 
-import java.nio.file.Files
 import java.nio.file.Path
 
+import static org.hamcrest.Matchers.endsWith
 import static org.junit.Assert.*
-import static org.hamcrest.Matchers.*
 
 class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIntegrationTest {
     /**
@@ -25,27 +21,14 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
     @Test
     public void useModulesViaEmptyConfigs() {
         final File projectDir = new File(getTestDir(), "useModulesViaEmptyConfigs")
-        doUseModulesViaEmptyConfigs(
-            new File(projectDir, "empty-config-lib"),
-            new File(projectDir, "external-lib"),
-            new File(projectDir, "another-lib"),
-            projectDir
-        )
-    }
-
-    private void doUseModulesViaEmptyConfigs(
-        File emptyConfigLibDir,
-        File extLibDir,
-        File anotherLibDir,
-        File projectDir
-    ) {
+        final File anotherLibDir = new File(projectDir, "another-lib")
+        final File extLibDir = new File(projectDir, "external-lib")
+        final File emptyConfigLibDir = new File(projectDir, "empty-config-lib")
         [emptyConfigLibDir, extLibDir, anotherLibDir].each { FileHelper.ensureDeleteDirRecursive(it) }
-
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
             launcher.forTasks("fAD")
         }
-
         [emptyConfigLibDir, extLibDir, anotherLibDir].each {
             assertTrue("File/folder for packed dep has been created at ${it}", it.exists())
             assertTrue("Link to packed dep has been created at ${it}", Link.isLink(it))
@@ -64,28 +47,14 @@ class PackedDependenciesStateHandlerIntegrationTest extends AbstractHolyGradleIn
     @Test
     public void useOnlyViaEmptyConfigs() {
         final File projectDir = new File(getTestDir(), "useOnlyViaEmptyConfigs")
-        doUseOnlyViaEmptyConfigs(
-            new File(projectDir, "empty-config-lib"),
-            new File(projectDir, "external-lib"),
-            new File(projectDir, "another-lib"),
-            projectDir
-        )
-    }
-
-    private void doUseOnlyViaEmptyConfigs(
-        File emptyConfigLibDir,
-        File extLibDir,
-        File anotherLibDir,
-        File projectDir
-    ) {
-        final Collection<File> allPackedDepDirs = [emptyConfigLibDir, extLibDir, anotherLibDir]
+        final File anotherLibDir = new File(projectDir, "another-lib")
+        final File extLibDir = new File(projectDir, "external-lib")
+        final Collection<File> allPackedDepDirs = [new File(projectDir, "empty-config-lib"), extLibDir, anotherLibDir]
         allPackedDepDirs.each { FileHelper.ensureDeleteDirRecursive(it) }
-
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.addArguments("--info")
             launcher.forTasks("fAD")
         }
-
         final Collection<File> linkPackedDepDirs = [extLibDir, anotherLibDir]
         allPackedDepDirs.each { File file ->
             final boolean expectLink = linkPackedDepDirs.contains(file)

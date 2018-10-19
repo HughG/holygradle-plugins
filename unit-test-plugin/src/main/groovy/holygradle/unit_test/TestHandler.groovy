@@ -36,16 +36,6 @@ class TestHandler {
         commandLineChunks.addAll(cmdLine)
     }
 
-    @Deprecated
-    @SuppressWarnings("GroovyUnusedDeclaration") // This is an API for build scripts.
-    public void redirectOutputToFile(String outputFilePath) {
-        redirectOutputFilePath = outputFilePath
-        project.logger.warn(
-            "WARNING: redirectOutputFilePath is deprecated. Instead, set the standardOutput property and/or the " +
-            "standardOutputTee property. The standardOutput property overrides any value passed to this method."
-        )
-    }
-
     /**
      * Sets the standard output of the test executable to the given {@code standardOutputTemplate}.  The argument is
      * interpreted as a {@link File} as for the {@link Project#file} method, and then treated as a template: any
@@ -162,26 +152,13 @@ class TestHandler {
             } else if (exePath.parent == null) {
                 // The exe string has no directory parts, so Exec task will find it on the system path.
             } else {
-                // TODO 2015-03-21 HughG: Remove this at next major revision change.
-                File tryRootPath = project.rootProject.file(exePathString)
-                if (tryRootPath.exists()) {
-                    project.logger.warn(
-                        "WARNING: For test ${name} in ${project}, " +
-                        "the test executable was specified as '${exePathString}' but found relative to " +
-                        "project.rootProject.projectDir at '${tryRootPath}'.  This root project path search will be " +
-                        "removed in a future version of the Holy Gradle.  Please use the rootProject.file(String) " +
-                        "method, which returns a file relative to the rootProject.projectDir."
-                    )
-                    cmd[0] = tryRootPath.path
-                } else {
-                    // Note that, if the file doesn't exist at configuration time, it may just be that the test EXE hasn't
-                    // been built yet.
-                    project.logger.debug(
-                        "WARNING: For test ${name} in ${project}, " +
-                        "the test executable was specified as '${exePathString}' but was NOT found relative to " +
-                        "that project or the root project, so may not run."
-                    )
-                }
+                // Note that, if the file doesn't exist at configuration time, it may just be that the test EXE hasn't
+                // been built yet.
+                project.logger.debug(
+                    "WARNING: For test ${name} in ${project}, " +
+                    "the test executable was specified as '${exePathString}' but was NOT found relative to " +
+                    "that project or the root project, so may not run."
+                )
             }
             task.commandLine cmd
 
@@ -278,20 +255,6 @@ class TestHandler {
                 (sourceDependenciesState != null) &&
                     !sourceDependenciesState.allConfigurationsPublishingSourceDependencies.empty
 
-
-            if (anyBuildDependencies) {
-                // Dummy task which just exists to give deprecation information to users.
-                // TODO 2015-01-30 HughG: Remove this at next major revision change.
-                Task dummyTask = project.task("unitTest${flavour}Independently", type: DefaultTask)
-                dummyTask.group = "Unit Test"
-                dummyTask.description = "Runs the ${flavour} unit tests for '${project.name}'. " +
-                    "Deprecated; use 'gw -a unitTest${flavour}' instead."
-                dummyTask.doFirst {
-                    throw new RuntimeException(
-                        "unitTest${flavour}Independently is deprecated; use 'gw -a unitTest${flavour}' instead"
-                    )
-                }
-            }
             Task task = project.task("unitTest${flavour}", type: DefaultTask)
             task.group = "Unit Test"
             task.description = "Run the ${flavour} unit tests for '${project.name}'."

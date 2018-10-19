@@ -1,8 +1,8 @@
 import java.nio.file.*
 
-File propertiesFile = new File(rootProject.projectDir, "gradle.properties")
-if (!propertiesFile.exists()) {
-    Path link = propertiesFile.toPath()
-    Path target = Paths.get("..", "gradle.properties")
-    Files.createLink(link, target)
+File rootPropertiesFile = new File(rootDir, "../gradle.properties")
+File buildSrcPropertiesFile = new File(rootDir, "gradle.properties")
+if (!rootPropertiesFile.exists()) {
+    throw new RuntimeException("You must create a gradle.properties in the root folder")
 }
+Files.copy(rootPropertiesFile.toPath(), buildSrcPropertiesFile.toPath(), StandardCopyOption.REPLACE_EXISTING)

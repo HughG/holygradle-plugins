@@ -33,8 +33,9 @@ packageArtifacts {
 }
 
 publishPackages {
-    addDependencyRelativePaths = Boolean.valueOf(project.addRelativePaths)
-    repositories.ivy {
-        url "http://dummy_repo_url"
+    repositories {
+        ivy {
+            url "http://dummy_repo_url"
+        }
     }
 }

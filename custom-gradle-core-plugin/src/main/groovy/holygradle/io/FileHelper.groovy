@@ -26,6 +26,7 @@ class FileHelper {
         } catch (IOException e) {
             throw new IOException("Failed to delete ${file}${formatPurpose(purpose)}", e)
         }
+        ensureDeleted(file, purpose)
     }
 
     public static void ensureDeleteDirRecursive(File dir, String purpose = null) {
@@ -52,12 +53,24 @@ class FileHelper {
             ) { File f ->
                 if (Link.isLink(f) || !f.isDirectory()) {
                     f.writable = true
-                    Files.delete(f.toPath())
+                    RetryHelper.retry(10, 1000, null, "delete ${dir}${formatPurpose(purpose)}") {
+                        Files.delete(f.toPath())
+                    }
                 }
                 return FileVisitResult.CONTINUE
             }
         } catch (IOException e) {
             throw new IOException("Failed to delete ${dir}${formatPurpose(purpose)}", e)
+        }
+        ensureDeleted(dir, purpose)
+    }
+
+    // Try to wait until the file is really deleted, because sometimes there's an asynchronous delay.
+    private static void ensureDeleted(File file, String purpose) {
+        RetryHelper.retry(10, 1000, null, "delete ${file}${formatPurpose(purpose)}") {
+            if (file.exists()) {
+                throw new IOException("Failed to delete ${file}${formatPurpose(purpose)}")
+            }
         }
     }
 
@@ -72,7 +85,7 @@ class FileHelper {
         try {
             Files.createDirectories(dir.toPath())
         } catch (IOException e) {
-            throw new IOException("Failed to delete ${dir}${formatPurpose(purpose)}", e)
+            throw new IOException("Failed to make ${dir}${formatPurpose(purpose)}", e)
         }
     }
 

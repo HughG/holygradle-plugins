@@ -1,6 +1,9 @@
 package holygradle.test;
 
+import org.gradle.internal.impldep.com.amazonaws.services.kms.model.UnsupportedOperationException;
 import org.gradle.tooling.*;
+import org.gradle.tooling.ProgressListener;
+import org.gradle.tooling.events.*;
 import org.gradle.tooling.model.*;
 
 import java.io.*;
@@ -19,48 +22,130 @@ public class WrapperBuildLauncher implements BuildLauncher {
     public WrapperBuildLauncher(BuildLauncher launcher) {
         this.launcher = launcher;
     }
-    
-    public BuildLauncher addProgressListener(ProgressListener listener) {
+
+    @Override
+    public WrapperBuildLauncher addProgressListener(ProgressListener listener) {
         launcher.addProgressListener(listener);
         return this;
     }
-    public BuildLauncher forTasks(Iterable<? extends Task> tasks) {
+
+    @Override
+    public WrapperBuildLauncher addProgressListener(org.gradle.tooling.events.ProgressListener progressListener) {
+        launcher.addProgressListener(progressListener);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher addProgressListener(
+        org.gradle.tooling.events.ProgressListener progressListener,
+        Set<OperationType> set
+    ) {
+        launcher.addProgressListener(progressListener, set);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher addProgressListener(
+        org.gradle.tooling.events.ProgressListener progressListener,
+        OperationType... operationTypes
+    ) {
+        launcher.addProgressListener(progressListener, operationTypes);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher withCancellationToken(CancellationToken cancellationToken) {
+        launcher.withCancellationToken(cancellationToken);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher forTasks(Iterable<? extends Task> tasks) {
         launcher.forTasks(tasks);
         return this;
     }
-    public BuildLauncher forTasks(String... tasks) {
+
+    @Override
+    public WrapperBuildLauncher forLaunchables(Launchable... launchables) {
+        launcher.forLaunchables(launchables);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher forLaunchables(Iterable<? extends Launchable> iterable) {
+        launcher.forLaunchables(iterable);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher forTasks(String... tasks) {
         launcher.forTasks(tasks);
         return this;
     }
-    public BuildLauncher forTasks(Task... tasks) {
+
+    @Override
+    public WrapperBuildLauncher forTasks(Task... tasks) {
         launcher.forTasks(tasks);
         return this;
     }
+
+    @Override
     public void run() {
         forwardAddedArguments();
         launcher.run();
     }
+
+    @Override
     public void run(ResultHandler<? super Void> handler) {
         forwardAddedArguments();
         launcher.run(handler);
     }
-    public BuildLauncher setJavaHome(File javaHome) {
+
+    @Override
+    public WrapperBuildLauncher setJavaHome(File javaHome) {
         launcher.setJavaHome(javaHome);
         return this;
     }
-    public BuildLauncher setJvmArguments(String... jvmArguments) {
+
+    @Override
+    public WrapperBuildLauncher setJvmArguments(String... jvmArguments) {
         launcher.setJvmArguments(jvmArguments);
         return this;
     }
-    public BuildLauncher setStandardError(OutputStream outputStream) {
+
+    @Override
+    public WrapperBuildLauncher setJvmArguments(Iterable<String> iterable) {
+        launcher.setJvmArguments(iterable);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher setEnvironmentVariables(Map<String, String> var1) {
+        launcher.setEnvironmentVariables(var1);
+        return this;
+    }
+
+
+    @Override
+    public WrapperBuildLauncher setStandardError(OutputStream outputStream) {
         launcher.setStandardError(outputStream);
         return this;
     }
-    public BuildLauncher setStandardInput(InputStream inputStream) {
+
+    @Override
+    public WrapperBuildLauncher setColorOutput(boolean b) {
+        launcher.setColorOutput(b);
+        return this;
+    }
+
+    @Override
+    public WrapperBuildLauncher setStandardInput(InputStream inputStream) {
         launcher.setStandardInput(inputStream);
         return this;
     }
-    public BuildLauncher setStandardOutput(OutputStream outputStream) {
+
+    @Override
+    public WrapperBuildLauncher setStandardOutput(OutputStream outputStream) {
         launcher.setStandardOutput(outputStream);
         return this;
     }
@@ -70,9 +155,23 @@ public class WrapperBuildLauncher implements BuildLauncher {
      * @param arguments Gradle command line arguments
      * @return this
      */
-    public BuildLauncher withArguments(String... arguments) {
-        launcher.withArguments(arguments);
-        return this;
+    @Override
+    public WrapperBuildLauncher withArguments(String... arguments) {
+        throw new UnsupportedOperationException(
+            "Call WrapperBuildLauncher#addArguments instead of BuildLauncher#withArguments"
+        );
+    }
+
+    /**
+     * Always throws {@link java.lang.UnsupportedOperationException}; use {@link #addArguments(String...)} instead.
+     * @param iterable Gradle command line arguments
+     * @return this
+     */
+    @Override
+    public WrapperBuildLauncher withArguments(Iterable<String> iterable) {
+        throw new UnsupportedOperationException(
+                "Call WrapperBuildLauncher#addArguments instead of BuildLauncher#withArguments"
+        );
     }
 
     /**
@@ -82,7 +181,7 @@ public class WrapperBuildLauncher implements BuildLauncher {
      * @param messages The messages to add.
      * @return this
      */
-    public BuildLauncher expectFailure(String... messages) {
+    public WrapperBuildLauncher expectFailure(String... messages) {
         this.expectedFailures.addAll(Arrays.asList(messages));
         return this;
     }
@@ -102,7 +201,7 @@ public class WrapperBuildLauncher implements BuildLauncher {
      * @param arguments Gradle command line arguments
      * @return this
      */
-    public BuildLauncher addArguments(String... arguments) {
+    public WrapperBuildLauncher addArguments(String... arguments) {
         Collections.addAll(this.arguments, arguments);
         return this;
     }

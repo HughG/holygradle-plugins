@@ -194,7 +194,7 @@ bool IsGitCredential(const wstring& target_name, const wstring& username) {
 }
 
 bool IsIntrepidCredential(const wstring& target_name, const wstring& username) {
-    return (target_name.find(HOLY_GRADLE_CREDENTIAL_PREFIX) == 0) && (GetCredentialUsername(target_name) == username);
+    return (target_name.find(HOLY_GRADLE_CREDENTIAL_PREFIX) == 0) && (_wcsnicmp(GetCredentialUsername(target_name).c_str(), username.c_str(), username.size()) == 0);
 }
 
 wstring GetIntrepidCredentialName(const wstring& target_name) {
@@ -350,6 +350,7 @@ list<wstring> GetDefaultCredentials(const wstring& username) {
 
     PCREDENTIAL *pCredArray = NULL;
     DWORD dwCount = 0;
+
     if (::CredEnumerate(NULL, 0, &dwCount, &pCredArray)) {
         for (DWORD dwIndex = 0; dwIndex < dwCount; dwIndex++) {
             PCREDENTIAL pCredential = pCredArray[dwIndex];
@@ -364,7 +365,6 @@ list<wstring> GetDefaultCredentials(const wstring& username) {
                 }
             } else if (IsIntrepidCredential(target_name, username)) {
                 wstring credential_name = GetIntrepidCredentialName(target_name);
-
                 if (bases.find(credential_name) == bases.end()) {
                     defaultCredentials.push_back(target_name);
                 }

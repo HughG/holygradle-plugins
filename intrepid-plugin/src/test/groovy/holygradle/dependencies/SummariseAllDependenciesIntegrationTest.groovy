@@ -1,7 +1,6 @@
 package holygradle.dependencies
 
 import com.google.common.io.Files
-import holygradle.custom_gradle.util.Symlink
 import holygradle.io.FileHelper
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher

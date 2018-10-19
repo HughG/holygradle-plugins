@@ -17,7 +17,7 @@ repositories.ivy {
 sourceOverrides {
     "ext_11" {
         dependency "holygradle.test:external-lib:1.1"
-        from "../source/ext-1.1"
+        from "../projectIsource/ext-1.1"
     }
 }
 

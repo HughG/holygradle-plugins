@@ -1,9 +1,7 @@
-import org.gradle.api.initialization.dsl.ScriptHandler
-
 apply plugin: 'groovy'
 
-// Force-add a Mercurial client-side hook to avoid comitting anything with "banned" words.
-project.ext.HGRC = new File('.hg/hgrc')
+// Force-add a Mercurial client-side hook to avoid committing anything with "banned" words.
+project.ext.HGRC = new File(project.rootDir, '.hg/hgrc')
 def ensureHgHook(String hookName, String hookComment, String hookText) {
     if (!HGRC.readLines().any { it.contains(hookName) }) {
         HGRC.withWriterAppend { BufferedWriter bw ->
@@ -24,10 +22,41 @@ ensureHgHook(
     'hg export tip | ' + findBannedWords
 )
 
-// Force-copy build bootstrap files to independenct sub-projects, so they stay up to date.
-["https-setup-kit", "wrapper-starter-kit", "wrapper-starter-kit/newWrapper"].each {
+// Force-copy GENERAL build bootstrap files to independent sub-projects, so they stay up to date.
+//
+// We don't copy these into "wrapper-starter-kit/newWrapper" because the "wrapper" task itself will write
+// then into that folder when it runs.
+["https-setup-kit", "wrapper-starter-kit"].each {
     File otherProjectDir = new File(projectDir, it)
-    ["gw.bat", "gradle/base-url-lookup.txt", "gradle/certs/**"].each { String copyPattern ->
+    copy {
+        into(otherProjectDir)
+        from(projectDir) {
+            include "gradlew.bat"
+            include "gw.bat"
+        }
+    }
+    copy {
+        into("${otherProjectDir}/gradle")
+        from("${projectDir}/custom-gradle-core-plugin/src") {
+            include "init.d/**"
+        }
+    }
+    copy {
+        into("${otherProjectDir}/gradle/wrapper")
+		from("${projectDir}/gradle/wrapper") {
+			include "gradle-wrapper.*"
+		}
+    }
+}
+
+// Force-copy LOCAL build bootstrap files to independent sub-projects, so they stay up to date.
+//
+// If you modify this, you probably also need to modify the copy step added to createWrapper in
+// "wrapper-starter-kit/newWrapper/build.gradle".  These files aren't written in by the "wrapper"
+// task because they're not packed into the plugin, because they're site-local and private.
+["https-setup-kit", "wrapper-starter-kit"].each {
+    File otherProjectDir = new File(projectDir, it)
+    ["gradle/wrapper/base-url-lookup.txt", "gradle/wrapper/proxy-lookup.txt", "gradle/wrapper/certs/**"].each { String copyPattern ->
         copy {
             into(otherProjectDir)
             from(projectDir) {
@@ -48,24 +77,17 @@ subprojects {
 
         // Specify common dependencies for all projects.
         dependencies {
-            groovy localGroovy()
+            compile localGroovy()
             compile gradleApi()
             testCompile files("../buildSrc/build/classes/main/")
         }
     }
 }
 
-// The custom-gradle project also needs the groovy plugin, even though it's not a "-plugin" itself.
-project(":custom-gradle") {
-    apply plugin: "groovy"
-}
-
 subprojects {
     // Add a default configuration for any subprojects which don't have one.
     if (configurations.findByName("default") == null) {
-        configurations {
-            it."default"
-        }
+        configurations.create('default')
     }
 
     // Set a common group.
@@ -73,33 +95,31 @@ subprojects {
     
     // Set common repo info for dependencies.
     repositories {
-        ivy {
-            url artifactoryServer + artifactoryPluginRepo
-            // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users, depending
-            // on local Artifactory configuration; or they may not be able to deploy into caches.
-            credentials {
-                username artifactoryUsername
-                password artifactoryPassword
+        if (project.hasProperty('artifactoryServer')) {
+            ivy {
+                url artifactoryServer + artifactoryPluginRepo
+                // We use credentials here because artifactoryPluginRepo may not be readable to anonymous users,
+                // depending on local Artifactory configuration; or they may not be able to deploy into caches.
+                credentials {
+                    username artifactoryUsername
+                    password artifactoryPassword
+                }
             }
-        }
-        maven {
-            url artifactoryServer + 'remote-repos/'
-            // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
-            // Artifactory.  If you update dependencies to require a new version of something (say, http-builder) which
-            // exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in the local
-            // Artifactory server, it will be written to the local Artifactory server.  Depending on the setup of your
-            // server, that may require credentials.
-            credentials {
-                username artifactoryUsername
-                password artifactoryPassword
+            maven {
+                url artifactoryServer + 'remote-repos/'
+                // We need credentials here because "remote-repos/" is a read-through cache of external repos, set up on
+                // Artifactory.  If you update dependencies to require a new version of something (say, http-builder)
+                // which exists in a real remote repo (such as <http://repo1.maven.org/maven2/>), but isn't cached in
+                // the local Artifactory server, it will be written to the local Artifactory server.  Depending on the
+                // setup of your server, that may require credentials.
+                credentials {
+                    username artifactoryUsername
+                    password artifactoryPassword
+                }
             }
+        } else {
+            mavenCentral()
         }
-    }
-    
-    // Don't cache SNAPSHOT dependencies for any length of time.
-    // TODO 2013-16-18 HughG: Really, we shouldn't use any SNAPSHOT dependencies.
-    configurations.all {
-        resolutionStrategy.cacheChangingModulesFor 1, 'seconds'
     }
 }
 
@@ -107,8 +127,13 @@ subprojects {
  * PUBLISH_LOCAL_TARGET_URI is needed by both test.gradle and publish.gradle, so it's defined here,
  * keeping other related URIs with it for ease of understanding.
  */
-project.ext.PUBLISH_RELEASE_TARGET_URI = artifactoryServer + artifactoryPluginReleasePublishRepo + "/"
-project.ext.PUBLISH_SNAPSHOT_TARGET_URI = artifactoryServer + artifactoryPluginSnapshotPublishRepo + "/"
+if (project.hasProperty('artifactoryServer')) {
+    project.ext.PUBLISH_RELEASE_TARGET_URI = artifactoryServer + artifactoryPluginReleasePublishRepo + "/"
+    project.ext.PUBLISH_SNAPSHOT_TARGET_URI = artifactoryServer + artifactoryPluginSnapshotPublishRepo + "/"
+} else {
+    project.ext.PUBLISH_RELEASE_TARGET_URI = 'Cannot_publish_because_property_artfactoryServer_is_not_set'
+    project.ext.PUBLISH_SNAPSHOT_TARGET_URI = 'Cannot_publish_because_property_artfactoryServer_is_not_set'
+}
 project.ext.PUBLISH_LOCAL_TARGET_URI = new File(project.projectDir as File, "local_repo").toURI().toString() + "/"
 /*
  * LOCAL_GRADLE_USER_HOME is passed to integration tests for the Gradle daemon (launched by the WrapperBuildLauncher in
@@ -120,7 +145,7 @@ project.ext.LOCAL_GRADLE_USER_HOME = new File(project.projectDir as File, "local
 /*
  * CUSTOM_GRADLE_BASE_NAME is needed by the custom-gradle project, but also by the integration test setup.
  */
-project.ext.CUSTOM_GRADLE_BASE_NAME = "custom-gradle-${gradle.gradleVersion}"
+project.ext.CUSTOM_GRADLE_BASE_NAME = "custom-gradle"
 
 apply from: "versionInfo.gradle"
 apply from: "publish.gradle"

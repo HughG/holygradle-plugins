@@ -10,17 +10,32 @@ This repository contains:
 
 # Prerequisites
  - Java JDK 1.7 - you do need the dev-kit, not just the run-time.  1.8 won't work.
- - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 15.
+ - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 2018.
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.7.0_09
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
     - If you normally need JAVA_HOME to point to another version of Java such as JDK 1.8, you can set
     HOLY_GRADLE_JAVA_HOME to your JDK 1.7 location, and the "gw.bat" in this repo will use that instead.
- - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  It will tell you about this in the "Event Log"
-   window.  Set it to the value you normally use in your Windows environment variable (or the default,
-   "%USERPROFILE%\.gradle").  After a short wait, IntelliJ will refresh.
+ - You will also need to set a GRADLE_USER_HOME property in IntelliJ.  
+   - It will tell you about this in the "Event Log" window. You can open the "Event Log" window by clicking on the 
+    icon in the bottom right corner of the window. The event log will show a message like the following.
+    ```
+    "Load error: undefined path variables GRADLE_USER_HOME is undefined. __Fix it__
+    Path variables are used to substitute absolute paths in IDEA project files and allow project file sharing in
+    version control systems. Some of the files describing the current project settings contain unknown path
+    variables and IDEA cannot restore those paths. (__show balloon__)".
+    ```
+    Click on the link on __Fix it__ and set it to the value you normally use in your Windows environment variable 
+    (or the default, "%USERPROFILE%\.gradle").  After a short wait, IntelliJ will refresh.
+   - You can also do this by opening the Path Varible settings. 
+    For this open File > Settings > Appearance & Behavior > Path Variables here you should add a setting for
+    GRADLE_USER_HOME with the path to your gradle cache. 
  - You may also need to configure IntelliJ to point to your installed JDK, in the "Project Structure" dialog.
- - An Artifactory server configured with:
+ - Visual Studio 2017 with C++ support, and the Windows 8.1 SDK, to build credential-store.
+   - In the Visual Studio 2017 installer, on the "Individual Components" tab, you need to select "Compilers, build
+   tools, and runtimes > Windows Universal CRT SDK" or you'll get an error about being unable to find `stdio.h` when
+   compiling `stdafx.h`.
+ - For publishing, an Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
    - a remote repo pointing to Maven Central 
    - one for publishing plugin snapshots for testing modifications to plugins without affecting existing plugin users.
@@ -50,7 +65,7 @@ artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
 
-The 'chosenDevEnvVersion' should be, e.g., "VS120" to use the C++ compiler from Visual Studio 2013.
+The 'chosenDevEnvVersion' should be, e.g., "VS150" to use the C++ compiler from Visual Studio 2017.
 
 Run 'gw tasks'.  You may need to supply proxy arguments if it's the first time you've run this version of Gradle
 (e.g., 'gw -Dhttp.proxyHost=proxyserver -Dhttp.proxyPort=8080').
@@ -128,7 +143,7 @@ lets you test a new version of the plugins on a real project, without causing pr
 `gw publishCustomGradleReally` and/or `gw publishPluginsReally` to publish the custom-gradle distribution, and/or the
 whole set of plugins.
 
- - Without any other arguments, the version used will be `<user>-SNAPSHOT`, where `<user>` is your system username (not
+ - Without any other arguments, the version used will be `<user>SNAPSHOT-0`, where `<user>` is your system username (not
 your BitBucket username).
  - To publish a release version, pass the version number with `-PpublishVersion=<version number>`.
  - To skip unit testing (for example, when repeatedly using `-DintegTest.single`), pass `-PnoTest`.  This only works for
@@ -163,13 +178,13 @@ To avoid annoying people with broken plugins you should test your changes by pub
 
  - In your global `gradle.properties` which lives in your `GRADLE_USER_HOME` directory, add a line such as:
 `systemProp.holygradle.pluginsSnapshotsUser=nm2501`. This will automatically change the requested versions to
-`<user>-SNAPSHOT`.  (This switch-over is part of the `holy-gradle-init.gradle` script in the custom-gradle distribution,
+`<user>SNAPSHOT-0`.  (This switch-over is part of the `holy-gradle-init.gradle` script in the custom-gradle distribution,
 rather than being part of Gradle itself.)
  - When you're testing your changes you can tell if it has picked up your new plugin because Gradle will print messages
 whenever artifacts are downloaded e.g.
 ```
-Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/ivy-nm2501-SNAPSHOT.xml
-Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAPSHOT.jar
+Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/ivy-nm2501SNAPSHOT-0.xml
+Download ..../holygradle/devenv-plugin/nm2501SNAPSHOT/devenv-plugin-nm2501SNAPSHOT-0.jar
 ```
  - You can also run `gw versionInfo` to get a complete list of version numbers.
 
@@ -178,7 +193,7 @@ Download ..../holygradle/devenv-plugin/nm2501-SNAPSHOT/devenv-plugin-nm2501-SNAP
 ## clone/update the plugins
 ## if necessary, follow the "getting started" steps detailed above
 ## add your println/log entries to the plugins for helping to diagnosing the problem
-## use "gw -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>-SNAPSHOT
+## use "gw -PnoIntegTest pubPR" to build.  This by-passes integration tests (which would fail with your added printlns).  This will default to publishing <user>SNAPSHOT-0
 ## now to force the user's build script to use the snapshots you've just published, set the property "systemProp.holygradle.pluginsSnapshotsUser=<user>" in your %GRADLE_USER_HOME%/gradle.properties file.
 ## before fixing, try to add a new integration test that replicates the issue, to help verify the fix and prevent future regression
  

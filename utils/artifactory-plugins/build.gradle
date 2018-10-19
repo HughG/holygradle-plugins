@@ -11,7 +11,7 @@ group = "holygradle"
 apply plugin: "groovy"
 
 dependencies {
-    groovy localGroovy()
+    compile localGroovy()
 
     // ----------------------------------------------------------------------------------------------------------------
     // These modules do not need to be deployed to Artifactory, because they're included in the Artifactory WAR.  They

@@ -275,6 +275,8 @@ jar file, +gradle/gradle-wrapper.jar+.
 . The Gradle Wrapper does some bootstrapping to ensure that Gradle is on your machine.
 .. If the optional file +gradle/base-url-lookup.txt+ is present and contains a line for the DNS suffix of the machine,
 that value is used to initialise +HOLY_GRADLE_REPOSITORY_BASE_URL+; otherwise the user must set it manually.
+.. If the optional file +gradle/proxy-lookup.txt+ is present and contains a line for the HTTP(S) proxy for the machine,
+that value is used to initialise Java proxy options; otherwise the user must set it manually.
 .. If the optional folder +gradle/certs+ exists, the Java +keytool.exe+ will be used to combine all SSL certificate
 files in that folder with the Java built-in ones in +_JRE_/lib/security/cacerts+, and the combined "trust store" file
 will be passed to the Gradle process.  This allows it to access servers which use self-signed gloss:root-cert[]s.

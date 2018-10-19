@@ -32,7 +32,7 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
                 (~/^Detected a changing module.*$/) : null,
                 (~/pluginsRepoOverride=.*/) : "pluginsRepoOverride=[active]",
                 (~/Download .*\.(pom|jar)/) : null, // Ignore any new Holy Gradle dependencies being cached.
-                (~/Total time:.*/) : "Total time: [snipped]",
+                (~/BUILD SUCCESSFUL in [0-9]+s*/) : "BUILD SUCCESSFUL in [snipped]s",
                 (~/Gradle user home:.*/) : "Gradle user home: [snipped]",
                 (~/Holy Gradle init script .*/) : "Holy Gradle init script [snipped]",
                 (~/Using SNAPSHOT version\..*/) : null,
@@ -49,8 +49,7 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testAllPluginsInitialiseTogether() {
         compareBuildOutput("tAPIT") { WrapperBuildLauncher launcher ->
-            launcher.forTasks("tasks")
-                .withArguments("--all")
+            launcher.forTasks("tasks", "--all")
         }
     }
 
@@ -60,8 +59,7 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void testBasicPluginConfig() {
         compareBuildOutput("tBPC") { WrapperBuildLauncher launcher ->
-            launcher.forTasks("tasks")
-                .withArguments("--all")
+            launcher.forTasks("tasks", "--all")
         }
     }
 }

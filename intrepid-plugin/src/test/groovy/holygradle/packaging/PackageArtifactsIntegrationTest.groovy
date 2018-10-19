@@ -1,10 +1,11 @@
 package holygradle.packaging
 
+import holygradle.artifacts.ConfigurationHelper
 import holygradle.io.FileHelper
 import holygradle.source_dependencies.RecursivelyFetchSourceTask
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
-import holygradle.testUtil.HgUtil
+import holygradle.testUtil.ScmUtil
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import org.gradle.api.file.FileTree
@@ -22,8 +23,9 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         File projectDir = new File(getTestDir(), "projectA")
 
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
-        project.ext.holyGradleInitScriptVersion = "1.2.3.4" // Required by custom-gradle-core-plugin.
+        project.ext.holyGradleInitScriptVersion = "9.10.11.12" // Required by custom-gradle-core-plugin.
         project.ext.holyGradlePluginsRepository = ""
+        project.buildscript.configurations.create(ConfigurationHelper.OPTIONAL_CONFIGURATION_NAME)
         project.apply plugin: 'intrepid'
 
         Collection<PackageArtifactHandler> packageArtifacts =
@@ -78,10 +80,10 @@ class PackageArtifactsIntegrationTest extends AbstractHolyGradleIntegrationTest 
         // Create a dummy project to provide access to FileTree methods
         Project project = ProjectBuilder.builder().withProjectDir(projectDir).build()
 
-        HgUtil.hgExec(project, "init", "srcDep1")
-        HgUtil.hgExec(project, "init", "srcDep2")
-        HgUtil.hgExec(project, "init", "noBuildFile")
-        HgUtil.hgExec(project, "init")
+        ScmUtil.hgExec(project, "init", "srcDep1")
+        ScmUtil.hgExec(project, "init", "srcDep2")
+        ScmUtil.hgExec(project, "init", "noBuildFile")
+        ScmUtil.hgExec(project, "init")
 
         // Run fAD to make sure the settings.gradle and settings-subprojects.txt are created.
         // First for srcDep1 ...

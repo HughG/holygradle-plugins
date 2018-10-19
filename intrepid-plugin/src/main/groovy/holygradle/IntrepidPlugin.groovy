@@ -1,6 +1,5 @@
 package holygradle
 
-import bsh.This
 import holygradle.artifacts.*
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.CustomGradleCorePlugin
@@ -25,15 +24,12 @@ import holygradle.unpacking.GradleZipHelper
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
-import org.gradle.BuildListener
-import org.gradle.BuildResult
 import org.gradle.api.*
 import org.gradle.api.artifacts.*
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import org.gradle.api.initialization.Settings
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.publish.PublishingExtension
 
 public class IntrepidPlugin implements Plugin<Project> {
     public static final String EVERYTHING_CONFIGURATION_NAME = "everything"
@@ -117,10 +113,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         BuildScriptDependencies buildScriptDependencies = BuildScriptDependencies.initialize(project)
         // Only define the build script dependencies for the root project because they're shared across all projects.
         if (project == project.rootProject) {
-            // 7zip
-            buildScriptDependencies.add("sevenZip", true)
-
-            // Mercurial
+            buildScriptDependencies.add("sevenZip", true, true)
             buildScriptDependencies.add("credential-store")
         }
 
@@ -145,21 +138,24 @@ public class IntrepidPlugin implements Plugin<Project> {
         // Define the 'packedDependenciesState' DSL for the project.
         SourceDependenciesStateHandler sourceDependenciesState = SourceDependenciesStateHandler.createExtension(project)
 
+        // Define 'packageArtifacts' DSL for the project.
+        NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers = PackageArtifactHandler.createContainer(project)
+
         // Define 'publishPackages' DSL block.
-        PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         project.extensions.create(
-            "publishPackages", DefaultPublishPackagesExtension, project, publishingExtension, sourceDependencies, packedDependencies
+            "publishPackages",
+            DefaultPublishPackagesExtension,
+            project,
+            packageArtifactHandlers,
+            packedDependencies
         )
         
         // Define 'sourceControl' DSL.
         SourceControlRepositories.createExtension(project)
         
-        // Define 'links' DSL block (and deprecated 'symlinks' one).
+        // Define 'links' DSL block.
         LinkHandler links = LinkHandler.createExtension(project)
         
-        // Define 'packageArtifacts' DSL for the project.
-        PackageArtifactHandler.createContainer(project)
-
         // Define 'sourceDependencyTasks' DSL
         Collection<SourceDependencyTaskHandler> sourceDependencyTasks = SourceDependencyTaskHandler.createContainer(project)
 
@@ -186,11 +182,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.description = "Delete all links to the unpack cache"
         }
         deleteLinksToCacheTask.initialize(LinksToCacheTask.Mode.CLEAN)
-        project.task("deleteSymlinksToCache") { Task t ->
-            t.dependsOn deleteLinksToCacheTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use deleteLinksToCache instead"
-            t.doFirst { logger.warn(t.description) }
-        }
         LinksToCacheTask rebuildLinksToCacheTask = (LinksToCacheTask)project.task(
             "rebuildLinksToCache", type: LinksToCacheTask
         ) { Task it ->
@@ -201,11 +192,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.dependsOn unpackDependenciesTask
         }
         rebuildLinksToCacheTask.initialize(LinksToCacheTask.Mode.BUILD)
-        project.task("rebuildSymlinksToCache") { Task t ->
-            t.dependsOn rebuildLinksToCacheTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use rebuildLinksToCache instead"
-            t.doFirst { logger.warn(t.description) }
-        }
 
         final FETCH_ALL_DEPENDENCIES_TASK_NAME = "fetchAllDependencies"
         RecursivelyFetchSourceTask fetchAllSourceDependenciesTask = (RecursivelyFetchSourceTask)project.task(
@@ -222,11 +208,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.description = "Remove all links."
             it.dependsOn deleteLinksToCacheTask
         }
-        project.task("deleteSymlinks") { Task t ->
-            t.dependsOn deleteLinksTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use deleteLinks instead"
-            t.doFirst { logger.warn(t.description) }
-        }
         LinkTask rebuildLinksTask = (LinkTask)project.task("rebuildLinks", type: LinkTask) { Task it ->
             it.group = "Dependencies"
             it.description = "Rebuild all links."
@@ -235,11 +216,6 @@ public class IntrepidPlugin implements Plugin<Project> {
             it.dependsOn fetchAllSourceDependenciesTask
         }
         rebuildLinksTask.initialize()
-        project.task("rebuildSymlinks") { Task t ->
-            t.dependsOn rebuildLinksTask
-            t.description = "${t.name} is deprecated and will be removed in future.  Use rebuildLinks instead"
-            t.doFirst { logger.warn(t.description) }
-        }
 
         /*Task fetchAllDependenciesTask =*/ project.task(
             FETCH_ALL_DEPENDENCIES_TASK_NAME,
@@ -303,7 +279,7 @@ public class IntrepidPlugin implements Plugin<Project> {
         if (project.hasProperty(EVERYTHING_CONFIGURATION_PROPERTY)) {
             // Define an 'everything' configuration which depends on all other configurations.
             Configuration everythingConf =
-                    configurations.findByName(EVERYTHING_CONFIGURATION_NAME) ?: configurations.add(EVERYTHING_CONFIGURATION_NAME)
+                    configurations.findByName(EVERYTHING_CONFIGURATION_NAME) ?: configurations.create(EVERYTHING_CONFIGURATION_NAME)
             project.gradle.projectsEvaluated {
                 configurations.each((Closure) { Configuration conf ->
                     if (conf.name != EVERYTHING_CONFIGURATION_NAME && conf.visible) {

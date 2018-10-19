@@ -51,15 +51,6 @@ class PackedDependencyHandler extends DependencyHandler {
         }
     }
 
-    /**
-     * @deprecated Use {@code project.packedDependencies['someDependency'].unpackToCache = false} instead.
-     */
-    @Deprecated
-    public void unpackToCache(boolean doUnpack) {
-        project.logger.warn("WARNING: The syntax 'unpackToCache false' is deprecated. Use 'unpackToCache = false' instead.")
-        this.unpackToCache = doUnpack
-    }
-
     public boolean shouldUnpackToCache() {
         if (unpackToCache == null) {
             PackedDependencyHandler p = getParentHandler()
@@ -75,15 +66,6 @@ class PackedDependencyHandler extends DependencyHandler {
 
             return unpackToCache
         }
-    }
-
-    @Deprecated
-    public void noCreateSymlinkToCache() {
-        project.logger.warn(
-            "WARNING: noCreateSymlinkToCache is deprecated and will be removed in future.  " +
-            "Please use noCreateLinkToCache instead"
-        )
-        noCreateLinkToCache()
     }
 
     public void noCreateLinkToCache() {

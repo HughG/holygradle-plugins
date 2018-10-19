@@ -36,7 +36,7 @@ class SourceDependencyHandler extends DependencyHandler {
 
     public SourceDependencyHandler(String depName, Project project) {
         super(depName, project)
-        destinationDir = new File(project.projectDir, depName).getCanonicalFile()
+        destinationDir = absolutePath.canonicalFile
         project.afterEvaluate { validate() }
     }
 
@@ -69,20 +69,6 @@ class SourceDependencyHandler extends DependencyHandler {
             protocol = "git"
             url = gitUrl
         }
-    }
-
-    /**
-     * @deprecated Methods of SourceDependencyPublishingHandler have moved out to SourceDependencyHandler or been
-     * deleted, because the configuration mapping to source dependencies has an effect even if you are not publishing.
-     */
-    public SourceDependencyHandler getPublishing() {
-        project.logger.warn(
-            "WARNING: The 'publishing' part of the syntax 'sourceDependencies { \"something\" { publishing ... } }' " +
-            "is deprecated and will be removed.  Instead, its contents should be moved up one level, so " +
-            "'sourceDependencies { \"something\" { publishing.configuration \"build->default\" ... } }' should be " +
-            "'sourceDependencies { \"something\" { configuration \"build->default\" ... } }'."
-        )
-        return this
     }
 
     public void configuration(String config) {

@@ -1,11 +1,11 @@
 package holygradle.unpacking
 
+import holygradle.artifacts.ConfigurationHelper
 import holygradle.dependencies.DependenciesStateHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.ResolvedDependenciesVisitor
 import org.gradle.api.Project
 import org.gradle.api.artifacts.*
-
 /**
  * This project extension provides information about the state of packed dependencies when they are resolved.
  *
@@ -77,8 +77,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         Configuration originalConf,
         Set<ResolvedDependency> dependencies,
         Collection<PackedDependencyHandler> packedDependencies,
-        Map<ModuleIdentifier, UnpackModule> unpackModules,
-        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles
+        Map<ModuleIdentifier, UnpackModule> unpackModules
     ) {
         project.logger.debug("collectUnpackModules for ${originalConf}")
         project.logger.debug("    starting with unpackModules ${unpackModules.keySet().sort().join('\r\n')}")
@@ -88,11 +87,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             dependencies,
             { ResolvedDependency resolvedDependency ->
                 // Visit this dependency only if: it's not a module we're building from source (because we don't want to
-                // include those as UnpackModules), and we can find its ivy.xml file (because we need that for
-                // relativePath to other modules).
-                //
-                // Visit this dependency's children only if: we can find its ivy.xml file (because we need that for
-                // relativePath to other modules).
+                // include those as UnpackModules).
                 //
                 // (Previously we wouldn't re-visit the module or its children if we'd already seen this
                 // resolvedDependency.configuration of this module.  However, this check was removed in 45f38934dea9
@@ -104,26 +99,9 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                     project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
                 }
 
-                // Is there an ivy file corresponding to this dependency?
-                File ivyFile = dependenciesStateHandler.getIvyFile(originalConf, resolvedDependency)
-                final boolean ivyFileExists = ivyFile?.exists()
-                // If this is a new module, not part of the build, but we can't find its ivy file, then track it so
-                // we can throw an exception later (after we've checked all dependencies).
-                if (isNonBuildModule && !ivyFileExists) {
-                    if (ivyFile == null) {
-                        project.logger.error("collectUnpackModules: Failed to find location of ivy.xml file for ${id}")
-                    } else {
-                        project.logger.error("collectUnpackModules: ivy.xml file for ${id} not found at ${ivyFile}")
-                    }
-                    modulesWithoutIvyFiles.add(id)
-                }
-
-                if (ivyFileExists) {
-                    project.logger.debug "collectUnpackModules: Ivy file under ${originalConf} for ${id} is ${ivyFile}"
-                }
                 return new ResolvedDependenciesVisitor.VisitChoice(
-                    isNonBuildModule && ivyFileExists,
-                    ivyFileExists
+                    isNonBuildModule,
+                    isNonBuildModule
                 )
             },
             { ResolvedDependency resolvedDependency ->
@@ -204,7 +182,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                         }
                     }
                 } else {
-                    unpackModuleVersion = new UnpackModuleVersion(id, parents, thisPackedDep)
+                    unpackModuleVersion = new UnpackModuleVersion(project, id, parents, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                             "collectUnpackModules: created version for ${id} " +
@@ -244,21 +222,16 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             [:].withDefault { new HashMap<ModuleIdentifier, UnpackModule>() }
 
         // Build a list (without duplicates) of all artifacts the project depends on.
-        Collection<ModuleVersionIdentifier> modulesWithoutIvyFiles = new HashSet<ModuleVersionIdentifier>()
         project.configurations.each((Closure){ Configuration conf ->
-            ResolvedConfiguration resConf = conf.resolvedConfiguration
+            Set<ResolvedDependency> firstLevelDeps =
+                ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
             collectUnpackModules(
                 conf,
-                resConf.getFirstLevelModuleDependencies(),
+                firstLevelDeps,
                 packedDependencies,
-                configurationUnpackModulesMap[conf],
-                modulesWithoutIvyFiles
+                configurationUnpackModulesMap[conf]
             )
         })
-
-        if (!modulesWithoutIvyFiles.isEmpty()) {
-            throw new RuntimeException("Some dependencies had no ivy.xml file")
-        }
 
         // Build a map of target locations to module versions
         List<UnpackModule> flattenedUnpackModules = configurationUnpackModulesMap.values().collect { it.values() }.flatten()
@@ -266,7 +239,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
             [:].withDefault { new ArrayList<UnpackModuleVersion>() }
         flattenedUnpackModules.each { UnpackModule module ->
             module.versions.each { String versionStr, UnpackModuleVersion versionInfo ->
-                File targetPath = versionInfo.getTargetPathInWorkspace(project).getCanonicalFile()
+                File targetPath = versionInfo.targetPathInWorkspace.canonicalFile
                 targetLocations[targetPath].add(versionInfo)
             }
         }
@@ -277,7 +250,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
         boolean foundTargetClash = targetLocations.inject(false) {
             boolean found, File target, Collection<UnpackModuleVersion> versions
              ->
-            final Set<UnpackDirEntry> uniqueUnpackDirEntries = versions.collect { it.getUnpackDirEntry(project) }.toSet()
+            final Set<UnpackDirEntry> uniqueUnpackDirEntries = versions.collect { it.getUnpackDirEntry() }.toSet()
             final boolean thisTargetHasClashes = uniqueUnpackDirEntries.size() > 1
             if (thisTargetHasClashes) {
                 project.logger.error(
@@ -285,7 +258,7 @@ class PackedDependenciesStateHandler implements PackedDependenciesStateSource {
                 )
                 versions.each {
                     logUnpackModuleVersionAncestry(it, 1)
-                    project.logger.debug("    "+ it.getUnpackEntry(project).toString())
+                    project.logger.debug("    "+ it.getUnpackEntry().toString())
                 }
                 project.logger.debug("  Unique unpack dir entries: " + uniqueUnpackDirEntries)
             }

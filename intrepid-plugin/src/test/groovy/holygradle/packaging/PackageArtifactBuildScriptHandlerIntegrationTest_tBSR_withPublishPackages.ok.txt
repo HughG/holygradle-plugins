@@ -13,10 +13,12 @@ packedDependenciesDefault {
 publishPackages {
     group "holygradle.test"
     nextVersionNumber "1.2.3"
-    repositories.ivy {
-        credentials {
-            username my.username("Artifactory")
-            password my.password("Artifactory")
+    repositories {
+        ivy {
+            credentials {
+                username my.username("Artifactory")
+                password my.password("Artifactory")
+            }
         }
         url "file://nul"
     }

@@ -1,5 +1,6 @@
 package holygradle.dependencies
 
+import holygradle.artifacts.ConfigurationHelper
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.*
@@ -85,7 +86,6 @@ class CollectDependenciesHelper {
             }
         }
 
-        configureToCopyCustomGradleDistribution(copySpec)
         configureToCopyPublishNotes(copySpec)
     }
 
@@ -205,8 +205,9 @@ class CollectDependenciesHelper {
         if (logger.isDebugEnabled()) {
             logger.debug("getResolvedArtifacts(${conf}, ...)")
         }
-        ResolvedConfiguration resConf = conf.resolvedConfiguration
-        resConf.firstLevelModuleDependencies.each { ResolvedDependency resolvedDependency ->
+        Set<ResolvedDependency> firstLevelDeps =
+            ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
+        firstLevelDeps.each { ResolvedDependency resolvedDependency ->
             if (logger.isDebugEnabled()) {
                 logger.debug("getResolvedArtifacts: resolvedDependency ${resolvedDependency.module.id}")
             }
@@ -227,34 +228,6 @@ class CollectDependenciesHelper {
                     )
                 }
             }
-        }
-    }
-
-    /**
-     * Configures this task to copy the custom-gradle distribution into the target "local_artifacts" folder.
-     */
-    private void configureToCopyCustomGradleDistribution(CopySpec copySpec) {
-        // project.gradle.gradleHomeDir will be something like:
-        //
-        //   C:\Users\nmcm\.gradle\wrapper\dists\custom-gradle-1.3-1.0.1.10\j5dmdk875e2rad4dnud3sriop\custom-gradle-1.3
-        //
-        // We want to copy the ZIP file in
-        //
-        //   C:\Users\nmcm\.gradle\wrapper\dists\custom-gradle-1.3-1.0.1.10\j5dmdk875e2rad4dnud3sriop
-        //
-        // called
-        //
-        //   custom-gradle-1.3-1.0.1.10.zip
-        //
-        // to
-        //
-        //   custom-gradle/1.0.1.10
-
-        final File gradleHomeParentDir = copyTask.project.gradle.gradleHomeDir.parentFile
-        final String distName = gradleHomeParentDir.parentFile.name
-        String customDistVersion = distName - "custom-gradle-${copyTask.project.gradle.gradleVersion}-"
-        copySpec.from(new File(gradleHomeParentDir, distName + ".zip").toString()) { CopySpec child ->
-            child.into "custom-gradle/${customDistVersion}"
         }
     }
 

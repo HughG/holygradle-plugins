@@ -3,9 +3,7 @@
     files needed to start using a given version of the custom-gradle distribution.
 
     Run it with "-PwrapperVersion=1.2.3.4" to publish a wrapper using custom-gradle-core-plugin
-    version 1.2.3.4.  You also have to set environment variable WRAPPER_STARTER_KIT_VERSION to the
-    version of the custom-gradle distribution to use to run this script.  This may or may not be the
-    same as the version you want to publish.
+    version 1.2.3.4.
 */
 
 buildscript {
@@ -14,6 +12,8 @@ buildscript {
 gplugins.apply()
 apply plugin: 'ivy-publish'
 
+project.ext.isSnapshotWrapperVersion = wrapperVersion.endsWith('SNAPSHOT-0')
+
 evaluationDependsOn("newWrapper")
 
 final File localGroupFile = new File(projectDir, "../local/holy-gradle-plugins/wrapper-group.txt")
@@ -21,7 +21,7 @@ project.group = localGroupFile.exists() ? localGroupFile.text : "holygradle"
 project.version = wrapperVersion
 
 configurations {
-    it."default"
+    create("default")
 }
 
 String targetDir = "${project.projectDir}/newWrapper"
@@ -34,8 +34,8 @@ task makeZip(type: Zip) {
     baseName = project.name
     from("${targetDir}/gradle") {
         into("gradle")
-        exclude("gradle-wrapper.properties")
     }
+    from("${targetDir}/gradlew.bat")
     from("${targetDir}/gw.bat")
 }
 
@@ -43,6 +43,8 @@ artifacts {
     "default" makeZip
 }
 
+def artifactoryPluginPublishRepo =
+    isSnapshotWrapperVersion ? artifactoryPluginSnapshotPublishRepo : artifactoryPluginReleasePublishRepo
 project.ext.PUBLISH_TARGET_URI = artifactoryServer + artifactoryPluginPublishRepo + "/"
 
 publishing {
@@ -53,9 +55,14 @@ publishing {
         }
         url PUBLISH_TARGET_URI
     }
+    publications {
+        ivy(IvyPublication) {
+            artifact(makeZip)
+        }
+    }
 }
 
-project.tasks["publish"] << {
+project.tasks["publish"].doLast {
     println "Published ${project.name} ${project.version} " +
         "to ${PUBLISH_TARGET_URI} at: " + new Date()
     println "Once you have tested the wrapper, unzip it into this folder and commit the changes."

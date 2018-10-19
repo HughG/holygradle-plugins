@@ -2,20 +2,24 @@ package holygradle.packaging
 
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
+import holygradle.custom_gradle.util.CamelCase
 import holygradle.io.FileHelper
 import holygradle.publishing.PublishPackagesExtension
-import holygradle.source_dependencies.SourceDependencyHandler
-import org.gradle.api.*
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.UnknownConfigurationException
-import org.gradle.api.file.*
-import org.gradle.api.initialization.Settings
-import org.gradle.api.tasks.bundling.*
-import org.gradle.util.ConfigureUtil
 import holygradle.publishing.RepublishHandler
-import holygradle.scm.SourceControlRepository
+import holygradle.scm.DummySourceControl
 import holygradle.scm.SourceControlRepositories
-import holygradle.custom_gradle.util.CamelCase
+import holygradle.scm.SourceControlRepository
+import holygradle.source_dependencies.SourceDependencyHandler
+import org.gradle.api.DefaultTask
+import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.artifacts.UnknownConfigurationException
+import org.gradle.api.file.CopySpec
+import org.gradle.api.initialization.Settings
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
+import org.gradle.api.tasks.bundling.Zip
+import org.gradle.util.ConfigureUtil
 
 class PackageArtifactHandler implements PackageArtifactDSL {
     public final Project project
@@ -24,10 +28,12 @@ class PackageArtifactHandler implements PackageArtifactDSL {
     private final PackageArtifactDescriptor rootPackageDescriptor
     private Collection<Closure> lazyConfigurations = []
     
-    public static Collection<PackageArtifactHandler> createContainer(Project project) {
-        project.extensions.packageArtifacts = project.container(PackageArtifactHandler) { String name ->
-            new PackageArtifactHandler(project, name)
-        }
+    public static NamedDomainObjectContainer<PackageArtifactHandler> createContainer(Project project) {
+        NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers =
+            project.container(PackageArtifactHandler) { String name ->
+                new PackageArtifactHandler(project, name)
+            }
+        project.extensions.packageArtifacts = packageArtifactHandlers
         Task createPublishNotesTask = defineCreatePublishNotesTask(project)
         Task packageEverythingTask = project.task("packageEverything", type: DefaultTask) {
             group = "Publishing"
@@ -39,45 +45,43 @@ class PackageArtifactHandler implements PackageArtifactDSL {
             repack.dependsOn packageEverythingTask
         }
 
-        // Create 'packageXxxxYyyy' tasks for each entry in 'packageArtifacts' in build script.  We do this in a
-        // projectsEvaluated block because otherwise the source dependency information won't be available, and some
-        // tesks which we want to depend on won't have been created.
-        project.gradle.projectsEvaluated {
-            NamedDomainObjectContainer<PackageArtifactHandler> packageArtifactHandlers =
-                project.extensions.packageArtifacts as NamedDomainObjectContainer<PackageArtifactHandler>
-            Configuration buildScriptConfiguration =
-                    project.configurations.findByName("buildScript") ?: project.configurations.create("buildScript")
-            PackageArtifactHandler buildScriptHandler =
+        // Create this configuration early so we can create the buildScript PackageArtifactHandler.
+        project.configurations.findByName("buildScript") ?: project.configurations.create("buildScript")
+        PackageArtifactHandler buildScriptHandler =
                 packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
-            buildScriptHandler.include project.buildFile.name
-            buildScriptHandler.include project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
-            buildScriptHandler.include Project.GRADLE_PROPERTIES
-            buildScriptHandler.configuration = "buildScript"
+        buildScriptHandler.include project.buildFile.name
+        buildScriptHandler.include project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE
+        buildScriptHandler.include Project.GRADLE_PROPERTIES
+        buildScriptHandler.configuration = "buildScript"
+        packageArtifactHandlers.all { packArt ->
+            Task packageTask = packArt.definePackageTask(createPublishNotesTask)
+            try {
+                project.artifacts.add(packArt.configuration, packageTask)
+            } catch (UnknownConfigurationException e) {
+                throw new RuntimeException(
+                    "Failed to find configuration '${packArt.configuration}' in ${project} " +
+                    "when adding packageArtifact entry '${packArt.name}'",
+                    e
+                )
+            }
+            packageEverythingTask.dependsOn(packageTask)
+        }
 
+        // Hook up the repackage task for this project to the republish task for the root project.  We do this in an
+        // afterEvaluate block on the root project in case there's some odd evaluationDependsOn setup and the root
+        // project's republish handler hasn't been created yet but will be once it's evaluated.
+        project.rootProject.afterEvaluate {
             PublishPackagesExtension publishPackages =
                 project.rootProject.extensions.findByName("publishPackages") as PublishPackagesExtension
-            if (publishPackages.getRepublishHandler() != null) {
+            if (publishPackages.republishHandler != null) {
                 Task republishTask = project.tasks.findByName("republish")
                 if (republishTask != null) {
                     republishTask.dependsOn repackageEverythingTask
                 }
             }
-            packageArtifactHandlers.each { packArt ->
-                Task packageTask = packArt.definePackageTask(createPublishNotesTask)
-                try {
-                    project.artifacts.add(packArt.configuration, packageTask)
-                } catch (UnknownConfigurationException e) {
-                    throw new RuntimeException(
-                        "Failed to find configuration '${packArt.configuration}' in ${project} " +
-                        "when adding packageArtifact entry '${packArt.name}'",
-                        e
-                    )
-                }
-                packageEverythingTask.dependsOn(packageTask)
-            }
         }
-                
-        project.extensions.packageArtifacts
+
+        packageArtifactHandlers
     }
 
     private static Task defineCreatePublishNotesTask(Project project) {
@@ -160,26 +164,22 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         SourceDependencyHandler handler = null
     ) {
         Project project = createPublishNotesTask.project
-        // For the originating project we will be passed a null handler (because we're looking at it as the root which
-        // has source dependencies, not a source dependency itself), in which case we want that originating project,
-        // which we can get from the task.
-        File sourceRepoDir
-        if (handler == null) {
-            sourceRepoDir = project.projectDir
-        } else {
-            // We don't use handler..getSourceDependencyProject(...).projectDir, because source dependencies don't have
-            // to contain a Gradle project.
-            sourceRepoDir = handler.destinationDir
-        }
 
         // We create a new SourceControlRepository instead of trying to get the "sourceControl" extension from the
         // project, because we don't want a DummySourceControl if there's no SCM info here.  Also, some source
         // dependencies may not have a project.
-        SourceControlRepository sourceRepo = SourceControlRepositories.create(
-            project.rootProject,
-            sourceRepoDir
-        )
-        if (sourceRepo != null) {
+        //
+        // For the originating project we will be passed a null handler (because we're looking at it as the root which
+        // has source dependencies, not a source dependency itself), in which case we want that originating project,
+        // which we have from the task.
+        SourceControlRepository sourceRepo
+        if (handler == null) {
+            sourceRepo = SourceControlRepositories.create(project)
+        } else {
+            sourceRepo = SourceControlRepositories.create(handler)
+        }
+
+        if (!(sourceRepo instanceof DummySourceControl)) {
             File sourceDepInfoDir
             if (handler == null) {
                 // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
@@ -294,7 +294,7 @@ class PackageArtifactHandler implements PackageArtifactDSL {
         doConfigureCopySpec(rootPackageDescriptor, copySpec)
     }
     
-    public Task definePackageTask(Task createPublishNotesTask) {
+    public AbstractArchiveTask definePackageTask(Task createPublishNotesTask) {
         String taskName = getPackageTaskName()
         Zip t = (Zip)project.task(taskName, type: Zip)
         t.description = "Creates a zip file for '${name}' in preparation for publishing project '${project.name}'."

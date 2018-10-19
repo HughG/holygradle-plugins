@@ -188,7 +188,7 @@ Suppose you also have some tasks (for example for running unit tests) in both mo
 
 [source,groovy]
 ----
-task myTest << {
+task myTest.doLast {
     println "Running tests..."
 }
 ----

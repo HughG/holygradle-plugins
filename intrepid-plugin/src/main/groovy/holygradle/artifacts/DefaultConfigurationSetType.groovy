@@ -66,8 +66,8 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
         LinkedHashSet<String> nonVisibleConfigurations
     ) {
         this.name = name
-        this.requiredAxes = requiredAxes
-        this.optionalAxes = optionalAxes
+        this.requiredAxes = fixStrings(requiredAxes)
+        this.optionalAxes = fixStrings(optionalAxes)
         this.nonVisibleConfigurations = nonVisibleConfigurations
         this.nonVisibleConfigurations << PRIVATE_BUILD_CONFIGURATION_NAME
     }
@@ -84,13 +84,13 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @SuppressWarnings("GroovyUnusedDeclaration")
     public final void setRequiredAxes(LinkedHashMap<String, List<String>> requiredAxes) {
-        this.requiredAxes = requiredAxes
+        this.requiredAxes = fixStrings(requiredAxes)
     }
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @SuppressWarnings("GroovyUnusedDeclaration")
     public final void requiredAxes(LinkedHashMap<String, List<String>> requiredAxes) {
-        this.requiredAxes.putAll(requiredAxes)
+        this.requiredAxes.putAll(fixStrings(requiredAxes))
     }
 
     public final LinkedHashMap<String, List<String>> getOptionalAxes() {
@@ -100,13 +100,13 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @SuppressWarnings("GroovyUnusedDeclaration")
     public final void setOptionalAxes(LinkedHashMap<String, List<String>> optionalAxes) {
-        this.optionalAxes = optionalAxes
+        this.optionalAxes = fixStrings(optionalAxes)
     }
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
     @SuppressWarnings("GroovyUnusedDeclaration")
     public final void optionalAxes(LinkedHashMap<String, List<String>> optionalAxes) {
-        this.optionalAxes.putAll(optionalAxes)
+        this.optionalAxes.putAll(fixStrings(optionalAxes))
     }
 
     // This is an API for use by build scripts, so ignore the "unused" warning.
@@ -467,5 +467,12 @@ class DefaultConfigurationSetType implements ConfigurationSetType {
             ", optionalAxes=" + optionalAxes +
             ", nonVisibleConfigurations=" + nonVisibleConfigurations +
             '}';
+    }
+
+    // Fix up for Groovy not always auto-converting from GString to String.
+    private final LinkedHashMap<String, List<String>> fixStrings(LinkedHashMap<String, List<String>> map) {
+        LinkedHashMap<String, List<String>> fixedMap = new LinkedHashMap<>()
+        map.each { k, v -> fixedMap[k.toString()] = v*.toString() }
+        fixedMap
     }
 }

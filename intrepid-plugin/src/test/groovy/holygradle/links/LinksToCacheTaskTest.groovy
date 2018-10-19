@@ -14,10 +14,6 @@ import org.junit.Test
 import static org.junit.Assert.*
 
 class LinksToCacheTaskTest extends AbstractHolyGradleTest {
-    private File getIvyFile(String fileName) {
-        return new File(getTestDir(), fileName)
-    }
-
     /**
      * Returns an instance of {@link ResolvedArtifact} whose {@link ResolvedArtifact#getFile()} method will return a
      * {@link File} pointing at {@code fileName}.
@@ -36,11 +32,11 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         boolean addDummyArtifact = true
     ) {
         UnpackModuleVersion version = new UnpackModuleVersion(
+            project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
             ((parent == null) ? [] : [parent]).toSet(),
             (parent == null) ? new PackedDependencyHandler(moduleName) : null
         )
-
         if (addDummyArtifact) {
             // Add a dummy artifact, otherwise the link won't be created (because no artifacts exist to be unpacked).
             version.addArtifacts([makeDummyResolvedArtifact("${moduleName}_dummy_artifact.zip")], "default")

@@ -1,0 +1,10 @@
+buildscript {
+    gplugins.use "devenv:${System.getProperty("holygradle.versionForIntegrationTest")}"
+}
+gplugins.apply()
+
+DevEnv {
+    solutionFile "build/foo.sln"
+    version "15.+"
+    platform "x64", "Win32"
+}

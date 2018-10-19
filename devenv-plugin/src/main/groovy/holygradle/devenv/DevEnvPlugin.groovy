@@ -56,57 +56,49 @@ class DevEnvPlugin implements Plugin<Project> {
             it.description = "This task is a dependency of all clean tasks, so will run before any of them"
         }
 
-        List<DevEnvTask> buildDebug = devEnvHandler.defineBuildTasks(project, DevEnvTask.EVERY_PLATFORM, "Debug")
-        List<DevEnvTask> buildRelease = devEnvHandler.defineBuildTasks(project, DevEnvTask.EVERY_PLATFORM, "Release")
-        List<DevEnvTask> cleanDebug = devEnvHandler.defineCleanTasks(project, DevEnvTask.EVERY_PLATFORM, "Debug")
-        List<DevEnvTask> cleanRelease = devEnvHandler.defineCleanTasks(project, DevEnvTask.EVERY_PLATFORM, "Release")
+        DevEnvTask buildDebug = devEnvHandler.defineBuildTask(project, DevEnvTask.EVERY_PLATFORM, "Debug")
+        DevEnvTask buildRelease = devEnvHandler.defineBuildTask(project, DevEnvTask.EVERY_PLATFORM, "Release")
+        DevEnvTask cleanDebug = devEnvHandler.defineCleanTask(project, DevEnvTask.EVERY_PLATFORM, "Debug")
+        DevEnvTask cleanRelease = devEnvHandler.defineCleanTask(project, DevEnvTask.EVERY_PLATFORM, "Release")
 
-        buildDebug.each { it.dependsOn beforeBuild }
-        buildRelease.each { it.dependsOn beforeBuild }
-        cleanDebug.each { it.dependsOn beforeClean }
-        cleanRelease.each { it.dependsOn beforeClean }
+        buildDebug.dependsOn beforeBuild
+        buildRelease.dependsOn beforeBuild
+        cleanDebug.dependsOn beforeClean
+        cleanRelease.dependsOn beforeClean
 
         project.gradle.projectsEvaluated {
             List<String> platforms = devEnvHandler.getPlatforms()
 
             if (platforms.size() == 1) {
-                buildDebug.each { it.configureBuildTask(devEnvHandler, platforms[0]) }
-                buildRelease.each { it.configureBuildTask(devEnvHandler, platforms[0]) }
-                cleanDebug.each { it.configureCleanTask(devEnvHandler, platforms[0]) }
-                cleanRelease.each { it.configureCleanTask(devEnvHandler, platforms[0]) }
+                buildDebug.configureBuildTask(devEnvHandler, platforms[0])
+                buildRelease.configureBuildTask(devEnvHandler, platforms[0])
+                cleanDebug.configureCleanTask(devEnvHandler, platforms[0])
+                cleanRelease.configureCleanTask(devEnvHandler, platforms[0])
             } else {
                 // If we have more than one platform, add specific tasks for each platform ("buildWin32Release",
-                // "buildx64Release", etc.), and make the original tasks ("buildDebug") depend on all of them, as a
+                // "buildX64Release", etc.), and make the original tasks ("buildDebug") depend on all of them, as a
                 // shortcut.
                 platforms.each { platform ->
                     String p = platform[0].toUpperCase() + platform[1..-1]
-                    List<DevEnvTask> platformBuildDebugTasks = devEnvHandler.defineBuildTasks(project, p, "Debug")
-                    buildDebug.eachWithIndex { DevEnvTask b, int i ->
-                        platformBuildDebugTasks[i].configureBuildTask(devEnvHandler, p)
-                        b.dependsOn platformBuildDebugTasks[i]
-                    }
-                    platformBuildDebugTasks.each { it.dependsOn beforeBuild }
+                    DevEnvTask platformBuildDebugTask = devEnvHandler.defineBuildTask(project, p, "Debug")
+                    platformBuildDebugTask.configureBuildTask(devEnvHandler, p)
+                    buildDebug.dependsOn platformBuildDebugTask
+                    platformBuildDebugTask.each { it.dependsOn beforeBuild }
 
-                    List<DevEnvTask> platformBuildReleaseTasks = devEnvHandler.defineBuildTasks(project, p, "Release")
-                    buildRelease.eachWithIndex { DevEnvTask b, int i ->
-                        platformBuildReleaseTasks[i].configureBuildTask(devEnvHandler, p)
-                        b.dependsOn platformBuildReleaseTasks[i]
-                    }
-                    platformBuildReleaseTasks.each { it.dependsOn beforeBuild }
+                    DevEnvTask platformBuildReleaseTask = devEnvHandler.defineBuildTask(project, p, "Release")
+                    platformBuildReleaseTask.configureBuildTask(devEnvHandler, p)
+                    buildRelease.dependsOn platformBuildReleaseTask
+                    platformBuildReleaseTask.each { it.dependsOn beforeBuild }
 
-                    List<DevEnvTask> platformCleanDebugTasks = devEnvHandler.defineCleanTasks(project, p, "Debug")
-                    cleanDebug.eachWithIndex { DevEnvTask b, int i ->
-                        platformCleanDebugTasks[i].configureCleanTask(devEnvHandler, p)
-                        b.dependsOn platformCleanDebugTasks[i]
-                    }
-                    platformCleanDebugTasks.each { it.dependsOn beforeClean }
+                    DevEnvTask platformCleanDebugTask = devEnvHandler.defineCleanTask(project, p, "Debug")
+                    cleanDebug.dependsOn platformCleanDebugTask
+                    platformCleanDebugTask.configureCleanTask(devEnvHandler, p)
+                    platformCleanDebugTask.each { it.dependsOn beforeClean }
 
-                    List<DevEnvTask> platformCleanReleaseTasks = devEnvHandler.defineCleanTasks(project, p, "Release")
-                    cleanRelease.eachWithIndex { DevEnvTask b, int i ->
-                        platformCleanReleaseTasks[i].configureCleanTask(devEnvHandler, p)
-                        b.dependsOn platformCleanReleaseTasks[i]
-                    }
-                    platformCleanReleaseTasks.each { it.dependsOn beforeClean }
+                    DevEnvTask platformCleanReleaseTask = devEnvHandler.defineCleanTask(project, p, "Release")
+                    platformCleanReleaseTask.configureCleanTask(devEnvHandler, p)
+                    cleanRelease.dependsOn platformCleanReleaseTask
+                    platformCleanReleaseTask.each { it.dependsOn beforeClean }
                 }
             }
         }

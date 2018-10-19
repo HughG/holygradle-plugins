@@ -186,7 +186,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "empty_dir").canonicalFile
         Assert.assertTrue("link '$link' is absolute", link.absolute)
         FileHelper.ensureDeleteDirRecursive(link, "for test setup")
-        FileHelper.ensureMkdir(link, "for test setup")
+        FileHelper.ensureMkdirs(link, "for test setup")
         File existingDir = new File(testDir, "existing_folder").canonicalFile
         Assert.assertTrue("target '$existingDir' is absolute", existingDir.absolute)
 
@@ -207,7 +207,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "non_empty_dir").canonicalFile
         Assert.assertTrue("link '$link' is absolute", link.absolute)
         FileHelper.ensureDeleteDirRecursive(link, "for test setup")
-        FileHelper.ensureMkdir(link, "for test setup")
+        FileHelper.ensureMkdirs(link, "for test setup")
         File file = new File(link, "dummy.txt")
         file.text = "dummy file"
         File existingDir = new File(testDir, "existing_folder").canonicalFile
@@ -303,7 +303,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "empty_dir").canonicalFile
         Assert.assertTrue("link '$link' is absolute", link.absolute)
         FileHelper.ensureDeleteDirRecursive(link, "for test setup")
-        FileHelper.ensureMkdir(link, "for test setup")
+        FileHelper.ensureMkdirs(link, "for test setup")
 
         // Act
         delete(link)
@@ -321,7 +321,7 @@ abstract class LinkTestBase extends AbstractHolyGradleTest
         File link = new File(testDir, "non_empty_dir").canonicalFile
         Assert.assertTrue("link '$link' is absolute", link.absolute)
         FileHelper.ensureDeleteDirRecursive(link, "for test setup")
-        FileHelper.ensureMkdir(link, "for test setup")
+        FileHelper.ensureMkdirs(link, "for test setup")
         File file = new File(link, "dummy.txt")
         file.text = "dummy file"
 

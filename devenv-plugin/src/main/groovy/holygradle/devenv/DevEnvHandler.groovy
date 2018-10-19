@@ -7,6 +7,10 @@ import holygradle.process.ExecHelper
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 
+/*
+    NOTE: If you change the Visual Studio location code in this class, also change it in credential-store/build.gradle.
+ */
+
 class DevEnvHandler {
     private Project project
     private DevEnvHandler parentHandler
@@ -289,43 +293,21 @@ class DevEnvHandler {
     
     // Returns two tasks - one for building this project as well as dependent projects, and
     // another task for building this project independently.
-    public List<DevEnvTask> defineBuildTasks(Project project, String platform, String configuration) {
-        [defineBuildTask(project, platform, configuration, true),
-        defineBuildTask(project, platform, configuration, false)]
-    }
-    
-    public DevEnvTask defineBuildTask(Project project, String platform, String configuration, boolean independently) {
-        String taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.BUILD, platform, configuration, independently)
+    public DevEnvTask defineBuildTask(Project project, String platform, String configuration) {
+        String taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.BUILD, platform, configuration)
         (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
-            it.init(independently, DevEnvTask.Operation.BUILD, configuration)
-            if (independently) {
-                def normalTaskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.BUILD, platform, configuration, false)
-                description = "This task only makes sense for individual projects e.g. gw subproj:b${configuration[0]}I. " +
-                    "Deprecated; use 'gw -a ${normalTaskName}' instead."
-            } else {
-                description = "Builds all dependent projects in $configuration mode."
-            }
+            it.init(DevEnvTask.Operation.BUILD, configuration)
+            it.description = "Builds all dependent projects in $configuration mode."
         }
     }
     
     // Returns two tasks - one for cleaning this project as well as dependent projects, and
     // another task for cleaning this project independently.
-    public List<DevEnvTask> defineCleanTasks(Project project, String platform, String configuration) {
-        [defineCleanTask(project, platform, configuration, true),
-        defineCleanTask(project, platform, configuration, false)]
-    }
-    
-    public DevEnvTask defineCleanTask(Project project, String platform, String configuration, boolean independently) {
-        String taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.CLEAN, platform, configuration, independently)
+    public DevEnvTask defineCleanTask(Project project, String platform, String configuration) {
+        String taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.CLEAN, platform, configuration)
         (DevEnvTask) project.task(taskName, type: DevEnvTask) { DevEnvTask it ->
-            it.init(independently, DevEnvTask.Operation.CLEAN, configuration)
-            if (independently) {
-                def normalTaskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.CLEAN, platform, configuration, false)
-                description = "This task only makes sense for individual projects e.g. gw subproj:c${configuration[0]}I. " +
-                    "Deprecated; use 'gw -a ${normalTaskName}' instead."
-            } else {
-                description = "Cleans all dependent projects in $configuration mode."
-            }
+            it.init(DevEnvTask.Operation.CLEAN, configuration)
+            it.description = "Cleans all dependent projects in $configuration mode."
         }
     }
 }

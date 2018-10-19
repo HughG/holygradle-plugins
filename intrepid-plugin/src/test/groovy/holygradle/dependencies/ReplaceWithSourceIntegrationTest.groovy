@@ -15,8 +15,9 @@ import static org.junit.Assert.assertTrue
 class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
     public void twoLevels() {
-        File templateDir = new File(getTestDir(), "projectAIn")
-        File projectDir = new File(getTestDir(), "projectA")
+        String projectName = "projectA"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "external-lib")
 
@@ -27,7 +28,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -43,8 +44,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void oneLevelWithNestedSourceDependencies() {
-        File templateDir = new File(getTestDir(), "projectBIn")
-        File projectDir = new File(getTestDir(), "projectB")
+        String projectName = "projectB"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File anotherDirectory = new File(projectDir, "another-lib")
         File externalDirectory = new File(projectDir, "external-lib")
@@ -56,7 +58,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -71,8 +73,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void oneLevelWithNestedSourceVersionConflict() {
-        File templateDir = new File(getTestDir(), "projectCIn")
-        File projectDir = new File(getTestDir(), "projectC")
+        String projectName = "projectC"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
 
@@ -83,7 +86,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -98,8 +101,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void oneLevelWithNestedSourceVersionConflictMultipleConfigurations() {
-        File templateDir = new File(getTestDir(), "projectDIn")
-        File projectDir = new File(getTestDir(), "projectD")
+        String projectName = "projectD"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
         File externalLibDirectory = new File(projectDir, "external-lib")
@@ -112,7 +116,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -125,8 +129,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
      */
     @Test
     public void incompatibleTransitiveDependencies() {
-        File templateDir = new File(getTestDir(), "projectEIn")
-        File projectDir = new File(getTestDir(), "projectE")
+        String projectName = "projectE"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File applicationDirectory = new File(projectDir, "application")
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
@@ -139,19 +144,20 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
-        String expectedDummyVersion = Helper.convertPathToVersion(new File(projectDir, "../source/ext-1.1").toString())
+        String expectedDummyVersion =
+            Helper.convertPathToVersion(new File(projectDir, "../" + projectName + "source/ext-1.1").toString())
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-                    """Failed to notify dependency resolution listener.
-> Failed to notify dependency resolution listener.
-   > Failed to notify dependency resolution listener.
-      > Could not resolve all dependencies for configuration ':bar'.
-         > A conflict was found between the following modules:
-            - holygradle.test:external-lib:${expectedDummyVersion}
-            - holygradle.test:external-lib:1.1
+                    """FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all dependencies for configuration ':bar'.
+> A conflict was found between the following modules:
+   - holygradle.test:external-lib:${expectedDummyVersion}
+   - holygradle.test:external-lib:1.1
 """
             ))
         }
@@ -164,8 +170,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
      */
     @Test
     public void incompatibleSourceOverrideTransitiveDependencies() {
-        File templateDir = new File(getTestDir(), "projectJIn")
-        File projectDir = new File(getTestDir(), "projectJ")
+        String projectName = "projectJ"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File applicationDirectory = new File(projectDir, "application")
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
@@ -178,18 +185,18 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-"""Failed to notify dependency resolution listener.
-> Failed to notify dependency resolution listener.
-   > Failed to notify dependency resolution listener.
-      > Could not resolve all dependencies for configuration ':bar'.
-         > A conflict was found between the following modules:
-            - holygradle.test:external-lib:1.1
-            - holygradle.test:external-lib:1.0
+"""FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all dependencies for configuration ':bar'.
+> A conflict was found between the following modules:
+   - holygradle.test:external-lib:1.1
+   - holygradle.test:external-lib:1.0
 """
             ))
         }
@@ -202,8 +209,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
      */
     @Test
     public void incompatibleDirectVsSourceOverrideTransitiveDependencies() {
-        File templateDir = new File(getTestDir(), "projectKIn")
-        File projectDir = new File(getTestDir(), "projectK")
+        String projectName = "projectK"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File applicationDirectory = new File(projectDir, "application")
         File frameworkDirectory = new File(projectDir, "framework")
         File externalDirectory = new File(projectDir, "ext_11")
@@ -216,18 +224,18 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-               """Failed to notify dependency resolution listener.
-> Failed to notify dependency resolution listener.
-   > Failed to notify dependency resolution listener.
-      > Could not resolve all dependencies for configuration ':bar'.
-         > A conflict was found between the following modules:
-            - holygradle.test:external-lib:1.1
-            - holygradle.test:external-lib:1.0
+               """FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not resolve all dependencies for configuration ':bar'.
+> A conflict was found between the following modules:
+   - holygradle.test:external-lib:1.1
+   - holygradle.test:external-lib:1.0
 """
             ))
         }
@@ -235,25 +243,26 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void customIvyFileGenerator() {
-        File templateDir = new File(getTestDir(), "projectFIn")
-        File projectDir = new File(getTestDir(), "projectF")
+        String projectName = "projectF"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
 
         File customFile = new File(externalDirectory, "custom")
         File sourceOverrideFile = new File(externalDirectory, "generateSourceOverrideDetails")
-        File gwFile = new File(externalDirectory, "gw")
+        File gradlewFile = new File(externalDirectory, "gradlew")
 
         if (projectDir.exists()) {
             customFile.delete()
             sourceOverrideFile.delete()
-            gwFile.delete()
+            gradlewFile.delete()
 
             Link.delete(externalDirectory)
             FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -261,39 +270,41 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
         assertTrue(customFile.exists())
         assertFalse(sourceOverrideFile.exists())
-        assertFalse(gwFile.exists())
+        assertFalse(gradlewFile.exists())
     }
 
     @Test
-    public void gwBatIvyFileGeneratorFallback() {
-        File templateDir = new File(getTestDir(), "projectGIn")
-        File projectDir = new File(getTestDir(), "projectG")
+    public void gradlewBatIvyFileGeneratorFallback() {
+        String projectName = "projectG"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
-        File gwFile = new File(externalDirectory, "gw")
+        File gradlewFile = new File(externalDirectory, "gradlew")
 
         if (projectDir.exists()) {
-            gwFile.delete()
+            gradlewFile.delete()
 
             Link.delete(externalDirectory)
             FileHelper.ensureDeleteDirRecursive(projectDir)
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
         }
 
-        assertTrue(gwFile.exists())
-        assertTrue(gwFile.text.contains("generateIvyModuleDescriptor"))
-        assertTrue(gwFile.text.contains("summariseAllDependencies"))
+        assertTrue(gradlewFile.exists())
+        assertTrue(gradlewFile.text.contains("generateDescriptorFileForIvyPublication"))
+        assertTrue(gradlewFile.text.contains("summariseAllDependencies"))
     }
 
     @Test
     public void noIvyFileGeneration() {
-        File templateDir = new File(getTestDir(), "projectHIn")
-        File projectDir = new File(getTestDir(), "projectH")
+        String projectName = "projectH"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
 
         if (projectDir.exists()) {
@@ -302,13 +313,13 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
                 "No Ivy file generation available for 'ext_11'. Please ensure your source override contains " +
-                "a generateSourceOverrideDetails.bat, or a compatible gw.bat, " +
+                "a generateSourceOverrideDetails.bat, or a compatible gradlew.bat, " +
                 "or else provide a custom generation method in your build.gradle"
             )
         }
@@ -316,8 +327,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
 
     @Test
     public void failsWithNoUnpackToCache() {
-        File templateDir = new File(getTestDir(), "projectIIn")
-        File projectDir = new File(getTestDir(), "projectI")
+        String projectName = "projectI"
+        File templateDir = new File(getTestDir(), projectName + "In")
+        File projectDir = new File(getTestDir(), projectName)
         File externalDirectory = new File(projectDir, "ext_11")
 
         if (projectDir.exists()) {
@@ -327,7 +339,7 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         }
 
         FileUtils.copyDirectory(templateDir, projectDir)
-        copySourceFiles()
+        copySourceFiles(projectName)
 
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
@@ -345,9 +357,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         // Todo: Decide what to do in this case
     }
 
-    private void copySourceFiles() {
+    private void copySourceFiles(String project) {
         File templateDir = new File(getTestDir(), "sourceIn")
-        File sourceDir = new File(getTestDir(), "source")
+        File sourceDir = new File(getTestDir(), project + "source")
 
         if (sourceDir.exists()) {
             FileHelper.ensureDeleteDirRecursive(sourceDir)

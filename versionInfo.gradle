@@ -2,12 +2,25 @@ import java.text.SimpleDateFormat
 
 
 project.ext.writeRepoInfo = { File repoDir, OutputStream os ->
-    exec {
-        executable = "hg"
-        args = ["paths", "default"]
-        standardOutput = os
-        workingDir = repoDir
+    new ByteArrayOutputStream().withStream { OutputStream errorStream ->
+        ExecResult result = exec {
+            executable = "hg"
+            args = ["paths", "default"]
+            errorOutput = errorStream
+            workingDir = repoDir
+            ignoreExitValue = true
+        }
+        // If "hg paths default" returns 1 and outputs "not found!", that just means the folder has no default remote,
+        // which is perfectly valid for a new, never-pushed repo.
+        if (result.exitValue == 0 ||
+            (result.exitValue == 1 && errorStream.toString().replaceAll('[\\r\\n]', '') == 'not found!')
+        ) {
+            errorStream.writeTo(os)
+        } else {
+            result.assertNormalExitValue() // to throw the appropriate exception from exec
+        }
     }
+
     (new PrintStream(os)).withStream { it.print(" ") }
     exec {
         executable = "hg"

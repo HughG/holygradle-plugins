@@ -1,0 +1,61 @@
+C:\Users\hughg\Documents\dev\holy-gradle-plugins\intrepid-plugin\src\main\groovy\holygradle\dependencies\ResolvedDependenciesVisitor.groovy
+* DONE: printlns
+
+intrepid-plugin/src/main/groovy/holygradle/publishing/DefaultPublishPackagesExtension.groovy
+* DONE: TODOs
+* DONE: Make creation of default publication an option, defaulting to true.
+* DONE: Option to always expose private configurations.
+
+intrepid-plugin/src/main/groovy/holygradle/unpacking/PackedDependenciesStateHandler.groovy
+* DONE: Logging
+
+* intrepid-plugin\src\test\groovy\holygradle\links\LinkTaskIntegrationTest.groovy
+** Err ... not really sure why I changed this.  Maybe temporarily to investigate
+some problem, or just to make it a more obviously made-up version?
+
+* intrepid-plugin/src/test/groovy/holygradle/publishing/DefaultPublishPackagesExtensionIntegrationTest.groovy
+** DONE: Extra logging / stacktrace.
+
+
+----------------------------------------------------------------------------------------
+No-init-script stuff
+
+* C:\Users\hughg\Documents\dev\holy-gradle-plugins\custom-gradle-core-plugin\src\main\groovy\holygradle\custom_gradle\CustomGradleCorePlugin.groovy
+** DONE, UNTESTED: getInitScriptLocation doesn't make sense any more, as it is.
+
+* C:\Users\hughg\Documents\dev\holy-gradle-plugins\gw.bat
+** DONE, UNTESTED: This has a hard-coded mention of "gradle-1.4-bin", but I'd rather have it version-independent.
+
+* C:\Users\hughg\Documents\dev\holy-gradle-plugins\publish.gradle (based on changes to test.gradle)
+** DONE: Make sure all code for publishing the custom dist, really and for test, is gone.
+
+* C:\Users\hughg\Documents\dev\holy-gradle-plugins\wrapper-starter-kit\newWrapper\build.gradle
+** DONE: Check that isSnapshotWrapperVersion is defined somewhere, and is defined to be "wrapperVersion.endsWith('SNAPSHOT-0')" or equivalent.
+
+* DONE: Change DefaultPublishPackagesExtension so that it doesn't need to be given the PublishingExtension
+directly, because accessing that extension freezes the publishing objects so they can't be changed, but people
+need to be able to change them to, e.g., add description and licence info to the Ivy XML.
+
+
+Gradle 2.14.1
+=============
+
+* TODO: See if I can upgrade jna version in custom-gradle-core-plugin.
+
+* TODO: See if I can upgrade to be able to build with Java 1.8 (even if it's set to preserve compatibility with 1.7).
+
+* TODO: Work out why IntelliJ thinks the buildSrc project should be getting Gradle 2.9 JARs, and change it to 2.14.1 somehow.
+** I still don't know, but IntelliJ re-downloads 2.9 if I delete it.
+
+* TODO: Look into deprecation warnings.
+** TODO: Changing resolution strategy after a configuration is resolved -- we shouldn't be doing that anyway!
+
+* DONE: Add a test (maybe integration) to make sure that a build script can use the "publishing {}" block itself -- to ensure
+that intrepid has not already accessed the PublishinExtension as a property.
+
+* TODO: See if I can make DefaultPublishPackagesExtension not depend on PackageArtifactHandler.  Then it could be useful
+without the rest of intrepid.
+
+----------------------------------------------------------------------------------------
+
+* TODO: See if I can make everything still work even if the custom init-script isn't there.

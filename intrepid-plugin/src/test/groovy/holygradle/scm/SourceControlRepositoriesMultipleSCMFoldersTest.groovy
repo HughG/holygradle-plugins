@@ -24,10 +24,10 @@ public class SourceControlRepositoriesMultipleSCMFoldersTest extends AbstractHol
     @Parameterized.Parameters
     public static ArrayList<Object[]> data() {
         [
-                [[".git", ".svn"]],
-                [[".git", ".hg"]],
-                [[".hg", ".svn"]],
-                [[".git", ".svn", ".hg"]]
+            [[".git", ".svn"]],
+            [[".git", ".hg"]],
+            [[".hg", ".svn"]],
+            [[".git", ".svn", ".hg"]]
         ]*.toArray()
     }
 

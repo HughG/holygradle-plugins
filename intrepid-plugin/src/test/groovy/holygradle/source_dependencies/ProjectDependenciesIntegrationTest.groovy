@@ -3,10 +3,7 @@ package holygradle.source_dependencies
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.RegressionFileHelper
 import holygradle.test.WrapperBuildLauncher
-import org.junit.Ignore
 import org.junit.Test
-
-import static org.junit.Assert.assertTrue
 
 class ProjectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTest {
     /**
@@ -33,9 +30,9 @@ class ProjectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("extractPackedDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-"""         > A conflict was found between the following modules:
-            - holygradle.test:external-lib:1.0
-            - holygradle.test:external-lib:1.1
+"""> A conflict was found between the following modules:
+      - holygradle.test:external-lib:1.0
+      - holygradle.test:external-lib:1.1
 """
             ))
         }

@@ -3,32 +3,82 @@ import java.util.regex.Matcher
 
 import holygradle.buildSrc.process.ExecHelper
 
-public File getCommonToolsPathFromVSWhere(String vswhereLocation) {
-    Pattern versionPattern = Pattern.compile("VS([0-9]+)", Pattern.CASE_INSENSITIVE)
-    Matcher versionMatcher = versionPattern.matcher(chosenDevEnvVersion)
+class VSVersion {
+    private static final Pattern VERSION_PATTERN =
+            Pattern.compile(
+                /VS([0-9]+)(0)|/ + // "VSnnnCOMNTOOLS" environment variable
+                /([0-9]+)\.([0-9]+|\+)/, // "nn.n" vswhere version string, also allowing "nn.+"
+                Pattern.CASE_INSENSITIVE
+            )
 
-    if (versionMatcher.find()) {
-        Integer devEnvVersion = Integer.parseInt(versionMatcher.group(1))
-        String majorVersionNumber = (devEnvVersion / 10).toString()
-        String fullVersionNumber = majorVersionNumber + ".0"
-        String nextFullVersionNumber = majorVersionNumber + '.1'
+    private final String asString
 
-        String installPath = ExecHelper.executeAndReturnResultAsString(
-            project.logger,
-            project.&exec,
-            { return true },
-            { ExecSpec spec ->
-                spec.commandLine vswhereLocation,
-                                 "-property", "installationPath",
-                                 "-legacy",
-                                 "-format", "value",
-                                 "-version", "[${fullVersionNumber},${nextFullVersionNumber})"
-            }
-        )
-        return new File(installPath, "Common7/Tools")
-    } else {
-        throw new RuntimeException("Failed to parse DevEnv version '${chosenDevEnvVersion}'")
+    public final String major
+    public final String minor
+    public final String rangeStart
+    public final String rangeEnd
+    public final String envVarName
+
+    public VSVersion(final String version) {
+        asString = version
+        Matcher versionMatcher = match(version)
+        if (versionMatcher.group(1) != null) {
+            // Matched "VSnnn"
+            major = versionMatcher.group(1)
+            minor = versionMatcher.group(2)
+        } else {
+            // Matched "nn.x"
+            major = versionMatcher.group(3)
+            minor = versionMatcher.group(4)
+        }
+
+        final char firstChar = version.charAt(0)
+        final boolean isEnvVarStyle = (Character.toLowerCase(firstChar) == ('v' as char))
+        final boolean isWildcardMinorVersion = isEnvVarStyle || (this.minor == '+')
+        envVarName = "VS${major}0COMNTOOLS"
+        if (isWildcardMinorVersion) {
+            rangeStart = "${major}.0"
+            rangeEnd = "${major.toInteger() + 1}.0"
+        } else {
+            rangeStart = "${major}.${this.minor}"
+            rangeEnd = "${major}.${minor.toInteger() + 1}"
+        }
     }
+
+    // Pulled out as a static method because IntelliJ gives "field may be uninitialised" warnings otherwise.
+    private static Matcher match(String version) {
+        final Matcher versionMatcher = VERSION_PATTERN.matcher(version)
+        if (!versionMatcher.find()) {
+            throw new RuntimeException("Failed to parse chosenDevEnvVersion '${version}'")
+        }
+        return versionMatcher
+    }
+
+    @Override
+    public String toString() {
+        return asString
+    }
+}
+
+public File getCommonToolsPathFromVSWhere(String vswhereLocation) {
+    VSVersion version = new VSVersion(chosenDevEnvVersion)
+    final String versionRange = "[${version.rangeStart},${version.rangeEnd})"
+    final String installPath = ExecHelper.executeAndReturnResultAsString(
+        project.logger,
+        project.&exec,
+        { return true },
+        { ExecSpec spec ->
+            spec.commandLine vswhereLocation,
+                            "-property", "installationPath",
+                            "-legacy",
+                            "-format", "value",
+                            "-version", versionRange
+        }
+    )
+    if (installPath == null || installPath.trim().empty) {
+        throw new RuntimeException("vswhere.exe could not find a Visual Studio version in range ${versionRange}")
+    }
+    return new File(installPath, "Common7/Tools")
 }
 
 public File getCommonToolsPathFromEnvironment() {
@@ -45,7 +95,6 @@ public File getCommonToolsPath() {
         .findResults { System.getenv(it) } // collect all non-null environment variable values
         .collect { "${it}\\Microsoft Visual Studio\\Installer\\vswhere.exe" } // map to filenames
         .find { new File(it).exists() } // return the first filename for which a file exists
-
     if (vswhereLocation != null) {
         return getCommonToolsPathFromVSWhere(vswhereLocation)
     } else {
@@ -69,10 +118,10 @@ task createReleaseVersionFile {
     outputs.file(versionFile)
     doLast {
         versionFile.withWriter { BufferedWriter writer ->
-            String username = System.getProperty("user.name").toLowerCase()
-            boolean isSnapshot = project.version.toString().endsWith('-SNAPSHOT')
-            String ver = isSnapshot ? "0.0.0.0" : project.version
-            String commaVer = isSnapshot ? "0,0,0,0" : project.version.replaceAll('\\.', ',')
+            final String version = project.version
+            boolean isSnapshot = version.endsWith("SNAPSHOT-0")
+            String ver = isSnapshot ? "0.0.0.0" : version
+            String commaVer = isSnapshot ? "0,0,0,0" : version.replaceAll('\\.', ',')
             writer.writeLine "#define RELEASE_VERSION \"${ver}\""
             writer.writeLine "#define RELEASE_VERSION_WITH_COMMAS ${commaVer}"
         }
@@ -118,5 +167,5 @@ project.publishTasks.each { Upload it ->
 project.tasks["publishPluginsLocally"].inputs.files(project.tasks["build"].outputs.files)
 
 artifacts {
-    it."default" CREDENTIAL_STORE_EXE
+    "default" CREDENTIAL_STORE_EXE
 }

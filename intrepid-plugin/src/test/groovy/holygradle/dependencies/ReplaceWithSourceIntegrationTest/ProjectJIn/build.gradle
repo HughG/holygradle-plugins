@@ -18,11 +18,11 @@ repositories.ivy {
 sourceOverrides {
     "application" {
         dependency "holygradle.test:example-application:1.0"
-        from "../source/application-1.0"
+        from "../projectJsource/application-1.0"
     }
     "framework" {
         dependency "holygradle.test:another-application:1.0"
-        from "../source/another-application-1.0-alt-1.1"
+        from "../projectJsource/another-application-1.0-alt-1.1"
     }
 }
 

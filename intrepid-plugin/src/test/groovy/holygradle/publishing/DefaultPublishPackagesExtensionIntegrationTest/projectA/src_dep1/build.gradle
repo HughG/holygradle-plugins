@@ -3,8 +3,10 @@ buildscript {
 }
 gplugins.apply()
 
-repositories.ivy {
-    url "..\\..\\..\\..\\testUtil\\repository\\"
+repositories {
+    ivy {
+        url "..\\..\\..\\..\\testUtil\\repository\\"
+    }
 }
 
 group = "happydays_subsiduary"
@@ -28,7 +30,9 @@ packageArtifacts {
 }
 
 publishPackages {    
-    repositories.ivy {
-        url "http://dummy_repo_url"
+    repositories {
+        ivy {
+            url "http://dummy_repo_url"
+        }
     }
 }

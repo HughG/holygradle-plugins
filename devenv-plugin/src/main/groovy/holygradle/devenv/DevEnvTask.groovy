@@ -1,19 +1,17 @@
 package holygradle.devenv
 
 import holygradle.custom_gradle.plugin_apis.StampingProvider
+import holygradle.logging.DefaultStyledTextOutput
+import holygradle.logging.ErrorHighlightingOutputStream
+import holygradle.logging.StyledTextOutput
 import holygradle.source_dependencies.SourceDependenciesStateHandler
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
-import org.gradle.logging.StyledTextOutput
-import org.gradle.logging.StyledTextOutputFactory
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 
 class DevEnvTask extends DefaultTask {
-    // Should this task depend on similarly named tasks in dependent projects?
-    public boolean independently = false 
-    
     // What operation (e.g. build/clean) are we running?
     public Operation operation = null
     
@@ -40,20 +38,17 @@ class DevEnvTask extends DefaultTask {
      * @param operation The kind of operation which the task performs.
      * @param platform The platform (x86, Win32), using {@link #EVERY_PLATFORM} for "any/all platform(s)".
      * @param configuration The Visual Studio configuration; must be "Debug" or "Release".
-     * @param independently If the task runs independently, it will
      */
-    public static getNameForTask(Operation operation, String platform, String configuration, boolean independently) {
-        String independentlyPart = independently ? "Independently" : ""
-        "${operation}${platform.capitalize()}${configuration}${independentlyPart}"
+    public static getNameForTask(Operation operation, String platform, String configuration) {
+        "${operation}${platform.capitalize()}${configuration}"
     }
 
     public DevEnvTask() {
         group = "DevEnv"
-        output = services.get(StyledTextOutputFactory).create(DevEnvTask)
+        output = new DefaultStyledTextOutput(System.out)
     }
     
-    public void init(boolean independently, Operation operation, String configuration) {
-        this.independently = independently
+    public void init(Operation operation, String configuration) {
         this.operation = operation
         this.configuration = configuration
     }
@@ -93,8 +88,7 @@ class DevEnvTask extends DefaultTask {
         // operation in dependent projects.
         Collection<SourceDependenciesStateHandler> sourceDependenciesState =
             project.extensions.findByName("sourceDependenciesState") as Collection<SourceDependenciesStateHandler>
-        if (independently ||
-            sourceDependenciesState == null ||
+        if (sourceDependenciesState == null ||
             !project.gradle.startParameter.buildProjectDependencies
         ) {
             return
@@ -103,8 +97,7 @@ class DevEnvTask extends DefaultTask {
         // depend on the same task in the other project, and on the platform-independent task (if they exist).
         sourceDependenciesState.allConfigurationsPublishingSourceDependencies.each { Configuration config ->
             this.dependsOn config.getTaskDependencyFromProjectDependency(true, this.name)
-            String anyPlatformTaskName =
-                getNameForTask(this.operation, EVERY_PLATFORM, this.configuration, this.independently)
+            String anyPlatformTaskName = getNameForTask(this.operation, EVERY_PLATFORM, this.configuration)
             this.dependsOn config.getTaskDependencyFromProjectDependency(true, anyPlatformTaskName)
         }
     }
@@ -118,7 +111,7 @@ class DevEnvTask extends DefaultTask {
         if (devEnvHandler.getVsSolutionFile() != null) {
              doConfigureCleanTask(
                  project, devEnvHandler.&getBuildToolPath, devEnvHandler.getVsSolutionFile(),
-                 devEnvHandler.useIncredibuild(), platform, configuration,
+                 platform, configuration,
                  devEnvHandler.getWarningRegexes(), devEnvHandler.getErrorRegexes()
             ) 
         }
@@ -135,11 +128,7 @@ class DevEnvTask extends DefaultTask {
         GString title = "${project.name} (${platform} ${configuration})"
         
         description = "Builds the solution '${solutionFile.name}' with ${buildToolName} in $configuration mode, " +
-            "first building all dependent projects. " +
-            (independently ?
-                "Deprecated; use 'gw -a ${getNameForTask(operation, platform, configuration, false)}' instead." :
-                "Run 'gw -a ...' to build for this project only."
-            )
+            "first building all dependent projects. Run 'gw -a ...' to build for this project only."
         configureTask(
             project, title, getBuildToolPath, solutionFile, targetSwitch,
             configSwitch, outputFile, warningRegexes, errorRegexes
@@ -147,7 +136,7 @@ class DevEnvTask extends DefaultTask {
     }
     
     private void doConfigureCleanTask(
-        Project project, Closure getBuildToolPath, File solutionFile, boolean useIncredibuild,
+        Project project, Closure getBuildToolPath, File solutionFile,
         String platform, String configuration, Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
         String targetSwitch = "/Clean"
@@ -156,31 +145,19 @@ class DevEnvTask extends DefaultTask {
         GString title = "${project.name} (${platform} ${configuration})"
         
         description = "Cleans the solution '${solutionFile.name}' with DevEnv in $configuration mode, " +
-            "first building all dependent projects. " +
-            (independently ?
-                "Deprecated; use 'gw -a ${getNameForTask(operation, platform, configuration, false)}' instead." :
-                "Run 'gw -a ...' to build for this project only."
-            )
+            "first building all dependent projects. Run 'gw -a ...' to build for this project only."
         configureTask(
             project, title, getBuildToolPath, solutionFile, targetSwitch,
             configSwitch, outputFile, warningRegexes, errorRegexes
         )
     }
-
+    
     private void configureTask(
         Project project, String title, Closure getBuildToolPath, File solutionFile,
         String targetSwitch, String configSwitch, File outputFile, 
         Collection<String> warningRegexes, Collection<String> errorRegexes
     ) {
         StyledTextOutput styledOutput = this.output
-        if (independently) {
-            def normalTaskName = getNameForTask(operation, platform, configuration, false)
-            doFirst {
-                throw new RuntimeException(
-                    "${name} is deprecated; use 'gw -a ${normalTaskName}' instead"
-                )
-            }
-        }
         doLast {
             ErrorHighlightingOutputStream devEnvOutput = new ErrorHighlightingOutputStream(
                 title, styledOutput, warningRegexes, errorRegexes
@@ -198,8 +175,8 @@ class DevEnvTask extends DefaultTask {
             devEnvOutput.summarise()
             
             // Write the entire output to a file.
-            outputFile.write(devEnvOutput.getFullStreamString())
-            
+            outputFile.write(devEnvOutput.toString())
+
             int exit = result.getExitValue()
             if (exit != 0) {
                 throw new RuntimeException("${buildToolPath.name} exited with code $exit.")

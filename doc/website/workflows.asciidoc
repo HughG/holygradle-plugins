@@ -682,13 +682,13 @@ It's also a good idea to check that the +ivy.xml+ file looks correct.  You can g
 file by running this command.
 
 ----
-gw generateIvyModuleDescriptor
+gw generateDescriptorFileForIvyPublication
 ----
 
 or
 
 ----
-gw gIMD
+gw gDFFIP
 ----
 
 You can find the +ivy.xml+ file in the +build/publications/ivy+ sub-directory of your project's
@@ -762,8 +762,8 @@ version, but the Holy Gradle will not unpack it, because it wll have recorded th
 same-named ZIP files have already been unpacked into the relevant unpack cache folder.
 ====
 
-The +publish+ task depends on the +packageEverything+ and +generateIvyModuleDescriptor+ tasks, so
-normally you only need to run this one command after your solution is built.
+The +publish+ task depends on the +packageEverything+ and +generateDescriptorFileForIvyPublication+
+tasks, so normally you only need to run this one command after your solution is built.
 
 ===== Republishing
 

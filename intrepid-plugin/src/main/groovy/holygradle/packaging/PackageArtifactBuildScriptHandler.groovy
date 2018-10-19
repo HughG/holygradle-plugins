@@ -6,6 +6,7 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.io.FileHelper
 import holygradle.links.LinkHandler
 import holygradle.publishing.RepublishHandler
+import holygradle.scm.DummySourceControl
 import holygradle.scm.SourceControlRepository
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Project
@@ -178,7 +179,7 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
             }
         }
         // We may have more than one handler for each name, but we know they all point to the same path, so any will do.
-        allSourceDeps.collectEntries { name, handlers -> [name, handlers[0]] }
+        allSourceDeps.collectEntries([:]) { name, handlers -> [name, handlers[0]] }
     }
 
     private static Map<String, PackedDependencyHandler> collectPackedDependencies(
@@ -275,8 +276,8 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
                 // extension from the sourceDep.project, because that project itself may not have the intrepid plugin
                 // applied, in which case it won't have that extension.  We need to create the SourceControlRepository
                 // object, instead of just using the SourceDependencyHandler, to create the actual revision.
-                SourceControlRepository repo = SourceControlRepositories.create(project.rootProject, sourceDep.absolutePath)
-                if (repo != null) {
+                SourceControlRepository repo = SourceControlRepositories.create(sourceDep)
+                if (!(repo instanceof DummySourceControl)) {
                     buildScript.append(" "*4)
                     buildScript.append("\"")
                     buildScript.append(sourceDep.getFullTargetPathRelativeToRootProject()) 
@@ -398,14 +399,16 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
                 buildScript.append('    nextVersionNumber "')
                 buildScript.append(project.version)
                 buildScript.append('"\n')
-                buildScript.append('    repositories.ivy {\n')
-                buildScript.append('        credentials {\n')
-                buildScript.append('            username my.username("')
+                buildScript.append('    repositories {\n')
+                buildScript.append('        ivy {\n')
+                buildScript.append('            credentials {\n')
+                buildScript.append('                username my.username("')
                 buildScript.append(publishCredentials)
                 buildScript.append('")\n')
-                buildScript.append('            password my.password("')
+                buildScript.append('                password my.password("')
                 buildScript.append(publishCredentials)
                 buildScript.append('")\n')
+                buildScript.append('            }\n')
                 buildScript.append('        }\n')
                 buildScript.append('        url "')
                 buildScript.append(publishUrl)

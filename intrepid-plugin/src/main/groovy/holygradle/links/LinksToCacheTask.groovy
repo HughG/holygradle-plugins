@@ -77,8 +77,8 @@ class LinksToCacheTask extends DefaultTask {
     public void addUnpackModuleVersion(UnpackModuleVersion version) {
         if (version.shouldCreateLinkToCache()) {
             logger.debug "LinksToCacheTask#addUnpackModuleVersion: adding ${version}"
-            final File linkDir = version.getTargetPathInWorkspace(project)
-            final File targetDir = version.getLinkDir(project)
+            final File linkDir = version.getTargetPathInWorkspace()
+            final File targetDir = version.getLinkDir()
             links[linkDir] = targetDir
         } else {
             logger.debug "LinksToCacheTask#addUnpackModuleVersion: skipping ${version}"
