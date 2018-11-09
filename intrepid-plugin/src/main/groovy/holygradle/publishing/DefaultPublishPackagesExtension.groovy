@@ -159,11 +159,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         project.tasks.withType(GenerateIvyDescriptor).all { GenerateIvyDescriptor descriptorTask ->
             generateIvyModuleDescriptorTask.dependsOn descriptorTask
             descriptorTask.dependsOn beforeGenerateDescriptorTask
-            println("4 configureGenerateDescriptorTasks")
 
             descriptorTask.doFirst {
                 // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
-                println("4.1 descriptorTask.doFirst")
                 descriptorTask.descriptor.status = project.status
                 putConfigurationsInOriginalOrder(descriptorTask.descriptor)
                 freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
@@ -184,7 +182,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
             }
 
             descriptorTask.doLast {
-                println("4.1 descriptorTask.doLast")
                 fixArrowsInXml(descriptorTask)
             }
         }
@@ -312,7 +309,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         final LinkedHashSet<String> localOriginalConfigurationOrder = originalConfigurationOrder // capture private for closure
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        println("1 putConfigurationsInOriginalOrder")
         descriptor.withXml { xml ->
             xml.asNode().configurations.each { Node confsNode ->
                 LinkedHashMap<String, Node> confNodes = new LinkedHashMap()
@@ -376,7 +372,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
 
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
-        println("2 collapseMultipleConfigurationDependencies")
         descriptor.withXml { xml ->
             Map<String, List<String>> configsByCoord = new LinkedHashMap().withDefault { new ArrayList() }
             xml.asNode().dependencies.each { depsNode ->
@@ -385,7 +380,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     configsByCoord[coord] << ((String)depNode.@conf)
                 }
                 int depsCount = depsNode.children.size()
-                println("2.1 depsCount before clear: " + depsCount)
                 depsNode.children().clear()
                 configsByCoord.each { String coord, List<String> configs ->
                     List<String> c = coord.split(":")
@@ -400,7 +394,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     ])
                 }
                 depsCount = depsNode.children.size()
-                println("2.2 depsCount after repopulate: " + depsCount)
             }
         }
     }
@@ -424,11 +417,9 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     }
 
     public void addConfigurationDependenciesToDefaultPublication(GenerateIvyDescriptor descriptorTask) {
-        println("3 addConfigurationDependenciesToDefaultPublication")
         descriptorTask.descriptor.withXml { xml ->
             Node depsNode = xml.asNode().dependencies.find() as Node
             int depsCount = depsNode.children.size()
-            println("3.1 depsCount before add: " + depsCount)
             descriptorTask.project.configurations.each((Closure) { Configuration conf ->
                 conf.dependencies.withType(ModuleDependency).each { ModuleDependency dep ->
                     depsNode.appendNode("dependency", [
@@ -440,7 +431,6 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                 }
             })
             depsCount = depsNode.children.size()
-            println("3.2 depsCount after add: " + depsCount)
         }
     }
 
