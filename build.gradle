@@ -1,5 +1,7 @@
 apply plugin: 'groovy'
 
+// Test comment
+
 // Force-add a Mercurial client-side hook to avoid committing anything with "banned" words.
 project.ext.HGRC = new File(project.rootDir, '.hg/hgrc')
 def ensureHgHook(String hookName, String hookComment, String hookText) {
