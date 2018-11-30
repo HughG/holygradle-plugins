@@ -321,6 +321,10 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     }
                 }
                 confNodes.values().each { Node confNode ->
+                    def nodeDescription = project.configurations[confNode.attribute("name").toString()].description
+                    if (nodeDescription) {
+                        confNode.@description = nodeDescription
+                    }
                     confsNode.append(confNode)
                 }
             }

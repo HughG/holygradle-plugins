@@ -4,8 +4,8 @@ buildscript {
 gplugins.apply()
 
 configurations {
-    compile
-    runtime
+    compile { description = "Compile-time stuff" }
+    runtime { description = "Runtime stuff" }
 }
 
 group = "happydays"
