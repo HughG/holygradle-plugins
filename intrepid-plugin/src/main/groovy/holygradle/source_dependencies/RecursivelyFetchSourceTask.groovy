@@ -64,22 +64,11 @@ class RecursivelyFetchSourceTask extends DefaultTask {
                 newSourceDependenciesWereFetched
             )
         if (needToReRun) {
-            if (runningUnderDaemon) {
-                // The daemon is being used so we can't terminate the process cleanly and force a re-run.
-                throw new RuntimeException(
-                    NEW_SUBPROJECTS_MESSAGE + " Please re-run this task to fetch transitive dependencies."
-                )
-            } else {
-                // We're not using the daemon, so we can exit the process and return a special exit code
-                // which will cause the process to be rerun by the gradle wrapper.
-                println "-"*80
-                println NEW_SUBPROJECTS_MESSAGE
-                println "Rerunning this task..."
-                println "-"*80
-                //System.exit(123456)
-		def newFile = new File(project.projectDir + "/.restartDepRes")
-                newFile.createNewFile()
-            }
+            File newFile = new File(project.rootDir, "/.restart")
+            newFile.createNewFile()
+            throw new RuntimeException(
+                    NEW_SUBPROJECTS_MESSAGE + " Now re-running this build due to new source dependencies."
+            )
         }
     }
 
@@ -123,8 +112,4 @@ class RecursivelyFetchSourceTask extends DefaultTask {
         }
     }
 
-    public boolean isRunningUnderDaemon() {
-        String command = System.getProperty("sun.java.command").split(" ")[0]
-        return command.contains("daemon")
-    }
 }
