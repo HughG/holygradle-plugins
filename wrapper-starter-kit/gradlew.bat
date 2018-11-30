@@ -194,7 +194,7 @@ set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
 :end
 @rem End local scope for the variables with windows NT shell
-if exists .restart (
+if exist .restart (
     del .restart
     goto executeGradle
 )
