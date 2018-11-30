@@ -6,7 +6,8 @@ public class BuildHelper {
     public static boolean buildFailedDueToVersionConflict(BuildResult result) {
         Throwable e = result.failure
         while (e != null) {
-            if (e.message.startsWith("A conflict was found between the following modules:")) {
+            final String message = e.message
+            if (message != null && message.startsWith("A conflict was found between the following modules:")) {
                 return true
             }
             e = e.cause

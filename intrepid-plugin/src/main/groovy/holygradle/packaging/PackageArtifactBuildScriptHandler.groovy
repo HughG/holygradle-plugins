@@ -6,6 +6,7 @@ import holygradle.dependencies.PackedDependencyHandler
 import holygradle.io.FileHelper
 import holygradle.links.LinkHandler
 import holygradle.publishing.RepublishHandler
+import holygradle.scm.DummySourceControl
 import holygradle.scm.SourceControlRepository
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Project
@@ -276,7 +277,7 @@ class PackageArtifactBuildScriptHandler implements PackageArtifactTextFileHandle
                 // applied, in which case it won't have that extension.  We need to create the SourceControlRepository
                 // object, instead of just using the SourceDependencyHandler, to create the actual revision.
                 SourceControlRepository repo = SourceControlRepositories.create(sourceDep)
-                if (repo != null) {
+                if (!(repo instanceof DummySourceControl)) {
                     buildScript.append(" "*4)
                     buildScript.append("\"")
                     buildScript.append(sourceDep.getFullTargetPathRelativeToRootProject()) 
