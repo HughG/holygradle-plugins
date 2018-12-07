@@ -156,7 +156,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         Task generateIvyModuleDescriptorTask,
         Project project
     ) {
-        project.tasks.withType(GenerateIvyDescriptor).whenTaskAdded { GenerateIvyDescriptor descriptorTask ->
+        project.tasks.withType(GenerateIvyDescriptor).all { GenerateIvyDescriptor descriptorTask ->
             generateIvyModuleDescriptorTask.dependsOn descriptorTask
             descriptorTask.dependsOn beforeGenerateDescriptorTask
 
@@ -321,6 +321,10 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     }
                 }
                 confNodes.values().each { Node confNode ->
+                    def nodeDescription = project.configurations[confNode.attribute("name").toString()].description
+                    if (nodeDescription) {
+                        confNode.@description = nodeDescription
+                    }
                     confsNode.append(confNode)
                 }
             }
@@ -379,6 +383,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     String coord = "${depNode.@org}:${depNode.@name}:${depNode.@rev}"
                     configsByCoord[coord] << ((String)depNode.@conf)
                 }
+                int depsCount = depsNode.children.size()
                 depsNode.children().clear()
                 configsByCoord.each { String coord, List<String> configs ->
                     List<String> c = coord.split(":")
@@ -392,6 +397,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                         "conf": sortedConfigs.join(";")
                     ])
                 }
+                depsCount = depsNode.children.size()
             }
         }
     }
@@ -417,6 +423,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
     public void addConfigurationDependenciesToDefaultPublication(GenerateIvyDescriptor descriptorTask) {
         descriptorTask.descriptor.withXml { xml ->
             Node depsNode = xml.asNode().dependencies.find() as Node
+            int depsCount = depsNode.children.size()
             descriptorTask.project.configurations.each((Closure) { Configuration conf ->
                 conf.dependencies.withType(ModuleDependency).each { ModuleDependency dep ->
                     depsNode.appendNode("dependency", [
@@ -427,6 +434,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
                     ])
                 }
             })
+            depsCount = depsNode.children.size()
         }
     }
 
