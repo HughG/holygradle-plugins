@@ -5,7 +5,7 @@ import org.gradle.api.Project
 import holygradle.kotlin.dsl.getByName
 import holygradle.kotlin.dsl.getValue
 
-internal class TestFlavourHandler(
+internal open class TestFlavourHandler(
         val name: String
 ) {
     companion object {

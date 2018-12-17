@@ -5,7 +5,7 @@ import org.gradle.api.Project
 /**
  * Extension to hold project-wide settings which affect how dependencies are handled.
  */
-class DependenciesSettingsHandler(private val project: Project) {
+open class DependenciesSettingsHandler(private val project: Project) {
     companion object {
         private const val DEPENDENCIES_SETTINGS_HANDLER_NAME = "dependenciesSettings"
         private const val DEFAULT_FAIL_ON_VERSION_CONFLICT_DEFAULT = true

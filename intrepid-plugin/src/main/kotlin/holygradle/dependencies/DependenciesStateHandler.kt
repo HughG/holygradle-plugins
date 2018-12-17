@@ -18,7 +18,7 @@ import javax.xml.parsers.DocumentBuilderFactory
  *
  * Specifically, it provides access to the metadata (Ivy XML and Maven POM) files for the dependencies.
  */
-class DependenciesStateHandler
+open class DependenciesStateHandler
     /**
      * Creates an instance of {@link DependenciesStateHandler} for the given project.
      *

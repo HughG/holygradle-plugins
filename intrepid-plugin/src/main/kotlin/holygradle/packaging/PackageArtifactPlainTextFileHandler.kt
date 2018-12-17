@@ -2,7 +2,7 @@ package holygradle.packaging
 
 import java.io.File
 
-class PackageArtifactPlainTextFileHandler(override val name: String) : PackageArtifactTextFileHandler {
+open class PackageArtifactPlainTextFileHandler(override val name: String) : PackageArtifactTextFileHandler {
     private val lines = mutableListOf<String>()
 
     fun add(text: String) {

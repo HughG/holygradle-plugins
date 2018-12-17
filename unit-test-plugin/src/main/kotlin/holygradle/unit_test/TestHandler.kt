@@ -18,7 +18,7 @@ import java.io.FileOutputStream
 import java.io.OutputStream
 import java.util.*
 
-internal class TestHandler(
+internal open class TestHandler(
         val project: Project,
         val name: String
 ) {

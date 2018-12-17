@@ -3,7 +3,7 @@ package holygradle.packaging
 import holygradle.SettingsFileHelper
 import java.io.File
 
-class PackageArtifactSettingsFileHandler(override val name: String) : PackageArtifactTextFileHandler {
+open class PackageArtifactSettingsFileHandler(override val name: String) : PackageArtifactTextFileHandler {
     private val includeModules = mutableListOf<String>()
 
     fun include(vararg modules: String) {

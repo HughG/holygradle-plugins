@@ -8,7 +8,7 @@ import holygradle.kotlin.dsl.getValue
 /**
  * This project extension provides information about the state of source dependencies.
  */
-class SourceDependenciesStateHandler(private val project: Project) {
+open class SourceDependenciesStateHandler(private val project: Project) {
     companion object {
         @JvmStatic
         fun createExtension(project: Project): SourceDependenciesStateHandler {

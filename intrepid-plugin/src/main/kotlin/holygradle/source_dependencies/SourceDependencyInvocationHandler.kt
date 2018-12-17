@@ -8,7 +8,7 @@ import java.util.*
  * way in which its exit code should be handled, which defaults to
  * {@link SourceDependencyInvocationHandler.ExitCodeBehaviour#FAIL_IMMEDIATELY}.
  */
-class SourceDependencyInvocationHandler(vararg cmdLine: String) {
+open class SourceDependencyInvocationHandler(vararg cmdLine: String) {
     /**
      * Enumeration of ways to handle the exit codes of processes run by a {@link SourceDependencyTask} due to calls to
      * {@link SourceDependencyTaskHandler#invoke(java.lang.String[])}.

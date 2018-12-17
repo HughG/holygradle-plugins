@@ -64,11 +64,11 @@ open class PackedDependencyHandler @JvmOverloads constructor (
         if (dependencyId != null) {
             throw RuntimeException("Cannot set dependency more than once")
         }
-        val match = dependencyCoordinate.split(":")
-        if (match.size != 3) {
+        val parts = dependencyCoordinate.split(":")
+        if (parts.size != 3) {
             throw RuntimeException("Incorrect dependency coordinate format: '$dependencyCoordinate'")
         } else {
-            dependencyId = DefaultModuleVersionIdentifier(match[1], match[2], match[3])
+            dependencyId = DefaultModuleVersionIdentifier(parts[0], parts[1], parts[2])
         }
     }
         

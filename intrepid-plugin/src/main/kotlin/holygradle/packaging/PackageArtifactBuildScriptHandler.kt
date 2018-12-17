@@ -16,7 +16,7 @@ import java.io.File
 import java.util.*
 import kotlin.reflect.KClass
 
-class PackageArtifactBuildScriptHandler(private val project: Project) : PackageArtifactTextFileHandler {
+open class PackageArtifactBuildScriptHandler(private val project: Project) : PackageArtifactTextFileHandler {
     companion object {
         private fun <T : DependencyHandler> findDependenciesRecursive(
                 project: Project,

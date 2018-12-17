@@ -5,7 +5,7 @@ import org.gradle.api.logging.Logger
 import java.io.File
 import java.io.IOException
 
-class RepositoryHandler(
+open class RepositoryHandler(
         private val logger: Logger,
         private val repository: String,
         private val artifactoryManager: ArtifactoryManagerHandler,

@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="holy-gradle-plugins:intrepid-plugin [integTest --continue -S -PnoTest]" type="GradleRunConfiguration" factoryName="Gradle">
+    <ExternalSystemSettings>
+      <option name="executionName" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/intrepid-plugin" />
+      <option name="externalSystemIdString" value="GRADLE" />
+      <option name="scriptParameters" value="--continue -S -PnoTest" />
+      <option name="taskDescriptions">
+        <list />
+      </option>
+      <option name="taskNames">
+        <list>
+          <option value="integTest" />
+        </list>
+      </option>
+      <option name="vmOptions" value="" />
+    </ExternalSystemSettings>
+    <method />
+  </configuration>
+</component>

@@ -4,6 +4,7 @@ import holygradle.Helper
 import holygradle.dependencies.PackedDependencyHandler
 import org.gradle.api.*
 import holygradle.SettingsFileHelper
+import holygradle.dependencies.PackedDependencyOptions
 import holygradle.unpacking.PackedDependenciesStateHandler
 import holygradle.util.mutableUnique
 import org.gradle.api.tasks.TaskAction
@@ -112,7 +113,7 @@ open class RecursivelyFetchSourceTask : DefaultTask() {
 
     private val shouldGenerateSettingsFileForPackedDependencies: Boolean
         get() {
-            val packedDependenciesDefault: PackedDependencyHandler by project.extensions
+            val packedDependenciesDefault: PackedDependencyOptions by project.extensions
             return project == project.rootProject && packedDependenciesDefault.shouldCreateSettingsFile
         }
 

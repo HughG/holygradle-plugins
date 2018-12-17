@@ -7,7 +7,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
 
-class PrerequisitesExtension(private val project: Project) {
+open class PrerequisitesExtension(private val project: Project) {
     private val checkers: MutableMap<String, PrerequisitesCheckerFactory> = linkedMapOf()
     private val statedPrerequisites: MutableList<StatedPrerequisite> = mutableListOf()
     internal var checkingAllPrerequisites: Boolean = false
@@ -30,8 +30,8 @@ class PrerequisitesExtension(private val project: Project) {
                 extension.register("Java", Action { checker: PrerequisitesChecker ->
                     val minVersion = checker.getParametersAs<String>().first()
                     val javaVersion = System.getProperty("java.version")!!
-                    val javaVerComponents = javaVersion.split("\\.")
-                    val minVerComponents = minVersion.split("\\.")
+                    val javaVerComponents = javaVersion.split(".")
+                    val minVerComponents = minVersion.split(".")
                     minVerComponents.forEachIndexed { index, item ->
                         val minVerInt = item.toInt()
                         val curVerInt = javaVerComponents[index].toInt()

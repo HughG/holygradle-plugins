@@ -19,7 +19,7 @@ class BuildScriptDependency(
 ) {
     var unpackTask: Copy? = null
         private set
-    lateinit var path: File
+    var path: File? = null
         private set
     val unpackTaskName: String = CamelCase.build(listOf("extract", dependencyName))
 
@@ -53,7 +53,7 @@ class BuildScriptDependency(
                     // to execute 'copy' at the same time, and b) just because the directory exists doesn't necessarily
                     // mean it's got the right stuff in it (but running 'copy' would fix it up).
                     // Anyway, just this simple check is good enough for now.
-                    !path.exists()
+                    !unpackCacheLocation.exists()
                 }
                 task.description = "Unpack build dependency '${dependencyName}'"
             }

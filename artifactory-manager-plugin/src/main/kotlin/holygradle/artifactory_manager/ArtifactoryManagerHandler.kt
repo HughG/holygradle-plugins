@@ -8,7 +8,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-class ArtifactoryManagerHandler(
+open class ArtifactoryManagerHandler(
         private val project: Project
 ) {
     companion object {

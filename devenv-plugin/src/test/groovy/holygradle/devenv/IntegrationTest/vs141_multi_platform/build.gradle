@@ -5,6 +5,6 @@ gplugins.apply()
 
 DevEnv {
     solutionFile "build/foo.sln"
-    version "VS120"
+    version "VS141"
     platform "x64", "Win32"
 }

@@ -23,10 +23,12 @@ class SevenZipHelper
  */
 constructor(private val project: Project)
 : Unzipper {
-    private val buildScriptDependencies: BuildScriptDependencies by project.extensions.extraProperties
+    private val buildScriptDependencies: BuildScriptDependencies by project.extensions
 
-    private val sevenZipUnpackTask: Copy = buildScriptDependencies.getUnpackTask("sevenZip")
-            ?: throw IllegalArgumentException("Project does not have a BuildScriptDependency for 'sevenZip'.")
+    private val sevenZipUnpackTask: Copy by lazy {
+        buildScriptDependencies.getUnpackTask("sevenZip")
+                ?: throw IllegalArgumentException("Project does not have a BuildScriptDependency for 'sevenZip'.")
+    }
 
     /**
      * Returns true if and only if 7Zip can be used, which depends on the executable having been downloaded and unpacked.

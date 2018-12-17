@@ -2,7 +2,7 @@ package holygradle.publishing
 
 import org.gradle.api.Project
 
-class RepublishHandler {
+open class RepublishHandler {
     companion object {
         @JvmStatic
         fun createExtension(project: Project): RepublishHandler = project.extensions.create("republish", RepublishHandler::class.java)

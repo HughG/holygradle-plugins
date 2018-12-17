@@ -19,7 +19,7 @@ import holygradle.kotlin.dsl.extra
 import holygradle.kotlin.dsl.task
 import java.io.File
 
-class PackageArtifactHandler(val project: Project, val name: String) : PackageArtifactDSL {
+open class PackageArtifactHandler(val project: Project, val name: String) : PackageArtifactDSL {
     override var configuration: String = name
     private val rootPackageDescriptor = PackageArtifactDescriptor(project, ".")
     private val lazyConfigurations = mutableListOf<Action<PackageArtifactDescriptor>>()

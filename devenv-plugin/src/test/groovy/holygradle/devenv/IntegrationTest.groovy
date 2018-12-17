@@ -9,8 +9,8 @@ import static org.junit.Assert.assertTrue
 
 class IntegrationTest extends AbstractHolyGradleIntegrationTest {
     @Test
-    public void testVs120MultiPlatform() {
-        File projectDir = new File(getTestDir(), "vs120_multi_platform")
+    public void testVs141MultiPlatform() {
+        File projectDir = new File(getTestDir(), "vs141_multi_platform")
         File libDir = new File(projectDir, "build/lib")
         FileHelper.ensureDeleteDirRecursive(libDir)
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->

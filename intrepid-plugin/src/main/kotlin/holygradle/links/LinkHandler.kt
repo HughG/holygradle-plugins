@@ -3,7 +3,7 @@ package holygradle.links
 import org.gradle.api.Action
 import org.gradle.api.Project
 
-class LinkHandler(val fromLocation: String = ".") {
+open class LinkHandler(val fromLocation: String = ".") {
     companion object {
         @JvmStatic
         fun createExtension(project: Project): LinkHandler {
@@ -100,7 +100,7 @@ class LinkHandler(val fromLocation: String = ".") {
     }
 
     private fun getLinkPath(toLocation: String): String {
-        val last = toLocation.split("/")[-1]
+        val last = toLocation.split("/").last()
         return if (fromLocation == ".") {
             last
         } else {

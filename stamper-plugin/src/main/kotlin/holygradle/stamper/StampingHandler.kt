@@ -6,7 +6,7 @@ import org.gradle.api.Project
 import org.gradle.util.ConfigureUtil
 import java.io.File
 
-class StampingHandler(private val project: Project) : StampingProvider {
+open class StampingHandler(private val project: Project) : StampingProvider {
     private val _fileReplacers: MutableCollection<FileReplacer> = mutableListOf()
     val fileReplacers: Collection<FileReplacer> get() = _fileReplacers
     private val _patternReplacers: MutableCollection<PatternReplacer> = mutableListOf()

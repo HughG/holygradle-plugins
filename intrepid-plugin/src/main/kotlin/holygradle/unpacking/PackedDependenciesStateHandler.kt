@@ -44,7 +44,7 @@ import java.io.File
  *
  * The purpose of this class is to build the latter structure from the former.
  */
-class PackedDependenciesStateHandler(
+open class PackedDependenciesStateHandler(
         private val project: Project
 ) : PackedDependenciesStateSource {
     companion object {

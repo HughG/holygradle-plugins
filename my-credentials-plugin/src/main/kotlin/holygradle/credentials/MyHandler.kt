@@ -6,7 +6,7 @@ import org.gradle.api.Project
 import holygradle.kotlin.dsl.getValue
 import java.io.ByteArrayOutputStream
 
-class MyHandler(private val project: Project, private val credentialStorePath: String) : CredentialSource {
+open class MyHandler(private val project: Project, private val credentialStorePath: String) : CredentialSource {
     companion object {
         @JvmStatic
         fun defineExtension(project: Project, credentialStorePath: String): MyHandler {

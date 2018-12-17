@@ -8,7 +8,7 @@ import java.util.regex.Pattern
 /**
  * Copyright (c) 2016 Hugh Greene (githugh@tameter.org).
  */
-class DevEnvHandler(
+open class DevEnvHandler(
         val project: Project,
         val parentHandler: DevEnvHandler?
 ) {
@@ -132,16 +132,16 @@ class DevEnvHandler(
         }
     }
 
-    fun defineBuildTask(project: Project, platform: String, configuation: String): DevEnvTask {
-        val taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.BUILD, platform, configuation)
+    fun defineBuildTask(project: Project, platform: String, configuration: String): DevEnvTask {
+        val taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.BUILD, platform, configuration)
         return project.task<DevEnvTask>(taskName) {
             init(DevEnvTask.Operation.BUILD, configuration)
             description = "Builds all dependent projects in $configuration mode."
         }
     }
 
-    fun defineCleanTask(project: Project, platform: String, configuation: String): DevEnvTask {
-        val taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.CLEAN, platform, configuation)
+    fun defineCleanTask(project: Project, platform: String, configuration: String): DevEnvTask {
+        val taskName = DevEnvTask.getNameForTask(DevEnvTask.Operation.CLEAN, platform, configuration)
         return project.task<DevEnvTask>(taskName) {
             init(DevEnvTask.Operation.CLEAN, configuration)
             description = "Cleans all dependent projects in $configuration mode."

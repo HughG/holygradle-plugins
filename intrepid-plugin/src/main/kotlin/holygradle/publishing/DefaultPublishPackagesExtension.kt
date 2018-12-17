@@ -22,7 +22,7 @@ import holygradle.kotlin.dsl.getValue
 import holygradle.kotlin.dsl.task
 import holygradle.util.addingDefault
 
-class DefaultPublishPackagesExtension(
+open class DefaultPublishPackagesExtension(
         private val project: Project,
         packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler>,
         packedDependencies: Collection<PackedDependencyHandler>
@@ -39,13 +39,13 @@ class DefaultPublishPackagesExtension(
 
         @JvmStatic
         fun getOrCreateExtension(project: Project): PublishPackagesExtension {
-            val packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler> by project.extensions
+            val packageArtifacts: NamedDomainObjectContainer<PackageArtifactHandler> by project.extensions
             val packedDependencies: NamedDomainObjectContainer<PackedDependencyHandler> by project.extensions
             return project.extensions.create(
                     "publishPackages",
                     DefaultPublishPackagesExtension::class.java,
                     project,
-                    packageArtifactHandlers,
+                    packageArtifacts,
                     packedDependencies
             )
         }
@@ -62,9 +62,14 @@ class DefaultPublishPackagesExtension(
         val configurations = project.configurations
         setupRecordingOfOriginalConfigurationOrder(configurations)
 
-        val beforeGenerateDescriptorTask = project.task("beforeGenerateDescriptor") {
-            group = "Publishing"
-            description = "Actions to run before any Ivy descriptor generation tasks"
+        val beforeGenerateDescriptorTask = try {
+            project.task("beforeGenerateDescriptor") {
+                group = "Publishing"
+                description = "Actions to run before any Ivy descriptor generation tasks"
+            }
+        } catch (e: InvalidUserDataException) {
+            println(e.toString())
+            throw e
         }
         val generateIvyModuleDescriptorTask = project.task("generateIvyModuleDescriptor") {
             group = "Publishing"

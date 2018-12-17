@@ -17,7 +17,7 @@ import holygradle.kotlin.dsl.project
 import holygradle.kotlin.dsl.task
 import java.io.File
 
-class SourceDependencyHandler(
+open class SourceDependencyHandler(
         depName: String,
         project: Project
 ) : DependencyHandler(depName, project) {
