@@ -1,6 +1,5 @@
 package holygradle
 
-import holygradle.custom_gradle.PrerequisitesChecker
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.kotlin.dsl.getValue
 import holygradle.source_dependencies.SourceDependencyHandler
@@ -9,10 +8,8 @@ import org.gradle.api.NamedDomainObjectCollection
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import org.gradle.testfixtures.ProjectBuilder
 import java.io.File
-
 import java.nio.file.Paths
 import java.util.*
 
@@ -107,63 +104,6 @@ class Helper {
                                 "then you can simply specify comma-separated configuration names without any '->' in between e.g. 'aa,bb'. " +
                                 "This will produce one configuration mapping per entry i.e. 'aa->aa' and 'bb->bb'."
                         )
-            }
-        }
-
-        fun setReadOnlyRecursively(root: File) {
-            for (file in root.walk()) {
-                if (file.isFile) {
-                    file.setReadOnly()
-                }
-            }
-        }
-
-        private fun String.containsDefaultAuth(): Boolean {
-            return (contains("[auth]")
-                    && contains("default.schemes")
-                    && contains("default.prefix")
-                    && contains("default.username"))
-        }
-
-        fun checkHgAuth(checker: PrerequisitesChecker) {
-            val mercurialIniFile = File(System.getenv("USERPROFILE"), "mercurial.ini")
-            if (mercurialIniFile.exists()) {
-                val iniText = mercurialIniFile.readText()
-                val ok = (iniText.containsDefaultAuth())
-                if (!ok) {
-                    checker.fail("""Your mercurial.ini file (in ${mercurialIniFile.parent}) is not properly
-configured with an [auth] section. This is necessary for storage of
-credentials using the 'mercurial_keyring' extension. The following properties
-must exist in the ini file:
-
-[auth]
-default.schemes = https
-default.prefix = *
-default.username = YOUR_USERNAME
-
-Run the task 'fixMercurialIni' to have this applied automatically.""")
-                }
-            } else {
-                checker.fail("""No mercurial.ini file could be found in ${mercurialIniFile.parent}.
-Please run the task 'fixMercurialIni'.""")
-            }
-        }
-
-        fun fixMercurialIni() {
-            // Create a default mercurial.ini file.
-            val mercurialIniFile = File(System.getenv("USERPROFILE"), "mercurial.ini")
-            var iniText = ""
-            if (mercurialIniFile.exists()) {
-                iniText = mercurialIniFile.readText()
-            }
-
-            if (!iniText.containsDefaultAuth()) {
-                iniText += "[auth]\r\n" +
-                        "default.schemes = https\r\n" +
-                        "default.prefix = *\r\n" +
-                        "default.username = " + System.getProperty("user.name").toLowerCase() + "\r\n"
-                mercurialIniFile.writeText(iniText)
-                println("Your mercurial.ini (in ${mercurialIniFile.parent}) has been modified.")
             }
         }
     }

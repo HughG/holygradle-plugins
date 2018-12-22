@@ -1,11 +1,8 @@
 package holygradle.io
 
-import groovy.io.FileVisitResult
 import holygradle.custom_gradle.util.RetryHelper
-import org.gradle.internal.impldep.bsh.commands.dir
 import java.io.File
 import java.io.IOException
-
 import java.nio.file.Files
 
 /**
@@ -30,8 +27,8 @@ object FileHelper {
         } catch (e: IOException) {
             throw IOException("Failed to delete ${file}${formatPurpose(purpose)}", e)
         }
+        ensureDeleted(file, purpose)
     }
-
 
     @JvmStatic
     @JvmOverloads
@@ -63,6 +60,18 @@ object FileHelper {
         } catch (e: IOException) {
             throw IOException("Failed to delete ${dir}${formatPurpose(purpose)}", e)
         }
+        ensureDeleted(dir, purpose)
+    }
+
+    /**
+     * Try to wait until the file is really deleted, because sometimes there's an asynchronous delay.
+     */
+    private fun ensureDeleted(file: File, purpose: String? = null) {
+        RetryHelper.retry(10, 1000, null, "delete ${file}${formatPurpose(purpose)}") {
+            if (file.exists()) {
+                throw IOException("Failed to delete ${file}${formatPurpose(purpose)}")
+           }
+       }
     }
 
     @JvmStatic
@@ -81,6 +90,15 @@ object FileHelper {
             Files.createDirectories(dir.toPath())
         } catch (e: IOException) {
             throw IOException("Failed to make ${dir}${formatPurpose(purpose)}", e)
+        }
+    }
+
+    @JvmStatic
+    fun setReadOnlyRecursively(root: File) {
+        for (file in root.walk()) {
+            if (file.isFile) {
+                file.setReadOnly()
+            }
         }
     }
 

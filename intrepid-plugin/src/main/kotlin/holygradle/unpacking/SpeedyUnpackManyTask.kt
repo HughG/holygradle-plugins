@@ -137,7 +137,7 @@ open class SpeedyUnpackManyTask : DefaultTask() {
         }
 
         if (entry.makeReadOnly) {
-            Helper.setReadOnlyRecursively(entry.unpackDir)
+            FileHelper.setReadOnlyRecursively(entry.unpackDir)
         }
     }
 

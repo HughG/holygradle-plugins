@@ -3,6 +3,7 @@ package holygradle.publishing
 import holygradle.apache.ivy.groovy.IvyConfigurationNode
 import holygradle.apache.ivy.groovy.asIvyModule
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.kotlin.dsl.get
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.*
@@ -22,14 +23,15 @@ import holygradle.kotlin.dsl.getValue
 import holygradle.kotlin.dsl.task
 import holygradle.util.addingDefault
 
+private const val EXTENSION_NAME: String = "publishPackages"
+
 open class DefaultPublishPackagesExtension(
         private val project: Project,
-        packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler>,
+        private val packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler>,
         packedDependencies: Collection<PackedDependencyHandler>
 ) : PublishPackagesExtension {
-    fun Project.publishing(configuration: PublishingExtension.(PublishingExtension) -> Unit) {
-        val publishing: PublishingExtension by this.extensions
-        publishing.configuration(publishing)
+    fun Project.publishing(configuration: (PublishingExtension) -> Unit) {
+        extensions.configure(PublishingExtension::class.java, configuration)
     }
 
     companion object {
@@ -42,7 +44,7 @@ open class DefaultPublishPackagesExtension(
             val packageArtifacts: NamedDomainObjectContainer<PackageArtifactHandler> by project.extensions
             val packedDependencies: NamedDomainObjectContainer<PackedDependencyHandler> by project.extensions
             return project.extensions.create(
-                    "publishPackages",
+                    EXTENSION_NAME,
                     DefaultPublishPackagesExtension::class.java,
                     project,
                     packageArtifacts,
@@ -52,7 +54,7 @@ open class DefaultPublishPackagesExtension(
     }
     override var createDefaultPublication = true
     override var publishPrivateConfigurations = true
-    val privateRepublishHandlerDelegate = lazy { RepublishHandler() }
+    private val privateRepublishHandlerDelegate = lazy { RepublishHandler() }
     private val privateRepublishHandler: RepublishHandler by privateRepublishHandlerDelegate
     private val originalConfigurationOrder = linkedSetOf<String>()
 
@@ -125,8 +127,7 @@ open class DefaultPublishPackagesExtension(
         }
     }
 
-    // Public for use from closure.
-    fun createDefaultPublication(
+    private fun createDefaultPublication(
         publishing: PublishingExtension,
         packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler>
     ) {
@@ -167,8 +168,7 @@ open class DefaultPublishPackagesExtension(
         }
     }
 
-    // Public for use from closure.
-    fun configureGenerateDescriptorTasks(
+    private fun configureGenerateDescriptorTasks(
         beforeGenerateDescriptorTask: Task,
         generateIvyModuleDescriptorTask: Task,
         project: Project
@@ -242,7 +242,7 @@ open class DefaultPublishPackagesExtension(
 
     override fun repositories(configure: Action<RepositoryHandler>) {
         project.publishing {
-            repositories {
+            it.repositories {
                 configure.execute(it)
             }
         }
@@ -256,7 +256,8 @@ open class DefaultPublishPackagesExtension(
                     "because createDefaultPublication is false."
                 )
             }
-            configure.execute(it.publications.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication::class.java))
+            createDefaultPublication(it, packageArtifactHandlers)
+            configure.execute(it.publications[DEFAULT_PUBLICATION_NAME])
         }
     }
 
@@ -266,13 +267,14 @@ open class DefaultPublishPackagesExtension(
 
     override val republishHandler: RepublishHandler? get() {
         if (project != project.rootProject && !privateRepublishHandlerDelegate.isInitialized()) {
-            return getOrCreateExtension(project.rootProject).republishHandler
+            val extension = project.rootProject.extensions[EXTENSION_NAME] as PublishPackagesExtension
+            return extension.republishHandler
         }
         return privateRepublishHandler
     }
     
     // Throw an exception if any packed dependencies are marked with noCreateLinkToCache()
-    fun failIfPackedDependenciesNotCreatingLink(packedDependencies: Collection<PackedDependencyHandler>) {
+    private fun failIfPackedDependenciesNotCreatingLink(packedDependencies: Collection<PackedDependencyHandler>) {
         val nonLinkedPackedDependencies =
                 packedDependencies.filter { it.shouldUnpackToCache && !it.shouldCreateLinkToCache }
         if (!nonLinkedPackedDependencies.isEmpty()) {
@@ -288,7 +290,7 @@ open class DefaultPublishPackagesExtension(
 
     // Re-writes the "configurations" element so that its children appear in the same order that the configurations were
     // defined in the project.
-    fun putConfigurationsInOriginalOrder(descriptor: IvyModuleDescriptorSpec) {
+    private fun putConfigurationsInOriginalOrder(descriptor: IvyModuleDescriptorSpec) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
@@ -325,7 +327,7 @@ open class DefaultPublishPackagesExtension(
 
     // Replace the version of any dependencies which were specified with dynamic version numbers, so they have fixed
     // version numbers as resolved for the build which is to be published.
-    fun /*static*/ freezeDynamicDependencyVersions(project: Project, descriptor: IvyModuleDescriptorSpec) {
+    private fun /*static*/ freezeDynamicDependencyVersions(project: Project, descriptor: IvyModuleDescriptorSpec) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
@@ -340,7 +342,7 @@ open class DefaultPublishPackagesExtension(
     // This method goes through the "dependencies" node and converts each set of "dependency" children with the same
     // "org"/"name"/"rev" (but different "conf") attribute values into a single "dependency" node with a list-style
     // configuration mapping in the "conf" attribute ("a1->b1;a2->b2").  This is for human-readability.
-    fun collapseMultipleConfigurationDependencies(descriptor: IvyModuleDescriptorSpec) {
+    private fun collapseMultipleConfigurationDependencies(descriptor: IvyModuleDescriptorSpec) {
         // WARNING: This method loses any sub-nodes of each dependency node.  These can be "conf" (not needed, as we use
         // the "@conf" attribute) and "artifact", "exclude", "include" (only needed to override the target's ivy file,
         // which I don't think we care about for now).
@@ -377,7 +379,7 @@ open class DefaultPublishPackagesExtension(
         }
     }
 
-    fun addConfigurationDependenciesToDefaultPublication(descriptorTask: GenerateIvyDescriptor) {
+    private fun addConfigurationDependenciesToDefaultPublication(descriptorTask: GenerateIvyDescriptor) {
         descriptorTask.descriptor.withXml { xml ->
             val dependencies = xml.asIvyModule().dependencies
             descriptorTask.project.configurations.forEach { conf ->

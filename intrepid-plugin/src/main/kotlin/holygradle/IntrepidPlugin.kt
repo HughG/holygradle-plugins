@@ -223,13 +223,6 @@ class IntrepidPlugin : Plugin<Project> {
             description = "Runs before source dependencies are fetched, to check authorisation setup. " +
                 "Extend it with doLast if needed."
         }
-        project.task<DefaultTask>("fixMercurialIni") {
-            group = "Source Dependencies"
-            description = "Modify/create your mercurial.ini file as required."
-            doLast {
-                Helper.fixMercurialIni()
-            }
-        }
 
         // Lazy configuration is a "secret" internal feature for use by plugins.  If a task adds a ".ext.lazyConfiguration"
         // property containing a single Closure, it will be executed just before that specific task runs.  As long as
@@ -271,13 +264,6 @@ class IntrepidPlugin : Plugin<Project> {
          **************************************/        
         project.gradle.projectsEvaluated {
             profilingHelper.timing("IntrepidPlugin(${project})#projectsEvaluated for tasks for sourceDependency versions") {
-                // Do we have any Hg source dependencies? Need to check for Hg prerequisite, and fetch hg.exe.
-                if (sourceDependencies.filter { it.protocol == "hg" }.isNotEmpty()) {
-                    beforeFetchSourceDependenciesTask.doFirst {
-                        prerequisites.check("HgAuth")
-                    }
-                }
-
                 val buildTasks = Helper.getProjectBuildTasks(project)
 
                 // For each source dependency, create a suitable task and link it into the
