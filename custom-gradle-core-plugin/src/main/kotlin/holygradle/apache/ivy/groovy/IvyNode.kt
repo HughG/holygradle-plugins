@@ -36,9 +36,10 @@ sealed class IvyNode(protected val node: Node) {
         override fun add(index: Int, element: T) = nodes.add(index, element.node)
         override fun removeAt(index: Int): T = makeIvyNode(nodes.removeAt(index) as Node)
         override fun set(index: Int, element: T): T = makeIvyNode(nodes.set(index, element.node) as Node)
+        override fun clear() = parent.children().clear()
 
-        fun appendNode(name: String, attrbiutes: Map<String, String>) =
-                parent.appendNode(name, attrbiutes)
+        fun appendNode(name: String, attributes: Map<String, String>) =
+                parent.appendNode(name, attributes)!!
     }
 
     protected class ChildNodes<T : IvyNode>(
@@ -85,7 +86,7 @@ sealed class IvyNode(protected val node: Node) {
     }
 
     protected fun <T : IvyNode> listChildNode(name: String, makeIvyNode: (Node) -> T) =
-            ListChildNode<T>(name, makeIvyNode)
+            ListChildNode(name, makeIvyNode)
 
     protected class NodeAttribute<T> : ReadWriteProperty<IvyNode, T> {
         override operator fun getValue(thisRef: IvyNode, property: KProperty<*>): T {

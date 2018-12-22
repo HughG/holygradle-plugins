@@ -131,8 +131,11 @@ open class DefaultPublishPackagesExtension(
         publishing: PublishingExtension,
         packageArtifactHandlers: NamedDomainObjectContainer<PackageArtifactHandler>
     ) {
-        publishing.publications { pubs ->
-            val defaultPublication = pubs.maybeCreate(DEFAULT_PUBLICATION_NAME, IvyPublication::class.java) as IvyPublication
+        publishing.publications PUBS@{ pubs ->
+            if (pubs.findByName(DEFAULT_PUBLICATION_NAME) != null) {
+                return@PUBS
+            }
+            val defaultPublication = pubs.create(DEFAULT_PUBLICATION_NAME, IvyPublication::class.java) as IvyPublication
             val configureAction: Action<IvyPublication> = Action { pub ->
                 // NOTE: We use .each instead of .all here because we have to fix the state of the publication within
                 // this closure.  If some other callback adds more configurations or packaged artifacts on the fly
