@@ -21,6 +21,7 @@ set DIRNAME=%~dp0
 if "%DIRNAME%" == "" set DIRNAME=.
 set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%
+for %%f in ("%DIRNAME:~0,-1%") do set JUSTDIRNAME=%%~nxf
 
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS=
@@ -73,16 +74,28 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
   if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
 )
 
-@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-@rem We need this file copied, even though the Holy Gradle build itself doesn't use it,
-@rem because the wrapper-starter-kit subproject needs to copy it from here.
-if exist "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" (
-  copy "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" "%~dp0gradle\wrapper\base-url-lookup.txt"
-)
+if "%JUSTDIRNAME%"=="holy-gradle-plugins" (
 
-@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" (
-  copy "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" "%~dp0gradle\wrapper\proxy-lookup.txt"
+  @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+  @rem We need this file copied, even though the Holy Gradle build itself doesn't use it,
+  @rem because the wrapper-starter-kit subproject needs to copy it from here.
+  if exist "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" (
+    copy "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" "%~dp0gradle\wrapper\base-url-lookup.txt"
+  ) else (
+    echo ************************************************************
+    echo WARNING: No local file found for wrapper\base-url-lookup.txt
+    echo ************************************************************
+  )
+
+  @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+  if exist "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" (
+    copy "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" "%~dp0gradle\wrapper\proxy-lookup.txt"
+  ) else (
+    echo *********************************************************
+    echo WARNING: No local file found for wrapper\proxy-lookup.txt
+    echo *********************************************************
+  )
+
 )
 
 @rem Try to find a proxy server and port based on the DNS suffix values on the local machine.
@@ -132,11 +145,19 @@ if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
   )
 )
 
+if "%JUSTDIRNAME%"=="holy-gradle-plugins" (
 
-@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist "%~dp0local\holy-gradle-plugins\certs" (
-  xcopy /i /s /y "%~dp0local\holy-gradle-plugins\certs" "%~dp0gradle\wrapper\certs"
+  @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+  if exist "%~dp0local\holy-gradle-plugins\certs" (
+    xcopy /i /s /y "%~dp0local\holy-gradle-plugins\certs" "%~dp0gradle\wrapper\certs"
+  ) else (
+    echo **************************************************
+    echo WARNING: No local files found for wrapper\certs\**
+    echo **************************************************
+  )
+
 )
+
 if not exist "%APP_HOME%gradle\wrapper\certs" goto certsDone
 @rem Find keytool.exe from java.exe.
 

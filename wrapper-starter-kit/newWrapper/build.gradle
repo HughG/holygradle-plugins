@@ -29,8 +29,10 @@ if (wrapperVersion != customGradleCoreVersion) {
     )
 }
 
-task clean.doLast {
-    delete "gradlew", "gradlew.bat", "gw.bat", "gradle"
+task clean {
+    doLast {
+        delete "gradlew", "gradlew.bat", "gw.bat", "gradle"
+    }
 }
 
 createWrapper.dependsOn clean
