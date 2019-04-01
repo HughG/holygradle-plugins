@@ -208,7 +208,7 @@ public class DefaultPublishPackagesExtension implements PublishPackagesExtension
         if (republishHandler != null) {
             String repoUrl = republishHandler.toRepository
             Collection<ArtifactRepository> repos = project.repositories.matching { repo ->
-                repo instanceof AuthenticationSupported && repo.credentials.username != null
+                repo.url.scheme != "file" && repo instanceof AuthenticationSupported && !repo.credentials.username.isNullOrEmpty()
             }
             if (repos.size() > 0 && repoUrl != null) {
                 AuthenticationSupported repo = (AuthenticationSupported)repos[0]

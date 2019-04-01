@@ -1,5 +1,8 @@
 Using pluginsRepoOverride=[active]
-:tasks
+
+> Configure project :
+
+> Task :tasks
 
 ------------------------------------------------------------
 All tasks runnable from root project
@@ -92,6 +95,9 @@ checkPrerequisiteHgAuth
 checkPrerequisiteJava1.7
 extractSevenZip - Unpack build dependency 'sevenZip'
 packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tAPIT'.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 5.0.
+See https://docs.gradle.org/4.9/userguide/command_line_interface.html#sec:command_line_warnings
 
 BUILD SUCCESSFUL in [snipped]s
 1 actionable task: 1 executed
