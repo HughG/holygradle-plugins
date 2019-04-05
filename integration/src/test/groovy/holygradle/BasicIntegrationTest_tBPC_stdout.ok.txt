@@ -112,7 +112,7 @@ unitTestMain_testDebug
 unitTestMain_testRelease
 
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 5.0.
-See https://docs.gradle.org/4.9/userguide/command_line_interface.html#sec:command_line_warnings
+See https://docs.gradle.org/4.7/userguide/command_line_interface.html#sec:command_line_warnings
 
 BUILD SUCCESSFUL in [snipped]s
 1 actionable task: 1 executed
