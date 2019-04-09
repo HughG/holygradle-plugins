@@ -99,8 +99,6 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
             if (launcher.expectedFailures.size() == 0) {
                 launcher.run()
             } else {
-                OutputStream errorOutput = new ByteArrayOutputStream()
-                launcher.setStandardError(errorOutput)
                 String error = null
                 try {
                     launcher.run()
@@ -112,12 +110,21 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
                             "-Dhttps.proxyHost=xxx -Dhttps.proxyPort=NNNN"
                     }
                 } catch (RuntimeException e) {
-                    println(e.toString())
-                    error = errorOutput.toString()
+                    //Print stack trace to stderr
+                    e.printStackTrace(System.err)
+
+                    // Store Exception message as String
+                    StringWriter errorStringWriter = new StringWriter()
+                    e.printStackTrace(new PrintWriter(errorStringWriter))
+                    error = errorStringWriter.toString()
                 }
                 if (error == null) {
                     fail("Expected failure but there was none.")
                 }
+
+
+                System.err.println("ERROR: ${error}")
+
                 launcher.expectedFailures.each {
                     assertTrue("Error message should contain '${it}' but it contained: ${error}.", error.contains(it))
                 }
