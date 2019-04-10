@@ -32,12 +32,7 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
         final projectDir = new File(getTestDir(), "unpacking_modules_to_same_location")
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-                """FAILURE: Build failed with an exception.
-
-* What went wrong:
-Multiple different dependencies/versions are targeting the same locations."""
-            ))
+            launcher.expectFailure("""Multiple different dependencies/versions are targeting the same locations.""")
         }
     }
 
