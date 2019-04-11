@@ -22,6 +22,7 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import holygradle.kotlin.dsl.getValue
 import holygradle.kotlin.dsl.task
 import holygradle.util.addingDefault
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 
 private const val EXTENSION_NAME: String = "publishPackages"
 
@@ -221,8 +222,17 @@ open class DefaultPublishPackagesExtension(
         val repubHandler = republishHandler
         if (repubHandler != null) {
             val repoUrl = repubHandler.toRepository
-            val repos = project.repositories.matching { repo ->
-                repo is AuthenticationSupported && repo.credentials.username != null
+            val repos = project.repositories.withType(IvyArtifactRepository::class.java).matching { repo ->
+                // Asking for credentials used to return null; in more recent Gradle versions it automatically sets them
+                // to empty strings, which don't work with "file:" URLs, which are used in the Holy Gradle's integration
+                // tests.  This code is dubious anyway: it's looking for the first dependency repo which needs credentials
+                // and assuming that they will be the credentials for the republish target, which might not be true.
+                //
+                // TODO 2019-01-03 HughG: Make the republishing DSL require users to specify the credentials for the
+                // target repo.
+                repo.url.scheme != "file" &&
+                        repo is AuthenticationSupported
+                        && !repo.credentials.username.isNullOrEmpty()
             }
             if (repos.size > 0 && repoUrl != null) {
                 val repo = repos[0] as AuthenticationSupported

@@ -11,7 +11,9 @@ open class CollectDependenciesTask : Copy() {
         }
 
         destinationDir = File(project.rootProject.projectDir, CollectDependenciesHelper.LOCAL_ARTIFACTS_DIR_NAME)
-        doFirst {
+        // This has to be an "onlyIf" block, rather than "doFirst", because more recent versions of Gradle create the
+        // output folder for a task before the doFirst block executes.
+        onlyIf {
             logger.info("Copying dependencies to ${destinationDir}")
             if (destinationDir.exists()) {
                 throw RuntimeException(
@@ -19,6 +21,7 @@ open class CollectDependenciesTask : Copy() {
                     "because it would overwrite files for the running version of the holygradle plugins."
                 )
             }
+            true
         }
 
         CollectDependenciesHelper(this).configure(this)

@@ -3,15 +3,17 @@ package holygradle.publishing
 import holygradle.ArtifactoryHelper
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.DefaultTask
+import org.gradle.api.artifacts.repositories.AuthenticationSupported
 import org.gradle.api.artifacts.repositories.PasswordCredentials
 
 open class CheckPublishedDependenciesTask : DefaultTask() {
     fun initialize(
         packedDependenciesStateSource: PackedDependenciesStateSource,
         repoUrl: String,
-        repoCredentials: PasswordCredentials
+        repo: AuthenticationSupported
     ) {
         doLast {
+            val repoCredentials = repo.credentials
             val helper = ArtifactoryHelper(
                 repoUrl,
                 requireNotNull(repoCredentials.username, { "Null username supplied" }),
