@@ -1,7 +1,7 @@
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 
-import holygradle.buildSrc.process.ExecHelper
+import holygradle.process.ExecHelper
 
 class VSVersion {
     private static final Pattern VERSION_PATTERN =
@@ -86,12 +86,7 @@ public File getCommonToolsPathFromEnvironment() {
     if (envVarComnTools == null || envVarComnTools == "") {
         throw new RuntimeException("'chosenDevEnvVersion' was set to '${chosenDevEnvVersion}' but the environment variable '${chosenDevEnvVersion}COMNTOOLS' was null or empty.")
     }
-    File comnToolsPath = new File(envVarComnTools)
-    File devEnvPath = new File(comnToolsPath, "../IDE/devenv.com")
-    if (!devEnvPath.exists()) {
-        throw new RuntimeException("DevEnv could not be found at '${devEnvPath}'.")
-    }
-    devEnvPath
+    return new File(envVarComnTools)
 }
 
 public File getCommonToolsPath() {
