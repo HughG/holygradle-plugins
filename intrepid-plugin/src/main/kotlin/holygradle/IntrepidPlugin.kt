@@ -44,6 +44,8 @@ class IntrepidPlugin : Plugin<Project> {
         val EVERYTHING_CONFIGURATION_PROPERTY = "createEverythingConfiguration"
         @JvmStatic
         val LAZY_CONFIGURATION_EXT_PROPERTY = "lazyConfiguration"
+        @JvmStatic
+        val FETCH_ALL_DEPENDENCIES_TASK_NAME = "fetchAllDependencies"
     }
 
     override fun apply(project: Project) {
@@ -60,7 +62,7 @@ class IntrepidPlugin : Plugin<Project> {
         /**************************************
          * Prerequisites
          **************************************/
-        val prerequisites = project.extensions.findByName("prerequisites") as? PrerequisitesExtension
+        /*val prerequisites =*/ project.extensions.findByName("prerequisites") as? PrerequisitesExtension
             ?: throw RuntimeException("Failed to find PrerequisitesExtension")
 
         /**************************************
@@ -186,7 +188,6 @@ class IntrepidPlugin : Plugin<Project> {
         }
         rebuildLinksToCacheTask.initialize(LinksToCacheTask.Mode.BUILD)
 
-        val FETCH_ALL_DEPENDENCIES_TASK_NAME = "fetchAllDependencies"
         val fetchAllSourceDependenciesTask = project.task<RecursivelyFetchSourceTask>("fetchAllSourceDependencies") {
             group = "Dependencies"
             description = "Retrieves all 'sourceDependencies' recursively."

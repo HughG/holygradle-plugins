@@ -43,7 +43,7 @@ class PrerequisitesChecker(
         if (parameter == null) {
             println("Checking '${name}'...")
         } else {
-            println("Checking '${name}' (${parameter})...")
+            println("Checking '${name}' (${parameter.toList()})...")
         }
         checkAction.execute(this)
         return ok

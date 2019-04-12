@@ -239,7 +239,7 @@ open class DefaultPublishPackagesExtension(
                 project.task<CheckPublishedDependenciesTask>("checkPackedDependencies") {
                     group = "Publishing"
                     description = "Check if all packed dependencies are accessible in the target repo."
-                    initialize(packedDependenciesStateSource, repoUrl, repo.credentials)
+                    initialize(packedDependenciesStateSource, repoUrl, repo)
                 }
             }
         }

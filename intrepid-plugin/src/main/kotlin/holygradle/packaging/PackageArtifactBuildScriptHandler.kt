@@ -1,6 +1,7 @@
 package holygradle.packaging
 
 import holygradle.Helper
+import holygradle.IntrepidPlugin
 import holygradle.custom_gradle.PluginUsages
 import holygradle.dependencies.DependencyHandler
 import holygradle.dependencies.PackedDependencyHandler
@@ -274,7 +275,7 @@ open class PackageArtifactBuildScriptHandler(private val project: Project) : Pac
         val pinnedSourceDeps = collectSourceDependencies(project, true, pinnedSourceDependencies).values
         if (pinnedSourceDeps.isNotEmpty()) {
             if (!generateSettingsFileForSubprojects) {
-                buildScript.append("fetchAllDependencies {\n")
+                buildScript.append("${IntrepidPlugin.FETCH_ALL_DEPENDENCIES_TASK_NAME} {\n")
                 buildScript.append("    generateSettingsFileForSubprojects = false\n")
                 buildScript.append("}\n")
                 buildScript.append("\n")
