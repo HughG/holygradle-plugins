@@ -1,7 +1,9 @@
 package holygradle.packaging
 
+import groovy.lang.Closure
 import org.gradle.api.Action
 import org.gradle.api.Project
+import org.gradle.util.ConfigureUtil
 
 /**
  * This class holds all the text files to be added to a package (build script, settings file, and any other text files),
@@ -16,9 +18,24 @@ class PackageArtifactTextFileCollector(private val project: Project) {
     private val textFileHandlers = mutableListOf<PackageArtifactTextFileHandler>()
     var createDefaultSettingsFile = true
 
-    fun includeBuildScript(action: Action<PackageArtifactBuildScriptHandler>) {
+    fun includeBuildScript(action: Closure<in Any?>) {
+        project.logger.lifecycle("PATFC.includeBuildScriptC(${action.javaClass.name})")
         if (buildScriptHandler == null) {
             buildScriptHandler = PackageArtifactBuildScriptHandler(project).apply {
+                project.logger.lifecycle("PATFC.includeBuildScriptC/apply(${this.javaClass.name})")
+                checkFileHandlersNotFixedYet(this)
+                ConfigureUtil.configure(action, this)
+            }
+        } else {
+            throw RuntimeException("Can only include one build script per package.")
+        }
+    }
+
+    fun includeBuildScript(action: Action<in PackageArtifactBuildScriptHandler>) {
+        project.logger.lifecycle("PATFC.includeBuildScript(${action.javaClass.name})")
+        if (buildScriptHandler == null) {
+            buildScriptHandler = PackageArtifactBuildScriptHandler(project).apply {
+                project.logger.lifecycle("PATFC.includeBuildScript/apply(${this.javaClass.name})")
                 checkFileHandlersNotFixedYet(this)
                 action.execute(this)
             }

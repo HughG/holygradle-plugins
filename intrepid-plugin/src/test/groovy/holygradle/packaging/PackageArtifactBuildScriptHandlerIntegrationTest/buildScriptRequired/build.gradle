@@ -63,8 +63,12 @@ packageArtifacts {
     }
     pinnedSource {
         includeBuildScript {
+            println("this = ${this} ${this.getClass().name}")
+            println("owner = ${owner.getClass().name}")
+            println("delegate = ${delegate.getClass().name}")
+            println("it = ${it} ${it.getClass().name}")
             // Both should work.
-            addPinnedSourceDependency "projectA"
+            addPinnedSourceDependency(["projectA"] as String[])
             addPinnedSourceDependency "projectA2"
         }
     }

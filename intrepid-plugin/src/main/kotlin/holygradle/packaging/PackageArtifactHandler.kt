@@ -1,5 +1,6 @@
 package holygradle.packaging
 
+import groovy.lang.Closure
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.CamelCase
@@ -17,6 +18,7 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.bundling.Zip
 import holygradle.kotlin.dsl.extra
 import holygradle.kotlin.dsl.task
+import org.gradle.util.ConfigureUtil
 import java.io.File
 
 open class PackageArtifactHandler(val project: Project, val name: String) : PackageArtifactDSL {
@@ -212,7 +214,13 @@ open class PackageArtifactHandler(val project: Project, val name: String) : Pack
         rootPackageDescriptor.include(pattern, action)
     }
 
-    override fun includeBuildScript(action: Action<PackageArtifactBuildScriptHandler>) {
+    /*override*/ fun includeBuildScript(action: Closure<in Any?>) {
+        project.logger.lifecycle("PAH.includeBuildScriptC(${action.javaClass.name})")
+        rootPackageDescriptor.includeBuildScript(action)
+    }
+
+    override fun includeBuildScript(action: Action<in PackageArtifactBuildScriptHandler>) {
+        project.logger.lifecycle("PAH.includeBuildScript(${action.javaClass.name})")
         rootPackageDescriptor.includeBuildScript(action)
     }
 

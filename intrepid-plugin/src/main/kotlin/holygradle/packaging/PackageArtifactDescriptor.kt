@@ -1,5 +1,6 @@
 package holygradle.packaging
 
+import groovy.lang.Closure
 import holygradle.io.FileHelper
 import holygradle.publishing.RepublishHandler
 import org.gradle.api.Action
@@ -33,7 +34,12 @@ class PackageArtifactDescriptor(val project: Project, projectRelativePath: Strin
     override fun include(pattern: String, action: Action<PackageArtifactIncludeHandler>) {
         action.execute(include(pattern))
     }
-    override fun includeBuildScript(action: Action<PackageArtifactBuildScriptHandler>) {
+
+    /*override*/ fun includeBuildScript(action: Closure<in Any?>) {
+        textFileCollector.includeBuildScript(action)
+    }
+
+    override fun includeBuildScript(action: Action<in PackageArtifactBuildScriptHandler>) {
         textFileCollector.includeBuildScript(action)
     }
 

@@ -18,6 +18,8 @@ import java.util.*
 import kotlin.reflect.KClass
 
 open class PackageArtifactBuildScriptHandler(private val project: Project) : PackageArtifactTextFileHandler {
+    private val Any?.safeClassName get() = if (this == null) "null" else this::class.java.name
+
     companion object {
         private fun <T : DependencyHandler> findDependenciesRecursive(
                 project: Project,
@@ -167,7 +169,20 @@ open class PackageArtifactBuildScriptHandler(private val project: Project) : Pac
         publishCredentials = myCredentialsConfig
     }
 
-    fun addPinnedSourceDependency(vararg sourceDep: String) {
+//    fun addPinnedSourceDependency(sourceDep: Any?) {
+//        println("addPinnedSourceDependency(${sourceDep} class ${sourceDep.safeClassName})")
+//    }
+//
+    fun addPinnedSourceDependency(sourceDep: java.lang.Object) {
+        println("addPinnedSourceDependency(${sourceDep} class ${sourceDep.safeClassName})")
+    }
+
+    fun addPinnedSourceDependency(sourceDep: String) {
+        println("addPinnedSourceDependency(${sourceDep} class ${sourceDep.safeClassName})")
+    }
+
+    fun addPinnedSourceDependency(sourceDep: Array<String>) {
+//    fun addPinnedSourceDependency(vararg sourceDep: String) {
         addPinnedSourceDependency(sourceDep.asIterable())
     }
 
@@ -179,6 +194,10 @@ open class PackageArtifactBuildScriptHandler(private val project: Project) : Pac
     fun addPinnedSourceDependency(vararg sourceDep: SourceDependencyHandler) {
         addPinnedSourceDependency(sourceDep.map { it.targetName })
         atTop = false
+    }
+
+    fun addPackedDependency(packedDepName: String, configurations: Any?) {
+        println("addPinnedSourceDependency(${packedDepName}, ${configurations} class ${configurations.safeClassName})")
     }
 
     fun addPackedDependency(packedDepName: String, configurations: Iterable<String>) {
