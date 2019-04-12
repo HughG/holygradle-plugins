@@ -1,10 +1,13 @@
 package holygradle.packaging
 
-import groovy.lang.Closure
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.io.FileHelper
+import holygradle.kotlin.dsl.container
+import holygradle.kotlin.dsl.extra
+import holygradle.kotlin.dsl.newInstance
+import holygradle.kotlin.dsl.task
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.publishing.RepublishHandler
 import holygradle.scm.SourceControlRepositories
@@ -16,12 +19,10 @@ import org.gradle.api.initialization.Settings
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import org.gradle.api.tasks.bundling.Zip
-import holygradle.kotlin.dsl.extra
-import holygradle.kotlin.dsl.task
-import org.gradle.util.ConfigureUtil
 import java.io.File
+import javax.inject.Inject
 
-open class PackageArtifactHandler(val project: Project, val name: String) : PackageArtifactDSL {
+open class PackageArtifactHandler @Inject constructor(val project: Project, val name: String) : PackageArtifactDSL {
     override var configuration: String = name
     private val rootPackageDescriptor = PackageArtifactDescriptor(project, ".")
     private val lazyConfigurations = mutableListOf<Action<PackageArtifactDescriptor>>()
@@ -29,9 +30,9 @@ open class PackageArtifactHandler(val project: Project, val name: String) : Pack
     companion object {
         @JvmStatic
         fun createContainer(project: Project): NamedDomainObjectContainer<PackageArtifactHandler> {
-            val packageArtifactHandlers = project.container(PackageArtifactHandler::class.java, { name ->
-                PackageArtifactHandler(project, name)
-            })
+            val packageArtifactHandlers = project.container<PackageArtifactHandler> { name ->
+                project.objects.newInstance(project, name)
+            }
             project.extensions.add("packageArtifacts", packageArtifactHandlers)
             val createPublishNotesTask = defineCreatePublishNotesTask(project)
             val packageEverythingTask = project.task<DefaultTask>("packageEverything") {
@@ -214,13 +215,7 @@ open class PackageArtifactHandler(val project: Project, val name: String) : Pack
         rootPackageDescriptor.include(pattern, action)
     }
 
-    /*override*/ fun includeBuildScript(action: Closure<in Any?>) {
-        project.logger.lifecycle("PAH.includeBuildScriptC(${action.javaClass.name})")
-        rootPackageDescriptor.includeBuildScript(action)
-    }
-
-    override fun includeBuildScript(action: Action<in PackageArtifactBuildScriptHandler>) {
-        project.logger.lifecycle("PAH.includeBuildScript(${action.javaClass.name})")
+    override fun includeBuildScript(action: Action<PackageArtifactBuildScriptHandler>) {
         rootPackageDescriptor.includeBuildScript(action)
     }
 

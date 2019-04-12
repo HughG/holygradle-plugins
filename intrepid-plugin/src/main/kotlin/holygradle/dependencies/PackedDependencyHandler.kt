@@ -1,19 +1,21 @@
 package holygradle.dependencies
 
 import holygradle.Helper
+import holygradle.kotlin.dsl.container
 import holygradle.kotlin.dsl.getValue
+import holygradle.kotlin.dsl.newInstance
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
+import javax.inject.Inject
 
-open class PackedDependencyHandler @JvmOverloads constructor (
+open class PackedDependencyHandler @Inject constructor (
         depName: String,
-        project: Project,
-        options: PackedDependencyOptionsHandler = PackedDependencyOptionsHandler()
+        project: Project
 ) :
         DependencyHandler(depName, project),
-        PackedDependencyOptions by options
+        PackedDependencyOptions by PackedDependencyOptionsHandler()
 {
     companion object {
         @JvmStatic
@@ -21,8 +23,8 @@ open class PackedDependencyHandler @JvmOverloads constructor (
             if (project == project.rootProject) {
                 project.extensions.create("packedDependenciesDefault", PackedDependencyOptionsHandler::class.java)
             }
-            val packedDependencies = project.container(PackedDependencyHandler::class.java) { name: String ->
-                PackedDependencyHandler(name, project)
+            val packedDependencies = project.container<PackedDependencyHandler> { name: String ->
+                project.objects.newInstance(name, project)
             }
             project.extensions.add("packedDependencies", packedDependencies)
             return packedDependencies

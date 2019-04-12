@@ -16,11 +16,8 @@
 
 package holygradle.kotlin.dsl
 
-import org.gradle.api.DefaultTask
+import org.gradle.api.*
 //import org.gradle.api.Incubating
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
 //import org.gradle.api.model.ObjectFactory
 
 //import org.gradle.api.artifacts.Dependency
@@ -177,8 +174,41 @@ fun <T : Task> Project.createTask(name: String, type: KClass<T>, configuration: 
 // */
 //fun Project.dependencies(configuration: DependencyHandlerScope.() -> Unit) =
 //    DependencyHandlerScope(dependencies).configuration()
-//
-//
+
+/**
+ * Creates a container for managing named objects of the specified type.
+ *
+ * The specified type must have a public constructor which takes the name as a [String] parameter.
+ *
+ * All objects **MUST** expose their name as a bean property named `name`.
+ * The name must be constant for the life of the object.
+ *
+ * @param T The type of objects for the container to contain.
+ * @return The container.
+ *
+ * @see [Project.container]
+ */
+inline fun <reified T> Project.container(): NamedDomainObjectContainer<T> =
+        container(T::class.java)
+
+
+/**
+ * Creates a container for managing named objects of the specified type.
+ *
+ * The given factory is used to create object instances.
+ *
+ * All objects **MUST** expose their name as a bean property named `name`.
+ * The name must be constant for the life of the object.
+ *
+ * @param T The type of objects for the container to contain.
+ * @param factory The factory to use to create object instances.
+ * @return The container.
+ *
+ * @see [Project.container]
+ */
+inline fun <reified T> Project.container(noinline factory: (String) -> T): NamedDomainObjectContainer<T> =
+        container(T::class.java, factory)
+
 ///**
 // * Locates a [Project] property using [Project.findProperty].
 // */

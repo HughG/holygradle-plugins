@@ -7,7 +7,7 @@ interface PackageArtifactBaseDSL {
 
     fun include(pattern: String, action: Action<PackageArtifactIncludeHandler>)
     
-    fun includeBuildScript(action: Action<in PackageArtifactBuildScriptHandler>)
+    fun includeBuildScript(action: Action<PackageArtifactBuildScriptHandler>)
     
     fun includeTextFile(path: String, action: Action<PackageArtifactPlainTextFileHandler>)
     

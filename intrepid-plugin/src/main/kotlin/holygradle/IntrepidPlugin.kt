@@ -7,6 +7,7 @@ import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.dependencies.*
 import holygradle.io.Link
+import holygradle.kotlin.dsl.*
 import holygradle.links.LinkHandler
 import holygradle.links.LinkTask
 import holygradle.links.LinksToCacheTask
@@ -24,11 +25,8 @@ import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
 import org.gradle.api.*
 import org.gradle.api.publish.ivy.plugins.IvyPublishPlugin
-import holygradle.kotlin.dsl.apply
-import holygradle.kotlin.dsl.extra
-import holygradle.kotlin.dsl.get
-import holygradle.kotlin.dsl.task
 import java.io.File
+import javax.inject.Inject
 
 private inline fun ProfilingHelper.timing(blockName: String, block: () -> Unit) {
     startBlock(blockName).apply {
@@ -36,7 +34,7 @@ private inline fun ProfilingHelper.timing(blockName: String, block: () -> Unit) 
         endBlock()
     }
 }
-class IntrepidPlugin : Plugin<Project> {
+class IntrepidPlugin @Inject constructor() : Plugin<Project> {
     companion object {
         @JvmStatic
         val EVERYTHING_CONFIGURATION_NAME = "everything"
@@ -94,15 +92,15 @@ class IntrepidPlugin : Plugin<Project> {
             }
         }
 
-        val configurationSetTypes = project.container(ConfigurationSetType::class.java) { name ->
-            DefaultConfigurationSetType(name)
+        val configurationSetTypes = project.container<ConfigurationSetType> { name ->
+            project.objects.newInstance<DefaultConfigurationSetType>(name)
         }
         project.extensions.add("configurationSetTypes", configurationSetTypes)
         configurationSetTypes.addAll(DefaultVisualStudioConfigurationSetTypes.TYPES.values)
         configurationSetTypes.addAll(DefaultWebConfigurationSetTypes.TYPES.values)
 
-        project.extensions.add("configurationSets", project.container(ConfigurationSet::class.java) { name ->
-            ProjectConfigurationSet(name, project)
+        project.extensions.add("configurationSets", project.container<ConfigurationSet> { name ->
+            project.objects.newInstance<ProjectConfigurationSet>(name, project)
         })
   
         /**************************************

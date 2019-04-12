@@ -5,6 +5,8 @@ import holygradle.IntrepidPlugin
 import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
+import holygradle.kotlin.dsl.container
+import holygradle.kotlin.dsl.newInstance
 import holygradle.scm.CommandLine
 import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
@@ -16,8 +18,9 @@ import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import holygradle.kotlin.dsl.project
 import holygradle.kotlin.dsl.task
 import java.io.File
+import javax.inject.Inject
 
-open class SourceDependencyHandler(
+open class SourceDependencyHandler @Inject constructor (
         depName: String,
         project: Project
 ) : DependencyHandler(depName, project) {
@@ -31,9 +34,9 @@ open class SourceDependencyHandler(
         @JvmStatic
         fun createContainer(project: Project): Collection<SourceDependencyHandler> {
             val sourceDependencies =
-                    project.container(SourceDependencyHandler::class.java, { sourceDepName: String ->
-                        SourceDependencyHandler(sourceDepName, project)
-                    })
+                    project.container<SourceDependencyHandler> { sourceDepName: String ->
+                        project.objects.newInstance(sourceDepName, project)
+                    }
             project.extensions.add("sourceDependencies", sourceDependencies)
             return sourceDependencies
         }
