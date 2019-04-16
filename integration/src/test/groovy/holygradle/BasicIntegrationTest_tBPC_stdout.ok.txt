@@ -1,6 +1,9 @@
 Using pluginsRepoOverride=[active]
+
+> Configure project :
 Updated: Intrepid - holygradle_test
-:tasks
+
+> Task :tasks
 
 ------------------------------------------------------------
 All tasks runnable from root project
@@ -77,6 +80,7 @@ beforeGenerateDescriptor - Actions to run before any Ivy descriptor generation t
 createPublishNotes - Creates 'build_info' directory which will be included in published packages.
 generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'.
 generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication.
+generateMetadataFileForIvyPublication - Generates the Gradle metadata file for publication 'ivy'.
 packageEverything - Creates all zip packages for project 'tBPC'.
 publish - Publishes all publications produced by this project.
 publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'.
@@ -107,6 +111,10 @@ packageBuildScript - Creates a zip file for 'buildScript' in preparation for pub
 packageDefault - Creates a zip file for 'default' in preparation for publishing project 'tBPC'.
 unitTestMain_testDebug
 unitTestMain_testRelease
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 5.0.
+Use '--warning-mode all' to show the individual deprecation warnings.
+See https://docs.gradle.org/4.9/userguide/command_line_interface.html#sec:command_line_warnings
 
 BUILD SUCCESSFUL in [snipped]s
 1 actionable task: 1 executed

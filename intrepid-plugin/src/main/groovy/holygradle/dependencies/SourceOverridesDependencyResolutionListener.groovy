@@ -17,7 +17,6 @@ import org.gradle.api.artifacts.result.ResolvedComponentResult
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult
 import org.gradle.api.initialization.Settings
 import org.gradle.api.internal.artifacts.configurations.ResolutionStrategyInternal
-import org.gradle.api.internal.artifacts.ivyservice.resolutionstrategy.StrictConflictResolution
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.logging.LogLevel
 import sun.rmi.runtime.Log
@@ -380,8 +379,7 @@ you may have to run the 'dependencies' task at multiple levels.
         final ResolutionStrategy strategy = configuration.resolutionStrategy
         final boolean hasStrictResolutionStrategy =
             (strategy instanceof ResolutionStrategyInternal) &&
-                ((ResolutionStrategyInternal) strategy).conflictResolution instanceof
-                    StrictConflictResolution
+                ((ResolutionStrategyInternal) strategy).conflictResolution.getClass().getSimpleName().equals("StrictConflictResolution")
         return hasStrictResolutionStrategy
     }
 }
