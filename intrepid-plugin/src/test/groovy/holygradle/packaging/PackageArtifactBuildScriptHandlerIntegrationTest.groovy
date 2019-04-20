@@ -170,11 +170,11 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
         regressionTestBuildScriptForMultiplePackages("buildScriptRequired", projectCPackagesDir, "tBSR", configurations)
     }
 
-    private ArrayList<String> regressionTestBuildScriptForMultiplePackages(
+    private List<String> regressionTestBuildScriptForMultiplePackages(
         String projectName,
         File packagesDir,
         String regressionFilePrefix,
-        ArrayList<String> configurations
+        List<String> configurations
     ) {
         return configurations.each { String confName ->
             final File packageZipFile = new File(packagesDir, "${projectName}-${confName}.zip")

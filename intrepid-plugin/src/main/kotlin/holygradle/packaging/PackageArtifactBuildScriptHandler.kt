@@ -18,8 +18,6 @@ import java.util.*
 import kotlin.reflect.KClass
 
 open class PackageArtifactBuildScriptHandler(private val project: Project) : PackageArtifactTextFileHandler {
-    private val Any?.safeClassName get() = if (this == null) "null" else this::class.java.name
-
     companion object {
         private fun <T : DependencyHandler> findDependenciesRecursive(
                 project: Project,

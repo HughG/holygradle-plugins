@@ -1,9 +1,7 @@
 package holygradle.packaging
 
-import groovy.lang.Closure
 import org.gradle.api.Action
 import org.gradle.api.Project
-import org.gradle.util.ConfigureUtil
 
 /**
  * This class holds all the text files to be added to a package (build script, settings file, and any other text files),

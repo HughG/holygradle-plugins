@@ -247,8 +247,7 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
         rootPackageDescriptor.to(toLocation)
     }
 
-    val packageTaskName: String
-        get() = CamelCase.build("package", name)
+    val packageTaskName: String = CamelCase.build("package", name)
 
     private fun doConfigureCopySpec(descriptor: PackageArtifactDescriptor, copySpec: CopySpec) {
         for (includeHandler in descriptor.includeHandlers) {

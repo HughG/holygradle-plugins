@@ -1,6 +1,5 @@
 package holygradle.packaging
 
-import groovy.lang.Closure
 import holygradle.io.FileHelper
 import holygradle.publishing.RepublishHandler
 import org.gradle.api.Action
