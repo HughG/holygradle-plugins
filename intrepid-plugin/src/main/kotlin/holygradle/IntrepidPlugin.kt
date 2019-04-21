@@ -6,6 +6,7 @@ import holygradle.custom_gradle.CustomGradleCorePlugin
 import holygradle.custom_gradle.PrerequisitesExtension
 import holygradle.custom_gradle.util.ProfilingHelper
 import holygradle.dependencies.*
+import holygradle.gradle.api.executeLazyConfiguration
 import holygradle.io.Link
 import holygradle.kotlin.dsl.*
 import holygradle.links.LinkHandler
@@ -28,20 +29,12 @@ import org.gradle.api.publish.ivy.plugins.IvyPublishPlugin
 import java.io.File
 import javax.inject.Inject
 
-private inline fun ProfilingHelper.timing(blockName: String, block: () -> Unit) {
-    startBlock(blockName).apply {
-        block()
-        endBlock()
-    }
-}
 class IntrepidPlugin @Inject constructor() : Plugin<Project> {
     companion object {
         @JvmStatic
         val EVERYTHING_CONFIGURATION_NAME = "everything"
         @JvmStatic
         val EVERYTHING_CONFIGURATION_PROPERTY = "createEverythingConfiguration"
-        @JvmStatic
-        val LAZY_CONFIGURATION_EXT_PROPERTY = "lazyConfiguration"
         @JvmStatic
         val FETCH_ALL_DEPENDENCIES_TASK_NAME = "fetchAllDependencies"
     }
@@ -227,19 +220,7 @@ class IntrepidPlugin @Inject constructor() : Plugin<Project> {
         // property containing a single Closure, it will be executed just before that specific task runs.  As long as
         // intrepid-plugin is applied in a build script, this is available to all plugins.
         project.rootProject.gradle.taskGraph.beforeTask { task ->
-            if (task.hasProperty(LAZY_CONFIGURATION_EXT_PROPERTY)) {
-                // In the unlikely event that someone set the lazyConfiguration property to an Action<SomethingElse>,
-                // we'll get ClassCastException later.  Should never happen.
-                @Suppress("UNCHECKED_CAST")
-                val lazyConfig = task.extra["lazyConfiguration"] as? Action<Task>
-                if (lazyConfig != null) {
-                    task.logger.info("Applying lazyConfiguration for task ${task.name}.")
-                    profilingHelper.timing("${task.name}#!lazyConfiguration") {
-                        lazyConfig.execute(task)
-                    }
-                    task.extra["lazyConfiguration"] = null
-                }
-            }
+            task.executeLazyConfiguration()
         }
 
         /**************************************

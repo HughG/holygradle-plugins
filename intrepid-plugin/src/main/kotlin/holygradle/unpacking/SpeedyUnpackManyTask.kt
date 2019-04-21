@@ -1,6 +1,7 @@
 package holygradle.unpacking
 
 import holygradle.Helper
+import holygradle.gradle.api.lazyConfiguration
 import holygradle.io.FileHelper
 import holygradle.io.Link
 import org.gradle.api.DefaultTask
@@ -39,15 +40,15 @@ open class SpeedyUnpackManyTask : DefaultTask() {
     fun addUnpackModuleVersions(source: PackedDependenciesStateSource) {
         // This needs to be done in a lazyConfiguration block (just before task execution), because you can't set a
         // task's inputs/outputs during task execution.
-        extra["lazyConfiguration"] = { it: Task ->
-            logger.debug("${it.path} before adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")
+        lazyConfiguration {
+            logger.debug("${path} before adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")
             source.allUnpackModules
                     .flatMap { it.versions.values }
                     .forEach {
                         // Add the unpack entry to unpack the module to the cache or directly to the workspace.
                         addEntry(it)
                     }
-            logger.debug("${it.path} after adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")
+            logger.debug("${path} after adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")
         }
     }
 

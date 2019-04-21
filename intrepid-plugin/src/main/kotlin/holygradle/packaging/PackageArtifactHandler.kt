@@ -3,6 +3,7 @@ package holygradle.packaging
 import holygradle.Helper
 import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.CamelCase
+import holygradle.gradle.api.lazyConfiguration
 import holygradle.io.FileHelper
 import holygradle.kotlin.dsl.container
 import holygradle.kotlin.dsl.extra
@@ -281,18 +282,18 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
         t.destinationDir = File(project.projectDir, "packages")
         t.includeEmptyDirs = false
 
-        t.extra["lazyConfiguration"] = fun(zip: Zip) {
+        t.lazyConfiguration {
             // t.group = "Publishing " + project.name
             // t.classifier = name
             for (action in lazyConfigurations) {
                 action.execute(rootPackageDescriptor)
             }
 
-            zip.from(project.projectDir) {
+            from(project.projectDir) {
                 include("build_info/**")
             }
 
-            val taskDir = File(zip.destinationDir, taskName)
+            val taskDir = File(destinationDir, taskName)
             FileHelper.ensureMkdirs(taskDir, "as output folder for publish notes ${taskDir}")
 
             // If we're publishing then let's generate the auto-generatable files. But if we're 'republishing'
@@ -302,11 +303,11 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
             if (repackageTask != null && project.gradle.taskGraph.hasTask(repackageTask)) {
                 val publishPackages = project.extensions.findByName("publishPackages") as PublishPackagesExtension
                 republishHandler = publishPackages.republishHandler
-                zip.doFirst {
+                doFirst {
                     rootPackageDescriptor.processPackageFiles(taskDir)
                 }
             } else {
-                zip.doFirst {
+                doFirst {
                     rootPackageDescriptor.createPackageFiles(taskDir)
                 }
             }

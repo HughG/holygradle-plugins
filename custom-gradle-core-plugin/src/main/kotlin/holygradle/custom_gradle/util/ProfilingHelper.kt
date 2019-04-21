@@ -44,4 +44,14 @@ class ProfilingHelper(private val logger: Logger) {
             timer.endBlock()
         }
     }
+
+    fun timing(blockName: String, block: () -> Unit) {
+        startBlock(blockName).apply {
+            try {
+                block()
+            } finally {
+                endBlock()
+            }
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package holygradle.unit_test
 
 import holygradle.IntrepidPlugin
+import holygradle.gradle.api.lazyConfiguration
 import holygradle.io.FileHelper
 import holygradle.source_dependencies.SourceDependenciesStateHandler
 import org.apache.commons.io.output.TeeOutputStream
@@ -238,35 +239,35 @@ internal open class TestHandler(
         val originalStandardOutput = task.standardOutput
         val originalErrorOutput = task.errorOutput
 
-        task.extra[IntrepidPlugin.LAZY_CONFIGURATION_EXT_PROPERTY] = { it: Exec ->
+        task.lazyConfiguration {
             val testOutputStream = when {
                 standardOutputTemplate != null -> makeOutputStream(project, flavour, standardOutputTemplate!!)
-                else -> it.standardOutput
+                else -> standardOutput
             }
             configureOutput(
                 flavour,
-                it,
+                this,
                 "standard",
                 originalStandardOutput,
                 testOutputStream,
                 standardOutputTeeTemplate,
-                it::getStandardOutput,
-                it::setStandardOutput
+                ::getStandardOutput,
+                ::setStandardOutput
             )
 
             val testErrorStream = when {
                 errorOutputTemplate != null -> makeOutputStream(project, flavour, errorOutputTemplate!!)
-                else -> it.errorOutput
+                else -> errorOutput
             }
             configureOutput(
                     flavour,
-                    it,
+                    this,
                     "error",
                     originalErrorOutput,
                     testErrorStream,
                     errorOutputTeeTemplate,
-                    it::getErrorOutput,
-                    it::setErrorOutput
+                    ::getErrorOutput,
+                    ::setErrorOutput
             )
         }
     }

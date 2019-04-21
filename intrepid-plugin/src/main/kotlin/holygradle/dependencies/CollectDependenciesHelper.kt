@@ -1,6 +1,7 @@
 package holygradle.dependencies
 
 import holygradle.artifacts.ConfigurationHelper
+import holygradle.gradle.api.lazyConfiguration
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
@@ -57,7 +58,7 @@ class CollectDependenciesHelper(private val copyTask: AbstractCopyTask) {
         // We find the set of artifacts after all projects are evaluated, so that all subprojects and their packed
         // dependencies are known.  We use "this.ext.lazyConfiguration" instead of "project.gradle.projectsEvaluated"
         // because this is slow, so we don't want to do it unless we're really executing the task.
-        copyTask.extra["lazyConfiguration"] = {
+        copyTask.lazyConfiguration {
             val ivyFiles = mutableMapOf<ModuleVersionIdentifier, File>()
             val pomFiles = mutableMapOf<ModuleVersionIdentifier, File>()
             val artifacts = mutableSetOf<ResolvedArtifact>()

@@ -1,8 +1,7 @@
 // This is some sample text
 buildscript {
-    gplugins.use "intrepid:dummy"
-    gplugins.use "devenv:dummy"
-    gplugins.use "my-credentials:dummy"
+    gplugins.use "intrepid-plugin:dummy"
+    gplugins.use "custom-gradle-core-plugin:dummy"
 }
 gplugins.apply()
 

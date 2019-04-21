@@ -6,6 +6,7 @@ import holygradle.custom_gradle.PluginUsages
 import holygradle.dependencies.DependencyHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.io.FileHelper
+import holygradle.kotlin.dsl.getValue
 import holygradle.links.LinkHandler
 import holygradle.publishing.RepublishHandler
 import holygradle.scm.SourceControlRepositories
@@ -232,9 +233,9 @@ open class PackageArtifactBuildScriptHandler(private val project: Project) : Pac
 
         // Include plugins
         buildScript.append("buildscript {\n")
-        val pluginUsagesExtension = project.extensions.findByName("pluginUsages") as PluginUsages
-        for ((name, versions) in pluginUsagesExtension.mapping) {
-            buildScript.append("    gplugins.use \"${name}:${versions.requested}\"")
+        val pluginUsages : PluginUsages by project.extensions
+        for ((name, versions) in pluginUsages.mapping) {
+            buildScript.append("    gplugins.use \"${name}:${versions.selected}\"\n")
         }
         buildScript.append("}\n")
         buildScript.append("gplugins.apply()\n")
