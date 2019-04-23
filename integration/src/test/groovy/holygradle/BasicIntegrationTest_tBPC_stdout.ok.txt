@@ -1,6 +1,5 @@
 Using pluginsRepoOverride=[active]
 
-> Configure project :
 Updated: Intrepid - holygradle_test
 
 > Task :tasks

@@ -37,8 +37,11 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
                 (~/Holy Gradle init script .*/) : "Holy Gradle init script [snipped]",
                 (~/Using SNAPSHOT version\..*/) : null,
                 (~/ UP-TO-DATE$/) : "",
+                (~/> Configure project :.*/) : null,
+                (~/^$/) : null,
+
             ])
-            regression.checkForRegression(testFileName)
+            regression.checkForRegression(testFileName, true)
         }
     }
 

@@ -1,7 +1,5 @@
 Using pluginsRepoOverride=[active]
 
-> Configure project :
-
 > Task :tasks
 
 ------------------------------------------------------------

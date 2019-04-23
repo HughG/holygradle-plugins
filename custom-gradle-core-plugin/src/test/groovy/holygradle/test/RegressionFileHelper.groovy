@@ -65,6 +65,10 @@ class RegressionFileHelper {
     }
     
     public void checkForRegression(String testName) {
+        checkForRegression(testName, false)
+    }
+
+    public void checkForRegression(String testName, boolean stripEmptyLines) {
         File okFile = getOkFile(testName)
         File testFile = getTestFile(testName)
         if (!okFile.exists()) {
@@ -73,7 +77,24 @@ class RegressionFileHelper {
         if (!testFile.exists()) {
             fail("Regression output file ${testFile.path} does not exist.")
         }
-        assertEquals("Regression file check for ${testFile.name}", okFile.text, testFile.text)
+        // This is annoying. The mechanism for replacing patterns doesn't allow for replacing multiple lines. So when
+        // we have a situation where a line occurs in test output in some circumstances and does not affect the test
+        // result, we can replace the line in question with null but then the test fails because of the empty line after.
+        // This stripEmptyLines mechanism allows all empty lines to be removed from the file in such a situation.
+        String okText = (stripEmptyLines) ? stripEmptyLinesFromText(okFile) : okFile.text
+        String fileText = (stripEmptyLines) ? stripEmptyLinesFromText(testFile) : testFile.text
+        assertEquals("Regression file check for ${testFile.name}", okText, fileText)
+    }
+
+    public String stripEmptyLinesFromText(File file) {
+        StringBuffer sb = new StringBuffer()
+        file.eachLine { String line ->
+            if (!line.equals("")) {
+                sb.append(line + "\n")
+            }
+        }
+        String linesRemoved = sb.toString()
+        return linesRemoved.trim()
     }
 
     public static String toStringWithPlatformLineBreaks(String lines) {
