@@ -36,7 +36,7 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
     holygradle.test:example-framework:1.1 in configurations [bar]
         which is from packed dependency sub/../extlib
     holygradle.test:external-lib:1.1 in configurations [bar, foo]
-        which is from holygradle.test:example-framework:1.1
+        which is from holygradle.test:external-lib:1.1
         which is from packed dependency extlib
 
 FAILURE: Build failed with an exception.
@@ -56,8 +56,7 @@ Multiple different dependencies/versions are targeting the same locations."""
                 """FAILURE: Build failed with an exception.
 
 * What went wrong:
-Execution failed for task ':rebuildLinksToCache'.
-> Module version holygradle.test:external-lib:1.1 is specified by packed dependencies at both path 'sub/extlib' and """ +
+Module version holygradle.test:external-lib:1.1 is specified by packed dependencies at both path 'sub/extlib' and """ +
 "'extlib'.  A single version can only be specified at one path.  If you need it to appear at more than one " +
 "location you can explicitly create links."
             ))

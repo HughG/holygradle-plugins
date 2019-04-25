@@ -35,7 +35,7 @@ open class DependenciesStateHandler
         private var index = 0
 
         override fun hasNext(): Boolean {
-            return index <= nodeList.length
+            return index < nodeList.length
         }
 
         override fun next(): Node {
