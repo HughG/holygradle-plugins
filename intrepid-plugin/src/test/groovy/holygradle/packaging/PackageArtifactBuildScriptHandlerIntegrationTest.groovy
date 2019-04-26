@@ -203,7 +203,7 @@ class PackageArtifactBuildScriptHandlerIntegrationTest extends AbstractHolyGradl
 
             try {
                 ZipEntry packageSettingsFile = packageZip.getEntry("${confName}/settings.gradle")
-                if (confName == "noCreateDefaultSettingsFile") {
+                if (confName in ["explicitFile", "noCreateDefaultSettingsFile"]) {
                     assertNull("Settings file should NOT exist in ${packageZipFile}", packageSettingsFile)
                 } else {
                     assertNotNull("Settings file should exist in ${packageZipFile}", packageSettingsFile)

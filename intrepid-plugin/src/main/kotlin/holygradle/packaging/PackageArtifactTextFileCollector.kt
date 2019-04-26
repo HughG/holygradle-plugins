@@ -1,5 +1,6 @@
 package holygradle.packaging
 
+import holygradle.kotlin.dsl.newInstance
 import org.gradle.api.Action
 import org.gradle.api.Project
 
@@ -18,7 +19,9 @@ class PackageArtifactTextFileCollector(private val project: Project) {
 
     fun includeBuildScript(action: Action<PackageArtifactBuildScriptHandler>) {
         if (buildScriptHandler == null) {
-            buildScriptHandler = PackageArtifactBuildScriptHandler(project).apply {
+            // Need to use the ObjectFactory so that the PackageArtifactBuildScriptHandler.addRepublishing method will
+            // have any Groovy Closures which are passed to it magically wrapped in Action<>.
+            buildScriptHandler = project.objects.newInstance<PackageArtifactBuildScriptHandler>(project).apply {
                 checkFileHandlersNotFixedYet(this)
                 action.execute(this)
             }

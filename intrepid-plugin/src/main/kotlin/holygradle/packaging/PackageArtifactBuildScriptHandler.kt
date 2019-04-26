@@ -16,9 +16,12 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import java.io.File
 import java.util.*
+import javax.inject.Inject
 import kotlin.reflect.KClass
 
-open class PackageArtifactBuildScriptHandler(private val project: Project) : PackageArtifactTextFileHandler {
+open class PackageArtifactBuildScriptHandler @Inject constructor(
+        private val project: Project
+) : PackageArtifactTextFileHandler {
     companion object {
         private fun <T : DependencyHandler> findDependenciesRecursive(
                 project: Project,
