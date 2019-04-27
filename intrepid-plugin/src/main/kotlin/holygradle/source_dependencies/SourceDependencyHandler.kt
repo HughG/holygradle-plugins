@@ -123,6 +123,7 @@ open class SourceDependencyHandler @Inject constructor (
     fun createFetchTask(project: Project, buildScriptDependencies: BuildScriptDependencies): Task  {
         val sourceDependency: SourceDependency = if (protocol == "svn") {
             val hgCommand = CommandLine(
+                project.logger,
                 "svn.exe",
                 project::exec
             )
@@ -133,6 +134,7 @@ open class SourceDependencyHandler @Inject constructor (
             )
         } else if (protocol == "hg") {
             val hgCommand = CommandLine(
+                project.logger,
                 "hg.exe",
                 project::exec
             )
@@ -144,6 +146,7 @@ open class SourceDependencyHandler @Inject constructor (
             )
         } else if (protocol == "git") {
             val gitCommand = CommandLine(
+                project.logger,
                 "git.exe",
                 project::exec
             )

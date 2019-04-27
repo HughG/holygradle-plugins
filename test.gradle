@@ -94,6 +94,7 @@ project.ext.setUpTests = { Project project ->
             t.systemProperty("holygradle.customInitScriptPath", project.rootProject.file('/custom-gradle-core-plugin/src/init.d/holy-gradle-init.gradle').toString())
             t.systemProperty("holygradle.gradleUserHomeForIntegrationTest", project.LOCAL_GRADLE_USER_HOME.toString())
             t.systemProperty("holygradle.versionForIntegrationTest", project.version)
+            t.systemProperty("holygradle.chosenDevEnvVersion", project.rootProject.property('chosenDevEnvVersion'))
         }
     }
     // Make the real publish tasks depend on the integration test (unless disabled)

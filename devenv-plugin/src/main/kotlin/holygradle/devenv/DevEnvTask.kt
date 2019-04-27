@@ -81,7 +81,7 @@ open class DevEnvTask: DefaultTask() {
             }
 
             doConfigureBuildTask(
-                    project, devEnvHandler.getBuildToolPath(true), vsSolutionFile,
+                    project, devEnvHandler::getBuildToolPath, vsSolutionFile,
                     devEnvHandler.useIncredibuild, platform, configuration,
                     devEnvHandler.warningRegexes, devEnvHandler.errorRegexes
             )
@@ -114,7 +114,7 @@ open class DevEnvTask: DefaultTask() {
         val vsSolutionFile = devEnvHandler.vsSolutionFile
         if (vsSolutionFile != null) {
             doConfigureCleanTask(
-                    project, devEnvHandler.getBuildToolPath(true), vsSolutionFile,
+                    project, devEnvHandler::getBuildToolPath, vsSolutionFile,
                     platform, configuration,
                     devEnvHandler.warningRegexes, devEnvHandler.errorRegexes
             )
@@ -122,7 +122,7 @@ open class DevEnvTask: DefaultTask() {
     }
 
     fun doConfigureBuildTask(
-            project: Project, buildToolPath: File, solutionFile: File, useIncredibuild: Boolean,
+            project: Project, getBuildToolPath: () -> File, solutionFile: File, useIncredibuild: Boolean,
             platform: String, configuration: String, warningRegexes: Iterable<Pattern>, errorRegexes: Iterable<Pattern>
     ) {
         val targetSwitch = if (useIncredibuild) {"/Build"} else {"/build"}
@@ -134,13 +134,13 @@ open class DevEnvTask: DefaultTask() {
         description = "Builds the solution '${solutionFile.name}' with ${buildToolName} in $configuration mode, " +
                 "first building all dependent projects. Run 'gw -a ...' to build for this project only."
         configureTask(
-                project, title, buildToolPath, solutionFile, targetSwitch,
+                project, title, getBuildToolPath, solutionFile, targetSwitch,
                 configSwitch, outputFile, warningRegexes, errorRegexes
         )
     }
 
     fun doConfigureCleanTask(
-        project: Project, buildToolPath: File, solutionFile: File,
+        project: Project, getBuildToolPath: () -> File, solutionFile: File,
         platform: String, configuration: String, warningRegexes: Iterable<Pattern>, errorRegexes: Iterable<Pattern>
     ) {
         val targetSwitch = "/Clean"
@@ -151,19 +151,19 @@ open class DevEnvTask: DefaultTask() {
         description = "Cleans the solution '${solutionFile.name}' with DevEnv in $configuration mode, " +
                 "first building all dependent projects. Run 'gw -a ...' to build for this project only."
         configureTask(
-                project, title, buildToolPath, solutionFile, targetSwitch,
+                project, title, getBuildToolPath, solutionFile, targetSwitch,
                 configSwitch, outputFile, warningRegexes, errorRegexes
         )
     }
 
     fun configureTask(
-            project: Project, title: String, buildToolPath: File, solutionFile: File,
+            project: Project, title: String, getBuildToolPath: () -> File, solutionFile: File,
             targetSwitch: String, configSwitch: String, outputFile: File,
             warningRegexes: Iterable<Pattern>, errorRegexes: Iterable<Pattern>
     ) {
         doLast {
             val devEnvOutput = ErrorHighlightingOutputStream(title, this.output, warningRegexes, errorRegexes)
-
+            val buildToolPath = getBuildToolPath()
             val result = project.exec { spec: ExecSpec ->
                 spec.workingDir(project.projectDir.path)
                 spec.commandLine(buildToolPath.path, solutionFile.path, targetSwitch, configSwitch)

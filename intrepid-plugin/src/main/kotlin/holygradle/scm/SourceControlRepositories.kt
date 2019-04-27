@@ -22,9 +22,9 @@ object SourceControlRepositories {
         }
 
         return when {
-            svnFile.exists() -> SvnRepository(CommandLine("svn.exe", rootProject::exec), location)
-            hgFile.exists() -> HgRepository(CommandLine("hg.exe", rootProject::exec), location)
-            gitFile.exists() -> GitRepository(CommandLine("git.exe", rootProject::exec), location)
+            svnFile.exists() -> SvnRepository(CommandLine(rootProject.logger, "svn.exe", rootProject::exec), location)
+            hgFile.exists() -> HgRepository(CommandLine(rootProject.logger, "hg.exe", rootProject::exec), location)
+            gitFile.exists() -> GitRepository(CommandLine(rootProject.logger, "git.exe", rootProject::exec), location)
             useDummyIfNecessary -> DummySourceControl()
             else -> null
         }
