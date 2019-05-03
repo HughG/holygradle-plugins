@@ -91,7 +91,7 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
             // Use custom init script.
             launcher.addArguments("-I", customInitScript.toString())
             // Access plugins from a local repo.
-            launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}", "-u")
+            launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}")
             maybeAddExtraArguments(launcher)
 
             ConfigureUtil.configure(closure, launcher)
