@@ -22,6 +22,8 @@
       <module name="custom-gradle-core-plugin_test" target="1.8" />
       <module name="devenv-plugin_main" target="1.8" />
       <module name="devenv-plugin_test" target="1.8" />
+      <module name="holy-gradle-plugins_buildSrc_main" target="1.8" />
+      <module name="holy-gradle-plugins_buildSrc_test" target="1.8" />
       <module name="holy-gradle-plugins_main" target="1.8" />
       <module name="holy-gradle-plugins_test" target="1.8" />
       <module name="holygradle-kotlin-dsl_main" target="1.8" />
