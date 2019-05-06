@@ -36,10 +36,3 @@ class UnitTestPlugin : Plugin<Project> {
         }
     }
 }
-
-private inline fun ProfilingHelper.timing(blockName: String, block: () -> Unit) {
-    startBlock(blockName).apply {
-        block()
-        endBlock()
-    }
-}

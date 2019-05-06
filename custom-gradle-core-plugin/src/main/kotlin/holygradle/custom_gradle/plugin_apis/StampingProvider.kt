@@ -13,5 +13,5 @@ interface StampingProvider {
     /**
      * True if the stamping should be done before a DevEnv build; false if it should happen after.
      */
-    val runPriorToBuild: Boolean
+    var runPriorToBuild: Boolean
 }

@@ -102,19 +102,17 @@ open class DefaultPublishPackagesExtension(
         }
 
         // Configure the publish task to deal with the version number, include source dependencies and convert
-        // dynamic dependency versions to fixed version numbers.  We do this in a projectsEvaluated block so that
-        // source dependency projects have been evaluated, so we can be sure their information is available.
-        project.gradle.projectsEvaluated {
-            project.publishing {
-                if (createDefaultPublication) {
-                    createDefaultPublication(it, packageArtifactHandlers)
-                    configureGenerateDescriptorTasks(
-                            beforeGenerateDescriptorTask,
-                            generateIvyModuleDescriptorTask,
-                            project
-                    )
-                    configureRepublishTaskDependencies(republishTask)
-                }
+        // dynamic dependency versions to fixed version numbers.  Note that the PublishingExtension is a
+        // DeferredConfigurable, so this block won't be executed until dependencies have been set up etc.
+        project.publishing {
+            if (createDefaultPublication) {
+                createDefaultPublication(it, packageArtifactHandlers)
+                configureGenerateDescriptorTasks(
+                        beforeGenerateDescriptorTask,
+                        generateIvyModuleDescriptorTask,
+                        project
+                )
+                configureRepublishTaskDependencies(republishTask)
             }
         }
     }

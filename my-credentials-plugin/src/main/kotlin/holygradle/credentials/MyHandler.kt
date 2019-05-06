@@ -52,7 +52,7 @@ open class MyHandler(private val project: Project, private val credentialStorePa
     }
     
     private fun getCredentials(credentialType: String, forceAskUser: Boolean = false): Credentials {
-        val usingLocalArtifacts: Boolean by project.extensions
+        val usingLocalArtifacts: Boolean = project.property("usingLocalArtifacts") as Boolean
         if (usingLocalArtifacts) {
             return Credentials("empty", "empty")
         }

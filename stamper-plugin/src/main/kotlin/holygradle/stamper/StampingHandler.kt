@@ -13,12 +13,10 @@ open class StampingHandler(private val project: Project) : StampingProvider {
     val patternReplacers: Collection<PatternReplacer> get() = _patternReplacers
 
     val taskDescription = "Stamp things"
-    private var _runPriorToBuild = false
 
     override var taskName: String = "stampFiles"
 
-    override val runPriorToBuild: Boolean
-        get() = _runPriorToBuild
+    override var runPriorToBuild: Boolean = false
 
     fun files(filePattern: String, config: Closure<Replacer>): Replacer {
         val replacer = PatternReplacer(filePattern)

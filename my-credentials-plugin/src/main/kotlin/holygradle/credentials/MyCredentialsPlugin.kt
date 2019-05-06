@@ -55,27 +55,6 @@ class MyCredentialsPlugin : Plugin<Project> {
         // Define 'my' DSL to allow user to retrieve secure user-specific settings.
         MyHandler.defineExtension(project, credentialStorePath)
         
-        /**************************************
-         * Tasks
-         **************************************/
-        val usingLocalArtifacts: Boolean by project.extensions
-        if (project == project.rootProject && !usingLocalArtifacts) {
-            val taskName = "cacheCredentials"
-            var credTask = project.tasks.findByName(taskName)
-            if (credTask == null) {
-                credTask = project.task<DefaultTask>(taskName) {
-                    group = "Credentials"
-                    description = "Refreshes and caches all credentials."
-                }
-            }
-            credTask.doLast {
-                val separator = "-".repeat(80)
-                println(separator)
-                println("Please use 'credential-store.exe' instead.")
-                println(separator)
-            }
-        }
-
         timer.endBlock()
     }
 }
