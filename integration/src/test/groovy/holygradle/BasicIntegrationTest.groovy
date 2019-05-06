@@ -2,7 +2,6 @@ package holygradle
 
 import holygradle.test.AbstractHolyGradleIntegrationTest
 import holygradle.test.WrapperBuildLauncher
-import org.junit.Ignore
 import org.junit.Test
 
 /**
@@ -50,7 +49,6 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
      * This is a basic smoke test, just to make sure the plugins initialize correctly when all used together, and
      * produce the expected list of tasks.
      */
-    @Ignore
     @Test
     public void testAllPluginsInitialiseTogether() {
         compareBuildOutput("tAPIT") { WrapperBuildLauncher launcher ->
