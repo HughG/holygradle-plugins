@@ -127,7 +127,7 @@ open class DevEnvTask: DefaultTask() {
     ) {
         val targetSwitch = if (useIncredibuild) {"/Build"} else {"/build"}
         val configSwitch = if (useIncredibuild) {"/cfg=\"${configuration}|${platform}\""} else {"${configuration}^|${platform}"}
-        val buildToolName = if (useIncredibuild) {"Incredibuild"} else {"Env"}
+        val buildToolName = if (useIncredibuild) {"Incredibuild"} else {"DevEnv"}
         val outputFile = File(solutionFile.parentFile, "build_${configuration}_${platform}.txt")
         val title = "${project.name} (${platform} ${configuration})"
 

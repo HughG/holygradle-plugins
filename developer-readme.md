@@ -103,6 +103,9 @@ publishing, if you want.  See the section on publishing below for more details.
 > 
 >     java.nio.file.FileSystemException: <filename>: A required privilege is not held by the client
 > 
+> If this error occurs even though you are running in an admin command prompt, it may be because your build is re-using
+> a compatible Gradle daemon which was started from a non-admin process.  Please run `gradlew --stop` then try again.
+>  
 > We may remove symlink support, and hence this test, once directory junction creation has been fully tested.
 
 Run tests with `gradlew test` for unit tests, and `gradlew integTest` for integration tests.  These use JUnit, so you can do the

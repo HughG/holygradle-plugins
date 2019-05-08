@@ -1448,7 +1448,14 @@ path.
 
 If you set this to point to a network share, the Holy Gradle will use a gloss:symlink[].  If your user account has local
 Administrator rights, then this requires the Gradle process to run with Administrator privileges on Windows 8 and above.
-Putting your cache on a share is not recommended, for performance reasons.
+In this case, if you run Gradle from a non-admin command prompt, you'll get an exception like the following.
+
+>     java.nio.file.FileSystemException: <filename>: A required privilege is not held by the client
+
+If this error occurs even though you are running in an admin command prompt, it may be because your build is re-using
+a compatible Gradle daemon which was started from a non-admin process.  Please run `gradlew --stop` then try again.
+
+In any case, putting your cache on a share is not recommended, for performance reasons.
 
 [[useRelativePathFromIvyXml]]
 ==== Relative paths for transitive dependencies

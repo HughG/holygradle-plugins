@@ -40,12 +40,9 @@ class PrerequisitesChecker(
         // The 'ok' variable is not really stateful. Its purpose is to determine the return value for this method.
         // It will be set to false if the fail method is called.
         ok = true
-        if (parameter == null) {
-            println("Checking '${name}'...")
-        } else {
-            println("Checking '${name}' (${parameter.toList()})...")
-        }
+        print("Checking '${name}' (${parameter?.joinToString() ?: "no parameters"}) ... ")
         checkAction.execute(this)
+        println("done")
         return ok
     }
     

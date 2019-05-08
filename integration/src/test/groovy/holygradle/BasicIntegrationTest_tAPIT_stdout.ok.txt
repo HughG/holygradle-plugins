@@ -1,4 +1,5 @@
 Using pluginsRepoOverride=[active]
+Checking 'Java' (1.8) ... done
 :tasks
 
 ------------------------------------------------------------
@@ -9,10 +10,6 @@ Build Setup tasks
 -----------------
 init - Initializes a new Gradle build.
 wrapper - Generates Gradle wrapper files.
-
-Credentials tasks
------------------
-cacheCredentials - Refreshes and caches all credentials.
 
 Custom Gradle tasks
 -------------------
@@ -70,10 +67,7 @@ generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xm
 packageEverything - Creates all zip packages for project 'tAPIT'.
 publish - Publishes all publications produced by this project.
 repackageEverything - As 'packageEverything' but doesn't auto-generate any files.
-
-Source Dependencies tasks
--------------------------
-fixMercurialIni - Modify/create your mercurial.ini file as required.
+republish - 'Republishes' the artifacts for the module.
 
 Stamping tasks
 --------------
@@ -87,8 +81,6 @@ unitTestRelease - Run the Release unit tests for 'tAPIT'.
 Other tasks
 -----------
 buildAndTestAll - Build 'tAPIT' and all dependent projects in Debug and Release, and run unit tests.
-checkPrerequisiteHgAuth
-checkPrerequisiteJava1.7
 extractSevenZip - Unpack build dependency 'sevenZip'
 packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tAPIT'.
 

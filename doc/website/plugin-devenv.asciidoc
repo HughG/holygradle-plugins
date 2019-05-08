@@ -75,22 +75,43 @@ DevEnv {
 }
 ----
 
+The +version+ must match one of the following forms.
+
+- +VSnnn+, where all except the last digit is used to match the major version.
+- +nn.n+, which matches an exact version (for Visual Studio 2017 and later; since Holy Gradle
+link:release_notes.html#_7_10_3[]).
+- +nn.++, which matches the major version and ignores the minor version (for Visual Studio 2017 and later;
+since Holy Gradle link:release_notes.html#_7_10_3[]).
+
 The +version+ is used to construct a path to +devenv.com+ as follows.
 
-- Get the value of the +<version>COMNTOOLS+ environment variable, for example, +VS100COMNTOOLS+
-- The resulting path will be appended with +../IDE/devenv.com+
+- If the +version+ string starts with +"VS"+, get the value of the +<version>COMNTOOLS+ environment variable, for
+example, +VS100COMNTOOLS+.
+- If that environment variable is defined and has a non-empty value, the resulting path will have +../IDE/devenv.com+
+appended.
+- (Since Holy Gradle link:release_notes.html#_7_10_1[].) If the variable is undefined or empty, try to find the
++vswhere.exe+ tool in both +%ProgramFiles(x86)%\Microsoft Visual Studio\Installer+ and
++%ProgramFiles%\Microsoft Visual Studio\Installer+ for +vswhere.exe+.
+- If it is not found, then fail.
+- If it is found, then pass the +version+ string to +vswhere.exe+ to find the installation path.
+- The resulting path will have +/Common7/IDE/devenv.com+ appended.
 
-The different versions of Visual Studio have environment variables which correspond as follows
+The different versions of Visual Studio have environment variables and internal versions which correspond as follows.
+From Visual Studio 2017 onwards, there is no environment variable.
 
-[options="header",width="30%"]
+[options="header",width="70%"]
 |====
-|Version |Variable
-|2005 |+VS80COMNTOOLS+
-|2008 |+VS90COMNTOOLS+
-|2010 |+VS100COMNTOOLS+
-|2012 |+VS110COMNTOOLS+
-|2013 |+VS120COMNTOOLS+
-|2015 |+VS140COMNTOOLS+
+|VS Product Version |Holy Gradle Version String |Variable |VS Internal Version
+|2005 |+VS80+ or +8.0+ |+VS80COMNTOOLS+ |8.0
+|2008 |+VS90+ or +9.0+ |+VS90COMNTOOLS+ |9.0
+|2010 |+VS100+ or +10.0+ |+VS100COMNTOOLS+ |10.0
+|2012 |+VS110+ or +11.0+ |+VS110COMNTOOLS+ |11.0
+|2013 |+VS120+ or +12.0+ |+VS120COMNTOOLS+ |12.0
+|2015 |+VS140+ or +14.0+ |+VS140COMNTOOLS+ |14.0
+.4+|2017 |+15.0+ |n/a |15.0
+|+15.1+ |n/a |15.1
+|_etc._ |n/a |_etc._
+|+15.++ |n/a |Latest of any installed "15.x"
 |====
 
 -> Call this method exactly once.  As of version link:release_notes.html#_7_7_0[], there is no default; previously it

@@ -32,7 +32,7 @@ class CustomGradleCorePlugin : Plugin<Project> {
         // DSL extension 'prerequisites' to allow build script to declare and verify prerequisites.
         val prerequisites = PrerequisitesExtension.defineExtension(target)
                
-        prerequisites.specify("Java", "1.7").check()
+        prerequisites.specify("Java", "1.8").check()
                
         // DSL extension 'pluginUsages' to help determine actual version numbers used (deprecated, should later replace with versionInfo)
         project.extensions.create("pluginUsages", PluginUsages::class.java, target)
