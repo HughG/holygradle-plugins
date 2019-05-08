@@ -5,6 +5,9 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin.iml" group="artifactory-manager-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin_main.iml" filepath="$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin_main.iml" group="artifactory-manager-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin_test.iml" filepath="$PROJECT_DIR$/.idea/modules/artifactory-manager-plugin/artifactory-manager-plugin_test.iml" group="artifactory-manager-plugin" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_main.iml" group="buildSrc" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" filepath="$PROJECT_DIR$/.idea/modules/buildSrc_test.iml" group="buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/credential-store/credential-store.iml" filepath="$PROJECT_DIR$/.idea/modules/credential-store/credential-store.iml" group="credential-store" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" filepath="$PROJECT_DIR$/.idea/modules/custom-gradle-core-plugin/custom-gradle-core-plugin.iml" group="custom-gradle-core-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/custom-gradle-core-plugin/custom-gradle-core-plugin_main.iml" filepath="$PROJECT_DIR$/.idea/modules/custom-gradle-core-plugin/custom-gradle-core-plugin_main.iml" group="custom-gradle-core-plugin" />
