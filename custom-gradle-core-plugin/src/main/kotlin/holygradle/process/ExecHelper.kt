@@ -15,6 +15,7 @@ class ProcessOutputStreams(val stdout: OutputStream, val stderr: OutputStream)
  * Utility methods related to executing processes.
  */
 object ExecHelper {
+    @JvmStatic
     fun executeAndReturnResultAsString(
             logger: Logger,
             execMethod: (Action<ExecSpec>) -> ExecResult,

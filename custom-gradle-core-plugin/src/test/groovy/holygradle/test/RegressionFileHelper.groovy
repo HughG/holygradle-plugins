@@ -63,8 +63,12 @@ class RegressionFileHelper {
     public File getTestFile(String testName) {
         return new File(getBaseDir(testName).path + ".test.txt")
     }
-    
+
     public void checkForRegression(String testName) {
+        checkForRegression(testName, false)
+    }
+
+    public void checkForRegression(String testName, boolean stripEmptyLines) {
         File okFile = getOkFile(testName)
         File testFile = getTestFile(testName)
         if (!okFile.exists()) {
@@ -73,18 +77,40 @@ class RegressionFileHelper {
         if (!testFile.exists()) {
             fail("Regression output file ${testFile.path} does not exist.")
         }
-        assertEquals("Regression file check for ${testFile.name}", okFile.text, testFile.text)
+        // This is annoying. The mechanism for replacing patterns doesn't allow for replacing multiple lines. So when
+        // we have a situation where a line occurs in test output in some circumstances and does not affect the test
+        // result, we can replace the line in question with null but then the test fails because of the empty line after.
+        // This stripEmptyLines mechanism allows all empty lines to be removed from the file in such a situation.
+        String okText = (stripEmptyLines) ? stripEmptyLinesFromText(okFile) : okFile.text
+        String fileText = (stripEmptyLines) ? stripEmptyLinesFromText(testFile) : testFile.text
+        assertEquals("Regression file check for ${testFile.name}", okText, fileText)
     }
 
-    public static String toStringWithPlatformLineBreaks(String lines) {
+    public static String toStringWithPlatformLineBreaks(Closure block) {
         StringWriter s = new StringWriter()
         AbstractHolyGradleTest.useCloseable(new PlatformLineWriter(s)) { Writer plw ->
             plw.withPrintWriter { PrintWriter pw ->
-                lines.eachLine { String line ->
-                    pw.println(line)
-                }
+                block(pw)
             }
         }
         return s.toString()
+    }
+
+    public static String toStringWithPlatformLineBreaks(String lines) {
+        return toStringWithPlatformLineBreaks { PrintWriter pw ->
+            lines.eachLine { String line ->
+                pw.println(line)
+            }
+        }
+    }
+
+    public String stripEmptyLinesFromText(File file) {
+        return toStringWithPlatformLineBreaks { PrintWriter pw ->
+            file.eachLine { String line ->
+                if (!line.empty) {
+                    pw.println(line)
+                }
+            }
+        }.trim()
     }
 }

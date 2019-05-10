@@ -91,7 +91,7 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
             // Use custom init script.
             launcher.addArguments("-I", customInitScript.toString())
             // Access plugins from a local repo.
-            launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}", "-u")
+            launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}")
             // Show full stacktrace in case of error.
             launcher.addArguments("-S")
             maybeAddExtraArguments(launcher)
@@ -109,15 +109,23 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
                 } catch (TaskExecutionException e) {
                     if (e.cause?.message?.startsWith("Could not install Gradle distribution from")) {
                         println "Failed to install base Gradle distribution."
-                        println "Try re-running tests with proxy arguments: -Dhttp.proxyHost=xxx -Dhttp.proxyPort=NNNN"
+                        println "Try re-running tests with proxy arguments: " +
+                            "-Dhttp.proxyHost=xxx -Dhttp.proxyPort=NNNN " +
+                            "-Dhttps.proxyHost=xxx -Dhttps.proxyPort=NNNN"
                     }
                 } catch (RuntimeException e) {
-                    println(e.toString())
-                    error = errorOutput.toString()
+                    //Print stack trace to stderr
+                    e.printStackTrace(System.err)
+
+                    // Store Exception message as String
+                    StringWriter errorStringWriter = new StringWriter()
+                    e.printStackTrace(new PrintWriter(errorStringWriter))
+                    error = errorStringWriter.toString()
                 }
                 if (error == null) {
                     fail("Expected failure but there was none.")
                 }
+                System.err.println("ERROR: ${error}")
                 launcher.expectedFailures.each {
                     assertTrue("Error message should contain '${it}' but it contained: ${error}.", error.contains(it))
                 }
