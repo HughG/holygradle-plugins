@@ -108,14 +108,6 @@ class SpeedyUnpackManyTask
             logger.info "SpeedyUnpackManyTask: creating unpack dir ${entry.unpackDir}"
             FileHelper.ensureMkdirs(entry.unpackDir)
         }
-        if (!entry.applyUpToDateChecks) {
-            // If we're not using the normal Gradle mechanism, reset the info file.
-            if (infoFile.exists()) {
-                logger.info "SpeedyUnpackManyTask: re-creating info file ${infoFile}"
-                FileHelper.ensureDeleteFile(infoFile)
-                infoFile.createNewFile()
-            }
-        }
 
         Unzipper localUnzipper = unzipper // capture private for closure
         zipFilesToUnpack.each { File file ->
@@ -125,6 +117,7 @@ class SpeedyUnpackManyTask
 
             if (!entry.applyUpToDateChecks) {
                 // If we're not using the normal Gradle mechanism, update the info file.
+                infoFile.setWritable(true)
                 infoFile.withWriterAppend { BufferedWriter bw ->
                     bw.withPrintWriter { PrintWriter writer ->
                         writer.println("Unpacked from: " + file.name)
