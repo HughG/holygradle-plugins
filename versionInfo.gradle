@@ -5,17 +5,26 @@ project.ext.writeRepoInfo = { File repoDir, OutputStream os ->
     // As long as we're not really publishing (and maybe just publishing locally for integration tests),
     // allow repos (most likely, the local repo) to have no ".hg" folder.
     boolean allowUnknown = !project.ext.getIsReallyPublishing()
-    ExecResult result
-    result = exec {
-        executable = "hg"
-        args = ["paths", "default"]
-        standardOutput = os
-        workingDir = repoDir
-        ignoreExitValue = allowUnknown
+    new ByteArrayOutputStream().withStream { OutputStream errorStream ->
+        ExecResult result = exec {
+            executable = "hg"
+            args = ["paths", "default"]
+            errorOutput = errorStream
+            workingDir = repoDir
+            ignoreExitValue = allowUnknown
+        }
+        // If "hg paths default" returns 1 and outputs "not found!", that just means the folder has no default remote,
+        // which is perfectly valid for a new, never-pushed repo, or a dummy "local" repo.
+        if (result.exitValue == 0)
+        ) {
+            errorStream.writeTo(os)
+        } else if (result.exitValue == 1 && errorStream.toString().replaceAll('[\\r\\n]', '') == 'not found!') {
+            os.println("unknown_remote")
+        } else {
+            result.assertNormalExitValue() // to throw the appropriate exception from exec
+        }
     }
-    if (result.exitValue != 0) {
-        os.println("unknown_remote")
-    }
+
     (new PrintStream(os)).withStream { it.print(" ") }
     result = exec {
         executable = "hg"

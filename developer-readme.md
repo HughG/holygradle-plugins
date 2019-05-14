@@ -10,7 +10,7 @@ This repository contains:
 
 # Prerequisites
  - Java JDK 1.8 - you do need the dev-kit, not just the run-time.
- - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 2017.1.
+ - IntelliJ IDEA - optional but very useful.  Currently the source is developed with version 2018.1.
  - JAVA_HOME environment variable pointing to your JDK e.g. JAVA_HOME=C:\Program Files\Java\jdk1.8.0_141
    - In IntelliJ IDEA, you may need to configure this for the project, in the "File > Project Structure..." dialog under
    "SDKs".  BUT, see the section below about 'gradle.properties', before attempting to open the project in IDEA.
@@ -31,7 +31,11 @@ This repository contains:
     For this open File > Settings > Appearance & Behavior > Path Variables here you should add a setting for
     GRADLE_USER_HOME with the path to your gradle cache. 
  - You may also need to configure IntelliJ to point to your installed JDK, in the "Project Structure" dialog.
- - Optionally, an Artifactory server configured with:
+  - Visual Studio 2017 with C++ support, and the Windows 8.1 SDK, to build credential-store.
+   - In the Visual Studio 2017 installer, on the "Individual Components" tab, you need to select "Compilers, build
+   tools, and runtimes > Windows Universal CRT SDK" or you'll get an error about being unable to find `stdio.h` when
+   compiling `stdafx.h`.
+ - For publishing, an Artifactory server configured with:
    - an Ivy repository for publishing Gradle plugins to. It should support releases and snapshots.
    - a remote repo pointing to Maven Central 
    - one for publishing plugin snapshots for testing modifications to plugins without affecting existing plugin users.
@@ -49,6 +53,7 @@ of your choice, containing a file with that name.
 ## Creating gradle.properties
 Create 'gradle.properties' in the root of your workspace add define these properties:
 ```
+chosenDevEnvVersion=VS150
 artifactoryServer=<fully qualified domain name of artifactory server, including port if necessary,
   e.g., http://artifact-server.company.com:8081/artifactory/>
 artifactoryPluginRepo=<name of the repository for obtaining dependent plugins, e.g., plugins-release>
@@ -59,6 +64,8 @@ artifactoryPluginSnapshotPublishRepo=<name of the (non-remote, non-virtual) repo
 artifactoryUsername=<username>
 artifactoryPassword=<encrypted artifactory password>
 ```
+
+The 'chosenDevEnvVersion' should be, e.g., "VS150" to use the C++ compiler from Visual Studio 2017.
 
 If you don't want to use an Artifactory server, don't define the `artifactoryServer` variable.
 
@@ -200,12 +207,12 @@ and https://github.com/gradle/kotlin-dsl/issues/390 which describes why we can't
 
 # Documentation
 Documentation was previously in the wiki for this repo but has moved to
-http://holygradle.bitbucket.org/, using AsciiDoc to allow for richer diagrams, linking, etc.
+http://holygradle.bitbucket.io/, using AsciiDoc to allow for richer diagrams, linking, etc.
 
 If you're using the Holy Gradle within a company, there may be a custom local build of those web
 pages available.
 
-## Installing Cygwin utilities.
+## Installing document generation utilities.
 
 To install AsciiDoc under Cygwin in Windows, follow these steps.
 
@@ -218,17 +225,13 @@ setup-x86_64.exe -q -p proxy-server.company.com:8080
 ```
 
 To install GraphViz for diagrams, and Pygments for syntax highlighting, you have to install packages from
-`cygwinports.org`, with the following steps.
+To install GraphViz for diagrams, and Pygments for syntax highlighting, you have to install packages from
+the Python Package Index, with the following steps.
 
-1. Follow the instructions at `http://cygwinports.org/` to register their public key and add their site to your list of
-mirrors.
-2. Run `setup_x86_64.exe` again as described above, without the `-P` option, and install the packages "graphviz" and
-"python-pygments".  If you get the following error, add the `-X` command line option.
-```
-Mirror Error:  Setup.ini signature ftp://ftp.cygwinports.org/pub/cygwinports/x86_64/setup.bz2.sig from
-ftp://ftp.cygwinports.org/pub/cygwinports/ failed to verify.
-Possible corrupt mirror?  Setup.ini rejected.
-```
+1. Download Python 3.5 (https://www.python.org/downloads/release/python-350/). This version is
+required to avoid conflicts with Vitrea.
+2. Add the Python installation directory and the Scripts subdirectory to your PATH.
+3. Run `pip install Pygments graphvis`
 
 ## Building the documentation
 
@@ -239,7 +242,7 @@ with `https://bitbucket.org/holygradle/holygradle.bitbucket.org` as master.
 2. Run `gradlew buildPublicWebsite`.  (You can also run with `-Pquickly` to build without syntax
 colouring, which may be noticeably faster.)
 3. Run `hg addremove`, then commit and push to update the website.  The site is viewable at
-`http://holygradle.bitbucket.org/`.
+`http://holygradle.bitbucket.io/`.
 
 You can also build a custom local version for your own organisation, containing specialised or
 confidential information.  For that you need to set `publicWebsitePublishUrl` and run

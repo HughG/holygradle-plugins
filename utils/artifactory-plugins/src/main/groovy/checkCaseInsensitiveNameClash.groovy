@@ -1,3 +1,5 @@
+package holygradle
+
 import groovyx.net.http.HttpResponseDecorator
 import groovyx.net.http.ParserRegistry
 import groovyx.net.http.RESTClient
@@ -142,10 +144,11 @@ class EmailNotifier2 {
     // "executions" block is executed is the "bin" folder of the installation.
     private static final File ARTIFACTORY_ROOT = new File("..")
     // Read all non-empty lines for email addresses.
-    private static final List<String> ALERT_EMAIL_ADDRESSES =
-        new File(ARTIFACTORY_ROOT, "etc/plugins/conf/notificationEmails.txt").
-            readLines().
-            findAll { !it.trim().empty }
+    private static final Set<String> ALERT_EMAIL_ADDRESSES =
+        new File(ARTIFACTORY_ROOT, "etc/plugins/conf/notificationEmails.txt")
+            .readLines()
+            .findAll { !it.trim().empty }
+            .toSet()
 
     private final Logger log
     private final Security security
@@ -195,9 +198,9 @@ class EmailNotifier2 {
         log.debug("sendNotifications: security.currentUsername = ${security.currentUsername}")
         log.debug("sendNotifications: currentUserEmail = ${currentUserEmail}")
         boolean isValidCurrentUserEmail = (currentUserEmail != null && !currentUserEmail.trim().empty)
-        List<String> emailAddresses = ALERT_EMAIL_ADDRESSES
+        Set<String> emailAddresses = new HashSet<String>(ALERT_EMAIL_ADDRESSES)
         if (isValidCurrentUserEmail) {
-            emailAddresses = emailAddresses + currentUserEmail
+            emailAddresses += currentUserEmail
         }
         log.debug("sendNotifications: emailAddresses = ${emailAddresses}")
         for (email in emailAddresses) {
@@ -215,10 +218,10 @@ class EmailNotifier2 {
 def List<ItemInfo> checkSiblings(RepoPath p) {
     List<ItemInfo> siblings = repositories.getChildren(p.parent)
     List<ItemInfo> clashes = siblings.findAll {
-        log.info("    sibling " + it)
+        log.debug("    sibling " + it)
         final boolean clash = (p.path != it.repoPath.path && p.path.equalsIgnoreCase(it.repoPath.path))
         if (clash) {
-            log.info("        CLASH!")
+            log.debug("        CLASH!")
         }
         return clash
     }
@@ -228,7 +231,7 @@ def List<ItemInfo> checkSiblings(RepoPath p) {
 def void checkPathForCaseClashes(RepoPath repoPath, Closure asSystem) {
     List<ItemInfo> clashes = []
     for (RepoPath path = repoPath; !path.root; path = path.parent) {
-        log.info("Checking " + path)
+        log.debug("Checking " + path)
         clashes += checkSiblings(path)
     }
 
@@ -240,7 +243,7 @@ def void checkPathForCaseClashes(RepoPath repoPath, Closure asSystem) {
         // Send email as well as giving an error.  This is helpful because the user won't see a useful error message
         // unless the case clash is in the filename, rather than in any parent folder.
         new EmailNotifier2(log, security, asSystem).sendNotifications(
-            "Blocked deploy to case-insensitive-equal path",
+            "Blocked deploy by ${security.currentUsername} (${security.currentUser().email}) to case-insensitive-equal path",
             errorMessage
         )
 

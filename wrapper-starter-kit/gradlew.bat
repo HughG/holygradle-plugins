@@ -21,6 +21,7 @@ set DIRNAME=%~dp0
 if "%DIRNAME%" == "" set DIRNAME=.
 set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%
+for %%f in ("%DIRNAME:~0,-1%") do set JUSTDIRNAME=%%~nxf
 
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS=
@@ -73,16 +74,28 @@ FOR /f %%a IN ("%CMD_LINE_ARGS%") DO (
   if /i "%%a" == "fetchAllDependencies" set NO_DAEMON_OPTION=--no-daemon
 )
 
-@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-@rem We need this file copied, even though the Holy Gradle build itself doesn't use it,
-@rem because the wrapper-starter-kit subproject needs to copy it from here.
-if exist "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" (
-  copy "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" "%~dp0gradle\wrapper\base-url-lookup.txt"
-)
+if "%JUSTDIRNAME%"=="holy-gradle-plugins" (
 
-@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" (
-  copy "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" "%~dp0gradle\wrapper\proxy-lookup.txt"
+  @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+  @rem We need this file copied, even though the Holy Gradle build itself doesn't use it,
+  @rem because the wrapper-starter-kit subproject needs to copy it from here.
+  if exist "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" (
+    copy "%~dp0local\holy-gradle-plugins\base-url-lookup.txt" "%~dp0gradle\wrapper\base-url-lookup.txt"
+  ) else (
+    echo ************************************************************
+    echo WARNING: No local file found for wrapper\base-url-lookup.txt
+    echo ************************************************************
+  )
+
+  @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+  if exist "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" (
+    copy "%~dp0local\holy-gradle-plugins\proxy-lookup.txt" "%~dp0gradle\wrapper\proxy-lookup.txt"
+  ) else (
+    echo *********************************************************
+    echo WARNING: No local file found for wrapper\proxy-lookup.txt
+    echo *********************************************************
+  )
+
 )
 
 @rem Try to find a proxy server and port based on the DNS suffix values on the local machine.
@@ -101,52 +114,9 @@ if exist "%~dp0gradle\wrapper\proxy-lookup.txt" (
   @rem We need a do-nothing command above because a label must label a command, not a closing parenthesis.
 )
 
-@rem If we're building the Holy Gradle, we just use the standard wrapper properties,
-@rem and there will be no project-local init-scripts for us to run.
-if "%APP_HOME:~-21%"=="\holy-gradle-plugins\" (
-    goto skipWriteWrapperProperties
-)
-
 set INIT_SCRIPT_OPTS=
 FOR %%f IN ("%APP_HOME%gradle\init.d\*.gradle") DO (
     SET "INIT_SCRIPT_OPTS=!INIT_SCRIPT_OPTS! -I "%%f""
-)
-set DISTRIBUTION_ORIGINAL_PATH_FILE="%APP_HOME%gradle\wrapper\distributionPath.txt"
-
-@rem Find a local_artifacts sub-folder, in this folder or any ancestor folder.
-set LOCAL_ARTIFACTS_DIR_NAME=local_artifacts
-set LOCAL_ARTIFACTS_DIR_RELATIVE_URL=
-set LOCAL_ARTIFACTS_DIR_PATH=
-set "dir=%~f0"
-:findLocalArtifactsLoop
-  @rem Get the parent directory using ~dp trick, then strip the trailing '\'
-  for %%d in ("%dir%") do set "dir=%%~dpd"
-  set "dir=%dir:~0,-1%"
-
-  if exist "%dir%\%LOCAL_ARTIFACTS_DIR_NAME%\" (
-    set "LOCAL_ARTIFACTS_DIR_PATH=%dir%\%LOCAL_ARTIFACTS_DIR_NAME%"
-    goto :findLocalArtifactsDone
-  )
-
-  if "%dir:~-1%" == ":" (
-    goto :findLocalArtifactsDone
-  )
-
-  set "LOCAL_ARTIFACTS_DIR_RELATIVE_URL=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%"
-goto findLocalArtifactsLoop
-
-:findLocalArtifactsDone
-
-
-
-if not "x%LOCAL_ARTIFACTS_DIR_PATH%"=="x" (
-  @rem We have to use goto here, instead of an "else (...)", because Windows will try to parse the
-  @rem "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%" inside the else, and fail because the variable isn't set.
-  if exist "%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle" (
-    @rem If the wrapper folder exists inside local_artifacts folder then write wrapper properties 
-    @rem based on local_artifacts location.
-    goto writeWrapperPropertiesForLocalArtifacts
-  )
 )
 
 if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
@@ -175,54 +145,19 @@ if "x%HOLY_GRADLE_REPOSITORY_BASE_URL%"=="x" (
   )
 )
 
+if "%JUSTDIRNAME%"=="holy-gradle-plugins" (
 
-if not exist "%APP_HOME%gradle\wrapper\gradle-wrapper.properties.in" (
-    echo Not generating "%APP_HOME%\gradle\wrapper\gradle-wrapper.properties" because ".in" file does not exist.
-    goto skipWriteWrapperProperties
+  @rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
+  if exist "%~dp0local\holy-gradle-plugins\certs" (
+    xcopy /i /s /y "%~dp0local\holy-gradle-plugins\certs" "%~dp0gradle\wrapper\certs"
+  ) else (
+    echo **************************************************
+    echo WARNING: No local files found for wrapper\certs\**
+    echo **************************************************
+  )
+
 )
 
-
-@rem Write the distribution base URL to a file and concat with the properties and path.
-@rem Note that this "set" trick (to echo without a newline) sets ERRORLEVEL to 1.
-if not "%HOLY_GRADLE_REPOSITORY_BASE_URL:~-1%"=="/" set HOLY_GRADLE_REPOSITORY_BASE_URL=%HOLY_GRADLE_REPOSITORY_BASE_URL%/
-<nul set /p=distributionUrl=%GRADLE_DISTRIBUTION_URL%> "%APP_HOME%gradle\wrapper\distributionUrlBase.txt"
-set DISTRIBUTION_PATH_FILE=%DISTRIBUTION_ORIGINAL_PATH_FILE%
-goto writeWrapperProperties
-
-:writeWrapperPropertiesForLocalArtifacts
-
-REM The local_artifacts folder has a custom-gradle folder, so use the distribution in there.
-set LOCAL_DISTRIBUTIONS_DIR=%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle
-set DISTRIBUTION_LOCAL_DIR_NAME=
-for /d %%D in (%LOCAL_DISTRIBUTIONS_DIR%/gradle-*-bin) do (
-    if not x!DISTRIBUTION_LOCAL_DIR_NAME!x == xx (
-        echo WARNING: Found more than one local Gradle distribution under %LOCAL_DISTRIBUTIONS_DIR%
-        dir /b %LOCAL_DISTRIBUTIONS_DIR%
-    )
-    set DISTRIBUTION_LOCAL_DIR_NAME=%%D
-)
-<nul set /p=distributionUrl=../%LOCAL_ARTIFACTS_DIR_RELATIVE_URL%local_artifacts/custom-gradle/%DISTRIBUTION_LOCAL_DIR_NAME%/> "%APP_HOME%gradle\wrapper\distributionUrlBase.txt"
-
-set DISTRIBUTION_LOCAL_PATH_FILE="%APP_HOME%gradle\wrapper\distributionLocalPath.txt"
-echo %~nx0 found "%LOCAL_ARTIFACTS_DIR_PATH%"
-echo so will generate "%APP_HOME%gradle\wrapper\gradle-wrapper.properties"
-echo from %DISTRIBUTION_LOCAL_PATH_FILE%
-echo instead of %DISTRIBUTION_ORIGINAL_PATH_FILE%.
-set /p DISTRIBUTION_PATH= <%DISTRIBUTION_ORIGINAL_PATH_FILE%
-set DISTRIBUTION_LOCAL_PATH=%DISTRIBUTION_PATH:plugins-release/holygradle/=%
-<nul set /p=%DISTRIBUTION_LOCAL_PATH%>%DISTRIBUTION_LOCAL_PATH_FILE%
-
-set DISTRIBUTION_PATH_FILE=%DISTRIBUTION_LOCAL_PATH_FILE%
-
-:writeWrapperProperties
-copy >nul /y /a "%APP_HOME%gradle\wrapper\gradle-wrapper.properties.in"+"%APP_HOME%gradle\wrapper\distributionUrlBase.txt"+%DISTRIBUTION_PATH_FILE% "%APP_HOME%\gradle\wrapper\gradle-wrapper.properties" /b
-
-:skipWriteWrapperProperties
-
-@rem This "copy" makes sure that we use the most up-to-date list when *building* the plugins.
-if exist "%~dp0local\holy-gradle-plugins\certs" (
-  xcopy /i /s /y "%~dp0local\holy-gradle-plugins\certs" "%~dp0gradle\wrapper\certs"
-)
 if not exist "%APP_HOME%gradle\wrapper\certs" goto certsDone
 @rem Find keytool.exe from java.exe.
 
@@ -274,12 +209,16 @@ set TRUST_STORE_OPTS="-Djavax.net.ssl.trustStore=%APP_HOME%gradle\wrapper\cacert
 
 set CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
 
+:executeGradle
 @rem Execute Gradle
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% %HOLY_GRADLE_PROXY_OPTS% %TRUST_STORE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION% %INIT_SCRIPT_OPTS%
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% %HOLY_GRADLE_PROXY_OPTS% %TRUST_STORE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %CMD_LINE_ARGS% %NO_DAEMON_OPTION% %INIT_SCRIPT_OPTS% %HOLY_GRADLE_OPTS%
 
 :end
 @rem End local scope for the variables with windows NT shell
-if "%ERRORLEVEL%"=="123456" goto execute
+if exist .restart (
+    del .restart
+    goto executeGradle
+)
 if "%ERRORLEVEL%"=="0" goto mainEnd
 
 :fail
