@@ -1,17 +1,20 @@
 package holygradle.credentials
 
 import holygradle.custom_gradle.plugin_apis.CredentialSource
+import holygradle.custom_gradle.plugin_apis.CredentialStore
+import holygradle.custom_gradle.plugin_apis.Credentials
+import holygradle.custom_gradle.plugin_apis.DEFAULT_CREDENTIAL_TYPE
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import holygradle.kotlin.dsl.getValue
 import java.io.ByteArrayOutputStream
 
-open class MyHandler(private val project: Project, private val credentialStorePath: String) : CredentialSource {
+open class MyHandler(private val project: Project) : CredentialSource {
     companion object {
         @JvmStatic
-        fun defineExtension(project: Project, credentialStorePath: String): MyHandler {
+        fun defineExtension(project: Project): MyHandler {
             return if (project == project.rootProject) {
-                project.extensions.create("my", MyHandler::class.java, project, credentialStorePath)
+                project.extensions.create("my", MyHandler::class.java, project)
             } else {
                 val my: MyHandler by project.rootProject.extensions
                 project.extensions.add("my", my)
@@ -20,34 +23,26 @@ open class MyHandler(private val project: Project, private val credentialStorePa
         }
     }
 
-    private val separator = "&&&"
-    private val defaultCredentialType = "Domain Credentials"
-    private val credentialsCache = mutableMapOf<String, String>()
+    override val credentialStore: CredentialStore = WindowsCredentialStore()
+    private val credentialsCache = mutableMapOf<String, Credentials?>()
     val instructions: NamedDomainObjectContainer<InstructionsHandler> = project.container(InstructionsHandler::class.java)
 
     // This method returns userName&&&password (raw)
-    private fun getCachedCredentials(credStorageKey: String): String? {
-        var credStorageValue: String? = null
-        if (credentialsCache.containsKey(credStorageKey)) {
-            credStorageValue = credentialsCache[credStorageKey]
+    private fun getCachedCredentials(credStorageKey: String): Credentials? {
+        project.logger.debug("getCachedCredentials(${credStorageKey}) START: cache = ${credentialsCache}")
+
+        var credStorageValue: Credentials? = credentialsCache[credStorageKey]
+        if (credStorageValue != null) {
             project.logger.info("Requested credentials for '${credStorageKey}'. Found in cache.")
         } else {
-            val credentialStoreOutput = ByteArrayOutputStream()
-            val execResult = project.exec { spec ->
-                spec.isIgnoreExitValue = true
-                spec.commandLine(credentialStorePath, credStorageKey)
-                spec.standardOutput = credentialStoreOutput
-            }
-            if (execResult.exitValue == 0) {
-                credStorageValue = credentialStoreOutput.toString()
-                credentialsCache[credStorageKey] = credStorageValue
-                project.logger.info("Requested credentials for '${credStorageKey}'. Retrieved from Credential Manager")
-            } else {
-                project.logger.warn(
-                    "WARNING: Requested credentials for '${credStorageKey}' from Credential Manager but failed"
-                )
-            }
+            credStorageValue = credentialStore.readCredential(credStorageKey)
+            credentialsCache[credStorageKey] = credStorageValue
+            project.logger.info("Requested credentials for '${credStorageKey}'. Retrieved from Credential Manager")
         }
+
+        project.logger.debug("getCachedCredentials(${credStorageKey}) END: credStorageValue = ${credStorageValue}, " +
+                "cache = ${credentialsCache}")
+
         return credStorageValue
     }
     
@@ -56,28 +51,11 @@ open class MyHandler(private val project: Project, private val credentialStorePa
         if (usingLocalArtifacts) {
             return Credentials("empty", "empty")
         }
-        
-        var username = System.getProperty("user.name").toLowerCase()
+
+        val defaultUsername = System.getProperty("user.name").toLowerCase()
         val credStorageKey = getCredentialStorageKey(credentialType)
-        val credStorageValue = getCachedCredentials(credStorageKey)
-
-        if (forceAskUser || credStorageValue == null) {
-            return getCredentialsFromUserAndStore(credentialType, username)
-        }
-
-        val credentials = credStorageValue.split(separator)
-        username = credentials[0]
-        val password = when (credentials.size) {
-            1 -> ""
-            2 -> credentials[1]
-            else -> {
-                project.logger.warn("WARNING: Attempting to get credentials from store, got more than 2 fields")
-                username = credentials[1]
-                credentials[2]
-            }
-        }
-
-        return Credentials(username, password)
+        return getCachedCredentials(credStorageKey)
+                ?: getCredentialsFromUserAndStore(credentialType, defaultUsername)
     }
     
     private fun getCredentialStorageKey(credentialType: String): String = "Intrepid - ${credentialType}"
@@ -85,39 +63,25 @@ open class MyHandler(private val project: Project, private val credentialStorePa
     private fun getCredentialsFromUserAndStore(credentialType: String, currentUserName: String): Credentials {
         val my: MyHandler by project.extensions
         val instructionsHandler = my.instructions.findByName(credentialType)
-        val instructionsText = instructionsHandler?.instructions
-
+        val title = "Intrepid - ${credentialType}"
         val timeoutSeconds = 60 * 3
-        val userCred = CredentialsForm.getCredentialsFromUser(credentialType, instructionsText, currentUserName, timeoutSeconds)
+        val userCred =
+                CredentialsForm.getCredentialsFromUser(title, instructionsHandler?.instructions, currentUserName, timeoutSeconds)
         if (userCred == null) {
             throw RuntimeException("User did not supply credentials '${credentialType}' within ${timeoutSeconds} seconds.")
         } else {
-            val credStoreExe = credentialStorePath
             val credStorageKey = getCredentialStorageKey(credentialType)
-            val credStorageValue = "${userCred.userName}${separator}${userCred.password}"
-            credentialsCache[credStorageKey] = credStorageValue
-            val result = project.exec { spec ->
-                spec.isIgnoreExitValue = true
-                spec.commandLine(credStoreExe, credStorageKey, userCred.userName, userCred.password)
-                spec.standardOutput = ByteArrayOutputStream()
-            }
-            if (result.exitValue != 0) {
-                project.logger.error(
-                        "ERROR: Got exit code ${result.exitValue} while running ${credStoreExe} to store credentials."
-                )
-                project.logger.error("Maybe you need to install the x86 Microsoft Visual C++ Runtime?")
-                throw RuntimeException("Failed to store credentials.")
-            }
-            println("Saved '${credentialType}' credentials for user '${userCred.userName}'.")
+            credentialStore.writeCredential(credStorageKey, userCred)
+            println("Saved '${credentialType}' credentials for user '${userCred.username}'.")
             return userCred
         }
     }
 
-    override val username: String
-        get() = username(defaultCredentialType)
-    override val password: String
-        get() = password(defaultCredentialType)
+    override val username: String?
+        get() = username(DEFAULT_CREDENTIAL_TYPE)
+    override val password: String?
+        get() = password(DEFAULT_CREDENTIAL_TYPE)
     
-    fun username(credentialType: String): String = getCredentials(credentialType).userName
-    fun password(credentialType: String): String = getCredentials(credentialType).password
+    fun username(credentialType: String): String? = getCredentials(credentialType).username
+    fun password(credentialType: String): String? = getCredentials(credentialType).password
 }

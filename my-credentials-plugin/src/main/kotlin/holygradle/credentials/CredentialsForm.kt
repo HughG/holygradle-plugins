@@ -1,5 +1,6 @@
 package holygradle.credentials
 
+import holygradle.custom_gradle.plugin_apis.Credentials
 import javax.swing.*
 import java.awt.*
 import java.awt.event.*

@@ -1,13 +1,10 @@
 package holygradle.credentials
 
 import holygradle.custom_gradle.util.ProfilingHelper
-import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ResolvedArtifact
 import holygradle.kotlin.dsl.get
-import holygradle.kotlin.dsl.getValue
-import holygradle.kotlin.dsl.task
 import java.io.File
 
 class MyCredentialsPlugin : Plugin<Project> {
@@ -23,12 +20,11 @@ class MyCredentialsPlugin : Plugin<Project> {
          * Dependencies
          **************************************/
 
+        // TODO 2017-03-28 HughG: Use BuildScriptDependencies to get this instead?
         val credentialStoreArtifact: ResolvedArtifact? = runtimeResolvedConfiguration.firstLevelModuleDependencies
                 .flatMap { it.allModuleArtifacts }
                 .firstOrNull { it.name.startsWith("credential-store") }
-        @Suppress("UNNECESSARY_SAFE_CALL")
-        val credentialStorePath = credentialStoreArtifact?.file?.path
-        if (credentialStorePath == null) {
+        if (credentialStoreArtifact == null) {
             project.logger.error(
                     "Cannot initialise ${this::class.simpleName}: " +
                     "failed to find credential-store.exe in buildscript ${classpathConfigurationName} configuration"
@@ -53,7 +49,7 @@ class MyCredentialsPlugin : Plugin<Project> {
          **************************************/
             
         // Define 'my' DSL to allow user to retrieve secure user-specific settings.
-        MyHandler.defineExtension(project, credentialStorePath)
+        MyHandler.defineExtension(project)
         
         timer.endBlock()
     }

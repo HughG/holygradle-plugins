@@ -15,8 +15,7 @@ project.ext.writeRepoInfo = { File repoDir, OutputStream os ->
         }
         // If "hg paths default" returns 1 and outputs "not found!", that just means the folder has no default remote,
         // which is perfectly valid for a new, never-pushed repo, or a dummy "local" repo.
-        if (result.exitValue == 0)
-        ) {
+        if (result.exitValue == 0) {
             errorStream.writeTo(os)
         } else if (result.exitValue == 1 && errorStream.toString().replaceAll('[\\r\\n]', '') == 'not found!') {
             os.println("unknown_remote")
