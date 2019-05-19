@@ -14,15 +14,10 @@ class CommandLine(
         private val exec: (Action<in ExecSpec>) -> ExecResult
 ) : Command {
     override fun execute(configureExecSpec: Action<ExecSpec>, throwOnError: Predicate<Int>): String {
-        return ExecHelper.executeAndReturnResultAsString(
-            logger,
-            exec,
-            Action { spec: ExecSpec ->
-                spec.executable(path)
-                configureExecSpec(spec)
-            },
-            throwOnError
-        )
+        return ExecHelper.executeAndReturnResultAsString(logger, exec, throwOnError) {
+            executable(path)
+            configureExecSpec(this)
+        }
     }
 
     override fun execute(configureExecSpec: Action<ExecSpec>): String {

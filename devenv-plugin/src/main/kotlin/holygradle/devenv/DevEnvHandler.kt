@@ -4,8 +4,6 @@ import holygradle.kotlin.dsl.extra
 import org.gradle.api.Project
 import holygradle.kotlin.dsl.task
 import holygradle.process.ExecHelper
-import org.gradle.api.Action
-import org.gradle.process.ExecSpec
 import java.io.File
 import java.util.function.Predicate
 import java.util.regex.Matcher
@@ -15,13 +13,13 @@ import java.util.regex.Pattern
  * Copyright (c) 2016 Hugh Greene (githugh@tameter.org).
  */
 
-private class VSVersion(private val version: String) {
-    private val versionPattern = Pattern.compile(
-            "VS([0-9]+)(0)|" + // "VSnnnCOMNTOOLS" environment variable
-                    "([0-9]+)\\.([0-9]+|\\+)", // "nn.n" vswhere version string, also allowing "nn.+"
-            Pattern.CASE_INSENSITIVE
-    )
+private val versionPattern = Pattern.compile(
+        "VS([0-9]+)(0)|" + // "VSnnnCOMNTOOLS" environment variable
+                "([0-9]+)\\.([0-9]+|\\+)", // "nn.n" vswhere version string, also allowing "nn.+"
+        Pattern.CASE_INSENSITIVE
+)
 
+private class VSVersion(private val version: String) {
     val major: String
     val minor: String
     val rangeStart: String
@@ -88,7 +86,9 @@ open class DevEnvHandler(
                 throw RuntimeException(
                         "You must set the devenv version, for example, 'DevEnv { version \"VS120\"}' for the " +
                         "Visual Studio 2013 compiler, or \"VS100\" for the Visual Studio 2010 compiler. " +
-                        "This value is used to read the appropriate environment variable, for example, VS120COMMONTOOLS."
+                        "From Visual Studio 2017 onwards you can use a string without the \"VS\" prefix, " +
+                        "such as \"15.2\" to get an exact version match, or \"15.+\" to match only the major version. " +
+                        "This value is used to find the appropriate path to 'devenv.com'."
                 )
     }
 
@@ -166,21 +166,16 @@ open class DevEnvHandler(
         warningRegexes.add(Pattern.compile(regex))
     }
 
-    private fun getCommonToolsPathFromVSWhere(): File {
+    private fun getCommonToolsPathFromVSWhere(vsWhereLocation: String): File {
         val version = devEnvVersion
         val versionRange = "[${version.rangeStart},${version.rangeEnd})"
-        val installPath = ExecHelper.executeAndReturnResultAsString(
-                project.logger,
-                project::exec,
-                Action { spec: ExecSpec ->
-                    spec.commandLine(this.vswhereLocation,
-                            "-property", "installationPath",
-                            "-legacy",
-                            "-format", "value",
-                            "-version", versionRange)
-                },
-                Predicate { true }
-        )
+        val installPath = ExecHelper.executeAndReturnResultAsString(project.logger, project::exec, Predicate { true }) {
+            commandLine(vswhereLocation,
+                    "-property", "installationPath",
+                    "-legacy",
+                    "-format", "value",
+                    "-version", versionRange)
+        }
         if (installPath.trim().isEmpty()) {
             throw RuntimeException("vswhere.exe could not find a Visual Studio version in range ${versionRange}")
         }
@@ -205,16 +200,16 @@ open class DevEnvHandler(
                     listOf("ProgramFiles", "ProgramFiles(x86)") // look at 64-bit then 32-bit environment variables
                             .mapNotNull { System.getenv(it) } // collect all non-null environment variable values
                             .map { "${it}\\Microsoft Visual Studio\\Installer\\vswhere.exe" } // map to filenames
-            this.vswhereLocation = vswherePossibleLocations
+            val vswhereLocation = vswherePossibleLocations
                     .find { File(it).exists() } // return the first filename for which a file exists
 
-            if (this.vswhereLocation != null) {
-                return getCommonToolsPathFromVSWhere()
+            if (vswhereLocation != null) {
+                return getCommonToolsPathFromVSWhere(vswhereLocation)
             } else {
                 // Failed; now we need to pick the right error message.
                 val envVarComnTools = devEnvVersion.envVarName
                 throw RuntimeException(when {
-                    this.vswhereLocation == null ->
+                    System.getenv(envVarComnTools) != null ->
                             "Cannot find \"vswhere.exe\" to locate \"devenv.com\" " +
                                     "(should be in ${vswherePossibleLocations})."
                     pathFromEnvironment == null ->

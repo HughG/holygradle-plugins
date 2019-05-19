@@ -19,24 +19,43 @@ object ExecHelper {
     fun executeAndReturnResultAsString(
             logger: Logger,
             execMethod: (Action<ExecSpec>) -> ExecResult,
-            configureSpec: Action<ExecSpec>,
-            throwOnError: Predicate<Int>
+            throwOnError: Predicate<Int>,
+            configureSpec: Action<ExecSpec>
     ): String {
-        return execute(logger, execMethod, configureSpec, throwOnError).stdout.toString().trim()
+        return execute(logger, execMethod, throwOnError, { configureSpec.execute(this) } ).stdout.toString().trim()
+    }
+
+    fun executeAndReturnResultAsString(
+            logger: Logger,
+            execMethod: (Action<ExecSpec>) -> ExecResult,
+            throwOnError: Predicate<Int>,
+            configureSpec: ExecSpec.() -> Unit
+    ): String {
+        return execute(logger, execMethod, throwOnError, configureSpec).stdout.toString().trim()
+    }
+
+    @JvmStatic
+    fun execute(
+            logger: Logger,
+            execMethod: (Action<ExecSpec>) -> ExecResult,
+            throwOnError: Predicate<Int>,
+            configureSpec: Action<ExecSpec>
+    ): ProcessOutputStreams {
+        return execute(logger, execMethod, throwOnError, { configureSpec.execute(this) })
     }
 
     fun execute(
-        logger: Logger,
-        execMethod: (Action<ExecSpec>) -> ExecResult,
-        configureSpec: Action<ExecSpec>,
-        throwOnError: Predicate<Int>
+            logger: Logger,
+            execMethod: (Action<ExecSpec>) -> ExecResult,
+            throwOnError: Predicate<Int>,
+            configureSpec: ExecSpec.() -> Unit
     ): ProcessOutputStreams {
         var commandLine: List<String>? = null
 
         val stdout: OutputStream = ByteArrayOutputStream()
         val stderr: OutputStream = ByteArrayOutputStream()
         val execResult = execMethod(Action { spec ->
-            configureSpec.execute(spec)
+            spec.configureSpec()
             spec.standardOutput = stdout
             spec.errorOutput = stderr
             spec.isIgnoreExitValue = true
