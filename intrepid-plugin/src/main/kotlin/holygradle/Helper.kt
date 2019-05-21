@@ -11,10 +11,13 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.testfixtures.ProjectBuilder
 import java.io.File
 import java.nio.file.Paths
+import java.security.MessageDigest
 import java.util.*
 
 class Helper {
     companion object {
+        val MAX_VERSION_STRING_LENGTH = 50
+
         // Recursively navigates down subprojects to gather the names of all sourceDependencies which
         // have not specified sourceControlRevisionForPublishedArtifacts.
         @JvmStatic
@@ -106,6 +109,22 @@ class Helper {
                         )
             }
         }
+
+        /**
+         * Converts a file path to a version string, by hashing the path and prefixing "SOURCE".  A short, 4 character,
+         * hash is used because it may itself be used as part of a file path and some parts of Windows are limited to 260
+         * characters for the entire file path.
+         * @param path A file path
+         * @return A valid version string, of length at most {@link Helper#MAX_VERSION_STRING_LENGTH}.
+         */
+        fun convertPathToVersion(path: String): String {
+            val canonicalPath = File(path).canonicalPath
+
+            val sha1 = MessageDigest.getInstance("SHA1")
+            val digest = sha1.digest(canonicalPath.toByteArray())
+            return "SOURCE_" + digest.slice(0..3).joinToString(separator = "") { String.format("%02x", it) }
+        }
+
     }
 
 }

@@ -19,7 +19,7 @@ object ExecHelper {
     fun executeAndReturnResultAsString(
             logger: Logger,
             execMethod: (Action<ExecSpec>) -> ExecResult,
-            throwOnError: Predicate<Int>,
+            throwOnError: Predicate<Int> = Predicate { true },
             configureSpec: Action<ExecSpec>
     ): String {
         return execute(logger, execMethod, throwOnError, { configureSpec.execute(this) } ).stdout.toString().trim()
@@ -28,7 +28,7 @@ object ExecHelper {
     fun executeAndReturnResultAsString(
             logger: Logger,
             execMethod: (Action<ExecSpec>) -> ExecResult,
-            throwOnError: Predicate<Int>,
+            throwOnError: Predicate<Int> = Predicate { true },
             configureSpec: ExecSpec.() -> Unit
     ): String {
         return execute(logger, execMethod, throwOnError, configureSpec).stdout.toString().trim()
@@ -38,7 +38,7 @@ object ExecHelper {
     fun execute(
             logger: Logger,
             execMethod: (Action<ExecSpec>) -> ExecResult,
-            throwOnError: Predicate<Int>,
+            throwOnError: Predicate<Int> = Predicate { true },
             configureSpec: Action<ExecSpec>
     ): ProcessOutputStreams {
         return execute(logger, execMethod, throwOnError, { configureSpec.execute(this) })
@@ -47,7 +47,7 @@ object ExecHelper {
     fun execute(
             logger: Logger,
             execMethod: (Action<ExecSpec>) -> ExecResult,
-            throwOnError: Predicate<Int>,
+            throwOnError: Predicate<Int> = Predicate { true },
             configureSpec: ExecSpec.() -> Unit
     ): ProcessOutputStreams {
         var commandLine: List<String>? = null

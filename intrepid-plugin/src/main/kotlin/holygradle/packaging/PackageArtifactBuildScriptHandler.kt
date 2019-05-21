@@ -2,6 +2,8 @@ package holygradle.packaging
 
 import holygradle.Helper
 import holygradle.IntrepidPlugin
+import holygradle.artifacts.toModuleVersionIdentifier
+import holygradle.artifacts.tryToModuleVersionIdentifier
 import holygradle.custom_gradle.PluginUsages
 import holygradle.dependencies.DependencyHandler
 import holygradle.dependencies.PackedDependencyHandler
@@ -374,10 +376,9 @@ open class PackageArtifactBuildScriptHandler @Inject constructor(
             // Some packed dependencies will explicitly specify the full coordinate, so just
             // publish them as-is.
             packedDependencies.forEach{ (packedDepName, packedDepConfigs) ->
-                val match = ".+:(.+):.+".toRegex().matchEntire(packedDepName)
-                if (match != null) {
-                    val (name) = match.destructured
-                    writePackedDependency(buildScript, name, packedDepName, packedDepConfigs)
+                val packedDepId = packedDepName.tryToModuleVersionIdentifier()
+                if (packedDepId != null) {
+                    writePackedDependency(buildScript, packedDepId.name, packedDepName, packedDepConfigs)
                     missingPackedDepNames.remove(packedDepName)
                 }
             }

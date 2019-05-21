@@ -46,6 +46,11 @@ open class PackedDependenciesSettingsHandler(private val project: Project) {
             }
         }
 
+    @Suppress("unused") // Part of public API, for backwards compatibility.
+    fun setUseRelativePathFromIvyXml(@Suppress("UNUSED_PARAMETER") defaultFail: Boolean) {
+        throw UnsupportedOperationException("Using the relative path from ivy.xml files is no longer supported.")
+    }
+
     /**
      * If set, the intrepid plugin will unpack dependencies unto subfolders of the given folder;
      * if unset (null), use the value from the root project (defaulting to "{@code $GRADLE_USER_HOME/unpackCache}").

@@ -106,13 +106,22 @@ open class DependenciesStateHandler
         if (forBuildscript) {
             return false
         }
-        
-        val moduleInBuild = project.rootProject.allprojects.find {
+
+        return findModuleInBuild(id) != null
+    }
+
+    /**
+     * Returns the relevant {@link Project) if and only if the given module version id matches one of the modules being
+     * built by the current build; otherwise returns null.
+     * @param id The id of the module to consider
+     * @return The project for the module if it is one in this build, otherwise null.
+     */
+    private fun findModuleInBuild(id: ModuleVersionIdentifier): Project? {
+        return project.rootProject.allprojects.find {
             (it.group == id.group) &&
-                (it.name == id.name) &&
-                (it.version == id.version)
+                    (it.name == id.name) &&
+                    (it.version == id.version)
         }
-        return moduleInBuild != null
     }
 
     /**

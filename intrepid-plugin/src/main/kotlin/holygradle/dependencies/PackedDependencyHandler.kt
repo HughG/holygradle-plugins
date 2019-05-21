@@ -40,7 +40,15 @@ open class PackedDependencyHandler @Inject constructor (
     }
 
     override val shouldUnpackToCache: Boolean get() {
-        return unpackToCache ?: (defaultOptions.shouldUnpackToCache)
+        val unpackToCache1 = unpackToCache
+        return if (unpackToCache1 != null) {
+            if (sourceOverride == null && !unpackToCache1) {
+                throw RuntimeException("A source override can not be applied to a packed dependency with unpackToCache = false")
+            }
+            unpackToCache1
+        } else {
+            defaultOptions.shouldUnpackToCache
+        }
     }
 
     val shouldCreateLinkToCache: Boolean get() {
@@ -77,6 +85,19 @@ open class PackedDependencyHandler @Inject constructor (
     fun dependency(dependencyCoordinate: String) {
         initialiseDependencyId(dependencyCoordinate)
     }
+
+    /**
+     * Returns the {@link SourceOverrideHandler} from the root project which corresponds to this dependency, if there is
+     * one; otherwise return null.
+     * @return the {@link SourceOverrideHandler} from the root project which corresponds to this dependency, if there is
+     * one, otherwise null.
+     */
+    val sourceOverride: SourceOverrideHandler?
+        get() {
+            val sourceOverrides: Collection<SourceOverrideHandler> by project.rootProject.extensions
+            return sourceOverrides.find { it.dependencyCoordinate == dependencyCoordinate }
+        }
+
 
     override fun configuration(config: String) {
         val newConfigs: MutableCollection<Map.Entry<String, String>> = mutableListOf()

@@ -2,6 +2,7 @@ package holygradle.apache.ivy.groovy
 
 import groovy.util.Node
 import groovy.util.NodeList
+import groovy.xml.Namespace
 import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -100,15 +101,37 @@ sealed class IvyNode(protected val node: Node) {
     }
 
     protected fun <T> nodeAttribute() = NodeAttribute<T>()
+
+    class NodeNamespacedAttribute<T>(private val namespace: Namespace) : ReadWriteProperty<IvyNode, T> {
+        override operator fun getValue(thisRef: IvyNode, property: KProperty<*>): T {
+            @Suppress("UNCHECKED_CAST")
+            return thisRef.node.attributes()[namespace[property.name]] as T
+        }
+
+        override operator fun setValue(thisRef: IvyNode, property: KProperty<*>, value: T) {
+            thisRef.node.attributes()[namespace[property.name]] = value
+        }
+    }
 }
 
 class IvyModuleNode(node: Node): IvyNode(node) {
+    val info: IvyInfoNode by childNode(::IvyInfoNode)
     val configurations: IvyNode.List<IvyConfigurationNode> by listChildNode("conf", ::IvyConfigurationNode)
+    val publications: IvyNode.List<IvyArtifactNode> by listChildNode("artifact", ::IvyArtifactNode)
     val dependencies: IvyNode.List<IvyDependencyNode> by listChildNode("dependency", ::IvyDependencyNode)
+}
+
+class IvyInfoNode(node: Node) : IvyNode(node) {
+    var organisation: String by nodeAttribute()
+    var module: String by nodeAttribute()
+    var revision: String by nodeAttribute()
 }
 
 class IvyConfigurationNode(node: Node) : IvyNode(node) {
     val name: String by nodeAttribute()
+}
+
+class IvyArtifactNode(node: Node) : IvyNode(node) {
 }
 
 class IvyDependencyNode(node: Node) : IvyNode(node) {
