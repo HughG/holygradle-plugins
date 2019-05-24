@@ -25,10 +25,7 @@ sourceOverrides {
             
             println("+"*30)
             println("Ivy File: ${new File(handler.from, "build/publications/ivy/ivy.xml")}")
-            return [
-                new File(handler.from, "build/publications/ivy/ivy.xml"),
-                new File(handler.from, "all-dependencies.xml")
-            ]
+            return new File(handler.from, "build/holygradle/flat-ivy.xml")
         }
     }
 }

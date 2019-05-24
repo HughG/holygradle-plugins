@@ -41,14 +41,6 @@ class UnpackModuleVersion {
         }
     }
 
-    public String getIncludeInfo() {
-        if (includeVersionNumberInPath) {
-            "(includes version number)"
-        } else {
-            "(no version number)"
-        }
-    }
-    
     public void addArtifacts(Iterable<ResolvedArtifact> arts, String originalConf) {
         for (art in arts) {
             artifacts[art].add(originalConf)
@@ -157,30 +149,6 @@ class UnpackModuleVersion {
             throw new RuntimeException("Error - module '${getFullCoordinate()}' has different parent results for ${methodName}: ${values.collect { "${it.value} from ${it.key}" }}")
         }
         return uniqueValues.iterator().next()
-    }
-
-    private String getParentRelativePath(UnpackModuleVersion module) {
-        getUniqueValue("getParentRelativePath", parents) { UnpackModuleVersion it ->
-            it.getRelativePathForDependency(module)
-        }
-    }
-
-    private String getParentTargetPath(Project project) {
-        getUniqueValue("getParentTargetPath", parents) { UnpackModuleVersion it ->
-            it.getTargetPathInWorkspace()
-        }.toString()
-    }
-
-    private String getParentModuleVersion() {
-        getUniqueValue("getParentModuleVersion", parents) { UnpackModuleVersion it ->
-            it.moduleVersion
-        }.toString()
-    }
-
-    private String getParentModuleVersions() {
-        parents.collect {
-            it.moduleVersion
-        }.join(", ")
     }
 
     // Return the name of the directory that should be constructed in the workspace for the unpacked artifacts. 
