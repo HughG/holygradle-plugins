@@ -4,6 +4,7 @@ import holygradle.Helper
 import holygradle.kotlin.dsl.container
 import holygradle.kotlin.dsl.getValue
 import holygradle.kotlin.dsl.newInstance
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
@@ -94,7 +95,7 @@ open class PackedDependencyHandler @Inject constructor (
      */
     val sourceOverride: SourceOverrideHandler?
         get() {
-            val sourceOverrides: Collection<SourceOverrideHandler> by project.rootProject.extensions
+            val sourceOverrides: NamedDomainObjectContainer<SourceOverrideHandler> by project.rootProject.extensions
             return sourceOverrides.find { it.dependencyCoordinate == dependencyCoordinate }
         }
 

@@ -141,7 +141,6 @@ open class SourceDependencyHandler @Inject constructor (
             HgDependency(
                 project,
                 this,
-                buildScriptDependencies,
                 hgCommand
             )
         } else if (protocol == "git") {
@@ -153,7 +152,6 @@ open class SourceDependencyHandler @Inject constructor (
             GitDependency(
                 project,
                 this,
-                buildScriptDependencies,
                 gitCommand
             )
         } else {

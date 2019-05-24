@@ -12,6 +12,7 @@ import holygradle.artifacts.toModuleVersionIdentifier
 import holygradle.io.FileHelper
 import holygradle.kotlin.dsl.KotlinClosure1
 import holygradle.kotlin.dsl.container
+import holygradle.kotlin.dsl.getValue
 import holygradle.process.ExecHelper
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -78,7 +79,7 @@ class SourceOverrideHandler(
         ivyFileGenerator = generator
     }
 
-    fun getIvyFileGenerator(): Closure<File??>? {
+    fun getIvyFileGenerator(): Closure<File?>? {
         val generator = ivyFileGenerator
         return if (generator == null) null else KotlinClosure1(generator)
     }
@@ -169,11 +170,6 @@ class SourceOverrideHandler(
         if (hasGeneratedDummyModuleFiles) {
             return
         }
-        val dummyVersionString = this.dummyVersionString
-                ?: throw RuntimeException(
-                        "Cannot generate dependency files for source override '${name}': the 'from' location has not been set"
-                )
-
         val tempDir = File(
                 project.buildDir,
                 "holygradle/source_override/${groupName}/${dependencyName}/${dummyVersionString}"
@@ -258,7 +254,7 @@ class SourceOverrideHandler(
      * Throw if this handler is NOT in a valid state.  This allows callers to avoid wasting time in
      * {@link #generateDummyModuleFiles} only to find something fails later on.
      */
-    private fun checkValid() {
+    internal fun checkValid() {
         if (dependencyId == null) {
             throw RuntimeException("You must call the 'dependency' method for source override '${name}'")
         }
@@ -291,9 +287,6 @@ class SourceOverrideHandler(
 
     val dummyDependencyCoordinate: String
         get() {
-            if (dummyVersionString == null) {
-                throw RuntimeException("You must call the sourceOverride method before requesting a dummy coordinate")
-            }
             val depId = getDependencyId()
             return "${depId.group}:${depId.name}:${dummyVersionString}"
         }

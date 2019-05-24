@@ -391,8 +391,8 @@ class IntrepidPlugin @Inject constructor() : Plugin<Project> {
     }
 
     private fun setupSourceOverrides(project: Project) {
-        val sourceOverrides: NamedDomainObjectCollection<SourceOverrideHandler> by project.extensions
-        var sourceOverrideDummyModulesRepo: IvyArtifactRepository? = null
+        var addedSourceOverrideDummyModulesRepo = false
+        val sourceOverrides: NamedDomainObjectContainer<SourceOverrideHandler> by project.extensions
 
         sourceOverrides.whenObjectAdded {
             // Fail if source overrides are added in a non-root project, because it will be even more effort to tie together
@@ -406,12 +406,13 @@ class IntrepidPlugin @Inject constructor() : Plugin<Project> {
             // If and when any source overrides are added, we also need to add a repo to contain dummy entries for all the
             // overridden module versions.  We force this to the start of the project repo list because it will contain
             // relatively few entries, and those versions won't appear in any normal repo.
-            if (sourceOverrideDummyModulesRepo == null) {
+            if (!addedSourceOverrideDummyModulesRepo) {
                 val tempDir = File(project.buildDir, "holygradle/source_override")
                 FileHelper.ensureMkdirs(tempDir)
-                sourceOverrideDummyModulesRepo = project.repositories.ivy { it.url = tempDir.toURI() }
+                val sourceOverrideDummyModulesRepo = project.repositories.ivy { it.url = tempDir.toURI() }
                 project.repositories.remove(sourceOverrideDummyModulesRepo)
-                project.repositories.addFirst(sourceOverrideDummyModulesRepo!!)
+                project.repositories.addFirst(sourceOverrideDummyModulesRepo)
+                addedSourceOverrideDummyModulesRepo = true
             }
         }
 

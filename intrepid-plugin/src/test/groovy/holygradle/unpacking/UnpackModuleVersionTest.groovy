@@ -62,8 +62,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals("org:apricot:1.1", apricot.getFullCoordinate())
         assertNotNull("getPackedDependency not null", apricot.getPackedDependency())
         assertEquals("apricot", apricot.getPackedDependency().name)
-        assertNotNull("getSelfOrAncestorPackedDependency not null", apricot.getSelfOrAncestorPackedDependency())
-        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependency().name)
+        assertNotNull("getSelfOrAncestorPackedDependencies not null", apricot.getSelfOrAncestorPackedDependencies())
+        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependencies().name)
         assertNull("getParent is null", apricot.getParent())
 
         UnpackEntry unpackEntry = apricot.getUnpackEntry()
@@ -141,7 +141,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
         assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
 
-        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependency())
+        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependencies())
         
         File targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace())
