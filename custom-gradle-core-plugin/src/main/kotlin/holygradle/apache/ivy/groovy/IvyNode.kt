@@ -129,6 +129,7 @@ class IvyInfoNode(node: Node) : IvyNode(node) {
 
 class IvyConfigurationNode(node: Node) : IvyNode(node) {
     val name: String by nodeAttribute()
+    var description: String by nodeAttribute()
 }
 
 class IvyArtifactNode(node: Node) : IvyNode(node) {

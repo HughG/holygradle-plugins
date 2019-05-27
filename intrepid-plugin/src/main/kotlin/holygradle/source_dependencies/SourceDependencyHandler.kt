@@ -189,7 +189,7 @@ open class SourceDependencyHandler @Inject constructor (
             return identifier
         }
 
-    val dependencyCoordinate: String get() = dependencyId.toString()
+    val dependencyCoordinate: String? get() = dependencyId?.toString()
 
     val sourceDependencyProject: Project? get() = project.rootProject.findProject(targetName)
 }

@@ -11,6 +11,7 @@ import holygradle.kotlin.dsl.newInstance
 import holygradle.kotlin.dsl.task
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.publishing.RepublishHandler
+import holygradle.scm.DummySourceControl
 import holygradle.scm.SourceControlRepositories
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.*
@@ -165,22 +166,20 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
             handler: SourceDependencyHandler? = null
         ) {
             val project = createPublishNotesTask.project
-            // For the originating project we will be passed a null handler (because we're looking at it as the root which
-            // has source dependencies, not a source dependency itself), in which case we want that originating project,
-            // which we can get from the task.
-            val sourceRepoDir = if (handler == null) {
-                project.projectDir
-            } else {
-                // We don't use handler..getSourceDependencyProject(...).projectDir, because source dependencies don't have
-                // to contain a Gradle project.
-                handler.destinationDir
-            }
-
             // We create a new SourceControlRepository instead of trying to get the "sourceControl" extension from the
             // project, because we don't want a DummySourceControl if there's no SCM info here.  Also, some source
             // dependencies may not have a project.
-            val sourceRepo = SourceControlRepositories.create(project.rootProject, sourceRepoDir)
-            if (sourceRepo != null) {
+            //
+            // For the originating project we will be passed a null handler (because we're looking at it as the root which
+            // has source dependencies, not a source dependency itself), in which case we want that originating project,
+            // which we have from the task.
+            val sourceRepo = if (handler == null) {
+                SourceControlRepositories.create(project)
+            } else {
+                SourceControlRepositories.create(handler)
+            }
+
+            if (sourceRepo !is DummySourceControl) {
                 val sourceDepInfoDir = if (handler == null) {
                     // We're adding info for the originating project, so put it at top-level: baseDir = "build_info"
                     baseDir

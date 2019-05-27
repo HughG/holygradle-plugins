@@ -6,5 +6,5 @@ import java.util.function.Predicate
 
 interface Command {
     fun execute(configureExecSpec: Action<ExecSpec>): String
-    fun execute(configureExecSpec: Action<ExecSpec>, throwOnError: Predicate<Int>): String
+    fun execute(configureExecSpec: Action<ExecSpec>, throwForExitValue: Predicate<Int>): String
 }

@@ -1,8 +1,10 @@
 package holygradle.publishing
 
 import holygradle.apache.ivy.groovy.IvyConfigurationNode
+import holygradle.apache.ivy.groovy.IvyDependencyNode
 import holygradle.apache.ivy.groovy.asIvyModule
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.sourcePath
 import holygradle.kotlin.dsl.get
 import holygradle.packaging.PackageArtifactHandler
 import holygradle.unpacking.PackedDependenciesStateSource
@@ -21,6 +23,8 @@ import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 import holygradle.kotlin.dsl.getValue
 import holygradle.kotlin.dsl.task
+import holygradle.kotlin.dsl.withType
+import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.util.addingDefault
 import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 
@@ -57,6 +61,7 @@ open class DefaultPublishPackagesExtension(
     override var publishPrivateConfigurations = true
     private val privateRepublishHandlerDelegate = lazy { RepublishHandler() }
     private val privateRepublishHandler: RepublishHandler by privateRepublishHandlerDelegate
+    private var republishTask: Task? = null
     private val originalConfigurationOrder = linkedSetOf<String>()
 
     init {
@@ -91,16 +96,6 @@ open class DefaultPublishPackagesExtension(
             this.failIfPackedDependenciesNotCreatingLink(packedDependencies)
         }
 
-        // Define a 'republish' task.
-        val republishTask = if (republishHandler != null) {
-            project.task<DefaultTask>("republish") {
-                group = "Publishing"
-                description = "'Republishes' the artifacts for the module."
-            }
-        } else {
-            null
-        }
-
         // Configure the publish task to deal with the version number, include source dependencies and convert
         // dynamic dependency versions to fixed version numbers.  Note that the PublishingExtension is a
         // DeferredConfigurable, so this block won't be executed until dependencies have been set up etc.
@@ -109,8 +104,7 @@ open class DefaultPublishPackagesExtension(
                 createDefaultPublication(it, packageArtifactHandlers)
                 configureGenerateDescriptorTasks(
                         beforeGenerateDescriptorTask,
-                        generateIvyModuleDescriptorTask,
-                        project
+                        generateIvyModuleDescriptorTask
                 )
                 configureRepublishTaskDependencies(republishTask)
             }
@@ -172,8 +166,7 @@ open class DefaultPublishPackagesExtension(
 
     private fun configureGenerateDescriptorTasks(
         beforeGenerateDescriptorTask: Task,
-        generateIvyModuleDescriptorTask: Task,
-        project: Project
+        generateIvyModuleDescriptorTask: Task
     ) {
         project.tasks.withType(GenerateIvyDescriptor::class.java).whenTaskAdded { descriptorTask ->
             generateIvyModuleDescriptorTask.dependsOn(descriptorTask)
@@ -185,6 +178,10 @@ open class DefaultPublishPackagesExtension(
                 putConfigurationsInOriginalOrder(descriptorTask.descriptor)
                 freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
                 collapseMultipleConfigurationDependencies(descriptorTask.descriptor)
+
+                if (project.hasProperty("recordAbsolutePaths")) {
+                    addDependencySourceTags(descriptorTask.descriptor)
+                }
             }
 
             // We call this here because it uses doFirst, and we need this to happen after
@@ -273,6 +270,15 @@ open class DefaultPublishPackagesExtension(
     }
 
     override fun republish(closure: Action<RepublishHandler>) {
+        // Define a 'republish' task, which will be configured in the project.publishing block.
+        val republishTaskName = "republish"
+        if (project.tasks.findByPath(republishTaskName) == null) {
+            project.task<DefaultTask>(republishTaskName) {
+                group = "Publishing"
+                description = "'Republishes' the artifacts for the module."
+            }
+        }
+
         closure.execute(privateRepublishHandler)
     }
 
@@ -315,7 +321,13 @@ open class DefaultPublishPackagesExtension(
                     configurations.remove(confNode)
                 }
             }
-            confNodesInOrder.values.forEach { configurations.add(it) }
+            confNodesInOrder.values.forEach {
+                val nodeDescription = project.configurations[it.name].description
+                if (nodeDescription != null) {
+                    it.description = nodeDescription
+                }
+                configurations.add(it)
+            }
         }
     }
 
@@ -390,11 +402,29 @@ open class DefaultPublishPackagesExtension(
         }
     }
 
+    private fun addDependencySourceTags(descriptor: IvyModuleDescriptorSpec) {
+        val sourceDependencies: NamedDomainObjectContainer<SourceDependencyHandler> by project.extensions
+        descriptor.withXml { xml ->
+            val module = xml.asIvyModule()
+            module.dependencies.forEach { depNode ->
+                // If the dependency is a source dependency, get its relative path from the
+                // gradle script's sourceDependencyHandler
+                val sourceDep = findSourceDependencyForDependencyNode(sourceDependencies, depNode)
+
+                if (sourceDep != null) {
+                    project.logger.info("Adding sourcePath attribute to source dep node: " +
+                            "${depNode.org}:${depNode.name}:${depNode.rev} path=${sourceDep.fullTargetPath}")
+                    depNode.sourcePath = sourceDep.absolutePath.canonicalPath
+                }
+            }
+        }
+    }
+
     private fun addConfigurationDependenciesToDefaultPublication(descriptorTask: GenerateIvyDescriptor) {
         descriptorTask.descriptor.withXml { xml ->
             val dependencies = xml.asIvyModule().dependencies
             descriptorTask.project.configurations.forEach { conf ->
-                conf.dependencies.withType(ModuleDependency::class.java).forEach { dep ->
+                conf.dependencies.withType<ModuleDependency>().forEach { dep ->
                     dependencies.appendNode("dependency", mapOf(
                         "org" to (dep.group ?: "unknown"),
                         "name" to dep.name,
@@ -415,6 +445,24 @@ open class DefaultPublishPackagesExtension(
                 var contents = ivyFile.readText()
                 contents = contents.replace("&gt;", ">")
                 ivyFile.writeText(contents)
+            }
+        }
+    }
+
+    private fun findSourceDependencyForDependencyNode(
+        sourceDependencies: Collection<SourceDependencyHandler>,
+        depNode: IvyDependencyNode
+    ): SourceDependencyHandler? {
+        return sourceDependencies.find {
+            val dependencyModule = it.dependencyId
+            if (dependencyModule == null) {
+                project.logger.debug("Ignoring source dependency on ${it.targetName} because there are no " +
+                        "configuration mappings")
+                false
+            } else {
+                dependencyModule.group == depNode.org
+                        && dependencyModule.name == depNode.name
+                        && dependencyModule.version == depNode.rev
             }
         }
     }

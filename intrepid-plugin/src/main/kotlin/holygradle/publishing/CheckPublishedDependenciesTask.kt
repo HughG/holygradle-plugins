@@ -4,7 +4,7 @@ import holygradle.ArtifactoryHelper
 import holygradle.unpacking.PackedDependenciesStateSource
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.repositories.AuthenticationSupported
-import org.gradle.api.artifacts.repositories.PasswordCredentials
+import org.jetbrains.kotlin.utils.keysToMap
 
 open class CheckPublishedDependenciesTask : DefaultTask() {
     fun initialize(
@@ -19,21 +19,25 @@ open class CheckPublishedDependenciesTask : DefaultTask() {
                 requireNotNull(repoCredentials.username, { "Null username supplied" }),
                 requireNotNull(repoCredentials.password, { "Null password supplied" })
             )
-            val modules = mutableMapOf<String, Boolean>()
-            for (module in packedDependenciesStateSource.allUnpackModules) {
-                for (versionInfo in module.versions.values) {
-                    // Add a trailing slash because, if we request without one, Artifactory will just respond with a
-                    // "302 Found" redirect which adds a trailing slash; so this saves us time.
-                    val coord = versionInfo.fullCoordinate.replace(":", "/") + '/'
-                    modules[versionInfo.fullCoordinate] = helper.artifactExists(coord)
+            // Build a set of all URLs first, because the same module might appear more than once, and we don't want to
+            // waste time making the same HTTP request more than once.
+            val allModuleUrls = mutableSetOf<String>()
+            packedDependenciesStateSource.allUnpackModules.values.forEach { modules ->
+                modules.forEach { module ->
+                    for (versionInfo in module.versions.values) {
+                        // Add a trailing slash because, if we request without one, Artifactory will just respond with a
+                        // "302 Found" redirect which adds a trailing slash; so this saves us time.
+                        allModuleUrls.add(versionInfo.fullCoordinate.replace(":", "/") + '/')
+                    }
                 }
             }
-            val tab = modules.keys
+            val moduleAvailability = allModuleUrls.keysToMap { helper.artifactExists(it) }
+            val tab = moduleAvailability.keys
                     .map { (it.length + 8) }
                     .max()
                     ?: 0
             logger.lifecycle("The following artifacts are available at '${repoUrl}':")
-            modules.forEach { (moduleVersion, available) ->
+            moduleAvailability.forEach { (moduleVersion, available) ->
                 var line = "   ${moduleVersion}" + (" ".repeat(tab-moduleVersion.length))
                 if (available) {
                     line += "[OK]"

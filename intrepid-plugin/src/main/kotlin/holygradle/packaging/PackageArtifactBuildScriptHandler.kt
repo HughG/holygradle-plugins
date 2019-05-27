@@ -11,6 +11,7 @@ import holygradle.io.FileHelper
 import holygradle.kotlin.dsl.getValue
 import holygradle.links.LinkHandler
 import holygradle.publishing.RepublishHandler
+import holygradle.scm.DummySourceControl
 import holygradle.scm.SourceControlRepositories
 import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.util.addingDefault
@@ -294,7 +295,7 @@ open class PackageArtifactBuildScriptHandler @Inject constructor(
                 // applied, in which case it won't have that extension.  We need to create the SourceControlRepository
                 // object, instead of just using the SourceDependencyHandler, to create the actual revision.
                 val repo = SourceControlRepositories.create(project.rootProject, sourceDep.absolutePath)
-                if (repo != null) {
+                if (repo !is DummySourceControl) {
                     buildScript.append(" ".repeat(4))
                     buildScript.append("\"")
                     buildScript.append(sourceDep.fullTargetPathRelativeToRootProject)
@@ -353,13 +354,20 @@ open class PackageArtifactBuildScriptHandler @Inject constructor(
             // the source dependencies.
             val sourceDeps = collectSourceDependencies(project, false, packedDependencies.keys)
             for ((sourceDepName, sourceDep) in sourceDeps) {
-                writePackedDependency(
-                    buildScript,
-                    sourceDep.fullTargetPathRelativeToRootProject,
-                    sourceDep.dependencyCoordinate,
-                    packedDependencies[sourceDepName]
-                            ?: throw RuntimeException("Failed to find packed dependency for source dependency ${sourceDepName}")
-                )
+                val dependencyCoordinate = sourceDep.dependencyCoordinate
+                // The dependency coordinate may be null, if there are no configuration mappings to this source
+                // dependency and it is not a Gradle project -- that is, if it's just pulled in as arbitrary source code
+                // rather than as another project in a multi-project build.  In that case, we shouldn't and can't
+                // state a dependency on it, because it's not published.
+                if (dependencyCoordinate != null) {
+                    writePackedDependency(
+                        buildScript,
+                        sourceDep.fullTargetPathRelativeToRootProject,
+                        dependencyCoordinate,
+                        packedDependencies[sourceDepName]
+                                ?: throw RuntimeException("Failed to find packed dependency for source dependency ${sourceDepName}")
+                    )
+                }
             }
             missingPackedDepNames.removeAll(sourceDeps.keys)
             val packedDeps = collectPackedDependencies(project, packedDependencies.keys)

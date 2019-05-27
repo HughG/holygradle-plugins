@@ -25,8 +25,8 @@ import java.util.zip.ZipOutputStream
 private const val HOLY_GRADLE_NAMESPACE = "https://holygradle.butbucket.org/ivy-ext/1/"
 private const val HOLY_GRADLE_NAMESPACE_NAME = "holygradle"
 private const val SOURCE_OVERRIDES_EXTENSION_NAME = "sourceOverrides"
-private val HOLY_GRADLE_IVY_NAMESPACE = Namespace(HOLY_GRADLE_NAMESPACE, HOLY_GRADLE_NAMESPACE_NAME)
-private val IvyDependencyNode.sourcePath: String? by IvyNode.NodeNamespacedAttribute(HOLY_GRADLE_IVY_NAMESPACE)
+internal val HOLY_GRADLE_IVY_NAMESPACE = Namespace(HOLY_GRADLE_NAMESPACE, HOLY_GRADLE_NAMESPACE_NAME)
+internal var IvyDependencyNode.sourcePath: String? by IvyNode.NodeNamespacedAttribute(HOLY_GRADLE_IVY_NAMESPACE)
 
 class SourceOverrideHandler(
         val name: String,
