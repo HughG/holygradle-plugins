@@ -31,7 +31,7 @@ abstract class SourceDependency(
 
     protected abstract val commandName: String
 
-    protected abstract fun DoCheckout(
+    protected abstract fun doCheckout(
             destinationDir: File,
             repoUrl: String,
             repoRevision: String?,
@@ -56,7 +56,7 @@ abstract class SourceDependency(
         val revText = if (revision == null) "head" else "rev: $revision"
         println("${commandName} from '${urlOnly}' ($branchText, $revText) to '<workspace>/${relativePath}'...")
         
-        val result = DoCheckout(destinationDir, urlOnly, revision, branchName)
+        val result = doCheckout(destinationDir, urlOnly, revision, branchName)
         println("  ${commandName} ${if (result) "succeeded" else "failed"}.")
     }
 

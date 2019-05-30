@@ -1,33 +1,31 @@
 package holygradle.scm
 
 import org.gradle.api.Action
+import org.gradle.process.ExecSpec
 import java.io.File
 import java.util.function.Predicate
 
-class GitRepository(val command: Command, localDir: File) : SourceControlRepository {
-    override val localDir: File = localDir.absoluteFile
+class GitRepository(scmCommand: Command, workingCopyDir: File) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
+    companion object {
+        @JvmStatic
+        val TYPE = object : SourceControlType {
+            override val executableName: String = "git"
+            override val repositoryClass: Class<GitRepository> = GitRepository::class.java
+            override val stateDirName: String = ".git"
+        }
+    }
+
     override val protocol: String = "git"
 
     override val url: String
         get() {
             // May need to strip "username[:password]@" from URL.
-            val result = command.execute(Action { spec ->
-                spec.workingDir = localDir
-                spec.args(
-                        "config",
-                        "--get",
-                        "remote.origin.url"
-                )
-            }, Predicate { errorCode ->
-                // Error code 1 means the section or key is invalid, probably just no remote set, so don't throw.
-                (errorCode != 1)
-            })
-            return result
+            return ScmHelper.getGitConfigValue(scmCommand, workingCopyDir, "remote.origin.url")
         }
 
     override val revision: String?
         get() {
-            return command.execute(Action { spec ->
+            return scmCommand.execute(Action { spec ->
                 spec.workingDir = localDir
                 spec.args(
                     "rev-parse", // Execute the "rev-parse" command,
@@ -39,10 +37,22 @@ class GitRepository(val command: Command, localDir: File) : SourceControlReposit
     override val hasLocalChanges: Boolean
         get() {
             // Execute git status with added, removed or modified files
-            val changes = command.execute(Action { spec ->
+            val changes = scmCommand.execute(Action { spec ->
                 spec.workingDir = localDir
                 spec.args("status", "--porcelain", "--untracked-files=no")
             })
             return changes.trim().isNotEmpty()
         }
+
+    override fun ignoresFileInternal(file: File): Boolean {
+        var exitValue = 0
+        scmCommand.execute(Action { spec ->
+            spec.workingDir = workingCopyDir
+            spec.args("check-ignore", "-q", file.absolutePath)
+        }, Predicate {
+            exitValue = it
+            (it != 0 && it != 1) // 0 = is ignored, 1 = is NOT ignored, 128 (or other) = error
+        })
+        return (exitValue == 0)
+    }
 }

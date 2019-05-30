@@ -2,13 +2,13 @@ package holygradle.scm
 
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.io.FileHelper
+import holygradle.kotlin.dsl.getValue
 import holygradle.source_dependencies.SourceDependency
 import holygradle.source_dependencies.SourceDependencyHandler
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.process.ExecSpec
-import holygradle.kotlin.dsl.getValue
 import java.io.File
 
 class SvnDependency(
@@ -19,9 +19,9 @@ class SvnDependency(
     var export = false
 
     override val fetchTaskDescription: String =
-            "Retrieves an SVN Checkout for '${sourceDependency.name}' into your workspace."
+            "Retrieves an SVN checkout for '${sourceDependency.name}' into your workspace."
 
-    private fun TryCheckout(
+    private fun tryCheckout(
             destinationFile: File,
             repoUrl: String,
             repoRevision: String?,
@@ -70,32 +70,35 @@ class SvnDependency(
     override val commandName: String
         get() = "SVN ${svnCommandName}"
 
-    override fun DoCheckout(destinationDir: File, repoUrl: String, repoRevision: String?, repoBranch: String?): Boolean {
+    override fun doCheckout(destinationDir: File, repoUrl: String, repoRevision: String?, repoBranch: String?): Boolean {
         val svnConfigDir = svnConfigDir
 
-        var result = TryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir)
+        var result = tryCheckout(destinationDir, repoUrl, repoRevision, svnConfigDir)
         
         if (!result) {
             val myCredentialsExtension = project.extensions.findByName("my") as? CredentialSource
-            if (myCredentialsExtension != null) {
-                println("  Authentication failed. Using credentials from 'my-credentials' plugin...")
-                result = TryCheckout(
-                    destinationDir,
-                    repoUrl,
-                    repoRevision,
-                    svnConfigDir,
-                    myCredentialsExtension.username,
-                    myCredentialsExtension.password
-                )
-                if (!result) {
-                    deleteEmptyDir(destinationDir)
-                    project.logger.error("  ${commandName} failed. Your \"Domain Credentials\" are probably out of date.")
-                    project.logger.error("  Have you changed your password recently? If so then please try running ")
-                    project.logger.error("  'credential-store.exe' which should be in the root of your workspace.")
-                    throw RuntimeException("SVN authentication failure.")
-                }
-            } else {
-                project.logger.error("  Authentication failed. Please apply the 'my-credentials' plugin.")
+                    ?: throw RuntimeException(
+                    "Failed to ${svnCommandName} ${repoUrl}.  Could not try with authentication " +
+                            "because the 'my-credentials' plugin is not applied. " +
+                            "Please apply the 'my-credentials' plugin and try again."
+            )
+            project.logger.info("  Authentication failed. Using credentials from 'my-credentials' plugin...")
+            val credentialBasis = sourceDependency.credentialBasis
+            result = tryCheckout(
+                destinationDir,
+                repoUrl,
+                repoRevision,
+                svnConfigDir,
+                myCredentialsExtension.username(credentialBasis),
+                myCredentialsExtension.username(credentialBasis)
+            )
+            if (!result) {
+                deleteEmptyDir(destinationDir)
+                throw RuntimeException(
+                        "Failed to clone ${repoUrl} even after using credentials from 'my-credentials' plugin. " +
+                                "If your password changed recently, " +
+                                "try running 'credential-store.exe' which should be in the root of your workspace, then try again."
+                        )
             }
         }
         

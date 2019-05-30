@@ -8,4 +8,5 @@ class DummySourceControl : SourceControlRepository {
     override val url: String = "dummy:url"
     override val revision: String? = null
     override val hasLocalChanges: Boolean = false
+    override fun ignoresFile(file: File): Boolean = false
 }

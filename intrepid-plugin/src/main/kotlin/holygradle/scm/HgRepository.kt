@@ -1,29 +1,52 @@
 package holygradle.scm
 
 import org.gradle.api.Action
+import org.gradle.process.ExecSpec
 import java.io.File
+import java.net.URL
+import java.util.function.Predicate
 
-class HgRepository(val command: Command, localDir: File) : SourceControlRepository {
-    override val localDir: File = localDir.absoluteFile
+class HgRepository(scmCommand: Command, workingCopyDir: File) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
+    companion object {
+        @JvmStatic
+        val TYPE = object : SourceControlType {
+            override val executableName: String = "hg"
+            override val repositoryClass: Class<HgRepository> = HgRepository::class.java
+            override val stateDirName: String = ".hg"
+        }
+    }
+
     override val protocol: String = "hg"
 
     override val url: String
         get() {
-            // TODO 2016-04-15 HughG: Instead of this, run "hg paths default" and capture the output.
-            // May need to strip "username[:password]@" from URL.
-            val hgrc = File(localDir, "/.hg/hgrc")
-            var url = "unknown"
-            if (hgrc.exists()) {
-                val urlRegex = "URL: (\\S+)".toRegex()
-                for (it in hgrc.readLines()) {
-                    val groups = urlRegex.find(it)?.groupValues
-                    if (groups != null && groups.size == 2) {
-                        url = groups[1]
-                        break
-                    }
-                }
+            var savedSpec: ExecSpec? = null
+            val defaultPath = scmCommand.execute(Action { spec ->
+                savedSpec = spec // so we can access the configured error stream
+                spec.workingDir = workingCopyDir
+                spec.args(
+                        "paths", // Execute the "paths" command,
+                        "default" // asking for the default push target
+                )
+            }, Predicate { exitValue ->
+                val errorString = savedSpec!!.errorOutput.toString().replace("[\\r\\n]".toRegex(), "")
+                val defaultRemoteNotFound = (exitValue == 1) && (errorString == "not found!")
+                // Throw if there's a non-zero exit value, unless it's just because there's no default remote,
+                // which is perfectly valid for a new, never-pushed repo.
+                (exitValue == 0) || !defaultRemoteNotFound
             }
-            return url
+            )
+            if (defaultPath.trim().isEmpty()) {
+                return "unknown"
+            }
+            val defaultUrl = URL(defaultPath)
+            val defaultUrlWithoutUserInfo = URL(
+                    defaultUrl.protocol,
+                    defaultUrl.host,
+                    defaultUrl.port,
+                    defaultUrl.file
+            )
+            return defaultUrlWithoutUserInfo.toString()
         }
 
     override val revision: String?
@@ -32,7 +55,7 @@ class HgRepository(val command: Command, localDir: File) : SourceControlReposito
             // to convert to the full node string.  The node may have a trailing "+" if the working
             // copy is modified, which we will remove.
     
-            var minimalNode = command.execute(Action { spec ->
+            var minimalNode = scmCommand.execute(Action { spec ->
                     spec.workingDir = localDir
                     spec.args(
                         "id", // Execute the "id" command,
@@ -43,7 +66,7 @@ class HgRepository(val command: Command, localDir: File) : SourceControlReposito
                 minimalNode = minimalNode.dropLast(1)
             }
     
-            return command.execute(Action { spec ->
+            return scmCommand.execute(Action { spec ->
                 spec.workingDir = localDir
                 spec.args(
                     "log",                      // Execute log command,
@@ -57,10 +80,25 @@ class HgRepository(val command: Command, localDir: File) : SourceControlReposito
     override val hasLocalChanges: Boolean
         get() {
             // Execute hg status with added, removed or modified files
-            val changes = command.execute(Action { spec ->
+            val changes = scmCommand.execute(Action { spec ->
                 spec.workingDir = localDir
                 spec.args("status", "-amrdC")
             })
             return changes.trim().isNotEmpty()
         }
+
+    override fun ignoresFileInternal(file: File): Boolean {
+        val ignoredFileLines = scmCommand.execute(Action { spec ->
+            spec.workingDir = workingCopyDir
+            spec.args("status", "-i", file.absolutePath)
+        }).lines()
+        if (ignoredFileLines.isEmpty()) {
+            return false
+        }
+        val line = ignoredFileLines[0]
+        val fileRelativePath = workingCopyDir.toPath().relativize(file.toPath())
+        // We do a startsWith check (instead of ==) because "file" might be a directory, in which case we'll get the
+        // filename of the first file in the folder.
+        return (line == "I $fileRelativePath")
+    }
 }
