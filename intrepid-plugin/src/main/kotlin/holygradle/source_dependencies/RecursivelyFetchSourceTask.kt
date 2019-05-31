@@ -1,7 +1,6 @@
 package holygradle.source_dependencies
 
 import holygradle.Helper
-import holygradle.dependencies.PackedDependencyHandler
 import org.gradle.api.*
 import holygradle.SettingsFileHelper
 import holygradle.dependencies.PackedDependencyOptions
@@ -42,7 +41,7 @@ open class RecursivelyFetchSourceTask : DefaultTask() {
     }
 
     @TaskAction
-    fun Checkout() {
+    fun checkout() {
         if (shouldGenerateSettingsFileForSourceDependencies) {
             maybeReRun(generateSettingsFileForSourceDependencies)
         } else if (shouldGenerateSettingsFileForPackedDependencies) {
@@ -69,21 +68,11 @@ open class RecursivelyFetchSourceTask : DefaultTask() {
                 newSourceDependenciesWereFetched
             )
         if (needToReRun) {
-            if (runningUnderDaemon) {
-                // The daemon is being used so we can't terminate the process cleanly and force a re-run.
-                throw RuntimeException(
-                    NEW_SUBPROJECTS_MESSAGE + " Please re-run this task to fetch transitive dependencies."
-                )
-            } else {
-                // We're not using the daemon, so we can exit the process and return a special exit code
-                // which will cause the process to be rerun by the gradle wrapper.
-                val separator = "-".repeat(80)
-                println(separator)
-                println(NEW_SUBPROJECTS_MESSAGE)
-                println("Rerunning this task...")
-                println(separator)
-                System.exit(123456)
-            }
+            val newFile = File(project.rootDir, "/.restart")
+            newFile.createNewFile()
+            throw RuntimeException(
+                NEW_SUBPROJECTS_MESSAGE + " Now re-running this build due to new source dependencies."
+            )
         }
     }
 
@@ -128,11 +117,5 @@ open class RecursivelyFetchSourceTask : DefaultTask() {
             return taskDependencies.getDependencies(this).any {
                 it is FetchSourceDependencyTask && it.getDidWork()
             }
-        }
-
-    private val runningUnderDaemon: Boolean
-        get() {
-            val command = System.getProperty("sun.java.command").split(" ")[0]
-            return command.contains("daemon")
         }
 }

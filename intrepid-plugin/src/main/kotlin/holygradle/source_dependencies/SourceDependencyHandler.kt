@@ -3,6 +3,8 @@ package holygradle.source_dependencies
 import holygradle.Helper
 import holygradle.IntrepidPlugin
 import holygradle.buildscript.BuildScriptDependencies
+import holygradle.custom_gradle.plugin_apis.CredentialSource
+import holygradle.custom_gradle.plugin_apis.DEFAULT_CREDENTIAL_TYPE
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
 import holygradle.kotlin.dsl.container
@@ -45,9 +47,14 @@ open class SourceDependencyHandler @Inject constructor (
     lateinit var protocol: String
     lateinit var url: String
     var branch: String? = null
+    val credentialBasis = DEFAULT_CREDENTIAL_TYPE
     val writeVersionInfoFile: Boolean? = null
     var export: Boolean = false
-    val destinationDir: File = File(project.projectDir, depName).canonicalFile
+    val destinationDir: File = absolutePath.canonicalFile
+
+    init {
+        project.afterEvaluate { validate() }
+    }
 
     fun hg(hgUrl: String) {
         if (::protocol.isInitialized || ::url.isInitialized) {
@@ -122,38 +129,14 @@ open class SourceDependencyHandler @Inject constructor (
 
     fun createFetchTask(project: Project): Task  {
         val sourceDependency: SourceDependency = if (protocol == "svn") {
-            val hgCommand = CommandLine(
-                project.logger,
-                "svn.exe",
-                project::exec
-            )
-            SvnDependency(
-                project,
-                this,
-                hgCommand
-            )
+            val hgCommand = CommandLine(project.logger, "svn.exe", project::exec)
+            SvnDependency(project,this, hgCommand)
         } else if (protocol == "hg") {
-            val hgCommand = CommandLine(
-                project.logger,
-                "hg.exe",
-                project::exec
-            )
-            HgDependency(
-                project,
-                this,
-                hgCommand
-            )
+            val hgCommand = CommandLine(project.logger, "hg.exe", project::exec)
+            HgDependency(project, this, hgCommand)
         } else if (protocol == "git") {
-            val gitCommand = CommandLine(
-                project.logger,
-                "git.exe",
-                project::exec
-            )
-            GitDependency(
-                project,
-                this,
-                gitCommand
-            )
+            val gitCommand = CommandLine(project.logger, "git.exe", project::exec)
+            GitDependency(project, this, gitCommand)
         } else {
             throw RuntimeException("Unsupported protocol: " + protocol)
         }
@@ -165,10 +148,11 @@ open class SourceDependencyHandler @Inject constructor (
     }
 
     /**
-     * Returns the module version ID of the source dependency, unless it doesn't have a Gradle project, in which case
-     * throws RuntimeException.
+     * Returns the module version ID of the source dependency, unless there is no configuration mapping to it (in which
+     * case returns {@code null}), or unless it has configuration mappings doesn't have a Gradle project which is
+     * included in the build (in which case throws RuntimeException).
      * @return The module version ID of the source dependency.
-     * @throws RuntimeException if the source dependency does not have a Gradle project.
+     * @throws RuntimeException if the source dependency has configuration mappings but does not have a Gradle project.
      */
     val dependencyId: ModuleVersionIdentifier?
         get() {
@@ -189,7 +173,28 @@ open class SourceDependencyHandler @Inject constructor (
             return identifier
         }
 
+    /**
+     * Returns the module version ID of the source dependency as a string, unless there is no configuration mapping to
+     * it (in which case returns {@code null}), or unless it has configuration mappings doesn't have a Gradle project
+     * which is included in the build (in which case throws RuntimeException).
+     * @return The module version ID string of the source dependency.
+     * @throws RuntimeException if the source dependency has configuration mappings but does not have a Gradle project.
+     */
     val dependencyCoordinate: String? get() = dependencyId?.toString()
 
     val sourceDependencyProject: Project? get() = project.rootProject.findProject(targetName)
+
+    private fun validate() {
+        val dependencyProject = project.rootProject.findProject(targetName)
+        if (configurationMappings.isEmpty()) {
+            if (dependencyProject == null) {
+                project.logger.debug("${project} has a source dependency on ${name}, which is not a Gradle project " +
+                        "in this build -- it is a non-Gradle source checkout")
+            } else {
+                project.logger.warn("WARNING: ${project} has a source dependency on ${name}, which is a project in " +
+                        "this build, but there is no configuration mapping.  This is probably a mistake.  " +
+                        "It means that, when ${project.name} is published, there will be no real dependency on ${targetName}.")
+            }
+        }
+    }
 }

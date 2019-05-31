@@ -19,5 +19,17 @@ interface CredentialSource {
      * @return A password for authentication.
      */
     val password: String?
+
+    /**
+     * Returns the username stored in a particular "Intrepid - <credentialType>" credential.
+     * @return The username stored in a particular "Intrepid - <credentialType>" credential.
+     */
+    fun username(credentialType: String): String?
+
+    /**
+     * Returns the password stored in a particular "Intrepid - <credentialType>" credential.
+     * @return The password stored in a particular "Intrepid - <credentialType>" credential.
+     */
+    fun password(credentialType: String): String?
 }
 

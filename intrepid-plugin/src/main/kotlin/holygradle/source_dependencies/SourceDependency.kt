@@ -7,7 +7,7 @@ import java.io.File
 
 abstract class SourceDependency(
         val project: Project,
-        val sourceDependency: SourceDependencyHandler
+        protected val sourceDependency: SourceDependencyHandler
 ) {
     companion object {
         @JvmStatic
@@ -38,7 +38,7 @@ abstract class SourceDependency(
             repoBranch: String?
     ): Boolean
 
-    fun Checkout() {
+    fun checkout() {
         val urlSplit = url.split("@")
         var urlOnly = url
         var revision: String? = null // meaning trunk
@@ -54,10 +54,10 @@ abstract class SourceDependency(
         val branchName = sourceDependency.branch
         val branchText = branchName ?: "default"
         val revText = if (revision == null) "head" else "rev: $revision"
-        println("${commandName} from '${urlOnly}' ($branchText, $revText) to '<workspace>/${relativePath}'...")
+        project.logger.info("${commandName} from '${urlOnly}' ($branchText, $revText) to '<workspace>/${relativePath}'...")
         
         val result = doCheckout(destinationDir, urlOnly, revision, branchName)
-        println("  ${commandName} ${if (result) "succeeded" else "failed"}.")
+        project.logger.info("  ${commandName} ${if (result) "succeeded" else "failed"}.")
     }
 
     abstract val fetchTaskDescription: String

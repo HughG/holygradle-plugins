@@ -21,15 +21,23 @@ open class FetchSourceDependencyTask : DefaultTask() {
         this.sourceDependency = sourceDependency
         url = sourceDependency.url
         destinationDir = sourceDependency.destinationDir
+        // If the destination folder already exists, don't try to fetch the source again.  If it doesn't exist (for
+        // example, because the user deleted it, or the previous checkout failed), always try to check out.  (Without
+        // the "upToDateWhen" call, a failed fetch seems to cause this task to be treated as UP-TO-DATE in future runs,
+        // even though the output folder doesn't exist.  That happens even if I set the output folder as a task output
+        // dir.)
         onlyIf {
-            !destinationDir.exists()
+            val destinationDirExists = destinationDir.exists()
+            if (destinationDirExists) {
+                project.logger.info(
+                        "Not fetching '${sourceDependency.url}' because target folder '${destinationDir}' exists")
+            }
+            !destinationDirExists
         }
     }
-        
+
     @TaskAction
-    fun Checkout() {
-        sourceDependency.Checkout()
+    fun checkout() {
+        sourceDependency.checkout()
     }
-    
-    val sourceDirName: String get() = sourceDependency.sourceDependency.name
 }

@@ -82,6 +82,6 @@ open class MyHandler(private val project: Project) : CredentialSource {
     override val password: String?
         get() = password(DEFAULT_CREDENTIAL_TYPE)
     
-    fun username(credentialType: String): String? = getCredentials(credentialType).username
-    fun password(credentialType: String): String? = getCredentials(credentialType).password
+    override fun username(credentialType: String): String? = getCredentials(credentialType).username
+    override fun password(credentialType: String): String? = getCredentials(credentialType).password
 }
