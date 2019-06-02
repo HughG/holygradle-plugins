@@ -311,7 +311,7 @@ open class DefaultPublishPackagesExtension(
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
-            val configurations = xml.asIvyModule().configurations
+            val configurations = xml.asIvyModule().configurations ?: mutableListOf<IvyConfigurationNode>()
             val confNodesInOrder = linkedMapOf<String, IvyConfigurationNode>()
             originalConfigurationOrder.forEach { confName ->
                 val confNode = configurations.find { it.name == confName }
@@ -354,7 +354,7 @@ open class DefaultPublishPackagesExtension(
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
-            xml.asIvyModule().dependencies.forEach { depNode ->
+            xml.asIvyModule().dependencies?.forEach { depNode ->
                 if (depNode.rev.endsWith("+")) {
                     depNode.rev = getDependencyVersion(project, depNode.org, depNode.name)
                 }
@@ -379,7 +379,7 @@ open class DefaultPublishPackagesExtension(
         //noinspection GroovyAssignabilityCheck
         descriptor.withXml { xml ->
             val configsByCoord = linkedMapOf<String, MutableList<String>>().addingDefault { mutableListOf() }
-            val dependencies = xml.asIvyModule().dependencies
+            val dependencies = xml.asIvyModule().dependencies ?: return@withXml
             dependencies.forEach { depNode ->
                 val coord = "${depNode.org}:${depNode.name}:${depNode.rev}"
                 configsByCoord[coord]!!.add(depNode.conf)
@@ -406,7 +406,7 @@ open class DefaultPublishPackagesExtension(
         val sourceDependencies: NamedDomainObjectContainer<SourceDependencyHandler> by project.extensions
         descriptor.withXml { xml ->
             val module = xml.asIvyModule()
-            module.dependencies.forEach { depNode ->
+            module.dependencies?.forEach { depNode ->
                 // If the dependency is a source dependency, get its relative path from the
                 // gradle script's sourceDependencyHandler
                 val sourceDep = findSourceDependencyForDependencyNode(sourceDependencies, depNode)
@@ -422,7 +422,7 @@ open class DefaultPublishPackagesExtension(
 
     private fun addConfigurationDependenciesToDefaultPublication(descriptorTask: GenerateIvyDescriptor) {
         descriptorTask.descriptor.withXml { xml ->
-            val dependencies = xml.asIvyModule().dependencies
+            val dependencies = xml.asIvyModule().dependencies ?: return@withXml
             descriptorTask.project.configurations.forEach { conf ->
                 conf.dependencies.withType<ModuleDependency>().forEach { dep ->
                     dependencies.appendNode("dependency", mapOf(

@@ -11,16 +11,15 @@ import kotlin.reflect.KProperty
  * Copyright (c) 2018 Hugh Greene (githugh@tameter.org).
  */
 
-private fun getChildNodes(node: Node, name: String): NodeList {
+private fun getChildNodes(node: Node, name: String): NodeList? {
     return node[name] as? NodeList
-            ?: throw RuntimeException("No child node(s) '${name}' found in ${node}")
 }
 
-private fun getChildNode(node: Node, name: String): Node {
-    val childNodes = getChildNodes(node, name)
+private fun getChildNode(node: Node, name: String): Node? {
+    val childNodes = getChildNodes(node, name) ?: return null
     val childCount = childNodes.size
-    if (childCount != 1) {
-        throw RuntimeException("Expected exactly 1 child node '${name}' but found ${childCount} in ${node}")
+    if (childCount > 1) {
+        throw RuntimeException("Expected 0 or 1 child node '${name}' but found ${childCount} in ${node}")
     }
     return childNodes[0] as Node
 }
@@ -28,11 +27,13 @@ private fun getChildNode(node: Node, name: String): Node {
 sealed class IvyNode(protected val node: Node) {
     class List<T : IvyNode>(
             private val parent: Node,
-            childrenName: String,
+            private val childrenName: String,
             private val makeIvyNode: (Node) -> T
     ): AbstractMutableList<T>() {
-        private val nodes = getChildNodes(parent, childrenName)
-        override val size: Int get() = nodes.size
+        private val maybeNodes = getChildNodes(parent, childrenName)
+        private val nodes get() = maybeNodes
+                ?: throw RuntimeException("No child node(s) '${childrenName}' found in ${parent}")
+        override val size: Int get() = maybeNodes?.size ?: 0
         override fun get(index: Int): T = makeIvyNode(nodes[index] as Node)
         override fun add(index: Int, element: T) = nodes.add(index, element.node)
         override fun removeAt(index: Int): T = makeIvyNode(nodes.removeAt(index) as Node)
@@ -62,7 +63,9 @@ sealed class IvyNode(protected val node: Node) {
             private val makeIvyNode: (Node) -> T
     ) : ReadOnlyProperty<IvyNode, T> {
         override operator fun getValue(thisRef: IvyNode, property: KProperty<*>): T {
-            return makeIvyNode(getChildNode(thisRef.node, property.name))
+            val childNode = getChildNode(thisRef.node, property.name)
+                    ?: throw RuntimeException("No child node(s) '${property.name}' found in ${thisRef.node}")
+            return makeIvyNode(childNode)
         }
 
 //    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
@@ -75,10 +78,10 @@ sealed class IvyNode(protected val node: Node) {
     protected class ListChildNode<T : IvyNode>(
             private val childrenName: String,
             private val makeIvyNode: (Node) -> T
-    ) : ReadOnlyProperty<IvyNode, MutableList<T>> {
-        override operator fun getValue(thisRef: IvyNode, property: KProperty<*>): IvyNode.List<T> {
+    ) : ReadOnlyProperty<IvyNode, MutableList<T>?> {
+        override operator fun getValue(thisRef: IvyNode, property: KProperty<*>): IvyNode.List<T>? {
             val childNode = getChildNode(thisRef.node, property.name)
-            return List(childNode, childrenName, makeIvyNode)
+            return if (childNode == null) null else List(childNode, childrenName, makeIvyNode)
         }
 
 //    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
@@ -116,9 +119,9 @@ sealed class IvyNode(protected val node: Node) {
 
 class IvyModuleNode(node: Node): IvyNode(node) {
     val info: IvyInfoNode by childNode(::IvyInfoNode)
-    val configurations: IvyNode.List<IvyConfigurationNode> by listChildNode("conf", ::IvyConfigurationNode)
-    val publications: IvyNode.List<IvyArtifactNode> by listChildNode("artifact", ::IvyArtifactNode)
-    val dependencies: IvyNode.List<IvyDependencyNode> by listChildNode("dependency", ::IvyDependencyNode)
+    val configurations: IvyNode.List<IvyConfigurationNode>? by listChildNode("conf", ::IvyConfigurationNode)
+    val publications: IvyNode.List<IvyArtifactNode>? by listChildNode("artifact", ::IvyArtifactNode)
+    val dependencies: IvyNode.List<IvyDependencyNode>? by listChildNode("dependency", ::IvyDependencyNode)
 }
 
 class IvyInfoNode(node: Node) : IvyNode(node) {

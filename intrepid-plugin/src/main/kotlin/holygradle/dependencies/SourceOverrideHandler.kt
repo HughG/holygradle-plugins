@@ -213,9 +213,9 @@ class SourceOverrideHandler(
         ivyModule.info.revision = dummyVersionString
         // Remove all the existing artifacts
         val publications = ivyModule.publications
-        publications.clear()
-        ivyModule.configurations.forEach { conf ->
-            publications.appendNode("artifact", mapOf(
+        publications?.clear()
+        ivyModule.configurations?.forEach { conf ->
+            publications?.appendNode("artifact", mapOf(
                     "name" to "dummy_artifact",
                     "type" to "zip",
                     "ext" to "zip",
@@ -223,7 +223,7 @@ class SourceOverrideHandler(
             ))
         }
 
-        ivyModule.dependencies.forEach { dep ->
+        ivyModule.dependencies?.forEach { dep ->
             val sourcePathValue = dep.sourcePath
             if (sourcePathValue != null) {
                 dep.rev = Helper.convertPathToVersion(sourcePathValue)

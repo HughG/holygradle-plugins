@@ -13,7 +13,7 @@ import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 import java.io.File
 import java.util.*
 
-class SummariseAllDependenciesTask : DefaultTask() {
+open class SummariseAllDependenciesTask : DefaultTask() {
     private val ivyDescriptorTasks = LinkedList<GenerateIvyDescriptor>()
 
     fun initialize() {
@@ -45,7 +45,7 @@ class SummariseAllDependenciesTask : DefaultTask() {
             val root = xml.parse(generateDescriptorTask.destination)
             val module = root.asIvyModule()
 
-            val dependenciesNode = module.dependencies
+            val dependenciesNode = module.dependencies ?: return@doLast
             dependenciesNode.clear()
             dependenciesMap.forEach { id, confMap ->
                 val allMappings = confMap.map { entry ->

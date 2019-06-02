@@ -151,11 +151,10 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                    """Caused by: org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.VersionConflictException: A conflict was found between the following modules:""")
-
-            // This error message has changed. It would be better to include the following lines in the expected error message:
-            //"""\n - holygradle.test:external-lib:${expectedDummyVersion}""" +
-            //"""\n - holygradle.test:external-lib:1.0""")
+                    """A conflict was found between the following modules:
+ - holygradle.test: external - lib: ${expectedDummyVersion}
+ - holygradle.test: external - lib: 1.0 
+""")
         }
     }
 
@@ -186,11 +185,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                    """Caused by: org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.VersionConflictException: A conflict was found between the following modules:""")
-
-            // This error message has changed. It would be better to include the following lines in the expected error message:
-            //"""\n - holygradle.test:external-lib:1.1""" +
-            //"""\n - holygradle.test:external-lib:1.0""")
+                    """A conflict was found between the following modules:
+ - holygradle.test:external-lib:1.1
+ - holygradle.test:external-lib:1.0""")
         }
     }
 
@@ -221,11 +218,9 @@ class ReplaceWithSourceIntegrationTest extends AbstractHolyGradleIntegrationTest
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(
-                    """Caused by: org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.VersionConflictException: A conflict was found between the following modules:""")
-
-                    // This error message has changed. It would be better to include the following lines in the expected error message:
-                    //"""\n - holygradle.test:external-lib:1.1""" +
-                    //"""\n - holygradle.test:external-lib:1.0""")
+                    """A conflict was found between the following modules:
+ - holygradle.test:external-lib:1.1
+ - holygradle.test:external-lib:1.0""")
         }
     }
 

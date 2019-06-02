@@ -52,7 +52,9 @@ object Junction {
         val canonicalFile = file.canonicalFile
 
         return try {
-            isMountPoint(canonicalFile)
+            // Treat it as a (part-created or -deleted) junction if it's an empty directory.
+            FileHelper.isEmptyDirectory(canonicalFile)
+                    || isMountPoint(canonicalFile)
         } catch (_: Win32Exception) {
             false
         }
