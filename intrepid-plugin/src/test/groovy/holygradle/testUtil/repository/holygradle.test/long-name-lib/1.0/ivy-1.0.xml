@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0">
+  <info organisation="holygradle.test" module="long-name-lib" revision="1.0" status="release" publication="20180111140802"/>
+  <configurations>
+    <conf name="compile" visibility="public"/>
+    <conf name="everything" visibility="public" extends="compile"/>
+  </configurations>
+  <publications>
+    <artifact name="long-name-lib" type="zip" ext="zip" conf="compile"/>
+  </publications>
+</ivy-module>

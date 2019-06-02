@@ -46,6 +46,7 @@ class SourceOverrideHandler(
     private var hasGeneratedDummyModuleFiles: Boolean = false
 
     companion object {
+        @JvmStatic
         fun createContainer(project: Project): Collection<SourceOverrideHandler> {
             val container = project.container { name: String ->
                 SourceOverrideHandler(name, project)

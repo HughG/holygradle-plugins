@@ -2,6 +2,7 @@ package holygradle.links
 
 import holygradle.dependencies.PackedDependenciesSettingsHandler
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.test.AbstractHolyGradleTest
 import holygradle.unpacking.DummyBuildScriptDependencies
 import holygradle.unpacking.UnpackModuleVersion
@@ -11,7 +12,6 @@ import org.gradle.api.internal.artifacts.DefaultModuleVersionIdentifier
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.Test
 import static org.junit.Assert.*
-import static org.hamcrest.core.IsEqual.*
 
 class LinksToCacheTaskTest extends AbstractHolyGradleTest {
     /**
@@ -34,7 +34,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         UnpackModuleVersion version = new UnpackModuleVersion(
             project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
-            parent,
+            ((parent == null) ? [] : [parent]).toSet(),
             (parent == null) ? new PackedDependencyHandler(moduleName, getProject()) : null
         )
         if (addDummyArtifact) {
@@ -48,8 +48,9 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         Project project = ProjectBuilder.builder().build()
         PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir =
             new File("theUnpackCache")
-        PackedDependencyHandler.createContainer(project)
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
+        project.extensions.create("packedDependenciesDefault", PackedDependencyHandler, "rootDefault")
+        SourceOverrideHandler.createContainer(project)
         project
     }
 
@@ -66,10 +67,11 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1")
 
         LinksToCacheTask task = makeLinksTask(project)
-        task.addUnpackModuleVersionWithAncestors(apricot)
+        task.addUnpackModuleVersion(apricot)
 
-        Collection<UnpackModuleVersion> versions = task.getOrderedVersions()
-        assertThat("Expected versions to be linked", versions.toArray(), equalTo([apricot].toArray()))
+        List<String> expectedLinkParts = ["apricot-1.1"]
+        Map<File, File> links = task.getLinks()
+        assertLinksMatch(links, expectedLinkParts)
     }
 
     /**
@@ -81,45 +83,46 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         UnpackModuleVersion apricot = getUnpackModuleVersion("apricot", "1.1", null, false)
 
         LinksToCacheTask task = makeLinksTask(project)
-        task.addUnpackModuleVersionWithAncestors(apricot)
+        task.addUnpackModuleVersion(apricot)
 
-        Collection<UnpackModuleVersion> versions = task.getOrderedVersions()
-        assertThat("Expected versions to be linked", versions.toArray(), equalTo([].toArray()))
+        List<String> expectedLinkParts = []
+        Map<File, File> links = task.getLinks()
+        assertLinksMatch(links, expectedLinkParts)
     }
 
     /**
-     * Test that the task returns the expected set of versions to create links for, when there are two versions, one
-     * a dependency of another.
+     * Test that the task returns the expected set of versions to create links for, when there are multiple versions.
      */
     @Test
-    public void testOneChildWithVersionsAddedInOrder() {
+    public void testMultipleVersions() {
         Project project = getProject()
         UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
         UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
 
-        LinksToCacheTask taskWithVersionsAddedInOrder = makeLinksTask(project)
-        taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(coconut)
-        taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(date)
+        LinksToCacheTask task = makeLinksTask(project)
+        task.addUnpackModuleVersion(coconut)
+        task.addUnpackModuleVersion(date)
 
-        Collection<UnpackModuleVersion> versions = taskWithVersionsAddedInOrder.getOrderedVersions()
-        assertThat("Expected versions to be linked", versions.toArray(), equalTo([coconut, date].toArray()))
+        List<String> expectedLinkParts = ["coconut-1.3", "date-1.4"]
+        Map<File, File> links = task.getLinks()
+        assertLinksMatch(links, expectedLinkParts)
     }
 
-    /**
-     * Test that the task returns the expected set of versions to create links for, when there are two versions, one
-     * a dependency of another, and the versions happen to be added out-of-order.
-     */
-    @Test
-    public void testOneChildWithVersionsAddedOutOfOrder() {
-        Project project = getProject()
-        UnpackModuleVersion coconut = getUnpackModuleVersion("coconut", "1.3")
-        UnpackModuleVersion date = getUnpackModuleVersion("date", "1.4", coconut)
-
-        LinksToCacheTask taskWithVersionsAddedInOrder = makeLinksTask(project)
-        taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(date)
-        taskWithVersionsAddedInOrder.addUnpackModuleVersionWithAncestors(coconut)
-
-        Collection<UnpackModuleVersion> versions = taskWithVersionsAddedInOrder.getOrderedVersions()
-        assertThat("Expected versions to be linked", versions.toArray(), equalTo([coconut, date].toArray()))
+    private void assertLinksMatch(Map<File, File> links, Collection<String> expectedLinkParts) {
+        Set<String> remainingLinkParts = new HashSet<>()
+        remainingLinkParts.addAll(expectedLinkParts)
+        boolean linksMissing = false
+        links.each { File linkDir, File targetDir ->
+            def matchingExpectation = remainingLinkParts.find { targetDir.path.contains(it) }
+            if (matchingExpectation == null) {
+                linksMissing = true
+            } else {
+                remainingLinkParts.remove(matchingExpectation)
+            }
+        }
+        assertTrue(
+            "Expected links with targets matching ${expectedLinkParts} but got ${links}",
+            !linksMissing && remainingLinkParts.empty
+        )
     }
 }

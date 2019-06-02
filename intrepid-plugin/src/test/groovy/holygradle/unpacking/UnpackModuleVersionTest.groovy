@@ -40,7 +40,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         new UnpackModuleVersion(
             project,
             new DefaultModuleVersionIdentifier("org", moduleName, moduleVersion),
-            parent,
+            ((parent == null) ? [] : [parent]).toSet(),
             (parent == null) ? new PackedDependencyHandler(moduleName, makeProject()) : null
         )
     }
@@ -62,9 +62,9 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertEquals("org:apricot:1.1", apricot.getFullCoordinate())
         assertNotNull("getPackedDependency not null", apricot.getPackedDependency())
         assertEquals("apricot", apricot.getPackedDependency().name)
-        assertNotNull("getSelfOrAncestorPackedDependencies not null", apricot.getSelfOrAncestorPackedDependencies())
-        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependencies().name)
-        assertNull("getParent is null", apricot.getParent())
+        assertEquals("getSelfOrAncestorPackedDependency has a single entry", apricot.getSelfOrAncestorPackedDependencies().size(), 1)
+        assertEquals("apricot", apricot.getSelfOrAncestorPackedDependencies().first().name)
+        assertEquals("getParent is empty", apricot.getParents().size(), 0)
 
         UnpackEntry unpackEntry = apricot.getUnpackEntry()
         File unpackCache = PackedDependenciesSettingsHandler.findOrCreatePackedDependenciesSettings(project).unpackedDependenciesCacheDir
@@ -97,10 +97,10 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         PackedDependencyHandler eggfruitPackedDep =
                 new PackedDependencyHandler("../bowl/eggfruit-<version>-tasty", project)
         UnpackModuleVersion eggfruit = new UnpackModuleVersion(
-            project,
-            new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
-            null,
-            eggfruitPackedDep
+                project,
+                new DefaultModuleVersionIdentifier("org", "eggfruit", "1.5"),
+                new HashSet<UnpackModuleVersion>(),
+                eggfruitPackedDep
         )
         
         assertEquals("eggfruit-1.5-tasty", eggfruit.targetDirName)
@@ -129,9 +129,9 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         Project project = makeProject()
         UnpackModuleVersion coconut = getUnpackModuleVersion(project, "coconut", "1.3")
         UnpackModuleVersion date = getUnpackModuleVersion(project, "date", "1.4", coconut)
-        
-        assertNotNull("getParent not null", date.getParent())
-        assertEquals(coconut, date.getParent())
+
+        assertNotEquals("getParents not empty", date.getParents().size(), 0)
+        assertEquals([coconut].toSet(), date.getParents())
 
         UnpackEntry unpackEntry = coconut.getUnpackEntry()
         File unpackCache =
@@ -141,7 +141,7 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
         assertFalse("applyUpToDateChecks", unpackEntry.applyUpToDateChecks)
         assertTrue("makeReadOnly", unpackEntry.makeReadOnly)
 
-        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependencies())
+        assertEquals(coconut.getPackedDependency(), date.getSelfOrAncestorPackedDependencies().first())
         
         File targetPath = new File(project.projectDir, "coconut")
         assertEquals(targetPath, coconut.getTargetPathInWorkspace())

@@ -117,6 +117,7 @@ class Helper {
          * @param path A file path
          * @return A valid version string, of length at most {@link Helper#MAX_VERSION_STRING_LENGTH}.
          */
+        @JvmStatic
         fun convertPathToVersion(path: String): String {
             val canonicalPath = File(path).canonicalPath
 

@@ -63,6 +63,20 @@ class HelperTest extends AbstractHolyGradleTest {
         checkSourceDependencies(["http://B", "http://C", "http://D"], projectA)
     }
 
+    @Test
+    public void testPathToVersion() {
+        String shortPath = "C:\\Temp"
+        String longPath = "C:\\Program Files (x86)\\Microsoft SDKs\\Cpp Azure Mobile SDK for Visual Studio 2013\\SDK\\lib\\x86\\Release"
+
+        String shortVersion = Helper.convertPathToVersion(shortPath)
+        String longVersion = Helper.convertPathToVersion(longPath)
+
+        assertThat(shortVersion, startsWith("SOURCE_"))
+        assertEquals(shortVersion.length(), 15)
+        assertThat(longVersion, startsWith("SOURCE_"))
+        assertEquals(longVersion.length(), 15)
+    }
+
     private static void checkSourceDependencies(Iterable<String> expectedUrls, Project project) {
         assertThat(
             Helper.getTransitiveSourceDependencies(project)*.url.sort().unique() as String[],
