@@ -1,0 +1,34 @@
+buildscript {
+    gplugins.use "intrepid:${System.getProperty("holygradle.versionForIntegrationTest")}"
+    project.buildDir = new File(System.getProperty("java.io.tmpdir"), "gradle/${project.name}")
+}
+gplugins.apply()
+
+configurations {
+    foo
+    bar
+}
+
+repositories.ivy {
+    url "..\\..\\..\\testUtil\\repository\\"
+}
+
+sourceOverrides {
+    "ext_11" {
+        dependency "holygradle.test:external-lib:1.1"
+        from "../projectAsource/ext-1.1"
+    }
+    "framework" {
+        dependency "holygradle.test:example-framework:1.1"
+        from "../projectAsource/framework-1.1"
+    }
+}
+
+// This is testing two levels of source override where the modules are in the same configuration.
+// The external library should be overridden despite being a transitive dependency of framework 1.1.
+packedDependencies {
+    "framework" {
+        dependency "holygradle.test:example-framework:1.1"
+        configuration "bar->compileVc10Debug,compileVc10Release"
+    }
+}
