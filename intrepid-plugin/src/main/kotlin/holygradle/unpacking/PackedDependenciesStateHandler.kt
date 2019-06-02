@@ -4,13 +4,14 @@ import holygradle.artifacts.ConfigurationHelper
 import holygradle.dependencies.DependenciesStateHandler
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.ResolvedDependenciesVisitor
+import holygradle.kotlin.dsl.get
+import holygradle.kotlin.dsl.getValue
+import holygradle.util.addingDefault
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ModuleIdentifier
 import org.gradle.api.artifacts.ResolvedDependency
-import holygradle.kotlin.dsl.get
-import holygradle.util.addingDefault
-import org.jetbrains.kotlin.utils.addToStdlib.firstNotNullResult
 import java.io.File
 
 /**
@@ -58,8 +59,7 @@ open class PackedDependenciesStateHandler(
     private val dependenciesStateHandler: DependenciesStateHandler =
             project.extensions.getByName("dependenciesState") as DependenciesStateHandler
     private var initializedUnpackModules = false
-    private lateinit var unpackModulesMap: Map<ModuleIdentifier, UnpackModule>
-    private lateinit var unpackModules: Collection<UnpackModule>
+    private lateinit var unpackModules: Map<Configuration, Collection<UnpackModule>>
 
     /**
      * This method visits the resolved {@code dependencies} of the {@code originalConf} (a configuration of a project in the build),
@@ -73,8 +73,6 @@ open class PackedDependenciesStateHandler(
      * @param packedDependencies The {@link PackedDependencyHandler} instances for this handler's project.
      * @param unpackModules A map of {@link UnpackModule} instances, to be populated corresponding to the transitive
      * closure of dependencies.
-     * @param modulesWithoutIvyFiles A collection of module version IDs, to be populated with IDs of any modules for
-     * which no Ivy XML file could be found.
      * @param dependencies The top-level set of resolved dependencies
      */
     private fun collectUnpackModules(
@@ -87,40 +85,24 @@ open class PackedDependenciesStateHandler(
         project.logger.debug("    starting with unpackModules ${unpackModules.keys.sortedBy { it.toString() }.joinToString("\r\n")}")
         project.logger.debug("    and packedDependencies ${packedDependencies.map { it.name }.sortedBy { it }.joinToString("\r\n")}")
 
-        val dependencyConfigurationsAlreadySeen = mutableSetOf<ResolvedDependenciesVisitor.ResolvedDependencyId>()
-
         ResolvedDependenciesVisitor.traverseResolvedDependencies(
             dependencies,
             { resolvedDependency ->
-                // Visit this dependency only if: we've haven't seen it already for the configuration we're
-                // processing, it's not a module we're building from source (because we don't want to include those
-                // as UnpackModules).
+                // Visit this dependency only if: it's not a module we're building from source (because we don't want to
+                // include those as UnpackModules).
                 //
-                // Visit this dependency's children only if: we've haven't seen it already for the configuration
-                // we're processing.
-
+                // (Previously we wouldn't re-visit the module or its children if we'd already seen this
+                // resolvedDependency.configuration of this module.  However, this check was removed in 45f38934dea9
+                // for ticket GR #6279 (mis-labelled in the commit) because ...TODO )
                 val id = resolvedDependency.module.id
-
-                val newId = ResolvedDependenciesVisitor.ResolvedDependencyId(id, resolvedDependency.configuration)
-                project.logger.debug("Adding ${newId} to ${dependencyConfigurationsAlreadySeen}")
-                val isNewModuleConfiguration = dependencyConfigurationsAlreadySeen.add(newId)
-                if (!isNewModuleConfiguration) {
-                    project.logger.debug(
-                        "collectUnpackModules: Skipping ${id}, conf ${resolvedDependency.configuration}, " +
-                        "because it has already been visited"
-                    )
-                }
-
-                val moduleIsInBuild = dependenciesStateHandler.isModuleInBuild(id)
-                if (moduleIsInBuild) {
+                val isNonBuildModule = !dependenciesStateHandler.isModuleInBuild(id)
+                if (!isNonBuildModule) {
                     project.logger.debug("collectUnpackModules: Skipping ${id} because it is part of this build")
                 }
 
-                val isNewNonBuildModuleConfiguration = isNewModuleConfiguration && !moduleIsInBuild
-
                 ResolvedDependenciesVisitor.VisitChoice(
-                    isNewNonBuildModuleConfiguration,
-                    isNewNonBuildModuleConfiguration
+                    isNonBuildModule,
+                    isNonBuildModule
                 )
             },
             { resolvedDependency ->
@@ -139,15 +121,14 @@ open class PackedDependenciesStateHandler(
                     project.logger.debug("collectUnpackModules: created module for ${id.module}")
                 }
 
-                // Find a parent UnpackModuleVersion instance i.e. one which has a dependency on 'this'
-                // UnpackModuleVersion. There will only be a parent if this is a transitive dependency, and not if it
-                // is a direct dependency of the project.
-                val parentUnpackModuleVersion: UnpackModuleVersion? =
-                    resolvedDependency.parents.firstNotNullResult { parentDependency ->
-                        val parentDependencyVersion = parentDependency.module.id
-                        val parentUnpackModule = unpackModules[parentDependencyVersion.module]
-                        parentUnpackModule?.getVersion(parentDependencyVersion)
-                    }
+                // Find all parent UnpackModuleVersion instances, i.e., ones which have a dependency on 'this'
+                // UnpackModuleVersion. There will only be parents if this is a transitive dependency, and not if it
+                // is only a direct dependency of the project.
+                val parents = resolvedDependency.parents.asSequence().mapNotNullTo(mutableSetOf()) {
+                    val parentDependencyVersion = it.module.id
+                    val parentUnpackModule = unpackModules[parentDependencyVersion.module]
+                    parentUnpackModule?.getVersion(parentDependencyVersion)
+                }
 
                 // We only have PackedDependencyHandlers for direct dependencies of a project.  If this resolved
                 // dependency is a transitive dependency, "thisPackedDep" will be null.
@@ -169,6 +150,7 @@ open class PackedDependenciesStateHandler(
                 val moduleVersion = unpackModule.versions[id.version]
                 if (moduleVersion != null) {
                     unpackModuleVersion = moduleVersion
+                    unpackModuleVersion.addParents(parents)
                     // If the same module appears as both a direct packed dependency (for which the path is explicitly
                     // specified by the user) and a transitive packed dependency (for which the path is inferred from
                     // its ancestors), we want to use the explicitly specified path.  Because UnpackModuleVersion
@@ -180,28 +162,34 @@ open class PackedDependenciesStateHandler(
                         // and confusing, and don't allow it.  If they really need it to appear to be in two places they
                         // can create explicit symlinks.
                         val existingPackedDep = unpackModuleVersion.packedDependency
-                        if (existingPackedDep != null && existingPackedDep != thisPackedDep) {
-                            throw RuntimeException(
-                                "Module version ${id} is specified by packed dependencies at both path " +
-                                "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
-                                "A single version can only be specified at one path.  If you need it to appear at " +
-                                "more than one location you can explicitly create links."
-                            )
+                        if (existingPackedDep != null) {
+                            // If the existing packed dep is the same as the one we found, we don't need to change it.
+                            // If it's different, fail.
+                            if (existingPackedDep != thisPackedDep) {
+                                throw RuntimeException(
+                                        "Module version ${id} is specified by packed dependencies at both path " +
+                                        "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
+                                        "A single version can only be specified at one path.  If you need it to appear at " +
+                                        "more than one location you can explicitly create links."
+                                )
+                            }
+                        } else {
+                            // There was no existing packed dep, so we fill it in.
+                            unpackModuleVersion.packedDependency = thisPackedDep
                         }
-                        unpackModuleVersion.packedDependency = thisPackedDep
                     }
                 } else {
-                    unpackModuleVersion = UnpackModuleVersion(project, id, parentUnpackModuleVersion, thisPackedDep)
+                    unpackModuleVersion = UnpackModuleVersion(project, id, parents, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
                         "collectUnpackModules: created version for ${id} " +
-                        "(pUMV = ${parentUnpackModuleVersion}, tPD = ${thisPackedDep?.name})"
+                                "(parents = ${parents}, tPD = ${thisPackedDep?.name})"
                     )
 
                 }
 
                 project.logger.debug("collectUnpackModules: adding ${id.module} originalConf ${originalConf.name} artifacts ${resolvedDependency.moduleArtifacts}")
-                unpackModuleVersion.addArtifacts(resolvedDependency.getModuleArtifacts(), originalConf.name)
+                unpackModuleVersion.addArtifacts(resolvedDependency.moduleArtifacts, originalConf.name)
             }
         )
     }
@@ -211,7 +199,7 @@ open class PackedDependenciesStateHandler(
      *
      * @return The transitive set of unpacked modules used by the project.
      */
-    override val allUnpackModules: Collection<UnpackModule>
+    override val allUnpackModules: Map<Configuration, Collection<UnpackModule>>
         get() {
             if (!initializedUnpackModules) {
                 initializeAllUnpackModules()
@@ -222,10 +210,18 @@ open class PackedDependenciesStateHandler(
     private fun initializeAllUnpackModules() {
         project.logger.debug("getAllUnpackModules for ${project}")
 
-        val deps = project.extensions.findByName("packedDependencies") as Collection<*>
-        val packedDependencies = deps.filterIsInstance<PackedDependencyHandler>()
+        val packedDependencies: NamedDomainObjectContainer<PackedDependencyHandler> by project.extensions
+
+        // Build a map of all unpack modules per configuration.  This allows us to force an unpack module to have only
+        // one location per configuration (by setting its packedDependency or its parents) but allow different locations
+        // for different configurations.  (A different configuration may have some, but not all, module versions
+        // different.  If the same version of a transitive dependency appears in more that one configuration, we want to
+        // link it next to its originating packed dependency/-ies in *all* configurations, not only in the first one we
+        // happen to process.)
+        val configurationUnpackModulesMap =
+                mutableMapOf<Configuration, MutableMap<ModuleIdentifier, UnpackModule>>().addingDefault { mutableMapOf() }
+
         // Build a list (without duplicates) of all artifacts the project depends on.
-        val modulesMap = mutableMapOf<ModuleIdentifier, UnpackModule>()
         project.configurations.forEach{ conf ->
             val firstLevelDeps =
                 ConfigurationHelper.getFirstLevelModuleDependenciesForMaybeOptionalConfiguration(conf)
@@ -233,39 +229,36 @@ open class PackedDependenciesStateHandler(
                 conf,
                 firstLevelDeps,
                 packedDependencies,
-                modulesMap
+                configurationUnpackModulesMap[conf]!!
             )
         }
 
         // Build a map of target locations to module versions
+        val flattenedUnpackModules = configurationUnpackModulesMap.values.flatMap { it.values }
         val targetLocations =
-                mutableMapOf<File, MutableCollection<UnpackModuleVersion>>().addingDefault { mutableListOf<UnpackModuleVersion>() }
-        for (module in modulesMap.values) {
+                mutableMapOf<File, MutableCollection<UnpackModuleVersion>>().addingDefault { mutableListOf() }
+        for (module in flattenedUnpackModules) {
             for ((_, versionInfo) in module.versions) {
                 val targetPath = versionInfo.targetPathInWorkspace.canonicalFile
                 targetLocations[targetPath]!!.add(versionInfo)
             }
         }
 
-        // Check if any target locations are used by more than one module/version.  (We use "inject", instead of "any",
+        // Check if any target locations are used by more than one module/version with different unpack entries.  It's
+        // okay if there are multiple but they all unpack to the same thing/place.  (We use "fold", instead of "any",
         // because we want to keep checking even after we find a problem, so we can log them all.)
         val foundTargetClash = targetLocations.entries.fold(false) { found, (target, versions) ->
-            val thisTargetHasClashes = versions.size > 1
+            val uniqueUnpackDirEntries = versions.mapTo(mutableSetOf()) { it.unpackDirEntry }
+            val thisTargetHasClashes = uniqueUnpackDirEntries.size > 1
             if (thisTargetHasClashes) {
                 project.logger.error(
                     "In ${project}, location '${target}' is targeted by multiple dependencies/versions:"
                 )
                 for (version in versions) {
-                    project.logger.error("    ${version.fullCoordinate} in configurations ${version.originalConfigurations}")
-                    var ver = version
-                    var parent = ver.parent
-                    while (parent != null) {
-                        ver = parent
-                        parent = ver.parent
-                        project.logger.error("        which is from ${version.fullCoordinate}")
-                    }
-                    project.logger.error("        which is from packed dependency ${version.packedDependency!!.name}")
+                    logUnpackModuleVersionAncestry(version, 1)
+                    project.logger.debug("    ${version.unpackEntry}")
                 }
+                project.logger.debug("  Unique unpack dir entries: $uniqueUnpackDirEntries")
             }
             found || thisTargetHasClashes
         }
@@ -273,7 +266,20 @@ open class PackedDependenciesStateHandler(
             throw RuntimeException("Multiple different dependencies/versions are targeting the same locations.")
         }
 
-        unpackModules = modulesMap.values.toList()
-        unpackModulesMap = modulesMap
+        unpackModules = configurationUnpackModulesMap.mapValues { (_, value) -> value.values }
+    }
+
+    private fun logUnpackModuleVersionAncestry(version: UnpackModuleVersion, indent: Int) {
+        val prefix = "    ".repeat(indent)
+        project.logger.error("${prefix}${version.fullCoordinate} in configurations ${version.originalConfigurations}")
+        val packedDependency = version.packedDependency
+        if (packedDependency != null) {
+            project.logger.error("${prefix}  directly from packed dependency ${packedDependency.name}")
+        }
+        version.parents.forEach { parent ->
+            project.logger.error("${prefix}  indirectly from ${version.fullCoordinate}")
+            logUnpackModuleVersionAncestry(parent, indent + 1)
+        }
+
     }
 }

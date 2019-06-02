@@ -5,10 +5,7 @@ import holygradle.custom_gradle.VersionInfo
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.gradle.api.lazyConfiguration
 import holygradle.io.FileHelper
-import holygradle.kotlin.dsl.container
-import holygradle.kotlin.dsl.extra
-import holygradle.kotlin.dsl.newInstance
-import holygradle.kotlin.dsl.task
+import holygradle.kotlin.dsl.*
 import holygradle.publishing.PublishPackagesExtension
 import holygradle.publishing.RepublishHandler
 import holygradle.scm.DummySourceControl
@@ -150,8 +147,8 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
                 project: Project,
                 handlers: MutableMap<String, SourceDependencyHandler>
         ) {
-            val sourceDependencies = project.extensions.findByName("sourceDependencies") as NamedDomainObjectContainer<*>
-            for (handler in sourceDependencies.filterIsInstance<SourceDependencyHandler>()) {
+            val sourceDependencies: NamedDomainObjectContainer<SourceDependencyHandler> by project.extensions
+            for (handler in sourceDependencies) {
                 handlers[handler.absolutePath.canonicalPath] = handler
                 val srcDepProject = handler.sourceDependencyProject
                 if (srcDepProject != null) {

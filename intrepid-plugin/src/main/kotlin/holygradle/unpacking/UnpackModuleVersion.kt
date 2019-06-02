@@ -23,7 +23,7 @@ class UnpackModuleVersion(
 ) {
     val includeVersionNumberInPath: Boolean = packedDependency?.pathIncludesVersionNumber ?: false
     // A map from artifacts to sets of configurations that include the artifacts.
-    val artifacts = mutableMapOf<ResolvedArtifact, MutableSet<String>>().addingDefault { HashSet<String>() }
+    val artifacts = mutableMapOf<ResolvedArtifact, MutableSet<String>>().addingDefault { mutableSetOf() }
     // The set of configurations in the containing project which lead to this module being included.
     val originalConfigurations: MutableSet<String> = mutableSetOf()
     private val mutableParents: MutableSet<UnpackModuleVersion> = HashSet(parents)
@@ -65,7 +65,6 @@ class UnpackModuleVersion(
      * Returns an {@link UnpackEntry} object which describes how to unpack this module version in the context of the
      * given {@code project}.  This is suitable for passing to
      * {@link SpeedyUnpackManyTask#addEntry(ModuleVersionIdentifier,UnpackEntry)}
-     * @param project
      * @return An {@link UnpackEntry} object which describes how to unpack this module version
      */
     val unpackEntry: UnpackEntry
@@ -126,12 +125,10 @@ class UnpackModuleVersion(
     val targetDirName: String
         get() {
             val packedDependency1 = packedDependency
-            return if (packedDependency1 != null) {
-                packedDependency1.getTargetNameWithVersionNumber(moduleVersion.version)
-            } else if (includeVersionNumberInPath) {
-                "${moduleVersion.name}-${moduleVersion.version}"
-            } else {
-                moduleVersion.name
+            return when {
+                packedDependency1 != null -> packedDependency1.getTargetNameWithVersionNumber(moduleVersion.version)
+                includeVersionNumberInPath -> "${moduleVersion.name}-${moduleVersion.version}"
+                else -> moduleVersion.name
             }
         }
 
@@ -169,7 +166,7 @@ class UnpackModuleVersion(
      * A link should be created if
      * <ul>
      *     <li>the relevant {@code packedDependencies} entry has {@code unpackToCache = true} (the default);</li>
-     *     <li>that entry has not had {@code noCreateSymlinkToCache() called on it; and</li>
+     *     <li>that entry has not had {@code noCreateLinkToCache() called on it; and</li>
      *     <li>this module version actually has any artifacts -- if not, nothing will be unpacked in the cache, so there
      *     will be no folder to which to make a symlink.</li>
      * </ul>

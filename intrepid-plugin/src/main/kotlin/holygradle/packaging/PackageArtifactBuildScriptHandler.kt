@@ -294,7 +294,7 @@ open class PackageArtifactBuildScriptHandler @Inject constructor(
                 // extension from the sourceDep.project, because that project itself may not have the intrepid plugin
                 // applied, in which case it won't have that extension.  We need to create the SourceControlRepository
                 // object, instead of just using the SourceDependencyHandler, to create the actual revision.
-                val repo = SourceControlRepositories.create(project.rootProject, sourceDep.absolutePath)
+                val repo = SourceControlRepositories.create(project.rootProject)
                 if (repo !is DummySourceControl) {
                     buildScript.append(" ".repeat(4))
                     buildScript.append("\"")

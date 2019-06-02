@@ -10,7 +10,7 @@ object SourceControlRepositories {
     @JvmStatic
     fun create(
         project: Project
-    ): SourceControlRepository? {
+    ): SourceControlRepository {
         val location = project.projectDir
         val repoLocation = findSourceControlDir(location)
         val repoTypesAtLocation = getRepositoryTypesAtLocation(repoLocation)
@@ -101,11 +101,9 @@ object SourceControlRepositories {
                 .newInstance(commandFactory(type.executableName), repoLocation)
     }
     @JvmStatic
-    fun createExtension(project: Project): SourceControlRepository? {
+    fun createExtension(project: Project): SourceControlRepository {
         val repo = create(project)
-        if (repo != null) {
-            project.extensions.add("sourceControl", repo)
-        }
+        project.extensions.add("sourceControl", repo)
         return repo
     }
 }

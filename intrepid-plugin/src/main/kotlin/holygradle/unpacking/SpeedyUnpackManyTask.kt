@@ -1,13 +1,11 @@
 package holygradle.unpacking
 
-import holygradle.Helper
 import holygradle.gradle.api.lazyConfiguration
 import holygradle.io.FileHelper
 import holygradle.io.Link
 import org.gradle.api.DefaultTask
-import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier
-import holygradle.kotlin.dsl.extra
+import holygradle.util.addingDefault
 import java.io.File
 
 /**
@@ -20,7 +18,7 @@ import java.io.File
  */
 open class SpeedyUnpackManyTask : DefaultTask() {
     private lateinit var unzipper: Unzipper
-    private val entries = mutableMapOf<ModuleVersionIdentifier, UnpackEntry>()
+    private val entries = mutableMapOf<ModuleVersionIdentifier, MutableSet<UnpackEntry>>().addingDefault { mutableSetOf() }
 
     fun initialize(
         unzipper: Unzipper
@@ -31,8 +29,10 @@ open class SpeedyUnpackManyTask : DefaultTask() {
             dependsOn(dependencies)
         }
         doLast {
-            for (values in entries.values) {
-                processEntry(values)
+            for (entrySet in entries.values) {
+                for (entry in entrySet) {
+                    processEntry(entry)
+                }
             }
         }
     }
@@ -42,12 +42,14 @@ open class SpeedyUnpackManyTask : DefaultTask() {
         // task's inputs/outputs during task execution.
         lazyConfiguration {
             logger.debug("${path} before adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")
-            source.allUnpackModules
-                    .flatMap { it.versions.values }
-                    .forEach {
+            for (modules in source.allUnpackModules.values) {
+                for (module in modules) {
+                    for (version in module.versions.values) (
                         // Add the unpack entry to unpack the module to the cache or directly to the workspace.
-                        addEntry(it)
-                    }
+                        addEntry(version)
+                    )
+                }
+            }
             logger.debug("${path} after adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")
         }
     }
@@ -55,37 +57,33 @@ open class SpeedyUnpackManyTask : DefaultTask() {
     private fun addEntry(versionInfo: UnpackModuleVersion) {
         logger.debug("Adding entry for ${versionInfo}")
         addEntry(versionInfo.moduleVersion, versionInfo.unpackEntry)
-        if (versionInfo.parent != null) {
-            addEntry(versionInfo.parent)
+        for (parent in versionInfo.parents) {
+            addEntry(parent)
         }
     }
 
     // Only public for testing
     fun addEntry(id: ModuleVersionIdentifier, entry: UnpackEntry) {
-        if (entries.containsKey(id)) {
-            if (entries[id] != entry) {
-                throw RuntimeException("Attempted to add inconsistent ${entry} to replace ${entries[id]} for ${id}")
-            }
-            return
-        } else {
-            entries[id] = entry
-        }
-        logger.debug("Adding ${id} inputs ${entry.zipFiles}")
-        inputs.files(entry.zipFiles)
-        if (entry.applyUpToDateChecks) {
-            // Use Gradle's normal pattern for copying files from a ZIP file to the filesystem.
-            for (zipFile in entry.zipFiles) {
-                project.zipTree(zipFile).visit { fileDetails ->
-                    val file = File(entry.unpackDir, fileDetails.path)
-                    logger.debug("Adding ${id} output ${file}")
-                    outputs.file(file)
+        if (entries[id]!!.add(entry)) {
+            // We haven't seen an equivalent entry yet, so configure the task to unpack this entry's files, too.
+
+            logger.debug("Adding ${id} inputs ${entry.zipFiles}")
+            inputs.files(entry.zipFiles)
+            if (entry.applyUpToDateChecks) {
+                // Use Gradle's normal pattern for copying files from a ZIP file to the filesystem.
+                for (zipFile in entry.zipFiles) {
+                    project.zipTree(zipFile).visit { fileDetails ->
+                        val file = File(entry.unpackDir, fileDetails.path)
+                        logger.debug("Adding ${id} output ${file}")
+                        outputs.file(file)
+                    }
                 }
+            } else {
+                // Just check the special "info file" to decide whether the unzipped contents are up to date.
+                val infoFile = getInfoFile(entry)
+                logger.debug("Adding ${id} output ${infoFile}")
+                outputs.file(infoFile)
             }
-        } else {
-            // Just check the special "info file" to decide whether the unzipped contents are up to date.
-            val infoFile = getInfoFile(entry)
-            logger.debug("Adding ${id} output ${infoFile}")
-            outputs.file(infoFile)
         }
     }
 
