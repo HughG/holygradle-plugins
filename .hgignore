@@ -89,6 +89,7 @@ syntax: regexp
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/(Collect|Zip)DependenciesIntegrationTest/[^/]+/((gradle|build_info)/|local_artifacts|.*build\.gradle)
 ^intrepid-plugin/src/test/groovy/holygradle/source_dependencies/CopyArtifactsIntegrationTest/copyPackedDependencies/blah/
 ^intrepid-plugin/src/test/groovy/holygradle/unpacking/PackedDependenciesStateHandlerIntegrationTest/[^/]+/[^/]+-?(lib|framework)/
+^intrepid-plugin/src/test/groovy/holygradle/unpacking/SpeedyUnpackManyTaskTest/userHome/
 ^intrepid-plugin/src/test/groovy/holygradle/unpacking/SpeedyUnpackManyTaskIntegrationTest/unpackLongFileName/long-name-lib/
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/SummariseAllDependenciesIntegrationTest/project[A-Z]/
 ^utils/artifactory-plugins/localConf/
