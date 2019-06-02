@@ -16,9 +16,6 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/devenv-plugin/devenv-plugin_main.iml" filepath="$PROJECT_DIR$/.idea/modules/devenv-plugin/devenv-plugin_main.iml" group="devenv-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/devenv-plugin/devenv-plugin_test.iml" filepath="$PROJECT_DIR$/.idea/modules/devenv-plugin/devenv-plugin_test.iml" group="devenv-plugin" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/holy-gradle-plugins.iml" filepath="$PROJECT_DIR$/.idea/modules/holy-gradle-plugins.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_buildSrc.iml" filepath="$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_buildSrc.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_buildSrc_main.iml" filepath="$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_buildSrc_main.iml" group="holy-gradle-plugins_buildSrc" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_buildSrc_test.iml" filepath="$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_buildSrc_test.iml" group="holy-gradle-plugins_buildSrc" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_main.iml" filepath="$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_main.iml" group="holy-gradle-plugins" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_test.iml" filepath="$PROJECT_DIR$/.idea/modules/holy-gradle-plugins_test.iml" group="holy-gradle-plugins" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/holygradle-kotlin-dsl/holygradle-kotlin-dsl.iml" filepath="$PROJECT_DIR$/.idea/modules/holygradle-kotlin-dsl/holygradle-kotlin-dsl.iml" group="holygradle-kotlin-dsl" />
