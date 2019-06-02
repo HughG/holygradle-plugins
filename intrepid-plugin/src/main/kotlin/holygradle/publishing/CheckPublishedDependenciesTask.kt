@@ -24,7 +24,7 @@ open class CheckPublishedDependenciesTask : DefaultTask() {
             val allModuleUrls = mutableSetOf<String>()
             packedDependenciesStateSource.allUnpackModules.values.forEach { modules ->
                 modules.forEach { module ->
-                    for (versionInfo in module.versions.values) {
+                    module.versions.values.forEach { versionInfo ->
                         // Add a trailing slash because, if we request without one, Artifactory will just respond with a
                         // "302 Found" redirect which adds a trailing slash; so this saves us time.
                         allModuleUrls.add(versionInfo.fullCoordinate.replace(":", "/") + '/')

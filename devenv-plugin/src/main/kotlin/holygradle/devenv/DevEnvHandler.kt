@@ -132,8 +132,6 @@ open class DevEnvHandler(
             return f
         }
 
-    private var vswhereLocation: String? = null
-
     fun version(version: String) {
         _devEnvVersion = VSVersion(version)
     }
@@ -170,7 +168,7 @@ open class DevEnvHandler(
         val version = devEnvVersion
         val versionRange = "[${version.rangeStart},${version.rangeEnd})"
         val installPath = ExecHelper.executeAndReturnResultAsString(project.logger, project::exec, Predicate { true }) {
-            commandLine(vswhereLocation,
+            commandLine(vsWhereLocation,
                     "-property", "installationPath",
                     "-legacy",
                     "-format", "value",

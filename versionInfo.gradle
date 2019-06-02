@@ -25,7 +25,7 @@ project.ext.writeRepoInfo = { File repoDir, OutputStream os ->
     }
 
     (new PrintStream(os)).withStream { it.print(" ") }
-    result = exec {
+    ExecResult result = exec {
         executable = "hg"
         args = ["id", "-ibt"]
         standardOutput = os

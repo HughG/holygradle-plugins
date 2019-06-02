@@ -42,12 +42,12 @@ open class SpeedyUnpackManyTask : DefaultTask() {
         // task's inputs/outputs during task execution.
         lazyConfiguration {
             logger.debug("${path} before adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")
-            for (modules in source.allUnpackModules.values) {
-                for (module in modules) {
-                    for (version in module.versions.values) (
+            source.allUnpackModules.values.forEach { modules ->
+                modules.forEach { module ->
+                    module.versions.values.forEach { version ->
                         // Add the unpack entry to unpack the module to the cache or directly to the workspace.
                         addEntry(version)
-                    )
+                    }
                 }
             }
             logger.debug("${path} after adding entries: inputs=${inputs.files.files}; outputs=${outputs.files.files}")

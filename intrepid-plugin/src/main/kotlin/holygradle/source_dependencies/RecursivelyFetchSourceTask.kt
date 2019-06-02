@@ -79,18 +79,20 @@ open class RecursivelyFetchSourceTask : DefaultTask() {
     private fun generateSettingsFileForPackedDependencies() {
         val packedDependenciesState: PackedDependenciesStateHandler by project.extensions
         val allUnpackModules = packedDependenciesState.allUnpackModules
-        var pathsForPackedDependencies: MutableCollection<String> = ArrayList<String>(allUnpackModules.size)
-        for (module in allUnpackModules) {
-            for (versionInfo in module.versions.values) {
-                if (!versionInfo.hasArtifacts) {
-                    // Nothing will have been unpacked/linked, so don't try to include it.
-                    logger.info("Not writing settings entry for empty packedDependency ${versionInfo.moduleVersion}")
-                    return
+        var pathsForPackedDependencies: MutableCollection<String> = ArrayList(allUnpackModules.size)
+        allUnpackModules.values.forEach { modules ->
+            modules.forEach { module ->
+                module.versions.values.forEach { versionInfo ->
+                    if (!versionInfo.hasArtifacts) {
+                        // Nothing will have been unpacked/linked, so don't try to include it.
+                        logger.info("Not writing settings entry for empty packedDependency ${versionInfo.moduleVersion}")
+                        return
+                    }
+                    val targetPathInWorkspace = versionInfo.targetPathInWorkspace
+                    val relativePathInWorkspace =
+                            Helper.relativizePath(targetPathInWorkspace, project.rootProject.projectDir)
+                    pathsForPackedDependencies.add(relativePathInWorkspace)
                 }
-                val targetPathInWorkspace = versionInfo.targetPathInWorkspace
-                val relativePathInWorkspace =
-                        Helper.relativizePath(targetPathInWorkspace, project.rootProject.projectDir)
-                pathsForPackedDependencies.add(relativePathInWorkspace)
             }
         }
         pathsForPackedDependencies = pathsForPackedDependencies.mutableUnique()

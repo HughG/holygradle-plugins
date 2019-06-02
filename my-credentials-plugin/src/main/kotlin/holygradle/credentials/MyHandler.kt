@@ -4,10 +4,9 @@ import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.custom_gradle.plugin_apis.CredentialStore
 import holygradle.custom_gradle.plugin_apis.Credentials
 import holygradle.custom_gradle.plugin_apis.DEFAULT_CREDENTIAL_TYPE
+import holygradle.kotlin.dsl.getValue
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
-import holygradle.kotlin.dsl.getValue
-import java.io.ByteArrayOutputStream
 
 open class MyHandler(private val project: Project) : CredentialSource {
     companion object {
@@ -46,7 +45,7 @@ open class MyHandler(private val project: Project) : CredentialSource {
         return credStorageValue
     }
     
-    private fun getCredentials(credentialType: String, forceAskUser: Boolean = false): Credentials {
+    private fun getCredentials(credentialType: String): Credentials {
         val usingLocalArtifacts: Boolean = project.property("usingLocalArtifacts") as Boolean
         if (usingLocalArtifacts) {
             return Credentials("empty", "empty")
