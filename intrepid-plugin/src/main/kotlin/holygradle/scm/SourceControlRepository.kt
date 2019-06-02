@@ -13,6 +13,9 @@ interface SourceControlRepository {
     
     val hasLocalChanges: Boolean
 
+    // For backwards compatibility with old Groovy definition.
+    fun hasLocalChanges(): Boolean = hasLocalChanges
+
     /**
      * Returns true if and only if the source control system is definitely currently ignoring this file.
      * @param file

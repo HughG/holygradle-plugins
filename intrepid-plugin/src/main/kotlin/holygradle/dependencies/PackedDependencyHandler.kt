@@ -43,7 +43,7 @@ open class PackedDependencyHandler @Inject constructor (
     override val shouldUnpackToCache: Boolean get() {
         val unpackToCache1 = unpackToCache
         return if (unpackToCache1 != null) {
-            if (sourceOverride == null && !unpackToCache1) {
+            if (sourceOverride != null && !unpackToCache1) {
                 throw RuntimeException("A source override can not be applied to a packed dependency with unpackToCache = false")
             }
             unpackToCache1

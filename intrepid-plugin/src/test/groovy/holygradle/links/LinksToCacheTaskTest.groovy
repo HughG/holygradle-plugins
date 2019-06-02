@@ -71,7 +71,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         task.addUnpackModuleVersion(apricot)
 
         List<String> expectedLinkParts = ["apricot-1.1"]
-        Map<File, File> links = task.getLinks()
+        Map<File, File> links = task.linksForTesting
         assertLinksMatch(links, expectedLinkParts)
     }
 
@@ -87,7 +87,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         task.addUnpackModuleVersion(apricot)
 
         List<String> expectedLinkParts = []
-        Map<File, File> links = task.getLinks()
+        Map<File, File> links = task.linksForTesting
         assertLinksMatch(links, expectedLinkParts)
     }
 
@@ -105,7 +105,7 @@ class LinksToCacheTaskTest extends AbstractHolyGradleTest {
         task.addUnpackModuleVersion(date)
 
         List<String> expectedLinkParts = ["coconut-1.3", "date-1.4"]
-        Map<File, File> links = task.getLinks()
+        Map<File, File> links = task.linksForTesting
         assertLinksMatch(links, expectedLinkParts)
     }
 

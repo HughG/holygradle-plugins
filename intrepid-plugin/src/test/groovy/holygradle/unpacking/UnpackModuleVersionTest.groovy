@@ -53,7 +53,6 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
             new File("theUnpackCache")
         PackedDependencyHandler.createContainer(project)
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
-        project.extensions.create("packedDependenciesDefault", PackedDependencyOptionsHandler)
         SourceOverrideHandler.createContainer(project)
         project
     }

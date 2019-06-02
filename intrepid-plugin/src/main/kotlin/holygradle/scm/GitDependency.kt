@@ -140,6 +140,6 @@ class GitDependency(
 
     private fun getCredentialHelperIsConfigured(): Boolean {
         return ScmHelper.getGitConfigValue(gitCommand, project.projectDir, "credential.helper")
-                .lineSequence().any { it.trim().isEmpty() }
+                .lineSequence().any { it.isNotBlank() }
     }
 }
