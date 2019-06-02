@@ -1,6 +1,8 @@
 package holygradle.unpacking
 
 import holygradle.dependencies.PackedDependenciesSettingsHandler
+import holygradle.dependencies.PackedDependencyOptionsHandler
+import holygradle.dependencies.SourceOverrideHandler
 import holygradle.test.*
 import org.junit.Test
 import org.gradle.api.Project
@@ -51,6 +53,8 @@ class UnpackModuleVersionTest extends AbstractHolyGradleTest {
             new File("theUnpackCache")
         PackedDependencyHandler.createContainer(project)
         project.ext.buildScriptDependencies = new DummyBuildScriptDependencies(project)
+        project.extensions.create("packedDependenciesDefault", PackedDependencyOptionsHandler)
+        SourceOverrideHandler.createContainer(project)
         project
     }
     

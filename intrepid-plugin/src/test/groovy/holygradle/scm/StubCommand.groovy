@@ -1,7 +1,11 @@
 package holygradle.scm
 
 import holygradle.testUtil.ExecUtil
+import org.gradle.api.Action
 import org.gradle.process.ExecSpec
+import org.jetbrains.annotations.NotNull
+
+import java.util.function.Predicate
 
 class StubCommand implements Command {
     private final String name
@@ -14,22 +18,29 @@ class StubCommand implements Command {
         this.doExec = doExec
     }
 
-    StubCommand(String name, List<Effect> effects) {
-        this(name, effects, {[0, ""]})
+    @Override
+    String execute(@NotNull Action<ExecSpec> configureExecSpec) {
+        return execute({ spec -> configureExecSpec.execute(spec); return spec })
     }
 
     @Override
-    String execute(Closure configureExecSpec) {
-        ExecSpec execSpec = ExecUtil.makeStubExecSpec().<ExecSpec> with(configureExecSpec)
+    String execute(@NotNull Action<ExecSpec> configureExecSpec, @NotNull Predicate<Integer> throwForExitValue) {
+        return execute(
+                { spec -> configureExecSpec.execute(spec); return spec },
+                { exitCode -> return throwForExitValue.test(exitCode) },
+        )
+    }
+
+    String execute(Closure<ExecSpec> configureExecSpec) {
+        ExecSpec execSpec = ExecUtil.makeStubExecSpec().<ExecSpec, ExecSpec> with(configureExecSpec)
         def (int exitValue, String output) = doExec(execSpec)
         effects.add(new Effect(execSpec, null))
         if (exitValue != 0) { throw new RuntimeException("Exit value was ${exitValue}") }
         return output
     }
 
-    @Override
-    String execute(Closure configureExecSpec, Closure throwForExitValue) {
-        ExecSpec execSpec = ExecUtil.makeStubExecSpec().<ExecSpec> with(configureExecSpec)
+    String execute(Closure<ExecSpec> configureExecSpec, Closure<Boolean> throwForExitValue) {
+        ExecSpec execSpec = ExecUtil.makeStubExecSpec().<ExecSpec, ExecSpec> with(configureExecSpec)
         def (int exitValue, String output) = doExec(execSpec)
         def shouldThrow = (exitValue != 0) && throwForExitValue(exitValue)
         effects.add(new Effect(execSpec, shouldThrow))
@@ -59,7 +70,7 @@ class StubCommand implements Command {
         }
 
         @Override
-        public String toString() {
+        String toString() {
             return "Effect{" +
                 "for=" + name +
                 ", args=" + args +
