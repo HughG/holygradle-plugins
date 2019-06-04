@@ -49,7 +49,7 @@ object SourceControlRepositories {
     fun create(
         handler: SourceDependencyHandler
     ): SourceControlRepository  {
-        // We don't use handler..getSourceDependencyProject(...).projectDir, because source dependencies don't have
+        // We don't use handler.getSourceDependencyProject(...).projectDir, because source dependencies don't have
         // to contain a Gradle project.  We don't search upward or allow a dummy SourceControlRepository because we
         // expect source dependencies to be in their own repos.
         val repoLocation = handler.destinationDir

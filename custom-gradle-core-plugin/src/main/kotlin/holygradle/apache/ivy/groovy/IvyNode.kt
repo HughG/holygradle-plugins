@@ -18,10 +18,11 @@ private fun getChildNodes(node: Node, name: String): NodeList? {
 private fun getChildNode(node: Node, name: String): Node? {
     val childNodes = getChildNodes(node, name) ?: return null
     val childCount = childNodes.size
-    if (childCount > 1) {
-        throw RuntimeException("Expected 0 or 1 child node '${name}' but found ${childCount} in ${node}")
+    return when (childCount) {
+        0 -> null
+        1 -> childNodes[0] as Node
+        else -> throw RuntimeException("Expected 0 or 1 child node '${name}' but found ${childCount} in ${node}")
     }
-    return childNodes[0] as Node
 }
 
 sealed class IvyNode(protected val node: Node) {
