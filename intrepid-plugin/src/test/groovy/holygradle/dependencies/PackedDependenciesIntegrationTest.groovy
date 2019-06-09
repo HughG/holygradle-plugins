@@ -11,11 +11,11 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
     public void testConflictingModules1() {
         invokeGradle(new File(getTestDir(), "conflicting_modules1")) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(
-                "A conflict was found between the following modules:",
-                "- holygradle.test:external-lib:1.0",
-                "- holygradle.test:external-lib:1.1"
-            )
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
+                """A conflict was found between the following modules:
+ - holygradle.test:external-lib:1.0
+ - holygradle.test:external-lib:1.1
+"""))
         }
     }
     

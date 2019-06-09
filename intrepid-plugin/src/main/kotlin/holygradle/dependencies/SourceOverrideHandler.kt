@@ -13,6 +13,7 @@ import holygradle.io.FileHelper
 import holygradle.kotlin.dsl.KotlinClosure1
 import holygradle.kotlin.dsl.container
 import holygradle.kotlin.dsl.getValue
+import holygradle.kotlin.dsl.newInstance
 import holygradle.process.ExecHelper
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ModuleVersionIdentifier
@@ -21,6 +22,7 @@ import java.io.FileOutputStream
 
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import javax.inject.Inject
 
 private const val HOLY_GRADLE_NAMESPACE = "https://holygradle.butbucket.org/ivy-ext/1/"
 private const val HOLY_GRADLE_NAMESPACE_NAME = "holygradle"
@@ -28,7 +30,7 @@ private const val SOURCE_OVERRIDES_EXTENSION_NAME = "sourceOverrides"
 internal val HOLY_GRADLE_IVY_NAMESPACE = Namespace(HOLY_GRADLE_NAMESPACE, HOLY_GRADLE_NAMESPACE_NAME)
 internal var IvyDependencyNode.sourcePath: String? by IvyNode.NodeNamespacedAttribute(HOLY_GRADLE_IVY_NAMESPACE)
 
-class SourceOverrideHandler(
+open class SourceOverrideHandler @Inject constructor(
         val name: String,
         private val project: Project
 ) {
@@ -48,8 +50,8 @@ class SourceOverrideHandler(
     companion object {
         @JvmStatic
         fun createContainer(project: Project): Collection<SourceOverrideHandler> {
-            val container = project.container { name: String ->
-                SourceOverrideHandler(name, project)
+            val container = project.container<SourceOverrideHandler> { name: String ->
+                project.objects.newInstance(name, project)
             }
             project.extensions.add(SOURCE_OVERRIDES_EXTENSION_NAME, container)
             return container
@@ -72,7 +74,7 @@ class SourceOverrideHandler(
 
     @SuppressWarnings("GroovyUnusedDeclaration") // API method for use in build scripts.
     fun ivyFileGenerator(generator: Closure<File?>) {
-        ivyFileGenerator = { generator.call() }
+        ivyFileGenerator = { generator.call(this@SourceOverrideHandler) }
     }
 
     @SuppressWarnings("GroovyUnusedDeclaration") // API method for use in build scripts.

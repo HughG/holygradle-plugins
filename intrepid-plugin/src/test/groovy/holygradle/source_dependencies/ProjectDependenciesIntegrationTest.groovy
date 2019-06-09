@@ -29,10 +29,10 @@ class ProjectDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTe
         File projectDir = new File(getTestDir(), "conflict")
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("extractPackedDependencies")
-            launcher.expectFailure(
+            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
                     """A conflict was found between the following modules:
  - holygradle.test:external-lib:1.0
- - holygradle.test:external-lib:1.1""")
+ - holygradle.test:external-lib:1.1"""))
         }
     }
 
