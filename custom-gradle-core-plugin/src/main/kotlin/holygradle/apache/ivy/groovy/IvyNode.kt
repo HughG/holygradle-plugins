@@ -36,9 +36,13 @@ sealed class IvyNode(protected val node: Node) {
                 ?: throw RuntimeException("No child node(s) '${childrenName}' found in ${parent}")
         override val size: Int get() = maybeNodes?.size ?: 0
         override fun get(index: Int): T = makeIvyNode(nodes[index] as Node)
-        override fun add(index: Int, element: T) = nodes.add(index, element.node)
-        override fun removeAt(index: Int): T = makeIvyNode(nodes.removeAt(index) as Node)
-        override fun set(index: Int, element: T): T = makeIvyNode(nodes.set(index, element.node) as Node)
+        override fun add(element: T): Boolean = parent.append(element.node)
+        override fun add(index: Int, element: T) = throw NotImplementedError("add at index is not supported")
+        override fun remove(element: T): Boolean = parent.remove(element.node)
+        override fun removeAt(index: Int): T = throw NotImplementedError("remove at index is not supported")
+                // makeIvyNode(nodes.removeAt(index) as Node)
+        override fun set(index: Int, element: T): T = throw NotImplementedError("set at index is not supported")
+                // makeIvyNode(nodes.set(index, element.node) as Node)
         override fun clear() = parent.children().clear()
 
         fun appendNode(name: String, attributes: Map<String, String>) =
@@ -134,10 +138,11 @@ class IvyInfoNode(node: Node) : IvyNode(node) {
 class IvyConfigurationNode(node: Node) : IvyNode(node) {
     val name: String by nodeAttribute()
     var description: String by nodeAttribute()
+
+    override fun toString(): String = "IvyConfigurationNode{${name}; node=${node}; parent=${node.parent()}}"
 }
 
-class IvyArtifactNode(node: Node) : IvyNode(node) {
-}
+class IvyArtifactNode(node: Node) : IvyNode(node)
 
 class IvyDependencyNode(node: Node) : IvyNode(node) {
     val org: String by nodeAttribute()

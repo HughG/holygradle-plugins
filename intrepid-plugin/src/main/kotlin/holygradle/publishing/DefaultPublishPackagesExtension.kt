@@ -169,18 +169,21 @@ open class DefaultPublishPackagesExtension(
         generateIvyModuleDescriptorTask: Task
     ) {
         project.tasks.withType(GenerateIvyDescriptor::class.java).whenTaskAdded { descriptorTask ->
+            project.logger.lifecycle("Configuring ${descriptorTask}")
             generateIvyModuleDescriptorTask.dependsOn(descriptorTask)
             descriptorTask.dependsOn(beforeGenerateDescriptorTask)
 
             descriptorTask.doFirst {
                 // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
-                descriptorTask.descriptor.status = project.status.toString()
-                putConfigurationsInOriginalOrder(descriptorTask.descriptor)
-                freezeDynamicDependencyVersions(project, descriptorTask.descriptor)
-                collapseMultipleConfigurationDependencies(descriptorTask.descriptor)
+                val descriptor = descriptorTask.descriptor
+                descriptor.status = project.status.toString()
+                project.logger.lifecycle("About to put configurations in original order for ${descriptorTask}")
+                putConfigurationsInOriginalOrder(descriptor)
+                freezeDynamicDependencyVersions(project, descriptor)
+                collapseMultipleConfigurationDependencies(descriptor)
 
                 if (project.hasProperty("recordAbsolutePaths")) {
-                    addDependencySourceTags(descriptorTask.descriptor)
+                    addDependencySourceTags(descriptor)
                 }
             }
 
@@ -313,21 +316,32 @@ open class DefaultPublishPackagesExtension(
         descriptor.withXml { xml ->
             val configurations = xml.asIvyModule().configurations ?: mutableListOf<IvyConfigurationNode>()
             val confNodesInOrder = linkedMapOf<String, IvyConfigurationNode>()
+            project.logger.lifecycle("ivyModule configurations: ${configurations.joinToString()}")
+            project.logger.lifecycle("project configurations: ${project.configurations.joinToString()}")
+            project.logger.lifecycle("originalConfigurationOrder: ${originalConfigurationOrder}")
+            project.logger.lifecycle("ivy xml BEFORE: >>>${xml.asString()}<<<")
+            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
             originalConfigurationOrder.forEach { confName ->
                 val confNode = configurations.find { it.name == confName }
                 // Private configurations will have been removed, and so return null.
                 if (confNode != null) {
                     confNodesInOrder[confName] = confNode
-                    configurations.remove(confNode)
+                    val removed = configurations.remove(confNode)
+                    project.logger.lifecycle("Removed ${confNode}? ${removed}")
                 }
             }
+            project.logger.lifecycle("ivy xml BETWEEN: >>>${xml.asString()}<<<")
+            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
             confNodesInOrder.values.forEach {
                 val nodeDescription = project.configurations[it.name].description
                 if (nodeDescription != null) {
                     it.description = nodeDescription
                 }
-                configurations.add(it)
+                val added = configurations.add(it)
+                project.logger.lifecycle("Added ${it}? ${added}")
             }
+            project.logger.lifecycle("ivy xml AFTER: >>>${xml.asString()}<<<")
+            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
         }
     }
 

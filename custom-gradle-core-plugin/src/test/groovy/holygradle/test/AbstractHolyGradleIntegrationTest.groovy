@@ -12,9 +12,9 @@ import java.util.concurrent.TimeUnit
 import static org.junit.Assert.*
 
 class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
-    protected final File customInitScript;
-    protected final File gradleUserHome;
-    protected final URI pluginsRepoOverride;
+    protected final File customInitScript
+    protected final File gradleUserHome
+    protected final URI pluginsRepoOverride
 
     /**
      * This Java system property key must match the one in test.gradle, in the root project.  It must be supplied, and
@@ -92,8 +92,8 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
             launcher.addArguments("-I", customInitScript.toString())
             // Access plugins from a local repo.
             launcher.addArguments("-D${PLUGINS_REPO_OVERRIDE_SYSTEM_PROPERTY_KEY}=${pluginsRepoOverride.path}")
-            // Show full stacktrace in case of error.
-            launcher.addArguments("-S")
+//            // Show full stacktrace in case of error.
+//            launcher.addArguments("-S")
             maybeAddExtraArguments(launcher)
 
             ConfigureUtil.configure(closure, launcher)

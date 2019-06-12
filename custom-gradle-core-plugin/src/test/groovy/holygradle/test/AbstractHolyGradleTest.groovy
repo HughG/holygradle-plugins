@@ -16,16 +16,16 @@ class AbstractHolyGradleTest {
     public TestRule watcher = new TestWatcher() {
         protected void starting(Description description) {
             String startOfTestMessage = "%%%% BEGIN Test ${description.getMethodName()} %%%%%%%%%%%%%%%%"
-            System.out.println(startOfTestMessage);
-            System.err.println(startOfTestMessage);
+            System.out.println(startOfTestMessage)
+            System.err.println(startOfTestMessage)
         }
 
         protected void finished(Description description) {
             String endOfTestMessage = ".... END Test ${description.getMethodName()} ................"
-            System.out.println(endOfTestMessage);
-            System.err.println(endOfTestMessage);
+            System.out.println(endOfTestMessage)
+            System.err.println(endOfTestMessage)
         }
-    };
+    }
 
     /**
      * Calls a closure with a given {@link Closeable} object, and closes that object in a finally block (unless it is
