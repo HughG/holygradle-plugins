@@ -1,19 +1,26 @@
 package holygradle.publishing
 
-import holygradle.apache.ivy.groovy.IvyConfigurationNode
+import groovy.util.Node
+import groovy.util.NodeList
 import holygradle.apache.ivy.groovy.IvyDependencyNode
 import holygradle.apache.ivy.groovy.asIvyModule
 import holygradle.dependencies.PackedDependencyHandler
 import holygradle.dependencies.sourcePath
 import holygradle.kotlin.dsl.get
+import holygradle.kotlin.dsl.getValue
+import holygradle.kotlin.dsl.task
+import holygradle.kotlin.dsl.withType
 import holygradle.packaging.PackageArtifactHandler
+import holygradle.source_dependencies.SourceDependencyHandler
 import holygradle.unpacking.PackedDependenciesStateSource
+import holygradle.util.addingDefault
 import org.gradle.api.*
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.AuthenticationSupported
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.ivy.IvyModuleDescriptorSpec
@@ -21,12 +28,6 @@ import org.gradle.api.publish.ivy.IvyPublication
 import org.gradle.api.publish.ivy.tasks.GenerateIvyDescriptor
 import org.gradle.api.publish.ivy.tasks.PublishToIvyRepository
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import holygradle.kotlin.dsl.getValue
-import holygradle.kotlin.dsl.task
-import holygradle.kotlin.dsl.withType
-import holygradle.source_dependencies.SourceDependencyHandler
-import holygradle.util.addingDefault
-import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 
 private const val EXTENSION_NAME: String = "publishPackages"
 
@@ -313,35 +314,61 @@ open class DefaultPublishPackagesExtension(
     private fun putConfigurationsInOriginalOrder(descriptor: IvyModuleDescriptorSpec) {
         // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
         //noinspection GroovyAssignabilityCheck
+
+
+//        descriptor.withXml { xml ->
+//            val configurations = xml.asIvyModule().configurations ?: mutableListOf<IvyConfigurationNode>()
+//            val confNodesInOrder = linkedMapOf<String, IvyConfigurationNode>()
+//            project.logger.lifecycle("ivyModule configurations: ${configurations.joinToString()}")
+//            project.logger.lifecycle("project configurations: ${project.configurations.joinToString()}")
+//            project.logger.lifecycle("originalConfigurationOrder: ${originalConfigurationOrder}")
+//            project.logger.lifecycle("ivy xml BEFORE: >>>${xml.asString()}<<<")
+//            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
+//            originalConfigurationOrder.forEach { confName ->
+//                val confNode = configurations.find { it.name == confName }
+//                // Private configurations will have been removed, and so return null.
+//                if (confNode != null) {
+//                    confNodesInOrder[confName] = confNode
+//                    val removed = configurations.remove(confNode)
+//                    project.logger.lifecycle("Removed ${confNode}? ${removed}")
+//                }
+//            }
+//            project.logger.lifecycle("ivy xml BETWEEN: >>>${xml.asString()}<<<")
+//            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
+//            confNodesInOrder.values.forEach {
+//                val nodeDescription = project.configurations[it.name].description
+//                if (nodeDescription != null) {
+//                    it.description = nodeDescription
+//                }
+//                val added = configurations.add(it)
+//                project.logger.lifecycle("Added ${it}? ${added}")
+//            }
+//            project.logger.lifecycle("ivy xml AFTER: >>>${xml.asString()}<<<")
+//            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
+//        }
+
+
         descriptor.withXml { xml ->
-            val configurations = xml.asIvyModule().configurations ?: mutableListOf<IvyConfigurationNode>()
-            val confNodesInOrder = linkedMapOf<String, IvyConfigurationNode>()
-            project.logger.lifecycle("ivyModule configurations: ${configurations.joinToString()}")
-            project.logger.lifecycle("project configurations: ${project.configurations.joinToString()}")
-            project.logger.lifecycle("originalConfigurationOrder: ${originalConfigurationOrder}")
-            project.logger.lifecycle("ivy xml BEFORE: >>>${xml.asString()}<<<")
-            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
-            originalConfigurationOrder.forEach { confName ->
-                val confNode = configurations.find { it.name == confName }
-                // Private configurations will have been removed, and so return null.
-                if (confNode != null) {
-                    confNodesInOrder[confName] = confNode
-                    val removed = configurations.remove(confNode)
-                    project.logger.lifecycle("Removed ${confNode}? ${removed}")
+            (xml.asNode().get("configurations") as NodeList).filterIsInstance<Node>().forEach { confsNode ->
+                val confNodes = LinkedHashMap<String, Node>()
+                originalConfigurationOrder.forEach { confName ->
+                    val confNode = confsNode.iterator().asSequence().filterIsInstance<Node>().find {
+                        it.attribute("name") == confName
+                    }
+                    // Private configurations will have been removed, and so return null.
+                    if (confNode != null) {
+                        confsNode.remove(confNode)
+                        confNodes[confName] = confNode
+                    }
+                }
+                confNodes.values.forEach { confNode ->
+                    val nodeDescription = project.configurations[confNode.attribute("name").toString()].description
+                    if (nodeDescription != null) {
+                        confNode.attributes()["description"] = nodeDescription
+                    }
+                    confsNode.append(confNode)
                 }
             }
-            project.logger.lifecycle("ivy xml BETWEEN: >>>${xml.asString()}<<<")
-            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
-            confNodesInOrder.values.forEach {
-                val nodeDescription = project.configurations[it.name].description
-                if (nodeDescription != null) {
-                    it.description = nodeDescription
-                }
-                val added = configurations.add(it)
-                project.logger.lifecycle("Added ${it}? ${added}")
-            }
-            project.logger.lifecycle("ivy xml AFTER: >>>${xml.asString()}<<<")
-            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
         }
     }
 
