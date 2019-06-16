@@ -29,8 +29,10 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
         String[] testNames = ["${testName}_stdout", "${testName}_stderr"]
         testNames.each { String testFileName ->
             regression.replacePatterns(testFileName, [
+                (~/^:buildSrc:.*$/) : null, // Ignore compilation of buildSrc project.
                 (~/^Detected a changing module.*$/) : null,
                 (~/pluginsRepoOverride=.*/) : "pluginsRepoOverride=[active]",
+                (~/^extractSevenZip.*$/) : null, // 7zip packed dependency may not be available in all contexts.
                 (~/Download .*\.(pom|jar)/) : null, // Ignore any new Holy Gradle dependencies being cached.
                 (~/BUILD SUCCESSFUL in [0-9]+s*/) : "BUILD SUCCESSFUL in [snipped]s",
                 (~/Gradle user home:.*/) : "Gradle user home: [snipped]",

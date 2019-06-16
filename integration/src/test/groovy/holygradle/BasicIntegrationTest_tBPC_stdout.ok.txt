@@ -1,5 +1,6 @@
 Using pluginsRepoOverride=[active]
 Checking 'Java' (1.8) ... done
+Updated: Intrepid - holygradle_test
 WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...holy-gradle-plugins\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_d64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
 WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...holy-gradle-plugins\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_r64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
 :tasks
@@ -36,6 +37,7 @@ fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildLinks - Rebuild all links.
 rebuildLinksToCache - Rebuild all links to the unpack cache
+summariseAllDependencies - Create an XML file listing all direct and transitive dependencies
 zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
 
 DevEnv tasks
@@ -92,7 +94,6 @@ unitTestRelease - Runs the Release unit tests for 'tBPC' and all dependent proje
 Other tasks
 -----------
 buildAndTestAll - Build 'tBPC' and all dependent projects in Debug and Release, and run unit tests.
-extractSevenZip - Unpack build dependency 'sevenZip'
 fetchOther - Retrieves an Hg Clone for 'other' into your workspace.
 packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tBPC'.
 packageDefault - Creates a zip file for 'default' in preparation for publishing project 'tBPC'.

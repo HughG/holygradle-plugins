@@ -34,6 +34,7 @@ fetchAllSourceDependencies - Retrieves all 'sourceDependencies' recursively.
 fetchFirstLevelSourceDependencies - Retrieves only the first level 'sourceDependencies'.
 rebuildLinks - Rebuild all links.
 rebuildLinksToCache - Rebuild all links to the unpack cache
+summariseAllDependencies - Create an XML file listing all direct and transitive dependencies
 zipDependencies - Collect all non-source dependencies into a 'local_artifacts' ZIP.
 
 DevEnv tasks
@@ -81,7 +82,6 @@ unitTestRelease - Run the Release unit tests for 'tAPIT'.
 Other tasks
 -----------
 buildAndTestAll - Build 'tAPIT' and all dependent projects in Debug and Release, and run unit tests.
-extractSevenZip - Unpack build dependency 'sevenZip'
 packageBuildScript - Creates a zip file for 'buildScript' in preparation for publishing project 'tAPIT'.
 
 BUILD SUCCESSFUL in [snipped]s

@@ -47,22 +47,12 @@ sealed class IvyNode(protected val node: Node) {
 
         fun appendNode(name: String, attributes: Map<String, String>) =
                 parent.appendNode(name, attributes)!!
-    }
 
-    protected class ChildNodes<T : IvyNode>(
-            private val makeIvyNode: (Node) -> T
-    ) : ReadOnlyProperty<IvyNode, MutableList<T>> {
-        override operator fun getValue(thisRef: IvyNode, property: KProperty<*>): MutableList<T> {
-            return List(thisRef.node, property.name, makeIvyNode)
+        init {
+            println("New List around ${parent} (${parent.name()})")
+            println("  children (${childrenName}): ${maybeNodes?.joinToString()}")
         }
-
-//    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
-//        println("$value has been assigned to '${property.name}' in $thisRef.")
-//    }
     }
-
-    protected fun <T : IvyNode> childNodes(makeIvyNode: (Node) -> T) = ChildNodes(makeIvyNode)
-    //protected inline fun <reified T : IvyNode> childNodes() = ChildNodes<T>({n -> T(n)})
 
     protected class ChildNode<out T : IvyNode>(
             private val makeIvyNode: (Node) -> T
@@ -72,10 +62,6 @@ sealed class IvyNode(protected val node: Node) {
                     ?: throw RuntimeException("No child node(s) '${property.name}' found in ${thisRef.node}")
             return makeIvyNode(childNode)
         }
-
-//    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
-//        println("$value has been assigned to '${property.name}' in $thisRef.")
-//    }
     }
 
     protected fun <T : IvyNode> childNode(makeIvyNode: (Node) -> T) = ChildNode(makeIvyNode)
@@ -88,10 +74,6 @@ sealed class IvyNode(protected val node: Node) {
             val childNode = getChildNode(thisRef.node, property.name)
             return if (childNode == null) null else List(childNode, childrenName, makeIvyNode)
         }
-
-//    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
-//        println("$value has been assigned to '${property.name}' in $thisRef.")
-//    }
     }
 
     protected fun <T : IvyNode> listChildNode(name: String, makeIvyNode: (Node) -> T) =

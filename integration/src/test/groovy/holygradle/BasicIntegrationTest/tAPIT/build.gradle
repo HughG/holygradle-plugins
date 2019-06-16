@@ -9,6 +9,15 @@ buildscript {
 gplugins.apply()
 
 /*
+    Cause the "republish" task to be created.
+ */
+publishPackages {
+    republish {
+        // Do nothing.
+    }
+}
+
+/*
     This project has no real content.  Its only function is to use all the plugins.  We need to have a "stamping" block
     for the "stamping" task to appear.
 */

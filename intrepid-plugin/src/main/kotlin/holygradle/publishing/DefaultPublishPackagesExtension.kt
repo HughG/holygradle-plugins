@@ -2,6 +2,7 @@ package holygradle.publishing
 
 import groovy.util.Node
 import groovy.util.NodeList
+import holygradle.apache.ivy.groovy.IvyConfigurationNode
 import holygradle.apache.ivy.groovy.IvyDependencyNode
 import holygradle.apache.ivy.groovy.asIvyModule
 import holygradle.dependencies.PackedDependencyHandler
@@ -170,7 +171,6 @@ open class DefaultPublishPackagesExtension(
         generateIvyModuleDescriptorTask: Task
     ) {
         project.tasks.withType(GenerateIvyDescriptor::class.java).whenTaskAdded { descriptorTask ->
-            project.logger.lifecycle("Configuring ${descriptorTask}")
             generateIvyModuleDescriptorTask.dependsOn(descriptorTask)
             descriptorTask.dependsOn(beforeGenerateDescriptorTask)
 
@@ -178,8 +178,7 @@ open class DefaultPublishPackagesExtension(
                 // From Gradle 1.7, the default status is 'integration', but we prefer the previous behaviour.
                 val descriptor = descriptorTask.descriptor
                 descriptor.status = project.status.toString()
-                project.logger.lifecycle("About to put configurations in original order for ${descriptorTask}")
-                putConfigurationsInOriginalOrder(descriptor)
+                putConfigurationsInOriginalOrder(descriptorTask.name, descriptor)
                 freezeDynamicDependencyVersions(project, descriptor)
                 collapseMultipleConfigurationDependencies(descriptor)
 
@@ -311,63 +310,25 @@ open class DefaultPublishPackagesExtension(
 
     // Re-writes the "configurations" element so that its children appear in the same order that the configurations were
     // defined in the project.
-    private fun putConfigurationsInOriginalOrder(descriptor: IvyModuleDescriptorSpec) {
-        // IvyModuleDescriptor#withXml doc says Gradle converts Closure to Action<>, so suppress IntelliJ IDEA check
-        //noinspection GroovyAssignabilityCheck
-
-
-//        descriptor.withXml { xml ->
-//            val configurations = xml.asIvyModule().configurations ?: mutableListOf<IvyConfigurationNode>()
-//            val confNodesInOrder = linkedMapOf<String, IvyConfigurationNode>()
-//            project.logger.lifecycle("ivyModule configurations: ${configurations.joinToString()}")
-//            project.logger.lifecycle("project configurations: ${project.configurations.joinToString()}")
-//            project.logger.lifecycle("originalConfigurationOrder: ${originalConfigurationOrder}")
-//            project.logger.lifecycle("ivy xml BEFORE: >>>${xml.asString()}<<<")
-//            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
-//            originalConfigurationOrder.forEach { confName ->
-//                val confNode = configurations.find { it.name == confName }
-//                // Private configurations will have been removed, and so return null.
-//                if (confNode != null) {
-//                    confNodesInOrder[confName] = confNode
-//                    val removed = configurations.remove(confNode)
-//                    project.logger.lifecycle("Removed ${confNode}? ${removed}")
-//                }
-//            }
-//            project.logger.lifecycle("ivy xml BETWEEN: >>>${xml.asString()}<<<")
-//            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
-//            confNodesInOrder.values.forEach {
-//                val nodeDescription = project.configurations[it.name].description
-//                if (nodeDescription != null) {
-//                    it.description = nodeDescription
-//                }
-//                val added = configurations.add(it)
-//                project.logger.lifecycle("Added ${it}? ${added}")
-//            }
-//            project.logger.lifecycle("ivy xml AFTER: >>>${xml.asString()}<<<")
-//            project.logger.lifecycle("configurations: ${configurations.joinToString()}")
-//        }
-
-
+    private fun putConfigurationsInOriginalOrder(taskName: String, descriptor: IvyModuleDescriptorSpec) {
         descriptor.withXml { xml ->
-            (xml.asNode().get("configurations") as NodeList).filterIsInstance<Node>().forEach { confsNode ->
-                val confNodes = LinkedHashMap<String, Node>()
-                originalConfigurationOrder.forEach { confName ->
-                    val confNode = confsNode.iterator().asSequence().filterIsInstance<Node>().find {
-                        it.attribute("name") == confName
-                    }
-                    // Private configurations will have been removed, and so return null.
-                    if (confNode != null) {
-                        confsNode.remove(confNode)
-                        confNodes[confName] = confNode
-                    }
+            val configurations = xml.asIvyModule().configurations
+                    ?: throw RuntimeException("Failed to find 'configurations' node in ixy.xml for ${taskName}")
+            val confNodesInOrder = linkedMapOf<String, IvyConfigurationNode>()
+            originalConfigurationOrder.forEach { confName ->
+                val confNode = configurations.find { it.name == confName }
+                // Private configurations will have been removed, and so return null.
+                if (confNode != null) {
+                    configurations.remove(confNode)
+                    confNodesInOrder[confName] = confNode
                 }
-                confNodes.values.forEach { confNode ->
-                    val nodeDescription = project.configurations[confNode.attribute("name").toString()].description
-                    if (nodeDescription != null) {
-                        confNode.attributes()["description"] = nodeDescription
-                    }
-                    confsNode.append(confNode)
+            }
+            confNodesInOrder.values.forEach {
+                val nodeDescription = project.configurations[it.name].description
+                if (nodeDescription != null) {
+                    it.description = nodeDescription
                 }
+                configurations.add(it)
             }
         }
     }
