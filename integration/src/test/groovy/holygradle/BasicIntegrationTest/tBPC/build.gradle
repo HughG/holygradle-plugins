@@ -84,6 +84,11 @@ publishPackages {
             url "http://artifactory.example-corp.com/artifactory/teamX-integration-local"
         }
     }
+
+    // Cause the "republish" task to be created.
+    republish {
+        // Do nothing.
+    }
 }
 
 /*
