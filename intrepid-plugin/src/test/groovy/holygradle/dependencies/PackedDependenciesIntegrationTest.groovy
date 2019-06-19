@@ -37,19 +37,12 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
     }
 
     @Test
-    @Ignore
     public void testSameModuleVersionInSameConfigurationAtMultipleLocations() {
         final projectDir = new File(getTestDir(), "same_module_same_conf_multi_target")
         invokeGradle(projectDir) { WrapperBuildLauncher launcher ->
             launcher.forTasks("fetchAllDependencies")
-            launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
-                """FAILURE: Build failed with an exception.
-
-* What went wrong:
-Module version holygradle.test:external-lib:1.1 is specified by packed dependencies at both path 'sub/extlib' and """ +
-                    "'extlib'.  A single version can only be specified at one path.  If you need it to appear at more than one " +
-                    "location you can explicitly create links."
-            ))
+            // This used to be disallowed but refactoring while developing source overrides, to allow multiple parents,
+            // means it works now.
         }
     }
     @Test
