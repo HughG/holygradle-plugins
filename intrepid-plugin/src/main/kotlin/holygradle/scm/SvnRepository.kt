@@ -3,7 +3,10 @@ package holygradle.scm
 import org.gradle.api.Action
 import java.io.File
 
-class SvnRepository(scmCommand: Command, workingCopyDir: File) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
+internal class SvnRepository(
+        scmCommand: Command,
+        workingCopyDir: File
+) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
     companion object {
         @JvmStatic
         val TYPE = object : SourceControlType {

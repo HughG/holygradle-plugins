@@ -8,7 +8,7 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import java.io.File
 
-class HgDependency(
+internal class HgDependency(
         project: Project,
         sourceDependency: SourceDependencyHandler,
         private val hgCommand: Command

@@ -6,7 +6,10 @@ import java.io.File
 import java.net.URL
 import java.util.function.Predicate
 
-class HgRepository(scmCommand: Command, workingCopyDir: File) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
+internal class HgRepository(
+        scmCommand: Command,
+        workingCopyDir: File
+) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
     companion object {
         @JvmStatic
         val TYPE = object : SourceControlType {

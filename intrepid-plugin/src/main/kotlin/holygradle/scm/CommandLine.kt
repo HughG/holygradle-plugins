@@ -8,7 +8,7 @@ import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
 import java.util.function.Predicate
 
-class CommandLine(
+internal class CommandLine(
         private val logger: Logger,
         private val path: String,
         private val exec: (Action<in ExecSpec>) -> ExecResult

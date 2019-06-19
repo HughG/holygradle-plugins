@@ -11,7 +11,7 @@ import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.process.ExecSpec
 import java.io.File
 
-class SvnDependency(
+internal class SvnDependency(
         project: Project,
         sourceDependency: SourceDependencyHandler,
         private val svnCommand: Command

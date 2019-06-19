@@ -10,7 +10,7 @@ import org.gradle.api.Project
 import java.io.File
 import java.net.URL
 
-class GitDependency(
+internal class GitDependency(
         project: Project,
         sourceDependency: SourceDependencyHandler,
         private val gitCommand: Command

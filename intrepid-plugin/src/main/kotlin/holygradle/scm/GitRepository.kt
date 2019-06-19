@@ -5,7 +5,10 @@ import org.gradle.process.ExecSpec
 import java.io.File
 import java.util.function.Predicate
 
-class GitRepository(scmCommand: Command, workingCopyDir: File) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
+internal class GitRepository(
+        scmCommand: Command,
+        workingCopyDir: File
+) : SourceControlRepositoryBase(scmCommand, workingCopyDir) {
     companion object {
         @JvmStatic
         val TYPE = object : SourceControlType {

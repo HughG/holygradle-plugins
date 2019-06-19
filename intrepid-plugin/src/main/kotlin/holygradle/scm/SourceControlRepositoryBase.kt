@@ -3,7 +3,7 @@ package holygradle.scm
 import java.io.File
 import java.nio.file.Files
 
-abstract class SourceControlRepositoryBase(
+internal abstract class SourceControlRepositoryBase(
         protected val scmCommand: Command,
         protected val workingCopyDir: File
 ) : SourceControlRepository {

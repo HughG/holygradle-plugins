@@ -13,7 +13,7 @@ import java.util.function.Predicate
 
 // TODO 2017-03-28 HughG: Refactor credential methods out to a separate class.
 
-object ScmHelper {
+internal object ScmHelper {
     private const val CREDENTIAL_BASIS_FILE_PATH = "holygradle/credential-bases.txt"
     private val HTTP_URL_SCHEMES = listOf("http", "https")
 
@@ -124,7 +124,7 @@ object ScmHelper {
         project.logger.info("  Cached credential '${credentialName}' from basis '${credentialBasis}'.")
     }
 
-    public fun repoSupportsAuthentication(repoUrl: String): Boolean {
+    fun repoSupportsAuthentication(repoUrl: String): Boolean {
         return URL(repoUrl).protocol in HTTP_URL_SCHEMES
     }
 }
