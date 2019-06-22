@@ -7,7 +7,7 @@ import org.gradle.api.Project
 import org.gradle.api.tasks.bundling.Zip
 import java.io.File
 
-class PackageArtifactDescriptor(val project: Project, projectRelativePath: String) : PackageArtifactBaseDSL {
+internal class PackageArtifactDescriptor(val project: Project, projectRelativePath: String) : PackageArtifactBaseDSL {
     private val _includeHandlers = mutableListOf<PackageArtifactIncludeHandler>()
     private val _excludes = mutableListOf(".gradle", "build.gradle", "packages/**/*", "packages/*")
     var fromLocation = projectRelativePath
@@ -58,7 +58,7 @@ class PackageArtifactDescriptor(val project: Project, projectRelativePath: Strin
         this.fromLocation = fromLocation
     }
 
-    override fun from(fromLocation: String, action: Action<PackageArtifactDescriptor>) {
+    override fun from(fromLocation: String, action: Action<PackageArtifactBaseDSL>) {
         val from = PackageArtifactDescriptor(project, this.fromLocation + "/" + fromLocation)
         _fromDescriptors.add(from)
         action.execute(from)

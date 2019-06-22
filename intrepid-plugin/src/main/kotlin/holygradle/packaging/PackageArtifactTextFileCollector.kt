@@ -8,7 +8,7 @@ import org.gradle.api.Project
  * This class holds all the text files to be added to a package (build script, settings file, and any other text files),
  * so that it can control the adding of a default settings file (unless overridden).
  */
-class PackageArtifactTextFileCollector(private val project: Project) {
+internal class PackageArtifactTextFileCollector(private val project: Project) {
     // If this class were not factored out, it would be an easy mistake to make, to allow other code in
     // PackageArtifactDescriptor to modify textFileHandlers after it was supposed to be "fixed".
 

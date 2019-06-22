@@ -12,7 +12,7 @@ import java.util.function.Predicate
  * Instances for groups and modules may have children, and will have a null version value.  Instances for versions will
  * have a non-null version, and won't have children.
  */
-class PathInfo(
+internal class PathInfo(
         val parent: PathInfo?,
         artifactory: ArtifactoryAPI,
         val path: String

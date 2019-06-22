@@ -7,6 +7,7 @@ import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import holygradle.kotlin.dsl.newInstance
 
 open class ArtifactoryManagerHandler(
         private val project: Project
@@ -91,8 +92,8 @@ open class ArtifactoryManagerHandler(
     }
 
     fun repository(repository: String, closure: Action<RepositoryHandler>) {
-        val repositoryHandler =
-            RepositoryHandler(project.logger, repository, this, outputDir, minRequestIntervalInMillis)
+        val repositoryHandler = project.objects.newInstance<RepositoryHandler>(
+                project.logger, repository, this, outputDir, minRequestIntervalInMillis)
         if (username != null) {
             repositoryHandler.username(username!!)
         }

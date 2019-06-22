@@ -236,7 +236,7 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
         rootPackageDescriptor.from(fromLocation)
     }
 
-    override fun from(fromLocation: String, action: Action<PackageArtifactDescriptor>) {
+    override fun from(fromLocation: String, action: Action<PackageArtifactBaseDSL>) {
         rootPackageDescriptor.from(fromLocation, action)
     }
 

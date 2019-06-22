@@ -19,7 +19,7 @@ interface PackageArtifactBaseDSL {
 
     fun from(fromLocation: String)
     
-    fun from(fromLocation: String, action: Action<PackageArtifactDescriptor>)
+    fun from(fromLocation: String, action: Action<PackageArtifactBaseDSL>)
     
     fun to(toLocation: String)
 }
