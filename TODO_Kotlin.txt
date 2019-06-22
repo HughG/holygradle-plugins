@@ -9,9 +9,6 @@ TODO: Check accessibility from Groovy of "static" methods on objects (companion 
 TODO: Make functions/fields private which are commented as being public only because of Groovy's stupid rules about
 visibility in closures.
 
-TODO: Do I actually need @Inject for nested handlers, or is that only if I want to get an ObjectFactory without having a
-reference to the project?
-
 TODO: Use Kotlin DSL methods more.
 
 TODO: Generally improve Kotlin style.

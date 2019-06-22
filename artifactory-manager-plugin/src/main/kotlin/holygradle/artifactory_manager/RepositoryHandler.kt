@@ -4,8 +4,9 @@ import org.gradle.api.Action
 import org.gradle.api.logging.Logger
 import java.io.File
 import java.io.IOException
+import javax.inject.Inject
 
-open class RepositoryHandler(
+open class RepositoryHandler @Inject constructor(
         private val logger: Logger,
         private val repository: String,
         private val artifactoryManager: ArtifactoryManagerHandler,
