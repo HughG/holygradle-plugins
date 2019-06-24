@@ -110,14 +110,6 @@ open class SpeedyUnpackManyTask : DefaultTask() {
             logger.info("SpeedyUnpackManyTask: creating unpack dir ${entry.unpackDir}")
             FileHelper.ensureMkdirs(entry.unpackDir)
         }
-        if (!entry.applyUpToDateChecks) {
-            // If we're not using the normal Gradle mechanism, reset the info file.
-            if (infoFile.exists()) {
-                logger.info("SpeedyUnpackManyTask: re-creating info file ${infoFile}")
-                FileHelper.ensureDeleteFile(infoFile)
-                infoFile.createNewFile()
-            }
-        }
 
         for (file in zipFilesToUnpack) {
             logger.lifecycle("Unpack ${file.name}")
@@ -126,6 +118,7 @@ open class SpeedyUnpackManyTask : DefaultTask() {
 
             if (!entry.applyUpToDateChecks) {
                 // If we're not using the normal Gradle mechanism, update the info file.
+                infoFile.setWritable(true)
                 infoFile.appendText("Unpacked from: " + file.name + System.lineSeparator())
 
                 logger.info("SpeedyUnpackManyTask: updated info file ${infoFile}, adding ${file.name}")

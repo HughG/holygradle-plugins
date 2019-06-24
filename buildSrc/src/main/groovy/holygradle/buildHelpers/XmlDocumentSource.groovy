@@ -32,6 +32,7 @@ public class XmlDocumentSource {
             // Use a custom entity resolver to get a local copy of the XHTML DTD, to save time and so that we don't
             // have to worry about proxies etc.  This also means we can use HTML entities like "&copy;".
             parser.setEntityResolver(getEntityResolver())
+            parser.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false)
             parser.trimWhitespace = false
             final XmlDoc doc = new XmlDoc(parser.parse(file))
             if (!doc.valid) {

@@ -30,7 +30,7 @@ public class XmlDoc {
     public List<Node> getLinks() {
         assertValid()
         if (!links) {
-            links = node.depthFirst().findAll { Node it -> it.name().localPart == "a" } as List<Node>
+            links = node.depthFirst().findAll { it instanceof Node && it.name().localPart == "a" } as List<Node>
         }
         return links
     }
@@ -39,7 +39,7 @@ public class XmlDoc {
         assertValid()
         if (!elementsById) {
             elementsById = new HashMap()
-            for (Node n : node.depthFirst()) {
+            for (Node n : node.depthFirst().findAll { it instanceof Node }) {
                 String nId = n.@id
                 if (nId != null) {
                     elementsById[nId] = n

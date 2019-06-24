@@ -155,7 +155,7 @@ for (local in [false, true]) {
         } else {
             doFirst {
                 logger.warn(
-                    "WARNING: Not replacing published websute URL in examples because property " +
+                    "WARNING: Not replacing published website URL in examples because property " +
                     "${websiteUrlProperty} is not set"
                 )
             }

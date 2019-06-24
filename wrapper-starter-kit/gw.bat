@@ -1,1 +1,1 @@
-%~dp0gradlew.bat %*
+"%~dp0gradlew.bat" %*
