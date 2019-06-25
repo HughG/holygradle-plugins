@@ -168,7 +168,7 @@ open class SourceDependencyHandler @Inject constructor (
                 val groupName = dependencyProject.group.toString()
                 val version = dependencyProject.version.toString()
 
-                identifier = DefaultModuleVersionIdentifier(groupName, targetName, version)
+                identifier = DefaultModuleVersionIdentifier.newId(groupName, targetName, version)
             }
             return identifier
         }

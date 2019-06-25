@@ -13,8 +13,8 @@ class PackedDependenciesIntegrationTest extends AbstractHolyGradleIntegrationTes
             launcher.forTasks("fetchAllDependencies")
             launcher.expectFailure(RegressionFileHelper.toStringWithPlatformLineBreaks(
                 """A conflict was found between the following modules:
- - holygradle.test:external-lib:1.0
- - holygradle.test:external-lib:1.1
+  - holygradle.test:external-lib:1.0
+  - holygradle.test:external-lib:1.1
 """))
         }
     }

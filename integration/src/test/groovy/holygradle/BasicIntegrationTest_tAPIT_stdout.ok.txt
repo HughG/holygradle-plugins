@@ -1,6 +1,8 @@
 Using pluginsRepoOverride=[active]
+> Configure project :
 Checking 'Java' (1.8) ... done
-:tasks
+
+> Task :tasks
 
 ------------------------------------------------------------
 All tasks runnable from root project
@@ -65,6 +67,7 @@ beforeGenerateDescriptor - Actions to run before any Ivy descriptor generation t
 createPublishNotes - Creates 'build_info' directory which will be included in published packages.
 generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'.
 generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication.
+generateMetadataFileForIvyPublication - Generates the Gradle metadata file for publication 'ivy'.
 packageEverything - Creates all zip packages for project 'tAPIT'.
 publish - Publishes all publications produced by this project.
 repackageEverything - As 'packageEverything' but doesn't auto-generate any files.

@@ -101,14 +101,19 @@ open class DefaultPublishPackagesExtension(
         // Configure the publish task to deal with the version number, include source dependencies and convert
         // dynamic dependency versions to fixed version numbers.  Note that the PublishingExtension is a
         // DeferredConfigurable, so this block won't be executed until dependencies have been set up etc.
-        project.publishing {
-            if (createDefaultPublication) {
-                createDefaultPublication(it, packageArtifactHandlers)
-                configureGenerateDescriptorTasks(
-                        beforeGenerateDescriptorTask,
-                        generateIvyModuleDescriptorTask
-                )
-                configureRepublishTaskDependencies(republishTask)
+        //
+        // TODO 2019-06-24 HughG: From Gradle 4.8 the publishing block stopped behaving as if it were "afterEvaluate" so
+        // I added an explicit one here.  Probably not all of this needs to be afterEvaluate, though.
+        project.afterEvaluate {
+            project.publishing { publishingExtension ->
+                if (createDefaultPublication) {
+                    createDefaultPublication(publishingExtension, packageArtifactHandlers)
+                    configureGenerateDescriptorTasks(
+                            beforeGenerateDescriptorTask,
+                            generateIvyModuleDescriptorTask
+                    )
+                    configureRepublishTaskDependencies(republishTask)
+                }
             }
         }
     }
@@ -170,7 +175,7 @@ open class DefaultPublishPackagesExtension(
         beforeGenerateDescriptorTask: Task,
         generateIvyModuleDescriptorTask: Task
     ) {
-        project.tasks.withType(GenerateIvyDescriptor::class.java).whenTaskAdded { descriptorTask ->
+        project.tasks.withType(GenerateIvyDescriptor::class.java).all { descriptorTask ->
             generateIvyModuleDescriptorTask.dependsOn(descriptorTask)
             descriptorTask.dependsOn(beforeGenerateDescriptorTask)
 
@@ -203,7 +208,7 @@ open class DefaultPublishPackagesExtension(
     }
 
     private fun configureRepublishTaskDependencies(republishTask: Task?) {
-        project.tasks.withType(PublishToIvyRepository::class.java).whenTaskAdded { publishTask ->
+        project.tasks.withType(PublishToIvyRepository::class.java).all { publishTask ->
             if (republishTask != null) {
                 republishTask.dependsOn(publishTask)
             }

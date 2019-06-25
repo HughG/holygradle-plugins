@@ -11,7 +11,7 @@ fun String.tryToModuleVersionIdentifier() : ModuleVersionIdentifier? {
         null
     } else {
         val values = match.groupValues
-        DefaultModuleVersionIdentifier(values[1], values[2], values[3])
+        DefaultModuleVersionIdentifier.newId(values[1], values[2], values[3])
     }
 }
 fun String.toModuleVersionIdentifier() : ModuleVersionIdentifier {

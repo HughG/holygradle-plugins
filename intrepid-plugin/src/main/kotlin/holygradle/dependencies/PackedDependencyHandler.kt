@@ -79,7 +79,7 @@ open class PackedDependencyHandler @Inject constructor (
         if (parts.size != 3) {
             throw RuntimeException("Incorrect dependency coordinate format: '$dependencyCoordinate'")
         } else {
-            dependencyId = DefaultModuleVersionIdentifier(parts[0], parts[1], parts[2])
+            dependencyId = DefaultModuleVersionIdentifier.newId(parts[0], parts[1], parts[2])
         }
     }
         

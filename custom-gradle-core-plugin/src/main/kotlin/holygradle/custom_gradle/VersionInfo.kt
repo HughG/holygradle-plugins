@@ -50,7 +50,7 @@ open class VersionInfo(private val project: Project) {
     val buildscriptDependencies: Map<out ModuleVersionIdentifier, String> by lazy {
         val pluginUsagesExtension = project.extensions.findByName("pluginUsages") as PluginUsages
         pluginUsagesExtension.mapping.entries.associate { (moduleName, versions) ->
-            DefaultModuleVersionIdentifier("holygradle", moduleName, versions.selected) to versions.requested
+            DefaultModuleVersionIdentifier.newId("holygradle", moduleName, versions.selected) to versions.requested
         }
     }
     

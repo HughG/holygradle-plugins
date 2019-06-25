@@ -1,9 +1,11 @@
 Using pluginsRepoOverride=[active]
+> Configure project :
 Checking 'Java' (1.8) ... done
 Updated: Intrepid - holygradle_test
 WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...holy-gradle-plugins\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_d64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
 WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...holy-gradle-plugins\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_r64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
-:tasks
+
+> Task :tasks
 
 ------------------------------------------------------------
 All tasks runnable from root project
@@ -76,6 +78,7 @@ beforeGenerateDescriptor - Actions to run before any Ivy descriptor generation t
 createPublishNotes - Creates 'build_info' directory which will be included in published packages.
 generateDescriptorFileForIvyPublication - Generates the Ivy Module Descriptor XML file for publication 'ivy'.
 generateIvyModuleDescriptor - Backwards-compatibility task for generating ivy.xml files for publication. This task will be removed in a future version of the Holy Gradle. It has been replaced by tasks with name generateDescriptorFileFor<NAME OF PUBLICATION>Publication.
+generateMetadataFileForIvyPublication - Generates the Gradle metadata file for publication 'ivy'.
 packageEverything - Creates all zip packages for project 'tBPC'.
 publish - Publishes all publications produced by this project.
 publishIvyPublicationToIvyRepository - Publishes Ivy publication 'ivy' to Ivy repository 'ivy'.

@@ -222,7 +222,7 @@ open class DependenciesStateHandler
                 val parentGroup = parentNode.getElementsByTagName("groupId").item(0).textContent
                 val parentName = parentNode.getElementsByTagName("artifactId").item(0).textContent
                 val parentVersion = parentNode.getElementsByTagName("version").item(0).textContent
-                val parentId = DefaultModuleVersionIdentifier(parentGroup, parentName, parentVersion)
+                val parentId = DefaultModuleVersionIdentifier.newId(parentGroup, parentName, parentVersion)
 
                 val parentPomRelativePathNodes = parentNode.getElementsByTagName("relativePath")
                 if (parentPomRelativePathNodes.length > 0) {
