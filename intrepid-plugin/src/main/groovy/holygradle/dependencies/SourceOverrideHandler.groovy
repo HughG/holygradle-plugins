@@ -108,11 +108,11 @@ class SourceOverrideHandler {
             // Otherwise use the generator function, if defined.
             project.logger.info("Using custom ivy file generator for ${dependencyCoordinate}")
             def generator = getIvyFileGenerator()
-            def (ivyXmlFile, dependenciesXmlFile) = generator(this)
-            if (!(ivyXmlFile != null && dependenciesXmlFile != null)) {
+            def ivyXmlFile = generator(this)
+            if (ivyXmlFile == null) {
                 throw new RuntimeException(
-                    "ivyFileGenerator for source override ${name} in ${project} must return two valid filenames, " +
-                    "but returned '${ivyXmlFile}' and '${dependenciesXmlFile}'."
+                    "ivyFileGenerator for source override ${name} in ${project} must return a valid filename, " +
+                    "but returned '${ivyXmlFile}'."
                 )
             }
             sourceOverrideIvyFile = ivyXmlFile
