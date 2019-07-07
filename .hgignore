@@ -76,8 +76,8 @@ syntax: regexp
 ^https-setup-kit/plainWrapper/(gw|gradlew)(\.bat)?
 ^https-setup-kit/plainWrapper/gradle
 ^custom-gradle-core-plugin/src/test/groovy/holygradle/io/(Symlink|Junction)Test/non_empty_dir/
-^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositories(|Svn|Hg|Git)Test
-^intrepid-plugin/src/test/groovy/holygradle/scm/(Hg|Git)DependencyTest
+^intrepid-plugin/src/test/groovy/holygradle/scm/SourceControlRepositories(|Svn|Hg|Git)Test/
+^intrepid-plugin/src/test/groovy/holygradle/scm/(Hg|Git)DependencyTest/
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactsIntegrationTest/projectB/(build_info|packages)/
 ^intrepid-plugin/src/test/groovy/holygradle/packaging/PackageArtifactBuildScriptHandlerIntegrationTest/[^/]+/build_info/.*
 ^intrepid-plugin/src/test/groovy/holygradle/dependencies/PackedDependenciesTest/unpacking_modules_to_same_location/extlib/
