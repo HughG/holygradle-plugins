@@ -1,5 +1,4 @@
 Using pluginsRepoOverride=[active]
-> Configure project :
 Checking 'Java' (1.8) ... done
 
 > Task :tasks

@@ -1,9 +1,8 @@
 Using pluginsRepoOverride=[active]
-> Configure project :
 Checking 'Java' (1.8) ... done
 Updated: Intrepid - holygradle_test
-WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...holy-gradle-plugins\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_d64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
-WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...holy-gradle-plugins\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_r64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
+WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_d64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
+WARNING: For test main_test in root project 'tBPC', the test executable was specified as '...\integration\src\test\groovy\holygradle\BasicIntegrationTest\tBPC/main/build/main_test/Output/main_test_r64.exe' but was NOT found relative to that project or the root project, so may not run.  It may not be built yet.
 
 > Task :tasks
 

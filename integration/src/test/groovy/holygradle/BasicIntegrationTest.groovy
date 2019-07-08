@@ -27,6 +27,10 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
 
         // Before we do the regression comparison, re-write any parts of the test files which change per-user or -run.
         String[] testNames = ["${testName}_stdout", "${testName}_stderr"]
+        // One of the patterns involves a Windows path.  We need to escape the backslashes for both the regex match and
+        // the replacement.
+        final String testExePathPrefix =
+                "\\integration\\src\\test\\groovy\\holygradle\\BasicIntegrationTest\\".replace('\\', '\\\\')
         testNames.each { String testFileName ->
             regression.replacePatterns(testFileName, [
                 (~/^:buildSrc:.*$/) : null, // Ignore compilation of buildSrc project.
@@ -39,10 +43,11 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
                 (~/Holy Gradle init script .*/) : "Holy Gradle init script [snipped]",
                 (~/Using SNAPSHOT version\..*/) : null,
                 (~/ UP-TO-DATE$/) : "",
-                (~/the test executable was specified as '.*holy-gradle-plugins/) :
-                        "the test executable was specified as '...holy-gradle-plugins"
+                (~/> Configure project :.*/) : null,
+                (~/the test executable was specified as '.*${testExePathPrefix}/) :
+                        "the test executable was specified as '...${testExePathPrefix}"
             ])
-            regression.checkForRegression(testFileName)
+            regression.checkForRegression(testFileName, true)
         }
     }
 
