@@ -21,10 +21,10 @@ public abstract class WinCredUtil {
     }
 
     public static void writeCredential(
-            String target,
-            String username,
-            String password,
-            int persistence
+        String target,
+        String username,
+        String password,
+        int persistence
     ) throws UnsupportedEncodingException {
         // prepare the credential blob
         byte[] credBlob = password.getBytes("UTF-16LE");

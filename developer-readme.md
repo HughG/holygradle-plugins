@@ -225,7 +225,6 @@ setup-x86_64.exe -q -p proxy-server.company.com:8080
 ```
 
 To install GraphViz for diagrams, and Pygments for syntax highlighting, you have to install packages from
-To install GraphViz for diagrams, and Pygments for syntax highlighting, you have to install packages from
 the Python Package Index, with the following steps.
 
 1. Download Python 3.5 (https://www.python.org/downloads/release/python-350/). This version is

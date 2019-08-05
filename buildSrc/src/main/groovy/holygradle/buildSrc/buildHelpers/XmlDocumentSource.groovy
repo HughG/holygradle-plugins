@@ -1,4 +1,4 @@
-package holygradle.buildHelpers
+package holygradle.buildSrc.buildHelpers
 
 import org.xml.sax.EntityResolver
 import org.xml.sax.InputSource

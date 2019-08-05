@@ -1,7 +1,5 @@
 package holygradle.publishing
 
-import groovy.util.Node
-import groovy.util.NodeList
 import holygradle.apache.ivy.groovy.IvyConfigurationNode
 import holygradle.apache.ivy.groovy.IvyDependencyNode
 import holygradle.apache.ivy.groovy.asIvyModule

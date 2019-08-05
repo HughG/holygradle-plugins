@@ -49,10 +49,8 @@ syntax: regexp
 # IntelliJ IDEA
 ^\.idea/(tasks|modules|workspace).xml
 ^\.idea/(libraries|modules)/
-^[^/]+/out/
 
 # Generated doc
-^buildSrc/gradle.properties
 ^doc/website/(raw-html|output)(-local)?/
 ^doc/website/local/
 

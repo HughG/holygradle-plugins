@@ -2,7 +2,6 @@ package holygradle.scm
 
 import org.gradle.api.Action
 import java.io.File
-
 internal class SvnRepository(
         scmCommand: Command,
         workingCopyDir: File

@@ -32,8 +32,6 @@
       <module name="integration_test" target="1.8" />
       <module name="intrepid-plugin_main" target="1.8" />
       <module name="intrepid-plugin_test" target="1.8" />
-      <module name="kotlintmp_main" target="1.8" />
-      <module name="kotlintmp_test" target="1.8" />
       <module name="my-credentials-plugin_main" target="1.8" />
       <module name="my-credentials-plugin_test" target="1.8" />
       <module name="stamper-plugin_main" target="1.8" />

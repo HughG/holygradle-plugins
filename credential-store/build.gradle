@@ -1,7 +1,7 @@
 import java.util.regex.Pattern
 import java.util.regex.Matcher
 
-import holygradle.process.ExecHelper
+import holygradle.buildSrc.process.ExecHelper
 
 class VSVersion {
     private static final Pattern VERSION_PATTERN =

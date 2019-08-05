@@ -1,6 +1,5 @@
 package holygradle.scm
 
-import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.kotlin.dsl.getValue
 import holygradle.source_dependencies.SourceDependency

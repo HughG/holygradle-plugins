@@ -2,6 +2,7 @@ package holygradle.unpacking
 
 import holygradle.Helper
 import holygradle.dependencies.PackedDependencyHandler
+import holygradle.dependencies.PackedDependencyOptions
 import holygradle.dependencies.SourceOverrideHandler
 import holygradle.kotlin.dsl.getValue
 import holygradle.util.addingDefault
@@ -62,10 +63,9 @@ class UnpackModuleVersion(
         }
 
     /**
-     * Returns an {@link UnpackEntry} object which describes how to unpack this module version in the context of the
-     * given {@code project}.  This is suitable for passing to
+     * Returns an {@link UnpackEntry} object which describes what files to unpack, and how and where, for this module
+     * version in the context of the given {@code project}.  This is suitable for passing to
      * {@link SpeedyUnpackManyTask#addEntry(ModuleVersionIdentifier,UnpackEntry)}
-     * @return An {@link UnpackEntry} object which describes how to unpack this module version
      */
     val unpackEntry: UnpackEntry
         get() {
@@ -165,12 +165,12 @@ class UnpackModuleVersion(
      * If true, a link for this module should be created, to the central cache, otherwise no link should be created.
      * A link should be created if
      * <ul>
-     *     <li>the relevant {@code packedDependencies} entry has {@code unpackToCache = true} (the default);</li>
-     *     <li>that entry has not had {@code noCreateLinkToCache() called on it; and</li>
+     *     <li>the relevant [PackedDependencyHandler] has {@code unpackToCache = true} (the default);</li>
+     *     <li>that entry has not had [PackedDependencyOptions.noCreateLinkToCache] called on it; and</li>
      *     <li>this module version actually has any artifacts -- if not, nothing will be unpacked in the cache, so there
      *     will be no folder to which to make a symlink.</li>
      * </ul>
-     * @return A flag indicating whether to create a symlink to the unpack cache for this version.
+     * @return A flag indicating whether to create a link to the unpack cache for this version.
      */
     val shouldCreateLinkToCache: Boolean get() =
         getUniqueValue("shouldCreateLinkToCache", selfOrAncestorPackedDependencies) {

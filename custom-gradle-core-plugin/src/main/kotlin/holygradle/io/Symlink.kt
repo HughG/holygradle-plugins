@@ -32,7 +32,6 @@ object Symlink {
     @JvmStatic
     fun rebuild(link: File, target: File) {
         // For simplicity in any error reporting, use canonical path for the link.
-
         val canonicalLink = link.canonicalFile
 
         // Delete the symlink if it exists

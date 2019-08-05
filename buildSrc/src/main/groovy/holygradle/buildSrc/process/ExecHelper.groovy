@@ -1,4 +1,4 @@
-package holygradle.process
+package holygradle.buildSrc.process
 
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
@@ -10,10 +10,10 @@ import org.gradle.process.ExecSpec
  */
 class ExecHelper {
     public static executeAndReturnResultAsString(
-            Logger logger,
-            Closure<ExecResult> execMethod,
-            Closure throwForExitValue,
-            Closure configureSpec
+        Logger logger,
+        Closure<ExecResult> execMethod,
+        Closure throwForExitValue,
+        Closure configureSpec
     ) {
         String commandLine = null
 
@@ -37,8 +37,8 @@ class ExecHelper {
                 logger.error "Failed with exitValue ${exitValue} from commandLine ${commandLine}."
             }
             [
-                    "Standard": stdout,
-                    "Error": stderr
+                "Standard": stdout,
+                "Error": stderr
             ].each { name, stream ->
                 logger.log logLevel, "${name} output stream follows. >>>"
                 stream.toString().eachLine { logger.log logLevel, it }

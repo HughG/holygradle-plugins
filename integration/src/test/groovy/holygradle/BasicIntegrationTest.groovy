@@ -45,7 +45,8 @@ class BasicIntegrationTest extends AbstractHolyGradleIntegrationTest {
                 (~/ UP-TO-DATE$/) : "",
                 (~/> Configure project :.*/) : null,
                 (~/the test executable was specified as '.*${testExePathPrefix}/) :
-                        "the test executable was specified as '...${testExePathPrefix}"
+                        "the test executable was specified as '...${testExePathPrefix}",
+                (~/^$/) : null,
             ])
             regression.checkForRegression(testFileName, true)
         }

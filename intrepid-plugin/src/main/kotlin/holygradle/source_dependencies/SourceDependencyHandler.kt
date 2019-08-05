@@ -2,17 +2,15 @@ package holygradle.source_dependencies
 
 import holygradle.Helper
 import holygradle.IntrepidPlugin
-import holygradle.buildscript.BuildScriptDependencies
-import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.custom_gradle.plugin_apis.DEFAULT_CREDENTIAL_TYPE
 import holygradle.custom_gradle.util.CamelCase
 import holygradle.dependencies.DependencyHandler
 import holygradle.kotlin.dsl.container
 import holygradle.kotlin.dsl.newInstance
 import holygradle.scm.CommandLine
+import holygradle.scm.GitDependency
 import holygradle.scm.HgDependency
 import holygradle.scm.SvnDependency
-import holygradle.scm.GitDependency
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ModuleVersionIdentifier

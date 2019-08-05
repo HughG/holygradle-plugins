@@ -139,10 +139,10 @@ open class PackedDependenciesStateHandler(
                     // resolved dependency version. We know that there can only be one resolved version per
                     // configuration so by checking the configuration matches we can be sure this is it.
                     (it.groupName == id.group) &&
-                        (it.dependencyName == id.name) &&
-                        (it.configurationMappings.any { entry ->
-                            originalConf.hierarchy.any { it.name == entry.key }
-                        })
+                            (it.dependencyName == id.name) &&
+                            (it.configurationMappings.any { entry ->
+                                originalConf.hierarchy.any { it.name == entry.key }
+                            })
                 }
 
                 // Find or create an UnpackModuleVersion instance.
@@ -160,7 +160,7 @@ open class PackedDependenciesStateHandler(
                         // It's possible for someone to specify the same version of the same module at two different
                         // paths, using two different packed dependencies.  However, we regard that as too complicated
                         // and confusing, and don't allow it.  If they really need it to appear to be in two places they
-                        // can create explicit symlinks.
+                        // can create explicit links.
                         val existingPackedDep = unpackModuleVersion.packedDependency
                         if (existingPackedDep != null) {
                             // If the existing packed dep is the same as the one we found, we don't need to change it.
@@ -170,6 +170,7 @@ open class PackedDependenciesStateHandler(
                                         "Module version ${id} is specified by packed dependencies at both path " +
                                         "'${existingPackedDep.name}' and '${thisPackedDep.name}'.  " +
                                         "A single version can only be specified at one path.  If you need it to appear at " +
+                                        "appear at " +
                                         "more than one location you can explicitly create links."
                                 )
                             }
@@ -182,10 +183,9 @@ open class PackedDependenciesStateHandler(
                     unpackModuleVersion = UnpackModuleVersion(project, id, parents, thisPackedDep)
                     unpackModule.versions[id.version] = unpackModuleVersion
                     project.logger.debug(
-                        "collectUnpackModules: created version for ${id} " +
+                            "collectUnpackModules: created version for ${id} " +
                                 "(parents = ${parents}, tPD = ${thisPackedDep?.name})"
                     )
-
                 }
 
                 project.logger.debug("collectUnpackModules: adding ${id.module} originalConf ${originalConf.name} artifacts ${resolvedDependency.moduleArtifacts}")
@@ -280,6 +280,5 @@ open class PackedDependenciesStateHandler(
             project.logger.error("${prefix}  indirectly from ${version.fullCoordinate}")
             logUnpackModuleVersionAncestry(parent, indent + 1)
         }
-
     }
 }

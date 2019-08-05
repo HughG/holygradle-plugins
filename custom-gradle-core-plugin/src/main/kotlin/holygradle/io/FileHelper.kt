@@ -55,7 +55,6 @@ object FileHelper {
                         Files.delete(f.toPath())
                     }
                 }
-
             }
         } catch (e: IOException) {
             throw IOException("Failed to delete ${dir}${formatPurpose(purpose)}", e)

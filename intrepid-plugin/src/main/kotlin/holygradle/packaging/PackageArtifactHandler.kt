@@ -50,6 +50,7 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
                     packageArtifactHandlers.findByName("buildScript") ?: packageArtifactHandlers.create("buildScript")
             buildScriptHandler.include(project.buildFile.name)
             buildScriptHandler.include(project.gradle.startParameter.settingsFile?.name ?: Settings.DEFAULT_SETTINGS_FILE)
+            buildScriptHandler.include(Project.GRADLE_PROPERTIES)
             buildScriptHandler.configuration = "buildScript"
             packageArtifactHandlers.all { packArt ->
                 val packageTask = packArt.definePackageTask(createPublishNotesTask)
@@ -167,6 +168,7 @@ open class PackageArtifactHandler @Inject constructor(val project: Project, val 
             // project, because we don't want a DummySourceControl if there's no SCM info here.  Also, some source
             // dependencies may not have a project.
             //
+
             // For the originating project we will be passed a null handler (because we're looking at it as the root which
             // has source dependencies, not a source dependency itself), in which case we want that originating project,
             // which we have from the task.

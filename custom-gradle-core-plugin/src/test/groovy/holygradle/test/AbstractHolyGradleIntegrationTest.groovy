@@ -101,8 +101,6 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
             if (launcher.expectedFailures.size() == 0) {
                 launcher.run()
             } else {
-                OutputStream errorOutput = new ByteArrayOutputStream()
-                launcher.setStandardError(errorOutput)
                 String error = null
                 try {
                     launcher.run()
@@ -125,7 +123,9 @@ class AbstractHolyGradleIntegrationTest extends AbstractHolyGradleTest {
                 if (error == null) {
                     fail("Expected failure but there was none.")
                 }
+
                 System.err.println("ERROR: ${error}")
+
                 launcher.expectedFailures.each {
                     assertTrue("Error message should contain '${it}' but it contained: ${error}.", error.contains(it))
                 }

@@ -1,6 +1,5 @@
 package holygradle.scm
 
-import holygradle.buildscript.BuildScriptDependencies
 import holygradle.custom_gradle.plugin_apis.CredentialSource
 import holygradle.source_dependencies.SourceDependency
 import holygradle.source_dependencies.SourceDependencyHandler
@@ -54,7 +53,7 @@ internal class HgDependency(
 
     override fun doCheckout(destinationDir: File, repoUrl: String, repoRevision: String?, repoBranch: String?): Boolean {
         var result = tryCheckout(repoUrl, destinationDir, repoBranch)
-        
+
         if (!result) {
             deleteEmptyDir(destinationDir)
             val repoSupportsAuthentication = ScmHelper.repoSupportsAuthentication(repoUrl)

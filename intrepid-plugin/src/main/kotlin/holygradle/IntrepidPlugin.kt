@@ -27,7 +27,6 @@ import holygradle.unpacking.SevenZipHelper
 import holygradle.unpacking.SpeedyUnpackManyTask
 import org.gradle.api.*
 import org.gradle.api.artifacts.DependencyResolveDetails
-import org.gradle.api.artifacts.repositories.IvyArtifactRepository
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.publish.ivy.plugins.IvyPublishPlugin
 import java.io.File
@@ -493,6 +492,4 @@ This project has source overrides, which have automatically-generated versions:
         }
         return false
     }
-
 }
-

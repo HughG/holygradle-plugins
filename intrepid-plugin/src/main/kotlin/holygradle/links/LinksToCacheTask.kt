@@ -3,12 +3,9 @@ package holygradle.links
 import com.google.common.annotations.VisibleForTesting
 import holygradle.io.Link
 import holygradle.unpacking.PackedDependenciesStateSource
-import holygradle.unpacking.UnpackModule
 import holygradle.unpacking.UnpackModuleVersion
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.ModuleVersionIdentifier
 import java.io.File
-import java.util.*
 
 /**
  * Task to create directory links into the Holy Gradle unpack cache, for all packed dependencies in a project.  (This

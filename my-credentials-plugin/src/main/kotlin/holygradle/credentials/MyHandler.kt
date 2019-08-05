@@ -56,9 +56,9 @@ open class MyHandler(private val project: Project) : CredentialSource {
         return getCachedCredentials(credStorageKey)
                 ?: getCredentialsFromUserAndStore(credentialType, defaultUsername)
     }
-    
+
     private fun getCredentialStorageKey(credentialType: String): String = "Intrepid - ${credentialType}"
-    
+
     private fun getCredentialsFromUserAndStore(credentialType: String, currentUserName: String): Credentials {
         val my: MyHandler by project.extensions
         val instructionsHandler = my.instructions.findByName(credentialType)
@@ -80,7 +80,7 @@ open class MyHandler(private val project: Project) : CredentialSource {
         get() = username(DEFAULT_CREDENTIAL_TYPE)
     override val password: String?
         get() = password(DEFAULT_CREDENTIAL_TYPE)
-    
+
     override fun username(credentialType: String): String? = getCredentials(credentialType).username
     override fun password(credentialType: String): String? = getCredentials(credentialType).password
 }

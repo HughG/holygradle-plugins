@@ -62,7 +62,7 @@ open class PackedDependencyHandler @Inject constructor (
     override val shouldCreateSettingsFile: Boolean get() {
         return createSettingsFile ?: defaultOptions.shouldCreateSettingsFile
     }
-    
+
     override val shouldMakeReadonly: Boolean get() {
         return readonly ?: defaultOptions.shouldMakeReadonly
     }
@@ -70,7 +70,7 @@ open class PackedDependencyHandler @Inject constructor (
     override val shouldApplyUpToDateChecks: Boolean get() {
         return applyUpToDateChecks ?: defaultOptions.shouldApplyUpToDateChecks
     }
-    
+
     fun initialiseDependencyId(dependencyCoordinate: String) {
         if (dependencyId != null) {
             throw RuntimeException("Cannot set dependency more than once")
@@ -82,7 +82,7 @@ open class PackedDependencyHandler @Inject constructor (
             dependencyId = DefaultModuleVersionIdentifier.newId(parts[0], parts[1], parts[2])
         }
     }
-        
+
     fun dependency(dependencyCoordinate: String) {
         initialiseDependencyId(dependencyCoordinate)
     }

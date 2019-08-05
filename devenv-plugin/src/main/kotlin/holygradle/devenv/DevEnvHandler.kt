@@ -8,6 +8,9 @@ import java.io.File
 import java.util.function.Predicate
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+/*
+    NOTE: If you change the Visual Studio location code in this class, also change it in credential-store/build.gradle.
+ */
 
 /**
  * Copyright (c) 2016 Hugh Greene (githugh@tameter.org).

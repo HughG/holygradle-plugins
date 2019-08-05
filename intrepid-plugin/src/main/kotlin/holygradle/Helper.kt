@@ -12,7 +12,6 @@ import org.gradle.testfixtures.ProjectBuilder
 import java.io.File
 import java.nio.file.Paths
 import java.security.MessageDigest
-import java.util.*
 
 class Helper {
     companion object {
@@ -90,13 +89,13 @@ class Helper {
             when (split.size) {
                 1 -> {
                     val configSet = config.split(",")
-                    configSet.mapTo(configurations) { AbstractMap.SimpleEntry(it, it) }
+                    configSet.mapTo(configurations) { java.util.AbstractMap.SimpleEntry(it, it) }
                 }
                 2 -> {
                     val fromConfigSet = split[0].split(",")
                     val toConfigSet = split[1].split(",")
                     for (from in fromConfigSet) {
-                        toConfigSet.mapTo(configurations) { AbstractMap.SimpleEntry(from, it) }
+                        toConfigSet.mapTo(configurations) { java.util.AbstractMap.SimpleEntry(from, it) }
                     }
                 }
                 else -> throw RuntimeException(
@@ -129,4 +128,3 @@ class Helper {
     }
 
 }
-

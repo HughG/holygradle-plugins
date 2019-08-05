@@ -108,7 +108,7 @@ class LinkTest extends AbstractHolyGradleTest {
             // Assert
             Assert.assertTrue(logger.toString().contains(
                 "Failed to create a directory junction from '${link.toString()}' to '${target.toString()}'. " +
-                "Falling back to symlinks."
+                    "Falling back to symlinks."
             ))
             Assert.assertTrue(logger.toString().contains(
                 "Directory junction and symlink creation failed from '${link.toString()}' to '${target.toString()}'."
